@@ -1,3 +1,10 @@
+<script type='text/javascript' src='https://ajax.aspnetcdn.com/ajax/jquery/jquery-1.5.2.min.js'></script>
+<link rel='stylesheet' type='text/css' href='include/LayoutMisc.css' xmlns='http://www.w3.org/1999/xhtml'>
+<link rel='stylesheet' type='text/css' href='include/ReducedStyle.css' xmlns='http://www.w3.org/1999/xhtml'>
+<link rel='stylesheet' type='text/css' href='include/ReducedStyle2.css' xmlns='http://www.w3.org/1999/xhtml'>
+<link rel='stylesheet' type='text/css' href='include/ReducedStyle3.css' xmlns='http://www.w3.org/1999/xhtml'>
+<link rel='stylesheet' type='text/css' href='include/DynamicStyle.css' xmlns='http://www.w3.org/1999/xhtml'>
+
 <div id="tags"></div>
 
 <div class="footer-fragments" role="contentinfo">
@@ -17,41 +24,100 @@
         </ul>
     </div>
 
+    <style>
+        .phr {
+            color: cornflowerblue;
+        }
+
+            .phr:hover {
+                font-weight: bold;
+                color: blue;
+                cursor: pointer;
+            }
+    </style>
+
     <div class="footer-fragment app-insights-footer-fragment" id="footer-fragment-668884184">
-        
+
+        <!--<span class='phr' onclick='clickedPhrase(this)'>API</span>&nbsp;|&nbsp;-->
+
+    </div>
+
+    <div id="tagPopup" style="background-color:#f5f3f3; visibility:hidden; position:absolute; margin:20px; border:1px solid #000000; display:block; padding:2px;">
+        <span style="position:absolute; right:0; top:0; margin:2px; width:10px; height:10px; font-size:x-small; background-color:red; color:white; font-weight:bold; border:1px solid #808080; display:block; padding:2px; cursor:pointer" onclick="$('#tagPopup').css('visibility', 'hidden')">X</span>
+        <div id="tagList" style="margin:5px; margin-right:15px; font-size:x-small"></div>
     </div>
 
     <script>
+        var currentMousePos = { x: -1, y: -1 };
+
         $(document).ready(function () {
+            $(document).mousemove(function (event) {
+                currentMousePos.x = event.pageX;
+                currentMousePos.y = event.pageY;
+            });
+
             var fileName = document.location.href.match(/[^\/]+$/)[0];
             fileName = fileName.replace(".html", ".json");
 
             var fileInfo = "https://raw.githubusercontent.com/technet2/Wiki/master/docs/info/" + fileName;
 
             $.getJSON(fileInfo, function (data) {
-
                 var keyPhrases = [];
                 $.each(data.KeyPhrases, function (key, val) {
-                    keyPhrases.push("<a href='/index/" + val + ".json'>" + val + "</a>&nbsp;|&nbsp;");
+                    keyPhrases.push("<span class=\"phr\" onclick='clickedPhrase(this)'>" + val + "</span>&nbsp;|&nbsp;");
                 });
 
                 var netities = [];
-                var list = JSON.parse(data.NetitiesJson); 
+                var list = JSON.parse(data.NetitiesJson);
 
                 $.each(list, function (key, val) {
-                    netities.push("<a href='/index/" + val.wikipediaUrl + "'>" + val.name + "</a>&nbsp;|&nbsp;");
+                    netities.push("<a href='" + val.wikipediaUrl + "'>" + val.name + "</a>&nbsp;|&nbsp;");
                 });
-                
+
+                $("<h2>Key Phrases Identified</h2>").appendTo("#tags");
+
                 $("<ul/>", {
                     "class": "tag-list",
                     html: keyPhrases.join("")
                 }).appendTo("#tags");
+
+                $("<h2>Entities on Wikipedia</h2>").appendTo("#tags");
 
                 $("<ul/>", {
                     "class": "tag-list",
                     html: netities.join("")
                 }).appendTo("#tags");
             });
+
         });
+
+        function clickedPhrase(ele) {
+            console.log(ele.innerText);
+            var popup = $('#tagPopup');
+            var tagList = $('#tagList');
+            tagList.empty();
+
+            var fileInfo = "https://raw.githubusercontent.com/technet2/Wiki/master/docs/index/" + ele.innerText + ".json";
+
+            $.getJSON(fileInfo, function (data) {
+                var nextLinks = [];
+
+                popup.css('visibility', 'visible');
+                popup.css('left', currentMousePos.x);
+                popup.css('top', currentMousePos.y);
+
+                $.each(data.Refs, function (key, val) {
+                    console.log("yey");
+                    console.log(val);
+                    nextLinks.push("<div style='margin-bottom:8px;'><a href='/Wiki/" + val.FileName + "'>" + val.Title + "</a></div>");
+                });
+                
+                $("<div/>", {
+                    "class": "link-list",
+                    html: nextLinks.join("")
+                }).appendTo("#tagList");
+            });
+
+        }
     </script>
 </div>
