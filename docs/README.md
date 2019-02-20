@@ -6,7 +6,7 @@ This is a copy of articles tagged as **[User Page](https://social.technet.micros
 
 Behind this repo is an Azure Function sentinel, which periodically polls the repo.
 
-After every poll, the sentinel writes it's status to [this file](/Wiki/blob/master/logs/WikiSentinelStatus.json).
+After every poll, the sentinel writes it's status to [this file](https://github.com/technet2/Wiki/blob/master/logs/WikiSentinelStatus.json).
 
 
 ## GitHub Pages
