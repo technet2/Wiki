@@ -51,7 +51,7 @@ If you see any bugs, broken links or improvements, please add an issue to this r
 
 If you would like to be a collaborator, please get in touch, or raise an issue.
 
-Index and loopup files are generated in various folders. Why not contribute a tool which uses this data, to generate other cross-reference or statistics files.
+[Index](https://github.com/technet2/Wiki/tree/master/docs/index) and [look up](https://github.com/technet2/Wiki/tree/master/docs/info) files are generated in various folders. Why not contribute a tool which uses this data, to generate other cross-reference or statistics files.
 
 ## Index
 
