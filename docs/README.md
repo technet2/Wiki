@@ -1,4 +1,4 @@
-##**Moving a community of passionate people to a better place.**
+##Moving a community of passionate people to a better place.
 
 This project is an experiment in moving the content and functionality of the world's greatest collaboration platform to a better host.
 
@@ -9,7 +9,7 @@ Behind this repo is an Azure Function sentinel, which periodically polls the rep
 After every poll, the sentinel writes it's status to [this file](/Wiki/blob/master/logs/WikiSentinelStatus.json).
 
 
-##**GitHub Pages**
+##GitHub Pages
 
 **[THESE PAGES ARE HOSTED HERE](https://technet2.github.io/Wiki)**
 
@@ -22,7 +22,7 @@ Most of the links will take you back to TechNet Wiki, except:
 * Country/language (top left) - Hard coded joke, to be replaced
 * Links which refer to an anchor within an article - Point to the same article, not the TechNet version
 
-##**Function Labels**
+##Function Labels
 
 This service uses "Labels" to act on user commands.
 
@@ -39,13 +39,13 @@ All it currently does is create a look-up file [here](https://github.com/technet
 Use this label to add a TechNet Wiki article to this service. When the service next polls for issues with this label, it will pull the articles in. You can list up to 10 articles in one request.
 
 
-##**Roadmap**
+##Roadmap
 
 1. Auto-create collaborators from ownership profile matches.
 2. Finish the IMPORT THIS function
 3. Poll TechNet and import articles, when revised on TechNet
 
-##**Collaborate**
+##Collaborate
 
 If you see any bugs, broken links or improvements, please add an issue to this repository. There are a selection of labels to choose from.
 
@@ -53,7 +53,7 @@ If you would like to be a collaborator, please get in touch, or raise an issue.
 
 Index and loopup files are generated in various folders. Why not contribute a tool which uses this data, to generate other cross-reference or statistics files.
 
-##**Index**
+##Index
 
 Below are some of the pages being generated and tested.
 Many of these are still 'work in progress'.
