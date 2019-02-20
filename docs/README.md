@@ -31,9 +31,9 @@ The Labels are:
 1. THIS IS MINE (live)
 Use this label to identify one of your articles, so that the service can check for your Ownership Proof. 
 All it currently does is create a look-up file [here](https://github.com/technet2/Wiki/tree/master/authors)
-* Your GitHub login name must be in double quotes, in your TechNet Wiki Profile. In the biography section.
-* Create an issue, add the THIS IS MINE label and paste a url to one of the GitHub articles.
-* You must be the owner of the article
+ * Your GitHub login name must be in double quotes, in your TechNet Wiki Profile. In the biography section.
+ * Create an issue, add the THIS IS MINE label and paste a url to one of the GitHub articles.
+ * You must be the owner of the article
 
 2. IMPORT THIS (not live)
 Use this label to add a TechNet Wiki article to this service. When the service next polls for issues with this label, it will pull the articles in. You can list up to 10 articles in one request.
@@ -58,6 +58,6 @@ If you would like to be a collaborator, please get in touch, or raise an issue.
 Below are some of the pages being generated and tested.
 Many of these are still 'work in progress'.
  
-* [130 Articles tagged with PEJL](https://technet2.github.io/Wiki/PageIndex1.html)
-* [Key Phrases Index](https://technet2.github.io/Wiki/KeyPhrasesIndex.html)
-* [Key Phrases Tally](https://technet2.github.io/Wiki/KeyPhrasesTally.html)
+* [130 Articles tagged with PEJL](https://technet2.github.io/Wiki/articles/PageIndex1.html)
+* [Key Phrases Index](https://technet2.github.io/Wiki/articles/KeyPhrasesIndex.html)
+* [Key Phrases Tally](https://technet2.github.io/Wiki/articles/KeyPhrasesTally.html)
