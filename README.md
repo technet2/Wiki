@@ -13,7 +13,7 @@ After every poll, the sentinel writes it's status to [this file](/Wiki/blob/mast
 
 **GitHub Pages**
 
-[THESE PAGES ARE HOSTED HERE(https://technet2.github.io/Wiki)
+[THESE PAGES ARE HOSTED HERE](https://technet2.github.io/Wiki)
 
 To honour the original HTML and CSS from TechNet Wiki, the pages have been pulled without any changes to the article body. 
 A wrapper is placed around the article to reconstruct the original TechNet Wiki branding. 
@@ -54,3 +54,12 @@ If you see any bugs, broken links or improvements, please add an issue to this r
 If you would like to be a collaborator, please get in touch, or raise an issue.
 
 Index and loopup files are generated in various folders. Why not contribute a tool which uses this data, to generate other cross-reference or statistics files.
+
+**Index**
+
+Below are some of the pages being generated and tested.
+Many of these are still 'work in progress'.
+ 
+* [Key Phrases Index](https://technet2.github.io/Wiki/PageIndex1.html)
+* [Key Phrases Index](https://technet2.github.io/Wiki/KeyPhrasesIndex.html)
+* [Key Phrases Tally](https://technet2.github.io/Wiki/KeyPhrasesTally.html)
