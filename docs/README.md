@@ -12,8 +12,9 @@ These have been imported and index pages were generated below:
 
 Behind this repo is an Azure Function sentinel, which periodically polls the repo.
 
-After every poll, the sentinel writes it's status to [this file](https://github.com/technet2/Wiki/blob/master/logs/WikiSentinelStatus.json).
+After every poll, the sentinel writes it's status to [this file](https://github.com/technet2/Sentinel/blob/master/logs/WikiSentinelStatus.json).
 
+If there are polling errors, they are written to a file within the date structure from [this logs folder](https://github.com/technet2/Sentinel/tree/master/logs).
 
 ## GitHub Pages
 
