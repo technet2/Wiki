@@ -66,6 +66,7 @@ If you would like to be a collaborator, please get in touch, or raise an issue.
 Below are some of the pages being generated and tested.
 Many of these are still 'work in progress'.
  
+* [68 Articles tagged with User Page](https://technet2.github.io/Wiki/articles/UserPages.html)
 * [130 Articles tagged with PEJL](https://technet2.github.io/Wiki/articles/PageIndex1.html)
 * [Key Phrases Index](https://technet2.github.io/Wiki/articles/KeyPhrasesIndex.html)
 * [Key Phrases Tally](https://technet2.github.io/Wiki/articles/KeyPhrasesTally.html)
