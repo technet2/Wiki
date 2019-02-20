@@ -17,7 +17,8 @@ After every poll, the sentinel writes it's status to [this file](https://github.
 
 ## GitHub Pages
 
-**[THESE PAGES ARE HOSTED HERE](https://technet2.github.io/Wiki)**
+If you are looking at the 'raw' repository file view of this markdown file, the pages are designed to be viewed below:
+https://technet2.github.io/Wiki
 
 To honour the original HTML and CSS from TechNet Wiki, the pages have been pulled without any changes to the article body. 
 A wrapper is placed around the article to reconstruct the original TechNet Wiki branding. 
@@ -25,7 +26,7 @@ Most of the links will take you back to TechNet Wiki, except:
 * Breadcrumb "Wiki" link - Goes to the root of the docs folder of this project
 * Breadcrumb "TechNet Articles" link - Goes to an Index page (soon to change)
 * Breadcrumb article title - Goes to the file in this project, where you can edit the GitHub version
-* Country/language (top left) - Hard coded joke, to be replaced
+* Country/language (top left) - Hard coded joke (to be replaced)
 * Links which refer to an anchor within an article - Point to the same article, not the TechNet version
 
 ## Function Labels
@@ -34,14 +35,15 @@ This service uses "Labels" to act on user commands.
 
 The Labels are:
 
-1. THIS IS MINE (live)
+### THIS IS MINE (live)
+
 Use this label to identify one of your articles, so that the service can check for your Ownership Proof. 
 All it currently does is create a look-up file [here](https://github.com/technet2/Wiki/tree/master/authors)
  * Your GitHub login name must be in double quotes, in your TechNet Wiki Profile. In the biography section.
  * Create an issue, add the THIS IS MINE label and paste a url to one of the GitHub articles.
  * You must be the owner of the article
 
-2. IMPORT THIS (not live)
+### IMPORT THIS (work in progress)
 Use this label to add a TechNet Wiki article to this service. When the service next polls for issues with this label, it will pull the articles in. You can list up to 10 articles in one request.
 
 
