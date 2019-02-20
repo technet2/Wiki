@@ -4,6 +4,10 @@ This project is an experiment in moving the content and functionality of the wor
 
 This is a copy of articles tagged as **[User Page](https://social.technet.microsoft.com/wiki/contents/articles/tags/User+Page/default.aspx)** or **[PEJL](https://social.technet.microsoft.com/wiki/contents/articles/tags/PEJL/default.aspx)** on [Microsoft TechNet Wiki](https://social.technet.microsoft.com/wiki).
 
+These have been imported and index pages were generated below: 
+ * [User Pages](https://technet2.github.io/Wiki/articles/UserPages.html)
+ * [PEJL Tagged](https://technet2.github.io/Wiki/articles/PageIndex1.html)
+
 Behind this repo is an Azure Function sentinel, which periodically polls the repo.
 
 After every poll, the sentinel writes it's status to [this file](https://github.com/technet2/Wiki/blob/master/logs/WikiSentinelStatus.json).
