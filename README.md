@@ -60,6 +60,6 @@ Index and loopup files are generated in various folders. Why not contribute a to
 Below are some of the pages being generated and tested.
 Many of these are still 'work in progress'.
  
-* [Key Phrases Index](https://technet2.github.io/Wiki/PageIndex1.html)
+* [130 Articles tagged with PEJL](https://technet2.github.io/Wiki/PageIndex1.html)
 * [Key Phrases Index](https://technet2.github.io/Wiki/KeyPhrasesIndex.html)
 * [Key Phrases Tally](https://technet2.github.io/Wiki/KeyPhrasesTally.html)
