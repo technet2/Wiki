@@ -38,7 +38,7 @@
             $.getJSON(fileInfo, function (data) {
                 var keyPhrases = [];
                 $.each(data.KeyPhrases, function (key, val) {
-                    keyPhrases.push("<span class=\"phr\" onclick=\"clickedPhrase('" + val.Name + "\')\">" + val.Name + "</span>&nbsp;|&nbsp;");
+                    keyPhrases.push("<span class=\"phr\" onclick=\"clickedPhrase('" + val.SafeName + "\')\">" + val.Name + "</span>&nbsp;|&nbsp;");
                 });
 
                 var netities = [];
@@ -97,39 +97,29 @@
 
         function clickedPhrase(safeName) {
             //console.log(ele.innerText);
-            var fileInfo = "https://raw.githubusercontent.com/technet2/Wiki/master/docs/index/" + safeName + ".json";
-
-            $.getJSON(fileInfo, function (data) {
-                processPhraseLinkPopup(data);
-            }).error(function () {
-                fileInfo = fileInfo.toLowerCase(); // try two
-                $.getJSON(fileInfo, function (data) {
-                    processPhraseLinkPopup(data);
-                });
-            });
-
-        }
-
-        function processPhraseLinkPopup(data) {
-            var nextLinks = [];
             var popup = $('#tagPopup');
-
             var tagList = $('#tagList');
             tagList.empty();
 
+            var fileInfo = "https://raw.githubusercontent.com/technet2/Wiki/master/docs/index/" + safeName + ".json";
 
-            popup.css('visibility', 'visible');
-            popup.css('left', currentMousePos.x);
-            popup.css('top', currentMousePos.y);
+            $.getJSON(fileInfo, function (data) {
+                var nextLinks = [];
 
-            $.each(data.Refs, function (key, val) {
-                nextLinks.push("<div style='margin-bottom:8px;'><a href='/Wiki/articles/" + val.FileName + "'>" + val.Title + "</a></div>");
+                popup.css('visibility', 'visible');
+                popup.css('left', currentMousePos.x);
+                popup.css('top', currentMousePos.y);
+
+                $.each(data.Refs, function (key, val) {
+                    nextLinks.push("<div style='margin-bottom:8px;'><a href='/Wiki/articles/" + val.FileName + "'>" + val.Title + "</a></div>");
+                });
+
+                $("<div/>", {
+                    "class": "link-list",
+                    html: nextLinks.join("")
+                }).appendTo("#tagList");
             });
 
-            $("<div/>", {
-                "class": "link-list",
-                html: nextLinks.join("")
-            }).appendTo("#tagList");
         }
 
         $(function () {
