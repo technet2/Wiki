@@ -1,0 +1,215 @@
+---
+layout: default
+title: IoT Suite - Remote Monitoring - Adding Live and Simulated Devices - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Components">Components</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Azure_IoT_Hub">Azure IoT Hub</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#How_to_register_your_device">How to register your device</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Azure_DocumentDb">Azure DocumentDb</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#How_to_add_a_device_to_the_monitoring_Web_App">How to add a device to the monitoring Web App</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Azure_Table_Storage">Azure Table Storage</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#How_to_add_a_simulated_device">How to add a simulated device</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>IoT Hub is the next big thing after Event Hub, providing authentication per device, and two-way messaging from one unified end point.</p>
+<p>IoT Suite is a tool to quickly spin up all the components you need to provide a complete IoT solution.</p>
+<p>You can find a complete break down of all the components that IoT Suite creates&nbsp;<span style="font-size:12.1px;">here :&nbsp;</span><a href="http://social.technet.microsoft.com/wiki/contents/articles/32941.iot-suite-under-the-hood-remote-monitoring.aspx" style="font-size:12.1px;"><strong>IoT
+ Suite - Under The Hood - Remote Monitoring</strong></a></p>
+<p>This document looks closer at just device creation, both real devices and simulated devices. Rules and actions are not covered here.</p>
+<p>&nbsp;</p>
+<h1><a name="Components"></a>Components</h1>
+<p>&nbsp;</p>
+<h2><a name="Azure_IoT_Hub"></a>Azure IoT Hub</h2>
+<p>IoT Hub is a very different service from both Service Bus and Event Hub. IoT Hub can scale to millions of devices, and provides built-in &quot;per-device authentication&quot;, libraries for most common devices, and two-way messaging from a single end point. Wth IoT
+ Hub, you must first register your device, and provide or obtain unique keys and generated ids that help protect your connection and avoid &quot;<a href="https://en.wikipedia.org/wiki/Spoofing_attack">spoofing</a>&quot;.</p>
+<p><br />
+</p>
+<h3><a name="How_to_register_your_device"></a>How to register your device</h3>
+<p>To create a device, you must first register your chosen device id with event hub, which will create the device&#39;s unique Generation Id, and Primary and Secondary Keys. You can create and send the Primary and Secondary keys if you prefer, but the Generation
+ Id is created by IoT Hub.</p>
+<p>To register a device, you can use the&nbsp;<strong><a href="https://msdn.microsoft.com/en-us/library/microsoft.azure.devices.registrymanager.aspx?f=255&amp;MSPPError=-2147217396"><strong>RegistryManager</strong></a>
+</strong>and&nbsp;<strong><a href="https://msdn.microsoft.com/en-us/library/microsoft.azure.devices.registrymanager.adddeviceasync.aspx#M:Microsoft.Azure.Devices.RegistryManager.AddDeviceAsync(Microsoft.Azure.Devices.Device)"><strong>AddDeviceAsync</strong></a>
+</strong>method, which returns the new IoT Hub device, with Generation Id and keys.</p>
+<p>Registry Manager is available from NuGet, if you search for &quot;Microsoft.Azure.Devices&quot;, but [at time of writing] you also need to tick the &quot;show prereleases&quot; checkbox to show it.</p>
+<p><br />
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5280.CaptureAzueDevices.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5280.CaptureAzueDevices.PNG" style="border-width:1px;border-style:solid;width:550px;height:263px;" /></a></p>
+<p><br />
+</p>
+<p>At this point, using the data you get back from device registration and the sample code, you can start sending data to IoT Hub from the device. However it will not be listed by the website, because it has not been added to the application database, as explained
+ next.</p>
+<p>&nbsp;</p>
+<h2><a name="Azure_DocumentDb"></a>Azure DocumentDb</h2>
+<p>This is the place IoT Suite uses for device provisioning and rules, look-ups for the website and simulated devices web jobs. The Web App application data.</p>
+<p>To add your new device to that demo website, you simply need to add a document to the&nbsp;DocumentDb resource that was created for the application.</p>
+<p>Below is the content of a document for one of the simulated devices which IoT Suite creates:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;DeviceProperties&quot;</code><code style="color:#000000;">: {</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;DeviceID&quot;</code><code style="color:#000000;">:
+</code><code><span style="color:#0000ff;">&quot;</span><strong><span style="color:#ff0000;">SampleDevice004_217</span></strong><span style="color:#0000ff;">&quot;</span></code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;HubEnabledState&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;CreatedTime&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;2015-12-14T22:28:24.720717Z&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;DeviceState&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;normal&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;UpdatedTime&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;2015-12-22T19:58:02.2369042Z&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Manufacturer&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;Contoso Inc.&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;ModelNumber&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;MD-996&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;SerialNumber&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;SER5102&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;FirmwareVersion&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;1.96&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Platform&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;Plat-99&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Processor&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;i3-7340&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;InstalledRAM&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;36 MB&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Latitude&quot;</code><code style="color:#000000;">: 47.659159,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Longitude&quot;</code><code style="color:#000000;">: -122.141515</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Commands&quot;</code><code style="color:#000000;">: [</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;PingDevice&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Parameters&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">null</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;StartTelemetry&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Parameters&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">null</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;StopTelemetry&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Parameters&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">null</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;ChangeSetPointTemp&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Parameters&quot;</code><code style="color:#000000;">: [</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;SetPointTemp&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Type&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;double&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">]</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;DiagnosticTelemetry&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Parameters&quot;</code><code style="color:#000000;">: [</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;Active&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Type&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;boolean&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;ChangeDeviceState&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Parameters&quot;</code><code style="color:#000000;">: [</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;DeviceState&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Type&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;string&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">]</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">],</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;CommandHistory&quot;</code><code style="color:#000000;">: [],</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;IsSimulatedDevice&quot;</code><code style="color:#000000;">:
+</code><code><span style="color:#ff0000;"><strong>1</strong></span></code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Version&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;1.0&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;ObjectType&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;DeviceInfo&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;IoTHub&quot;</code><code style="color:#000000;">: {</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;MessageId&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;CorrelationId&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;ConnectionDeviceId&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;</code><code><span style="color:#ff0000;"><strong>SampleDevice004_217</strong></span></code><code style="color:blue;">&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;ConnectionDeviceGenerationId&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;</code><code><span style="color:#ff0000;"><strong>635857281044650363</strong></span></code><code style="color:blue;">&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;EnqueuedTime&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;0001-01-01T00:00:00&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;StreamId&quot;</code><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">null</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;id&quot;</code><code style="color:#000000;">:
+</code><code style="color:blue;">&quot;</code><code><span style="color:#ff0000;"><strong>3cd6862c-0d80-4674-8b21-42537csebfd3</strong></span></code><code style="color:blue;">&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<p>&quot;DeviceProperties/<strong>DeviceID</strong>&quot;, &quot;IoTHub/<strong>ConnectionDeviceId</strong>&quot; and &quot;<strong>id</strong>&quot; can all be the same, the name of your new device.
+<span style="font-size:12.1px;">That last &quot;id&quot; is the document id.</span>&nbsp;IoT Suite generates a GUID for this id
+<span style="font-size:12.1px;">when it first creates the simulated devices for the demo. This is</span>&nbsp;just to ensure these and new devices added via the Web App are unique documents in the database.&nbsp;</p>
+<p>&quot;IoTHub/<strong>ConnectionDeviceGenerationId</strong>&quot; is the number you got back from device registration, as explained above.</p>
+<p>&quot;<strong>IsSimulatedDevice</strong>&quot; is a Boolean one or zero. One obviously meaning this device is simulated.</p>
+<p>&nbsp;</p>
+<h3><a name="How_to_add_a_device_to_the_monitoring_Web_App"></a><a name="AddDevice"></a>How to add a device to the monitoring Web App</h3>
+<p>Adding a new device to the example that IoT Suite created just requires one new file [as shown above] to be created in DocumentDb.</p>
+<p>The Azure Portal has features built in to browse and manage documents, including adding a new one.</p>
+<p>Here is a screenshot of the document above copied and pasted into a new document, with the red bits changed for my new device:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8713.CaptureAddDeviceDocDb.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8713.CaptureAddDeviceDocDb.PNG" style="border-width:1px;border-style:solid;width:550px;height:362px;" /></a></p>
+<p>Save your new document into the database and reload your website. You should now find your new device listed.&nbsp;<span style="font-size:12.1px;">You should see it on the map and be able to select it.&nbsp;</span></p>
+<p><span style="font-size:12.1px;">I</span><span style="font-size:12.1px;">f you have connected a device, telemetry should start to appear in the history charts and any commands you added should be available.</span></p>
+<p>&nbsp;</p>
+<h2><a name="Azure_Table_Storage"></a>Azure Table Storage</h2>
+<p>If you want your device to be a simulated device, using the existing web job example provided in the sample code, you need to add it to the Table Storage account that IoT Suite creates for this purpose.&nbsp;</p>
+<p>Each component created by IoT Suite is just an example of how you can wire up your IoT solution.&nbsp;<span style="font-size:12.1px;">Table Storage is the best solution for a simple&nbsp;</span><span style="font-size:12.1px;">key/value store. It is</span><span style="font-size:12.1px;">&nbsp;cheap
+ and scales easily to millions of rows (devices), whilst still being very fast to query.&nbsp;</span></p>
+<p><span style="font-size:12.1px;"><span style="font-size:12.1px;">As mentioned above, there is a &quot;</span><strong style="font-size:12.1px;">IsSimulatedDevice&quot;</strong><span style="font-size:12.1px;">&nbsp;flag in the device document, in DocumentDb, the &quot;</span><strong style="font-size:12.1px;">ConnectionDeviceGenerationId&quot;&nbsp;</strong><span style="font-size:12.1px;">is
+ also needed by the simulator to pass through IoT Hub. However, DocumentDb could potentially be millions of rows, so running queries for the IsSimulatedDevice flag of each document could be slow, compared to using a look-up table as demonstrated by ths IoT
+ Suite example.</span><br />
+</span></p>
+<p>&nbsp;</p>
+<h3><a name="How_to_add_a_simulated_device"></a><a name="AddSimulated"></a>How to add a simulated device</h3>
+<p>To make your new device come to simulated life, you simply need to add a row to the
+<strong>DeviceList </strong>Table Storage service.</p>
+<p>This cannot be done from within the Azure Portal, but it can be done manually using Visual Studio.&nbsp;</p>
+<p>If the Table Storage account you added does not show in your Azure Server Explorer, you can right click and &quot;Attach External Storage&quot;, as shown below:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4621.CaptureExternalStorageAdd.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4621.CaptureExternalStorageAdd.PNG" style="border-width:1px;border-style:solid;width:408px;height:291px;" /></a></p>
+<p>This will bring up a form that will generate the connection string needed to connect to the various storage resources. The first two connection methods generate the endpoints for you, but if they don&#39;t work, you can add them manually with the third option,
+ as shown below:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1362.CaptureExternalStorage.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1362.CaptureExternalStorage.PNG" style="border-width:1px;border-style:solid;width:550px;height:479px;" /></a></p>
+<p>The account key, and the end points are all shown in Azure Portal, when you click the key icon, as shown below:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5428.CaptureExternalStorageKeys.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5428.CaptureExternalStorageKeys.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>The Connection Strings section contains the full text that can be copied from, and it should match your generated connection string n the preview window shown before.</p>
+<p>With this new storage account attached, you can now view and add/edit/delete the rows of data that define which devices are simulated, as shown below:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0044.CaptureAddedDevice.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0044.CaptureAddedDevice.PNG" style="border-width:1px;border-style:solid;width:550px;height:180px;" /></a></p>
+<p>The last device listed was added manually using the &#43; icon shown above. This brings up a form for manually entering the new row,. You must enter your device id as PartitionKey, and the namespace for the project as RowKey.&nbsp;</p>
+<p>Then you must add an extra row called &quot;Key&quot; and use the Primary or Secondary Key you obtained or supplied, when registering your device with IoT Hub, as explained at the start.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8741.CaptureAddDevice.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8741.CaptureAddDevice.PNG" style="border-width:1px;border-style:solid;width:550px;height:455px;" /></a></p>
+<p><br />
+</p>
+<p><strong>And that&#39;s it!</strong></p>
+<p><strong>In a few minutes, you should see data showing for the new simulated device, in the Web App:</strong></p>
+<p><br />
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5305.CaptureAddDeviceDone.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5305.CaptureAddDeviceDone.PNG" style="border-width:1px;border-style:solid;width:550px;height:349px;" /></a></p>
+<p><br />
+</p>
+<h1><a name="See_Also"></a>See Also</h1>
+<ul>
+<li><span style="font-size:12.1px;"><a href="http://social.technet.microsoft.com/wiki/contents/articles/32941.iot-suite-under-the-hood-remote-monitoring/edit.aspx">IoT Suite -
+<strong>Under The Hood</strong> - Remote Monitoring</a></span> </li><li><span style="font-size:12.1px;"><a href="https://azure.microsoft.com/en-gb/documentation/articles/iot-hub-what-is-iot-hub/">What is Azure IoT Hub?</a><br />
+</span></li><li><span style="font-size:12.1px;"><a href="https://www.microsoft.com/en-gb/server-cloud/internet-of-things/azure-iot-suite.aspx">Azure IoT Suite</a></span>
+</li><li><a href="https://github.com/Azure/azure-iot-remote-monitoring">The full Azure IoT Remote Monitoring preconfigured solution on GitHub</a>
+</li></ul>
+
+</div>
+    
+    

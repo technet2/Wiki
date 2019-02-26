@@ -1,0 +1,165 @@
+---
+layout: default
+title: Wpf HowTo&#58; Add a Debug/Output Console to your Application - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<hr />
+This example shows how to make a multi-threaded handler for the built in Console commands.<br />
+<br />
+You can set&nbsp;<a href="http://msdn.microsoft.com/en-us/library/system.console.setout.aspx"><strong>Console.Out</strong></a> to any
+<a href="http://msdn.microsoft.com/en-us/library/system.io.textwriter.aspx"><strong>TextWriter</strong></a>. So you simply have to create your own TextWriter to handle cross-threaded handling of messages to your user interface.<br />
+<br />
+Below is an example of a writing Console messages to a TextBox from two different threads.<br />
+<br />
+&nbsp; <br />
+<strong>TextBoxOutputter.cs</strong><br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.IO;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Text;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Windows.Controls;</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">namespace</code>
+<code style="color:#000000;">WpfApplication68</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+TextBoxOutputter : TextWriter</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">TextBox textBox =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">TextBoxOutputter(TextBox output)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">textBox = output;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">override</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">Write(</code><code style="color:#006699;font-weight:bold;">char</code>
+<code style="color:#000000;">value)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">base</code><code style="color:#000000;">.Write(value);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">textBox.Dispatcher.BeginInvoke(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Action(() =&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">textBox.AppendText(value.ToString());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}));</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">override</code> <code style="color:#000000;">
+Encoding Encoding</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">get</code>
+<code style="color:#000000;">{ </code><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">System.Text.Encoding.UTF8; }</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+<br />
+<strong><span style="color:#ff0000;">Note: It&#39;s using the TextBox&#39;s Dispatcher to append the text. This prevents threading problems.</span></strong>
+<br />
+<br />
+<br />
+<strong>MainWindow.xaml<br />
+</strong><br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Window</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml/presentation">http://schemas.microsoft.com/winfx/2006/xaml/presentation</a>&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:x</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml">http://schemas.microsoft.com/winfx/2006/xaml</a>&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">x:Class</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;WpfApplication68.MainWindow&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">Title</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MainWindow&quot;</code>
+<code style="color:#808080;">Height</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;350&quot;</code>
+<code style="color:#808080;">Width</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;525&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:local</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;clr-namespace:WpfApplication68&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Grid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">TextBox</code>
+<code style="color:#808080;">Height</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;200&quot;</code>
+<code style="color:#808080;">Width</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;400&quot;</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;TestBox&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Grid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Window</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<br />
+<br />
+<strong>MainWindow.xaml.cs<br />
+</strong><br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Windows;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Threading;</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">namespace</code>
+<code style="color:#000000;">WpfApplication68</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">partial</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">MainWindow : Window</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">TextBoxOutputter outputter;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">MainWindow()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">InitializeComponent();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">outputter =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+TextBoxOutputter(TestBox);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.SetOut(outputter);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(</code><code style="color:blue;">&quot;Started&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var timer1 =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Timer(TimerTick, </code><code style="color:blue;">&quot;Timer1&quot;</code><code style="color:#000000;">, 0, 1000);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var timer2 =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Timer(TimerTick, </code><code style="color:blue;">&quot;Timer2&quot;</code><code style="color:#000000;">, 0, 500);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">void</code>
+<code style="color:#000000;">TimerTick(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">state)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var who = state
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#006699;font-weight:bold;">
+string</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(who);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+<em><strong>This small article is part of a </strong><a href="http://social.technet.microsoft.com/wiki/contents/articles/12346.wpfhowto-a-collection-of-helpful-short-articles.aspx"><strong>series of WPF &quot;How To&quot; articles</strong></a><strong>, in response to
+ real user questions on the </strong></em><a href="http://social.msdn.microsoft.com/Forums/en/wpf"><em><span style="color:#0066dd;"><strong>MSDN WPF Forum</strong></span></em></a><em><strong>.</strong></em>
+<br />
+<ul>
+<li><a href="http://social.msdn.microsoft.com/Forums/en/wpf/thread/8110f566-fe7b-41f6-a92e-5e45955bdec8">Link to original MSDN WPF Forum Question</a>
+</li></ul>
+<ul>
+</ul>
+<hr />
+
+</div>
+    
+    

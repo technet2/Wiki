@@ -1,0 +1,218 @@
+---
+layout: default
+title: WpfHowTo&#58; Pass and use a Control in its own ValueConverter for Convert/Convert​Back - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+A common question on the WPF forums is how to pass the control itself into a ValueConverter that is acting on one of it&#39;s properties.
+<br />
+<br />
+This example shows how that is achieved with three examples.<br />
+&nbsp;<br />
+The main&nbsp;trick here is to use a <strong>MultiValueConverter</strong> and a <strong>
+MultiBinding, </strong>but where it is&nbsp;defined in resources is very important.<br />
+<br />
+<h3><a name="Example_1"></a><strong>Example 1</strong></h3>
+<p>The first example passes in a bound value from the code-behind and the control itself through a MultiBinding, to the MultiValueConverter.&nbsp;
+</p>
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">TextBlock</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;tb1&quot;</code>
+<code style="color:#808080;">Margin</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;20&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">TextBlock.Text</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MultiBinding</code>
+<code style="color:#808080;">Converter</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{StaticResource MyConverter}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Binding</code>
+<code style="color:#808080;">RelativeSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{RelativeSource Self}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Binding</code>
+<code style="color:#808080;">Path</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyValue&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MultiBinding</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">TextBlock.Text</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">TextBlock</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<br />
+<br />
+<p>The main thing to note here is the RelativeSource of the first binding, being {RelativeSource Self}.
+<br />
+This will pass the control itself into the converter.</p>
+<p>Here is the converter:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+MyConverter : IMultiValueConverter</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">FrameworkElement myControl;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">theValue;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">object</code> <code style="color:#000000;">
+Convert(</code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">[] values, System.Type targetType,
+</code><code style="color:#006699;font-weight:bold;">object</code> <code style="color:#000000;">
+parameter, System.Globalization.CultureInfo culture)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">myControl = values[0]
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+FrameworkElement;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">theValue = values[1];</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">myControl.Name &#43; </code><code style="color:blue;">&quot; : &quot;</code>
+<code style="color:#000000;">&#43; values[1];</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">[] ConvertBack(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">value, System.Type[] targetTypes, </code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">parameter, System.Globalization.CultureInfo culture)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#006699;font-weight:bold;">
+object</code><code style="color:#000000;">[] { </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">, myControl.Name &#43;
+</code><code style="color:blue;">&quot; : &quot;</code> <code style="color:#000000;">&#43; theValue };</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+<br />
+The Convert method just takes the first value and converts it into a <a href="http://msdn.microsoft.com/en-us/library/system.windows.frameworkelement.aspx">
+FrameworkElement</a>, so it can take the control&#39;s name (proving the control was passed in correctly) which it joins to the second parameter. It also keeps a local copy of the values for the ConvertBack method discussed later in example 3.
+<p>&nbsp;</p>
+<p><strong>Notice the values array in MultiValueConverters order the bidings by the same order they are shown in the markup code.</strong></p>
+<h3><a name="Example_2"></a><strong>Example 2</strong></h3>
+<p>The second example is similar in that it sets a property of UserControl1, but this example includes a couple of extras.</p>
+<p>Firstly you will notice the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/ms745795.aspx"><strong>DependancyPropertyChangedCallback</strong></a> parameter of the
+<a href="http://msdn.microsoft.com/en-us/library/system.windows.dependencyproperty.aspx">
+DependancyProperty</a> constructor is used. Any changes to the MyUserControlvalue property will cause a call to MyUserControlValueChanged. In the example, this method takes the new value (e.NewValue) and adds it to a datestamp into the third textbox of UserControl1.<br />
+Also notice the control itself was passed in, this is where you can act on the specific object instance.</p>
+<p>&nbsp;</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+readonly</code> <code style="color:#000000;">DependencyProperty MyUserControlValueProperty =</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DependencyProperty.Register(</code><code style="color:blue;">&quot;MyUserControlValue&quot;</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">),
+</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(UserControl1),
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+UIPropertyMetadata(</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">, MyUserControlValueChanged));</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+MyUserControlValueChanged(DependencyObject dp, DependencyPropertyChangedEventArgs e)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var uc1 = dp
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+UserControl1;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">uc1.MyChangedDateString = e.NewValue &#43;
+</code><code style="color:blue;">&quot; - &quot;</code> <code style="color:#000000;">&#43; DateTime.Now.ToString();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>This user control is used just the same as the previous example:This user control is used just the same as the previous example:This user control is used just the same as the previous example:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;local:UserControl1 x:Name=</code><code style="color:blue;">&quot;uc1&quot;</code>
+<code style="color:#000000;">Background=</code><code style="color:blue;">&quot;Yellow&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;local:UserControl1.MyUserControlValue&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;MultiBinding Converter=</code><code style="color:blue;">&quot;{StaticResource MyConverter2}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;Binding RelativeSource=</code><code style="color:blue;">&quot;{RelativeSource Self}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;Binding Path=</code><code style="color:blue;">&quot;MyValue&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/MultiBinding&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/local:UserControl1.MyUserControlValue&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/local:UserControl1&gt;</code></span></div>
+</div>
+<p>However the converter in this example shows how once you have the control, the converter can safely do stuff on it like calling it&#39;s methods.<br />
+<br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+MyConverter2 : IMultiValueConverter</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">object</code> <code style="color:#000000;">
+Convert(</code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">[] values, System.Type targetType,
+</code><code style="color:#006699;font-weight:bold;">object</code> <code style="color:#000000;">
+parameter, System.Globalization.CultureInfo culture)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var uc = values[0]
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+UserControl1;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">uc.MyShowTextMethod(</code><code style="color:blue;">&quot;Set from converter&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">uc.Name &#43; </code><code style="color:blue;">&quot; : &quot;</code>
+<code style="color:#000000;">&#43; values[1];</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">[] ConvertBack(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">value, System.Type[] targetTypes, </code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">parameter, System.Globalization.CultureInfo culture)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+System.NotImplementedException();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<h3 class="endscriptcode"><a name="Example_3"></a><strong>Example 3</strong></h3>
+<p>This is in response to a <a href="http://social.msdn.microsoft.com/Forums/en-US/wpf/thread/e47ef158-d1e1-40b7-991d-3b4970d2123e">
+follow-up question</a> where the poster wanted to use the passed in control in the ConvertBack method. As shown above, the passed in values are kept for use with the ConvertBack method.</p>
+<p><strong>It is important to understand how and WHERE you refer to the Converter, not as one StaticResource, but as several localised resources.</strong> If it is defined in the top Window/Page level resources, all controls will use the same converter instance,
+ so any passed in values will be written over by the next control. When you try to convert back, you will get whatever the last control to use Convert was.</p>
+<p>Instead, you have to define the static resource at CONTROL LEVEL, so only that control uses THAT instance of the converter.<strong>This is an important concept to know.<br />
+</strong></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;TextBox x:Name=</code><code style="color:blue;">&quot;tb1&quot;</code>
+<code style="color:#000000;">Margin=</code><code style="color:blue;">&quot;20&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;TextBox.Resources&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;local:MyConverter x:Key=</code><code style="color:blue;">&quot;MyConverter&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/TextBox.Resources&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;TextBox.Text&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;MultiBinding Converter=</code><code style="color:blue;">&quot;{StaticResource MyConverter}&quot;</code>
+<code style="color:#000000;">UpdateSourceTrigger=</code><code style="color:blue;">&quot;PropertyChanged&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;Binding RelativeSource=</code><code style="color:blue;">&quot;{RelativeSource Self}&quot;</code>
+<code style="color:#000000;">Mode=</code><code style="color:blue;">&quot;OneTime&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;Binding Path=</code><code style="color:blue;">&quot;MyValue&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/MultiBinding&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/TextBox.Text&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/TextBox&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;TextBox x:Name=</code><code style="color:blue;">&quot;tb2&quot;</code>
+<code style="color:#000000;">Margin=</code><code style="color:blue;">&quot;20&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;TextBox.Resources&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;local:MyConverter x:Key=</code><code style="color:blue;">&quot;MyConverter&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/TextBox.Resources&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;TextBox.Text&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;MultiBinding Converter=</code><code style="color:blue;">&quot;{StaticResource MyConverter}&quot;</code>
+<code style="color:#000000;">UpdateSourceTrigger=</code><code style="color:blue;">&quot;PropertyChanged&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;Binding RelativeSource=</code><code style="color:blue;">&quot;{RelativeSource Self}&quot;</code>
+<code style="color:#000000;">Mode=</code><code style="color:blue;">&quot;OneTime&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;Binding Path=</code><code style="color:blue;">&quot;MyValue2&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/MultiBinding&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/TextBox.Text&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/TextBox&gt;</code></span></div>
+</div>
+<br />
+<br />
+This available in a&nbsp;<a href="http://code.msdn.microsoft.com/WPF-Parsing-XAML-into-440bdfed"><strong>demo project here</strong></a>.
+<br />
+<br />
+<br />
+<em><strong>This small article is part of a </strong><a href="http://social.technet.microsoft.com/wiki/contents/articles/12346.wpfhowto-a-collection-of-helpful-short-articles.aspx"><strong>series of WPF &quot;How To&quot; articles</strong></a><strong>, in response to
+ real user questions on the </strong></em><a href="http://social.msdn.microsoft.com/Forums/en/wpf"><em><span style="color:#0066dd;"><strong>MSDN WPF Forum</strong></span></em></a><em><strong>.</strong></em>
+<br />
+<br />
+<ul>
+<li><a href="http://social.msdn.microsoft.com/Forums/en/wpf/thread/c2b3b414-170d-41e4-9c98-b4164c2754ae">Link to original MSDN WPF Forum Question</a>
+</li></ul>
+<p>&nbsp;</p>
+
+</div>
+    
+    

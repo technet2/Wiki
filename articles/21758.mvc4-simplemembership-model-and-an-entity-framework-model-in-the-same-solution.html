@@ -1,0 +1,248 @@
+---
+layout: default
+title: MVC4 SimpleMembership Model and an Entity Framework Model in the Same Solution - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><em><strong>This page is in development, while I try to figure a way through my coding issues. Please do not edit unless you have the solution.</strong></em></p>
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#The_Problem">The Problem</a></li><li class="hierarchy-item"><a href="#Initial_Setup">Initial Setup</a></li><li class="hierarchy-item"><a href="#Where_we_begin">Where we begin</a></li><li class="hierarchy-item"><a href="#Publish_to_Azure">Publish to Azure</a></li><li class="hierarchy-item"><a href="#Now_Add_EF4">Now Add EF4</a></li><li class="hierarchy-item"><a href="#Fix_1_Remove_tt_files">Fix - Remove tt files</a></li><li class="hierarchy-item"><a href="#Move_the_Namespace">Move the Namespace</a></li><li class="hierarchy-item"><a href="#Fix_Rename_the_EF_entities">Fix - Rename the EF entities</a></li><li class="hierarchy-item"><a href="#Fix_Forget_the_Membership_tables_just_give_me_the_rest_of_the_database">Fix - Forget the Membership tables, just give me the rest of the database</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<br />
+</p>
+<h2><a name="The_Problem"></a>The Problem</h2>
+<br />
+I am trying to publish an MVC 4 website, including &quot;out of the box&quot; SimpleMembership.
+<br />
+<br />
+The problem arises when I simply try to add an existing or new entity model, for use in linq with web services, from the same website.<br />
+<br />
+I have spent considerable time trying to add an existing edmx model to a new MVC site, even patching to EF6, which has a fix for multiple models, which eventually worked fine locally.&nbsp;<br />
+<br />
+When I published my solution to Azure, it broke with no useful error information.<br />
+<br />
+<br />
+<h2><a name="Initial_Setup"></a>Initial Setup</h2>
+<br />
+Create an empty Azure database instance<br />
+<br />
+Create an empty Azure website and link resources to the database<br />
+<br />
+Create a new MVC4 project in Visual Studio 2012,&nbsp;leave default&nbsp;&quot;Internet Application&quot; template and &quot;Razor&quot; view engine.<br />
+<br />
+<br />
+<h2><a name="Where_we_begin"></a>Where we begin</h2>
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1373.Capture1.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/276x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1373.Capture1.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Here is the initial collapsed view of the solution, straight out of the box.<br />
+<br />
+Below is the start of Web.config:<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;?</code><code style="color:#006699;font-weight:bold;">xml</code>
+<code style="color:#808080;">version</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1.0&quot;</code>
+<code style="color:#808080;">encoding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;utf-8&quot;</code><code style="color:#000000;">?&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">configuration</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">configSections</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">section</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;entityFramework&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">type=&quot;System.Data.Entity.Internal.ConfigFile.EntityFrameworkSection,
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">EntityFramework,
+</code><code style="color:#808080;">Version</code><code style="color:#000000;">=</code><code style="color:blue;">5</code><code style="color:#000000;">.0.0.0,
+</code><code style="color:#808080;">Culture</code><code style="color:#000000;">=</code><code style="color:blue;">neutral</code><code style="color:#000000;">,
+</code><code style="color:#808080;">PublicKeyToken</code><code style="color:#000000;">=</code><code style="color:blue;">b77a5c561934e089</code><code style="color:#000000;">&quot;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">requirePermission</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">configSections</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">connectionStrings</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DefaultConnection&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">connectionString=&quot;Data Source=(LocalDb)\v11.0;Initial
+</code><code style="color:#808080;">Catalog</code><code style="color:#000000;">=</code><code style="color:blue;">aspnet</code><code style="color:#000000;">-MVC4_EF4-20131210000611;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Integrated
+</code><code style="color:#808080;">Security</code><code style="color:#000000;">=</code><code style="color:blue;">SSPI</code><code style="color:#000000;">;AttachDBFilename=|DataDirectory|\aspnet-MVC4_EF4-20131210000611.mdf&quot;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">providerName</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;System.Data.SqlClient&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">connectionStrings</code><code style="color:#000000;">&gt;</code></span></span></div>
+</div>
+<br />
+Now run this vanilla out-of-the-box project, with absolutely no changes.<br />
+<br />
+It is <strong>AccountController.cs</strong> that has the [Authorise] and [InitializeSimpleMembership] attributes, so you have to navigate to the
+<strong>login page</strong> to trigger the creation of the SimpleMembership schema in the database.<br />
+<br />
+By default, the connection string creates a LocalDb database. and generates the tables and foreign key constraints in this new database.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8802.Capture2.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/345x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8802.Capture2.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<strong>That should all work fine on your local machine.</strong><br />
+<br />
+<br />
+<h2 style="line-height:25px;"><a name="Publish_to_Azure"></a>Publish to Azure</h2>
+<br />
+Log back into Azure, select the new website, go to the &quot;dashboard&quot; tab and &quot;Download the publish profile&quot;.<br />
+<br />
+Back in Visual Studio, right-click the website and select &quot;Publish&quot; (or select menu option &quot;Build&quot; / &quot;Publish&nbsp;<em>YourProjName</em>&quot;)<br />
+<br />
+Import the publish profile you just downloaded.<br />
+<br />
+Click Next to the &quot;Settings&quot; page and change the &quot;UsersContext&quot; (DefaultConnection) to use the Azure database that was resource linked, above.<br />
+<br />
+Click &quot;Finish&quot; to publish it to Azure.<br />
+<strong><br />
+This should also work fine. Go manage the Azure database and again you&#39;ll see the tables added to the empty database and registered users get added.</strong><br />
+<br />
+<br />
+<h2><a name="Now_Add_EF4"></a>Now Add EF4</h2>
+<br />
+This is where things start to go wrong.&nbsp;<br />
+<br />
+Firstly, right-click the <strong>Models folder</strong>, Add / New Item / Data / &quot;ADO.NET Entity Data Model&quot;, named whatever you like.<br />
+<br />
+In the Entity Data Model Wizard, select &quot;Generate from database&quot; and on the next page
+<strong>select &quot;DefaultConnection (Settings)</strong>&quot;<br />
+<br />
+<strong>Uncheck &quot;Save entity connection settings in Web.Config&quot;</strong>. This prevents a second connection string being used.
+<strong><span style="color:#ff0000;">I&#39;m not sure the relevance of this yet.</span></strong><br />
+<br />
+Click next, choose your preferred Entity Framework version, click next.<br />
+<br />
+Firstly, if you did not select any objects and click Finish, after a warning, you would get an empty model. Again, this builds, runs locally and when republished to Azure.<br />
+<br />
+However, we will include the five new Simple Membership tables, as shown below...<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5432.Capture3.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5432.Capture3.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+... then you get the first compilation errors:<br />
+<br />
+&quot;Error<span class="Apple-tab-span" style="white-space:pre;"> </span>1<span class="Apple-tab-span" style="white-space:pre;">
+</span>Missing partial modifier on declaration of type &#39;MVC4_EF4.Models.UserProfile&#39;; another partial declaration of this type exists<span class="Apple-tab-span" style="white-space:pre;">
+</span>c:\users\pedro\documents\visual studio 2012\Projects\MVC4_EF4\MVC4_EF4\Models\AccountModels.cs&quot;<br />
+<br />
+...and...<br />
+<br />
+&quot;Error<span class="Apple-tab-span" style="white-space:pre;"> </span>2<span class="Apple-tab-span" style="white-space:pre;">
+</span>Ambiguity between &#39;MVC4_EF4.Models.UserProfile.UserName&#39; and &#39;MVC4_EF4.Models.UserProfile.UserName&#39;<span class="Apple-tab-span" style="white-space:pre;">
+</span>c:\users\pedro\documents\visual studio 2012\Projects\MVC4_EF4\MVC4_EF4\Controllers\AccountController.cs<span style="white-space:pre;">&quot;</span><br />
+<div><br />
+</div>
+<br />
+<strong>UserProfile </strong>and navigation property <strong>UserName </strong>are defined both by the &quot;Code First&quot; model for Simple Membership, and as a partial declaration by the new &quot;tt&quot; files from the EF &quot;Database First&quot; generated model.&nbsp;Because of the
+ folder we chose for the edmx, they also now clash with the namespace for the Account Model.<br />
+<br />
+<br />
+<br />
+<h2><a name="Fix_1_Remove_tt_files"></a>Fix - Remove tt files</h2>
+<br />
+In the Models folder, as indicated by the error above, you will have noticed that the edmx creation wizard has created a .cs file for each table/class. These are created by the newly created tt template files in your project, shown below:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5460.Capture4.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/280x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5460.Capture4.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+If you delete &quot;<strong>Model1.Context.tt</strong>&quot; and &quot;<strong>Model1.tt</strong>&quot; from your project, and recompile, it should now build without any conflicts.<br />
+<br />
+Without those extra partial classes, the project will also run locally, and when published to Azure.<br />
+<br />
+<br />
+<br />
+<h2><a name="Move_the_Namespace"></a>Move the Namespace</h2>
+<br />
+Now, delete Model1.edmx and create a new folder called &quot;EF_Data&quot;.&nbsp;<br />
+<br />
+Repeat the steps above to recreate the edmx and supporting files in this new folder, which will therefore be a separate namespace from the Account Model.<br />
+<br />
+This will now compile without the clashes above, however when you run the project you will now get a new error:<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+SimpleMembershipInitializer</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">SimpleMembershipInitializer()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Database.SetInitializer&lt;UsersContext&gt;(</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">(var context = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">UsersContext())</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(!context.Database.Exists())</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Create the SimpleMembership database without Entity Framework migration schema</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">((IObjectContextAdapter)context).ObjectContext.CreateDatabase();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">WebSecurity.InitializeDatabaseConnection(</code><code style="color:blue;">&quot;DefaultConnection&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;UserProfile&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;UserId&quot;</code><code style="color:#000000;">, </code>
+<code style="color:blue;">&quot;UserName&quot;</code><code style="color:#000000;">, autoCreateTables:
+</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div><span style="background-color:#ffff00;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+InvalidOperationException(</code><code style="color:blue;">&quot;The ASP.NET Simple Membership database could not be initialized. For more information, please see
+<a href="http://go.microsoft.com/fwlink/?LinkId=256588">http://go.microsoft.com/fwlink/?LinkId=256588</a>&quot;</code><code style="color:#000000;">, ex);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+<br />
+If you put a breakpoint just before this, the actual exception is as follows:<br />
+<br />
+&quot;Schema specified is not valid. Errors:&nbsp;<br />
+The mapping of CLR type to EDM type is ambiguous because multiple CLR types match the EDM type &#39;UserProfile&#39;. Previously found CLR type &#39;<strong>MVC4_EF4.<span style="color:#ff0000;">EF_Data</span>.UserProfile</strong>&#39;, newly found CLR type &#39;<strong>MVC4_EF4.<span style="color:#ff0000;">Models</span>.UserProfile</strong>&#39;.&quot;<br />
+<br />
+<br />
+This seems to be an age old problem with EF. <br />
+<a href="http://social.msdn.microsoft.com/Forums/en-US/5a8ea003-c6bc-4fc6-ad2a-634f09447c49/ef4-mapping-of-clr-type-to-edm-type-is-ambiguous-error?forum=adodotnetentityframework">Here is a forum post discussing it</a>.<br />
+It seems to be an issue with CreateObjectSet, which ignores namespaces. There are two solutions suggested, which may help you:<br />
+<br />
+1) Manually rename one of the two clashing classes, making every class unique.<br />
+2) Separate them in different assemblies<br />
+<br />
+Considering the simple steps I&#39;ve taken to get to this point, neither of these options seem acceptable.&nbsp;<br />
+<br />
+<br />
+<br />
+<h2><a name="Fix_Rename_the_EF_entities"></a>Fix - Rename the EF entities</h2>
+<br />
+Open the edmx in the&nbsp;Entity Data Model Designer.<br />
+<br />
+Click the table headers and rename the table within the designer, like &quot;UserProfile2&quot;, &quot;webpages_Roles2&quot;, etc.<br />
+<br />
+This will now work fine, but you have to use the new entity names, which isn&#39;t a very clean solution.<br />
+<br />
+<br />
+<br />
+<h2><a name="Fix_Forget_the_Membership_tables_just_give_me_the_rest_of_the_database"></a>Fix - Forget the Membership tables, just give me the rest of the database</h2>
+<br />
+In some cases, you don&#39;t want these tables in my data model and can leave them isolated to the Membership model.<br />
+<br />
+You can have a separate user lookup table, which had your application specific columns and duplicated any important fields (like UserId and UserName).<br />
+<br />
+Open the Entity Data Model Designer and delete the five Membership tables.<br />
+<br />
+This will now run fine, without the schema errors.<br />
+<br />
+<br />
+<br />
+<br />
+<em><strong>More to come...</strong></em><br />
+
+</div>
+    
+    

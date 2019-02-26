@@ -1,0 +1,220 @@
+---
+layout: default
+title: WpfHowTo&#58; Change DataGrid RowHeader Properties and/or Template When a Cell is Selected - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+This project shows the solution to a poster&#39;s question regarding manipulating the RowHeaderStyle, or other aspects of the row header, when a cell is selected.<br />
+<br />
+<div>Changing the style means changing a property, or the template.</div>
+<div>This is best done by a Trigger, up where it needs to be done.</div>
+<div><br />
+To achieve this my first choice would be an AttachedProperty.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+AttachedProperties</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+bool</code> <code style="color:#000000;">GetIsFocussed(DependencyObject obj)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">bool</code><code style="color:#000000;">)obj.GetValue(IsFocussedProperty);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">SetIsFocussed(DependencyObject obj, </code>
+<code style="color:#006699;font-weight:bold;">bool</code> <code style="color:#000000;">
+value)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">obj.SetValue(IsFocussedProperty, value);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+readonly</code> <code style="color:#000000;">DependencyProperty IsFocussedProperty =</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DependencyProperty.RegisterAttached(</code><code style="color:blue;">&quot;IsFocussed&quot;</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">bool</code><code style="color:#000000;">),
+</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(AttachedProperties),
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+UIPropertyMetadata(</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">));</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+<br />
+The AttachedProperty gives us something to work with, when we are building in our own logic to a UI. The only safe and available alternative is the Tag property, which is a lazy alternative and not &#39;clean code&#39;, as far as readability is concerned.<br />
+<br />
+That&#39;s pretty much it for the code, now let&#39;s look at how the Styles and Triggers find and use it in the UI.<br />
+<br />
+Below are three examples of triggers.<br />
+<br />
+<strong>1) Changing the row header template</strong><br />
+<br />
+This uses a style (DataGridRowHeaderStyle1) which has a DataTrigger on the attached property, when set to true, it replaces the whole Template (which is a property that a style can therefore set)<br />
+<br />
+<strong>2) Changing a property for the row header</strong><br />
+<br />
+Most of the time you only want to change some of the properties, like Background. myDataGrid2 uses DataGridRowHeaderStyle2 which also triggers on the attached property to trigger just a property shown by the existing Control Template.</div>
+<div><br />
+</div>
+<div><strong>3) Changing DataGrid.RowHeaderStyle as requested.</strong><br />
+<br />
+The original question was regarding the &#39;global&#39; DataGrid.RowHeaderStyle, so I also show how you can change all the RowHeaders upon one cell selection.<br />
+</div>
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Window.Resources</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ControlTemplate</code>
+<code style="color:#808080;">x:Key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DifferentHeaderTemplate&quot;</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridRowHeader}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Grid</code>
+<code style="color:#808080;">Background</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Red&quot;</code>
+<code style="color:#808080;">Width</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;10&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ControlTemplate</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">x:Key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataGridRowHeaderStyle1&quot;</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridRowHeader}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style.Triggers</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataTrigger</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding (local:AttachedProperties.IsFocussed), Mode=OneWay, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGridRow}}}&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Template&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{DynamicResource DifferentHeaderTemplate}&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataTrigger</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style.Triggers</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">x:Key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataGridRowHeaderStyle2&quot;</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridRowHeader}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style.Triggers</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataTrigger</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding (local:AttachedProperties.IsFocussed), Mode=OneWay, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGridRow}}}&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Background&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Red&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataTrigger</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style.Triggers</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">x:Key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataGridRowHeaderStyle3&quot;</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridRowHeader}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Template&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{DynamicResource DifferentHeaderTemplate}&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Window.Resources</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">StackPanel</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&lt;!-- Changing DataGridRowHeader ControlTemplate for selected cell --&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid</code>
+<code style="color:#808080;">Margin</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;10&quot;</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;myDataGrid1&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding AllItems}&quot;</code>
+<code style="color:#808080;">RowHeaderStyle</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{DynamicResource DataGridRowHeaderStyle1}&quot;</code>
+<code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.CellStyle</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridCell}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IsSelected&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding (local:AttachedProperties.IsFocussed), Mode=OneWayToSource, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGridRow}}}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.CellStyle</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&lt;!-- Changing DataGridRowHeader Properties for selected cell --&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid</code>
+<code style="color:#808080;">Margin</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;10&quot;</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;myDataGrid2&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding AllItems}&quot;</code>
+<code style="color:#808080;">RowHeaderStyle</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{DynamicResource DataGridRowHeaderStyle2}&quot;</code>
+<code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.CellStyle</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridCell}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IsSelected&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding (local:AttachedProperties.IsFocussed), Mode=OneWayToSource, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGridRow}}}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.CellStyle</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&lt;!-- Changing DataGrid.RowHeaderStyle --&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid</code>
+<code style="color:#808080;">Margin</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;10&quot;</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;myDataGrid3&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding AllItems}&quot;</code>
+<code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataGrid&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style.Triggers</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataTrigger</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding (local:AttachedProperties.IsFocussed), Mode=OneWay, RelativeSource={RelativeSource Self}}&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataGrid.RowHeaderStyle&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{DynamicResource DataGridRowHeaderStyle3}&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataTrigger</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style.Triggers</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.CellStyle</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Style</code>
+<code style="color:#808080;">TargetType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{x:Type DataGridCell}&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Setter</code>
+<code style="color:#808080;">Property</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IsSelected&quot;</code>
+<code style="color:#808080;">Value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding (local:AttachedProperties.IsFocussed), Mode=OneWayToSource, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGrid}}}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Style</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.CellStyle</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">StackPanel</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<div><br />
+<br />
+Notice that the &#39;<strong>Row</strong>&#39; level triggers set and look for the AttachedProperty in the same place, using RelativeSource, with traverses back up the Visual Tree looking for a control of the same AncestorType.<br />
+<br />
+<strong>RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGridRow}}<br />
+<br />
+<br />
+<br />
+</strong>For the third <strong>DataGrid</strong> level example, the triggers find the binding RelativeSource as:<br />
+<br />
+From the cell: <strong>RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type DataGrid}}<br />
+<br />
+</strong><span>From the DataGrid: <strong>RelativeSource={RelativeSource Self}<br />
+</strong></span><br />
+<br />
+<br />
+This available in a&nbsp;<a href="http://code.msdn.microsoft.com/Changing-DataGrid-f0bbff36"><strong>demo project here</strong></a>.
+<br />
+<br />
+<em><strong>This small article is part of a </strong><a href="http://social.technet.microsoft.com/wiki/contents/articles/12346.wpfhowto-a-collection-of-helpful-short-articles.aspx"><strong>series of WPF &quot;How To&quot; articles</strong></a><strong>, in response to
+ real user questions on the </strong></em><a href="http://social.msdn.microsoft.com/Forums/en/wpf"><em><span style="color:#0066dd;"><strong>MSDN WPF Forum</strong></span></em></a><em><strong>.</strong></em>
+<br />
+<br />
+</div>
+<ul>
+<li><a href="http://social.msdn.microsoft.com/Forums/en/wpf/thread/ad62cc1b-77a3-4eac-b6e0-09e1bfbd1d0f">Link to original MSDN WPF Forum Question</a>
+</li></ul>
+<p>&nbsp;</p>
+
+</div>
+    
+    

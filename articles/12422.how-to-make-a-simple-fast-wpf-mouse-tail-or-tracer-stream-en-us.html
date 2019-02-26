@@ -1,0 +1,210 @@
+---
+layout: default
+title: How to make a Simple fast WPF mouse tail (or tracer stream) (en-US) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+This article shows how to add &quot;Tracer&quot; objects, that follow the mouse around in a stream / tracer effect.
+<br />
+<br />
+The concept is to move away from a &quot;controller&quot; type solution where a monitor loop adds and removes dots.<br />
+<br />
+In this example, each dot is responsible for it&#39;s own actions, similar to how objects can group and swarm together, depending on their AI.<br />
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4064.Tracer.png" style="font-size:12.1px;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4064.Tracer.png" style="border-width:0px;border-style:solid;width:450px;height:532px;" /></a></div>
+<br />
+In this screenshot, the black lines are just &quot;mouse-down&quot; drawn on the InkCanvas. The red line is the tracer line following and decaying behind the mouse.<br />
+<br />
+<br />
+<h3><a name="The_TracerAnt"></a>The TracerAnt</h3>
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">class</code>
+<code style="color:#000000;">TracerAnt : Border </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">FrameworkElement myCanvas;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Timer timer;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">TracerAnt(FrameworkElement parent, </code><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">delay) </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Width = Height = 2;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Background = Brushes.Red;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">VerticalAlignment = System.Windows.VerticalAlignment.Top;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IsHitTestVisible =
+</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Point p = Mouse.GetPosition(myCanvas);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Margin =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Thickness(p.X, p.Y, 0, 0); </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">myCanvas = parent;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">timer =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Timer(selfControlledBorderTick, </code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">, 0, delay);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">void</code>
+<code style="color:#000000;">selfControlledBorderTick(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">state) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Application.Current.Dispatcher.Invoke(DispatcherPriority.Send,
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Action(() =&gt; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Point p = Mouse.GetPosition(myCanvas);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Margin =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Thickness(p.X, p.Y, 0, 0); </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}));
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+Kill() </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">timer.Change(Timeout.Infinite, Timeout.Infinite);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+</div>
+<p>When the timer ticks, it simply changes the margin to the mouse position (in relation to the container)</p>
+<p>Note the use of the Application.Current.Dispatcher, a failsafe way to get back to the UI thread</p>
+<p>Also note the Horizontal and VerticalAlignment set to left and top, as a centered or stretched control won;t be positioned the same as the mouse.<br />
+<br />
+</p>
+<h3><a name="On_MouseEnter"></a>On MouseEnter</h3>
+<p>&nbsp;</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+MyCanvas_MouseEnter(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">sender, MouseEventArgs e) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">AddAntTracers(numberOfAnts, millisecondsTillCheck);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}
+</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+AddAntTracers(</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#000000;">
+count, </code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#000000;">
+totalDelay) </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">gap = totalDelay / count; </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Task.Factory.StartNew(()=&gt;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">for</code>
+<code style="color:#000000;">(var a = 0; a &lt; count; a&#43;&#43;) </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Application.Current.Dispatcher.Invoke(DispatcherPriority.Send,
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Action(() =&gt; </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MyInkCanvas.Children.Add(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">TracerAnt(MyInkCanvas, totalDelay)); </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}));
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Thread.Sleep(gap);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">});
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<div class="endscriptcode">AddAntTracers takes the total time between an ant tick/check and divides by the number of ants desired. this gives the interval between adding that means a perfect stream is produced.</div>
+<div class="endscriptcode"></div>
+<div class="endscriptcode">You can play with the totalDelay and count to make the stream longer or shorter and the ants closer or father apart.</div>
+<div class="endscriptcode"></div>
+<div class="endscriptcode">Notice also the use of .net4&#39;s Task class, a very powerful replacement for the BackgroundWorker, although you easily use a Background worker if you are still on .net 3.5<br />
+<br />
+<br />
+</div>
+<h3 class="endscriptcode"><a name="On_MouseLeave"></a>On MouseLeave</h3>
+<div class="endscriptcode"><br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+MyCanvas_MouseLeave(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">sender, MouseEventArgs e) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Application.Current.Dispatcher.Invoke(DispatcherPriority.Send,
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Action(() =&gt; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(TracerAnt ant </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">MyInkCanvas.Children) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ant.Kill();
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MyInkCanvas.Children.Clear();
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}));
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+<br />
+<div class="endscriptcode">Finally, when the mouse leaves, the collection is removed.</div>
+<div class="endscriptcode"></div>
+<div class="endscriptcode"><strong>However, each TracerAnt still has an active timer, which may prevent tear-down and garbage recycling and a memory leak, so first itterate through each child and kill the timer.</strong></div>
+<div class="endscriptcode"></div>
+<div class="endscriptcode">The Kill method shown in the TracerAnt snippet uses Timeout.Infinate for delay and interval, which kills the timer.<br />
+<br />
+<br />
+<br />
+This available in a&nbsp;<a href="http://code.msdn.microsoft.com/Simple-fast-WPF-mouse-tail-aaaa1206"><strong>demo project here</strong></a>.
+<br />
+<br />
+<em><strong>This small article is part of a </strong><a href="http://social.technet.microsoft.com/wiki/contents/articles/12346.wpfhowto-a-collection-of-helpful-short-articles.aspx"><strong>series of WPF &quot;How To&quot; articles</strong></a><strong>, in response to
+ real user questions on the </strong></em><a href="http://social.msdn.microsoft.com/Forums/en/wpf"><em><span style="color:#0066dd;"><strong>MSDN WPF Forum</strong></span></em></a><em><strong>.</strong></em>
+<br />
+<br />
+</div>
+</div>
+<ul>
+<li><a href="http://social.msdn.microsoft.com/Forums/en/wpf/thread/79b97c61-5b91-4b7c-b36b-43bc4d630674">Link to original MSDN WPF Forum Question</a>
+</li></ul>
+<p>&nbsp;</p>
+
+</div>
+    
+    
