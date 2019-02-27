@@ -130,8 +130,7 @@ $(function () {
     $("#rateYo").rateYo({
 
         onSet: function (rating, rateYoInstance) {
-
-            alert("Rating is set to: " + rating);
+            alert("You chose: " + rating + " (this feature is still in development)");
         }
     });
 });
