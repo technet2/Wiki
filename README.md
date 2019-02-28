@@ -2,4 +2,4 @@
 
 * [The "GitHub Pages" full articles list](https://technet2.github.io/Wiki/articles/) 
 * [The Wiki repository](https://github.com/technet2/Wiki)
-* [The Wiki wiki](https://github.com/technet2/Wiki/wiki])
+* [The Wiki wiki](https://github.com/technet2/Wiki/wiki)
