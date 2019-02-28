@@ -22,7 +22,7 @@ $(document).ready(function () {
     var $h1 = document.querySelector('h1');
     if ($h1) {
         title = $h1.innerText;
-        $('#editMeCrumb').append($('<a href="' + editVersion + '">' + title + '!!!</a>'));
+        $('#editMeCrumb').append($('<a href="' + editVersion + '">' + title + '</a>'));
     }
 
     var url = "https://github.com/technet2/Wiki/commits/master/articles/" + fileName;
