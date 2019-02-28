@@ -1,3 +1,5 @@
 **Moving a community of passionate people to a better place.**
 
-[THESE PAGES ARE EXPLAINED HERE](https://technet2.github.io/Wiki)
+* [The "GitHub Pages" full articles list]({{ site.baseurl }}/articles) 
+* [The Wiki repository](https://github.com/technet2/Wiki)
+* [The Wiki wiki](https://github.com/technet2/Wiki/wiki])
