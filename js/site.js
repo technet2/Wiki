@@ -114,7 +114,7 @@ function clickedPhrase(safeName) {
         popup.css('left', left);
 
         $.each(data.Refs, function (key, val) {
-            nextLinks.push("<div style='margin-bottom:8px;'><a href='/articles/" + val.FileName + "'>" + val.Title + "</a></div>");
+            nextLinks.push("<div style='margin-bottom:8px;'><a href='/Wiki/articles/" + val.FileName + "'>" + val.Title + "</a></div>");
         });
 
         $("<div />", {
