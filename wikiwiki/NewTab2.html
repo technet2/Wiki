@@ -1,0 +1,126 @@
+---
+layout: justjs
+title: Redirecting 2...
+weight: 1
+---
+
+<div id="mainPanel">
+    <h2>Please choose how you want to open external web links.</h2>
+
+    <ol>
+        <li>
+            <a href="Javascript:Choice('tab')">Open external links in a new tab</a>
+            <br /><span style="font-size:small; text-indent:10px"><i>(Then this page will go back)</i></span>
+        </li>
+        <li>
+            <a href="Javascript:Choice('notab')">Follow on to external links from this same tab</a>
+            <br /><span style="font-size:small; text-indent:10px"><i>(Use the browser history button to return)</i></span>
+        </li>
+    </ol>
+
+    <p>These options will set a cookie for this site in your browser. It should auto-redirect from then on. Contact us if this is not working on your browser.</p>
+</div>
+
+<div id="redirectPanel" style="visibility:hidden" onkeypress="">
+    Redirecting. Press any key to cancel.
+    You will be redirected in 2 seconds.
+</div>
+
+<script>
+    var fileParamName = 'file';
+    var text = document.getElementById('mainPanel');
+    var redir = document.getElementById('redirectPanel');
+
+    function showRedirect() {
+        console.log('showRedirect 1');
+        text.style.visibility = 'hidden';
+        redir.style.visibility = 'visible';
+        console.log('showRedirect 2');
+    }
+
+    function showOptions() {
+        console.log('showOptions 1');
+        redir.style.visibility = 'hidden';
+        text.style.visibility = 'visible';
+        console.log('showOptions 2');
+    }
+
+    function CancelRedirect() {
+        console.log('CancelRedirect started');
+        choice = null;
+        clearCookie(optCookieName);
+        showOptions();
+        console.log('CancelRedirect finished');
+    }
+
+    function AttachCancelEvent() {
+        console.log('attaching keypress');
+        document.body.addEventListener("keypress", CancelRedirect);
+        console.log('keypress attached');
+    }
+
+    function RedirectOrReturn(extUrl, opt) {
+        if (extUrl) {
+            if (!extUrl.startsWith('http')) {
+                extUrl = 'http://' + extUrl;
+            }
+
+            if (opt) {
+                if (opt == "tab") {
+                    AttachCancelEvent();
+                    showRedirect();
+                    setTimeout(function () {
+                        // redirect if user hasn't cancelled
+                        if (choice != null) {
+                            window.open(extUrl, '_Blank');
+                            window.history.back();
+                        }
+                    }, 2000);
+                }
+                else {
+                    if (document.referrer == extUrl) {
+                        window.history.back();
+                    }
+                    else {
+                        AttachCancelEvent();
+                        showRedirect();
+                        window.history.pushState(null, null, document.referrer);
+                        setTimeout(function () {
+                            // redirect if user hasn't cancelled
+                            if (choice != null) {
+                                window.location.href = extUrl;
+                            }
+                        }, 2000);
+                    }
+                }
+            }
+            else {
+                // choose an option
+            }
+        }
+        else {
+            prompt('The target reference was not found or formatted correctly in the URL');
+        }
+    }
+
+    function Choice(opt) {
+        setCookie(optCookieName, opt, 365);
+        choice = opt;
+        RedirectOrReturn(fileParam, opt);
+    }
+
+    // Next script happens on page load. All vanilla js.
+    // Cookie names defined in site.js
+    var fileParam = getUrlParam(fileParamName, null); // getUrlParam is in site.js
+    var clearParam = getUrlParam(clearCookieName, null); // getUrlParam is in site.js
+    var choice = getCookie(optCookieName);
+
+    if (clearParam == '1') {
+        clearCookie(optCookieName);
+        window.history.back();
+    }
+    else {
+        RedirectOrReturn(fileParam, choice);
+    }
+
+</script>

@@ -1,0 +1,77 @@
+---
+layout: default
+title: Editor
+weight: 3
+---
+
+
+<script src="http://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+
+<script src="https://cdn.ckeditor.com/4.11.3/standard-all/ckeditor.js"></script>
+<script src="/Wiki/js/octokit-rest.js"></script>
+
+<textarea cols="80" id="editor1" name="editor1" rows="10" data-sample-short>&lt;p&gt;This is some &lt;strong&gt;sample text&lt;/strong&gt;. You are using &lt;a href=&quot;https://ckeditor.com/&quot;&gt;CKEditor&lt;/a&gt;.&lt;/p&gt;</textarea>
+
+<input type="button" onclick="save()" value="SAVE" />
+
+<script>
+    CKEDITOR.replace('editor1', {
+        uiColor: '#CCEAEE'
+    });
+
+    $(document).ready(function () {
+        var file = getUrlParam('file', null);
+        if (file != null) {
+            $.get(file, function (data) {
+                $("#editor1").html(data);
+                console.log("Load was performed.");
+            });
+        }
+
+    });
+
+    async function save() {
+        alert('to save');
+        // https://octokit.github.io/rest.js/#api-Repos-updateFile
+
+        var owner = "ProjectPete";
+        var repo = "technet2/Wiki";
+        var encoding = "utf-8";
+
+        var path = "";
+        var sha = "";
+
+        var message = "an update test";
+        var content = $("#editor1").html;
+        var branch = "heads/master";
+        
+        committername = "ProjectPete";
+        committeremail = "ProjectPete";
+        
+        authorname = "ProjectPete";
+        authoremail = "ProjectPete";
+        
+        const github = new Octokit({
+            auth: 'technet2 XXXXXXXXXXXXXXX' // b3...
+        });
+
+        const result = await octokit.repos.updateFile({ owner, repo, path, message, content, sha, branch, committername, committeremail, authorname, authoremail })
+
+        var sha_latest_commit = github.git.getCommit(repo, branch).object.sha;
+        console.log(sha_latest_commit);
+        var sha_base_tree = github.commit(repo, sha_latest_commit).commit.tree.sha;
+        console.log(sha_base_tree);
+
+        var file_name = File.join("some_dir", "new_file.txt");
+        var blob_sha = github.createBlob(repo, Base64.encode64(my_content), "base64");
+        var sha_new_tree = github.createTree(owner, repo, tree.sha = sha_base_tree.sha, tree.mode = "100644");
+            console.log(sha_new_tree);
+
+            //+ ', "tree": [{ "path": ' + file_name + ', "mode": "100644", "type": "blob", "sha": ' + blob_sha + '}]}'
+
+        const result = await github.git.createBlob({ owner, repo, content, encoding });
+
+        const result2 = await github.repos.updateFile({ owner, repo, path, message, content, sha, branch, committer, committername, committeremail, author, authorname, authoremail });
+        
+    }
+</script>

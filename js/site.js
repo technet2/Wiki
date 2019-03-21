@@ -8,7 +8,7 @@ $(document).ready(function () {
 
     var args = document.location.href.match(/[^\/]+$/);
     var fileName = '';
-    if (!args || args.length == 0) {
+    if (!args || args.length === 0) {
         return;
     }
 
@@ -25,10 +25,11 @@ $(document).ready(function () {
         $('#editMeCrumb').append($('<a href="' + editVersion + '">' + title + '</a>'));
     }
 
-    var url = "https://github.com/technet2/Wiki/commits/master/articles/" + fileName;
     var $tab = document.querySelector('#myHistory');
-    $tab.setAttribute('href', url);
-    //$('#myHistory').setAttribute('href', url);
+    if ($tab) {
+        var url = "https://github.com/technet2/Wiki/commits/master/articles/" + fileName;
+        $tab.setAttribute('href', url);
+    }
 
     $.getJSON(fileInfo, function (data) {
         var keyPhrases = [];
@@ -47,7 +48,7 @@ $(document).ready(function () {
             if (val.SubType) {
                 type += ", " + val.SubType;
             }
-            if (type != "") {
+            if (type !== "") {
                 name += " (" + type + ")";
             }
             if (val.WikipediaUrl) {
@@ -125,12 +126,112 @@ function clickedPhrase(safeName) {
 
 }
 
-$(function () {
-
-    $("#rateYo").rateYo({
-
-        onSet: function (rating, rateYoInstance) {
-            alert("You chose: " + rating + " (this feature is still in development)");
-        }
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (m, key, value) {
+        vars[key] = value;
     });
+    return vars;
+}
+
+function getUrlParam(parameter, defaultvalue) {
+    var urlparameter = defaultvalue;
+    if (window.location.href.indexOf(parameter) > -1) {
+        urlparameter = getUrlVars()[parameter];
+    }
+    return urlparameter;
+}
+
+var clearCookieName = 'clearCookie';
+var optCookieName = 'extHrefOpt';
+
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+} 
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+} 
+
+function clearCookie(cookieName) {
+    setCookie(cookieName, null, 0);
+}
+
+var createUUID = function () {
+    return "uuid-" + ((new Date).getTime().toString(16) + Math.floor(1E7 * Math.random()).toString(16));
+}
+
+var simpleWaitBarSegmentWidth = 0;
+var simpleWaitBarSegmentPeriod = 0;
+var simpleWaitBarStage = 0;
+var simpleWaitBarTotalSegments = 0;
+var progressBar;
+var simpleWaitBarCallback;
+var waitBarContainer;
+var waitBarParent;
+
+function simpleWaitBar(attachElement, widthPixels, heightPixels, segmentCount, totalMilliseconds, finishedCallback) {
+    waitBarParent = attachElement;
+    simpleWaitBarStage = 0;
+    // Create container
+    waitBarContainer = document.createElement('div');
+    waitBarContainer.className = 'bar';
+    waitBarContainer.style.width = widthPixels + 'px';
+    waitBarContainer.style.height = heightPixels + 'px';
+    // Create bar
+    progressBar = document.createElement('div');
+    progressBar.style.cssFloat = 'left';
+    progressBar.style.width = '10px';
+    progressBar.style.height = '100%';
+    progressBar.style.background = 'black';
+    waitBarContainer.appendChild(progressBar);
+    attachElement.append(waitBarContainer);
+    // Set variables
+    simpleWaitBarSegmentWidth = widthPixels / segmentCount;
+    simpleWaitBarSegmentPeriod = totalMilliseconds / segmentCount;
+    simpleWaitBarCallback = finishedCallback;
+    simpleWaitBarTotalSegments = segmentCount;
+    simpleWaitBarWait();
+}
+
+function simpleWaitBarWait() {
+    setTimeout(function () {
+        simpleWaitBarStage += 1;
+        var newWidth = (simpleWaitBarSegmentWidth * simpleWaitBarStage) + 'px';
+        console.log(newWidth);
+        if (simpleWaitBarStage > simpleWaitBarTotalSegments) {
+            waitBarParent.removeChild(waitBarContainer);
+            simpleWaitBarCallback();
+        }
+        else {
+            progressBar.style.width = newWidth;
+            simpleWaitBarWait();
+        }
+    }, simpleWaitBarSegmentPeriod);
+}
+
+$(function () {
+    $rateYo = $("#rateYo");
+    if ($rateYo.rateYo) {
+        $rateYo.rateYo({
+            onSet: function (rating, rateYoInstance) {
+                alert("You chose: " + rating + " (this feature is still in development)");
+            }
+        });
+    }
 });

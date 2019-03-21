@@ -1,0 +1,149 @@
+---
+layout: justjs
+title: Redirecting...
+weight: 1
+---
+
+<style>
+    .bar {
+        border-radius: 5px;
+        clip: auto;
+        border: 1px solid black;
+    }
+    .masked {
+        position: relative;
+        pointer-events: none;
+        display: inline-block;
+    }
+
+        .masked::before {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0px;
+            left: 0px;
+            visibility: visible;
+            opacity: 0.6;
+            background-color: white;
+            content: "";
+        }
+</style>
+
+<div id="redirectPanel" style="visibility:hidden" onkeypress="">
+    <p><b>Redirecting... Press any key to cancel.</b></p>
+</div>
+
+<div id="mainPanel">
+
+    <h1>Can this link open in a new tab?</h1>
+
+    <p>The author of this web link intended you to open it in a new browser tab.</p>
+    <p>GitHub block the HTML notation open in a new tab/window. This is workaround, but the choice is yours.</p>
+
+    <p>
+        <input type="radio" name="linkOption" value="tab" onclick="RadioOptionClicked()" />Open external links in a new tab
+        <br /><span style="font-size:small; text-indent:10px"><i>(Then this page will go back to where you were reading)</i></span>
+    </p>
+
+    <p>
+        <input type="radio" name="linkOption" value="notab" onclick="RadioOptionClicked()" />Open links on this same tab
+        <br /><span style="font-size:small; text-indent:10px"><i>(Use the browser history button to return)</i></span>
+    </p>
+
+    <p>These options will set a cookie for this site in your browser. It should auto-redirect from then on. Contact us if this is not working on your browser.</p>
+</div>
+
+<script>
+    var fileParamName = 'file';
+    var text = document.getElementById('mainPanel');
+    var redir = document.getElementById('redirectPanel');
+
+    function showRedirect() {
+        text.classList.add("masked");
+        redir.style.visibility = 'visible';
+    }
+
+    function showOptions() {
+        redir.style.visibility = 'hidden';
+        text.classList.remove("masked");
+    }
+
+    function CancelRedirect() {
+        choice = null;
+        clearCookie(optCookieName);
+        showOptions();
+    }
+
+    function AttachCancelEvent() {
+        document.body.addEventListener("keypress", CancelRedirect);
+    }
+
+    function RedirectOrReturn(extUrl, opt) {
+        if (extUrl) {
+            if (!extUrl.startsWith('http')) {
+                extUrl = 'http://' + extUrl;
+            }
+
+            if (opt) {
+                if (opt == "tab") {
+                    AttachCancelEvent();
+                    showRedirect();
+
+                    simpleWaitBar(redir, 200, 10, 10, 1000,
+                        function () {
+                            // redirect if user hasn't cancelled
+                            if (choice != null) {
+                                window.open(extUrl, '_Blank');
+                                window.history.back();
+                            }
+                        });
+                }
+                else {
+                    if (document.referrer == extUrl) {
+                        window.history.back();
+                    }
+                    else {
+                        AttachCancelEvent();
+                        showRedirect();
+                        window.history.pushState(null, null, document.referrer);
+                        simpleWaitBar(redir, 200, 10, 10, 1000,
+                            function () {
+                                // redirect if user hasn't cancelled
+                                if (choice != null) {
+                                    window.location.href = extUrl;
+                                }
+                            });
+                    }
+                }
+            }
+            else {
+                // choose an option
+            }
+        }
+        else {
+            prompt('The target reference was not found or formatted correctly in the URL');
+        }
+    }
+
+    function RadioOptionClicked() {
+        var opt = document.querySelector('input[name="linkOption"]:checked').value;
+        setCookie(optCookieName, opt, 365);
+        choice = opt;
+        RedirectOrReturn(fileParam, opt);
+    }
+    
+    // Next script happens on page load. All vanilla js.
+    // Cookie names defined in site.js
+    var fileParam = getUrlParam(fileParamName, null); // getUrlParam is in site.js
+    var clearParam = getUrlParam(clearCookieName, null); // getUrlParam is in site.js
+    var choice = getCookie(optCookieName);
+
+    if (clearParam == '1') {
+        clearCookie(optCookieName);
+        window.history.back();
+    }
+    else {
+        RedirectOrReturn(fileParam, choice);
+    }
+
+</script>
