@@ -1,0 +1,41 @@
+---
+layout: default
+title: SCCM 2012 Application Deployment Status Bug, and Fix - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+&nbsp;&nbsp;&nbsp;&nbsp;I have run across an issue where I deploy an application and want to find out what machines haven&#39;t finished downloading or installing my application. Clicking &quot;In Progress&quot; in the report shows me 1 &quot;Waiting on Content&quot; and 28 &quot;Waiting for Maintenance Window&quot;.
+ When I click either the 1 or 28, I get the list of 29 machines that are &quot;In Progress&quot;. No help to me! Well I dug through the code and here&#39;s the fix. For the record I&#39;m using SCCM 2012 SP1 CU3.<br />
+<br />
+The issue lies in the query asking for the EnforcementState but ultimately doing nothing with it.&nbsp;<br />
+<br />
+We&#39;re going to have to pass the specific EnforcementState to the other report so it can be compared
+<ol>
+<li>Open the report &quot;Application deployment status&quot; from under &quot;Software Distribution - Application Monitoring - Hidden&quot; (Details View shows hidden items) in Report Builder.
+</li><li>Scroll right and click the cell that currently contains [Total], this is a textbox named Total.
+</li><li>Edit the Action property by clicking the elipsis &quot;...&quot;. </li><li>Under the Action node click Add to add a Parameter names EnforcementState and a value of [EnforcementState], this value is already being pulled, but not sent to the detail report until now. Click Ok and save the report.
+</li></ol>
+<p>The first report is now finished. When you click on a number under the Assets column you are now sending that EnforcementState parameter to the details report, if you just tried it you certainly get an error. The details report doesn&#39;t know what to do with
+ this parameter.</p>
+<ol>
+<li>Open the report &quot;Application deployment detailed status&quot; from under &quot;Software Distribution - Application Monitoring - Hidden&quot;
+</li><li>Right-click on Parameters and click Add Parameter </li><li>Name this EnforcementState with a Prompt of EnforcementState, visibility should either be Visible or Hidden (visible only matters when a parameter isn&#39;t passed into the report, which ours is passed from the eariler steps)
+</li><li>Expand Datasets and right-click on DataSet1 and select Dataset Properties </li><li>In the Query pane scroll past the first SELECT, begin, and second SELECT. The area we are changing is in the query&#39;s second WHERE section. Add the following to the end:&nbsp; AND (AppState.EnforcementState = @EnforcementState). This will make your WHERE clause
+ look like the following. </li></ol>
+<p>WHERE<br />
+&nbsp; (AppState.PolicyModelID = @PolicyModelID) AND<br />
+&nbsp; (AppState.AssignmentID = @AssignmentID) AND<br />
+&nbsp; (AppState.StatusType = @StatusType) AND <br />
+&nbsp; (AppState.StatusType = AppState.AppStatusType) AND<br />
+&nbsp; (@DT = 0 OR AppState.DTCI = @DT) AND<br />
+&nbsp; (AppState.EnforcementState = @EnforcementState)<br />
+else if @StatusType = 3<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Add this, AND (AppState.EnforcementState = @EnforcementState), to the next WHERE statement as well. Skip the following one, as StatusType 4 is Unknown, and add it to the last WHERE as well. Click OK and save the report. You may have to refresh the page
+ if you&#39;re currently viewing this report in your browser but this will now show specifically the assets you wanted to see.</p>
+
+</div>
+    
+    

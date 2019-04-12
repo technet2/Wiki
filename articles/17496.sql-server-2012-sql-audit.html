@@ -1,0 +1,78 @@
+---
+layout: default
+title: SQL Server 2012 – SQL Audit - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1 style="margin:24pt 0in 0pt;"><a name="Overview"></a><span style="font-family:Cambria;font-size:24px;">Overview</span></h1>
+<p style="margin:0in 0in 10pt;"><span style="color:black;">In this&nbsp;post I will highlight SQL Audit and show you a real world example of how to audit modifications to custom SharePoint databases.&nbsp; The SQL Audit feature in SQL Server 2012 has several enhancements
+ that make </span>it more efficient and easier for organizations to meet their data compliance policies and regulations.</p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Calibri,sans-serif;font-size:24px;">SQL Audit in SQL Server 2012</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">SQL Audit allows the database administrator to track and log server level events as well as database level events.&nbsp; Audited events can be written to the Windows event logs or to binary audit files
+ which can later be analyzed using&nbsp;T-SQL.&nbsp; </span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">Audits consist of a server level audit which defines where the audit log records will be written.&nbsp; Database and server level audits can be filtered on particular users.&nbsp; SQL Audit executes asynchronously
+ so there is no need to worry about auditing holding up user transactions. </span>
+<span style="font-family:Cambria;font-size:24px;"><br />
+Scenario</span></p>
+<p style="margin:0in 0in 10pt;">In this scenario a customer has a custom SharePoint database with a table used to&nbsp;store data collected from a survey.&nbsp; The data in this table is sensitive to the organization.&nbsp; To adhere to security regulations the organization
+ must track and log all deletions from this table and information about&nbsp;who deleted the records.&nbsp; Additionally the audit needs to be filtered so that only deletions by users&nbsp;who are members of the db_datareader and&nbsp;db_datawriter role are tracked and logged.&nbsp;
+<br />
+<br />
+In this scenario it could be authorization creep or someone who is supposed to have access to delete but either way the customer would like to track and log this activity.<br />
+<span style="font-family:Cambria;font-size:24px;"><br />
+Step 1 - Creating the Audit</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">I have configured an audit in SQL Server Management Studio.&nbsp; This audit will write to a binary file on the file system with no maximum file size.&nbsp; Log file size options and other various settings
+ can be configured.&nbsp; A new option for DBA’s in the “On Audit Log Failure” section allows more flexibility and prevents the server from shutting down when auditing cannot be performed for some reason.&nbsp; Another new option which I really like is the ability to
+ filter the audit on a particular database or user name and many other filters.</span></p>
+<p style="margin:0in 0in 10pt;">In the screen shot below the audit has been configured to continue if the audit log fails for any reason.&nbsp; The target of the audit is a binary file located at C:\SQL Audit with an unlimited file size.&nbsp;&nbsp;<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2235.Main-Audit.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2235.Main-Audit.JPG" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Calibri;"><b>NOTE: </b>Administrators must ensure that audit destination has enough storage to handle the logging of events.&nbsp; The file destination can be a network share UNC path \\FileShare\$.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Cambria;font-size:24px;">Step 2 - Create the Server Audit Specification</span></p>
+<p style="margin:0in 0in 10pt;">By running the following script a Schema Change audit group will be setup:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6558.ServerAudit_5F00_Spec.JPG"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2248.Server_5F00_Audit_5F00_Spec_5F00_SQL.jpg"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2678.ServerAudit_5F00_Spec.GIF"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2678.ServerAudit_5F00_Spec.GIF" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Cambria;font-size:24px;">Step 3 - Create the Database Audit Specification<br />
+<br />
+</span>By running the following script a database audit will be setup to track DELETE statements on the dbo.SurveyData table by anyone who is a member of the db_datawriter role.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0272.DatabaseAuditSpecNew.gif"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4377.DatabaseAuditSpecNew2.gif"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4377.DatabaseAuditSpecNew2.gif" style="border-width:0px;border-style:solid;" /></a><br />
+<span style="font-family:Cambria;font-size:24px;"><br />
+Step 4 – Verify auditing <br />
+<br />
+</span><span style="font-family:Calibri;">To verify auditing is setup correctly and is successfully tracking the DELETE statements on the dbo.SurveyData table I will remove a record from the table and then analyze the SQL Audit logs.</span></p>
+<ul>
+<li>Check the file system to ensure that the Audit log file has been created:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5611.FileSystem_5F00_Log.GIF"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5611.FileSystem_5F00_Log.GIF" style="border-width:0px;border-style:solid;" /></a><span style="line-height:115%;font-family:&#39;Calibri&#39;,&#39;sans-serif&#39;;font-size:11pt;"><br />
+</span></li><li>The dbo.SurveyData table is defined as shown below:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2474.TableDef.GIF"><img width="551" height="173" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2474.TableDef.GIF" style="border-width:0px;border-style:solid;width:401px;height:120px;" /></a>
+</li></ul>
+<p>&nbsp;</p>
+<ul>
+<li>The dbo.SurveyData table has been pre-loaded as shown below:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5618.DataLoad.GIF"><img width="549" height="254" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5618.DataLoad.GIF" style="border-width:0px;border-style:solid;width:404px;height:176px;" /></a>
+</li><li>The following T-SQL statement has been run by a user CONTOSO\TestUser who is a member of the db_datawrite role in the customer SharePoint content database:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7624.DELETE.GIF"><img width="551" height="191" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7624.DELETE.GIF" style="border-width:0px;border-style:solid;width:440px;height:148px;" /></a>
+</li></ul>
+<p style="margin:0in 0in 10pt 0.5in;"><span style="font-family:Calibri;"><strong>NOTE:</strong> By running this statement I am simulating a user removing a single record from the dbo.SurveyData table.</span></p>
+<ul>
+<li>Analyze the SQL audit logs to see if the DELETE statement is being logged correctly:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3247.SelectFromLogFile.GIF"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3247.SelectFromLogFile.GIF" style="border-width:0px;border-style:solid;" /></a>
+</li></ul>
+<p style="margin:0in 0in 10pt 0.5in;"><span style="font-family:Calibri;"><b>NOTE: </b>
+Using the fn_get_audit_file function a DBA can analyze logs from the binary file just as they would do with a SQL trace file.&nbsp; Using this function the information in the binary audit log file can be extracted and moved off into a database for archival purposes.</span></p>
+<p><span style="font-family:Cambria;font-size:24px;">Summary</span></p>
+<p><span style="font-family:Calibri;">SQL Audit in SQL Server 2012 provides a robust and flexible solution that enables organizations to track and log changes to individual tables by certain users and roles.&nbsp; SQL Audit is easy to setup and administer.&nbsp; With
+ enhancements like Max Rollover Files, Max File Size and Filter DBA’s now have many more options to make auditing more efficient and useful.
+</span>&nbsp;</p>
+
+</div>
+    
+    

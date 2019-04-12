@@ -1,0 +1,152 @@
+---
+layout: default
+title: Creating Friendly Week Names in Power Pivot and SSAS Tabular Models with DAX - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list- header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Problem_definition">Problem definition</a></li><li class="hierarchy-item"><a href="#Solution">Solution</a></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<hr />
+<h1><a name="Problem_definition"></a>Problem definition</h1>
+<p>Take a quick moment to think about why these two Pivot Tables might be different and what the problem is with the week names (Note: both of the Pivots Tables are unfiltered).</p>
+<table>
+<tbody>
+<tr>
+<td><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8311.1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/223x288/__key/communityserver-wikis-components-files/00-00-00-00-05/8311.1.png" style="border:0px solid currentcolor;" /></a>&nbsp;</td>
+<td><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1323.2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/220x286/__key/communityserver-wikis-components-files/00-00-00-00-05/1323.2.png" style="border:0px solid currentcolor;" /></a></td>
+</tr>
+<tr>
+<td><strong>&nbsp;Pivot Table A</strong></td>
+<td><strong>Pivot Table B&nbsp;</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The weeks in Pivot Table A are Sunday-based (i.e. Sunday through Saturday) whereas the weeks in Pivot Table B are Monday-based (i.e. Monday Through Sunday), but you wouldn&#39;t be able to guess this by just looking at the images, would you?</p>
+<p>With regards to what&#39;s wrong with the week names, the truth is, nothing is actually wrong from a logical or performance perspective. The weeks appear in the correct order and each week belongs to a single year. In other words, this is a natural hierarchy
+ and follows the best practices mentioned in <a href="http://www.sqlbi.com/articles/natural-hierarchies-in-power-pivot-and-tabular" target="_blank">
+this</a> article by Marco Russo. So what&#39;s the issue then? You&#39;ll quickly learn the answer to this by trying to answer the following question: Without drilling down, would you be able to quickly tell the starting date of &#39;Week 11 2006&#39; in either of the Pivot
+ Tables? Your answer would most likely be &quot;no&quot; and that&#39;s the problem. Unsurprisingly, most end-users wouldn&#39;t know the answer to this question either and that&#39;s an even bigger problem!</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/84583.3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x355/__key/communityserver-wikis-components-files/00-00-00-00-05/84583.3.png" style="border:0px solid currentcolor;" /></a></p>
+<p>&nbsp;</p>
+<p>Drilling down is great and everything, but this is one extra step that the end-user has to take to gain a better understanding of what they are looking at. Imagine that the end-user isn&#39;t sure which week contains a particular date. They may end up trying
+ to guess this by drilling down on the most likely weeks until they find it, or they may end up expanding all of the weeks at once, but neither of these actions is ideal.</p>
+<p>Right, so now that we know what the problem is, let&#39;s move on to a possible solution…
+</p>
+<hr />
+<h1><a name="Solution"></a>Solution</h1>
+<p>You can add a friendly week name column to your date table with some DAX. Depending on your end-users you will need to create either Sunday-based weeks or Monday-based weeks. In some cases, your target audience may require the option of both. Let&#39;s assume
+ that the latter is true for our examples.</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3108.4.png" style="color:#ff6600;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x399/__key/communityserver-wikis-components-files/00-00-00-00-05/3108.4.png" style="border:0px solid currentcolor;" /></a></p>
+<p>&nbsp;</p>
+<p>A calculated column for &#39;Sunday Based Week&#39; can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>​=&quot;Week &quot; &amp; WEEKNUM(&#39;Date&#39;[Date], 1) &amp; &quot; &quot; &amp; &#39;Date&#39;[Year]</code></span></div>
+</div>
+<p>A calculated column for &#39;Monday Based Week&#39; can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>​=&quot;Week &quot; &amp; WEEKNUM(&#39;Date&#39;[Date], 2) &amp; &quot; &quot; &amp; &#39;Date&#39;[Year]</code></span></div>
+</div>
+&nbsp;
+<p>Notice that the difference between these two DAX formulas is the argument used for the second parameter of the
+<strong>WEEKNUM</strong> function. A &#39;1&#39; means that the starting date is a Sunday, and a &#39;2&#39; means that the starting date is a Monday. The first parameter must reference a column with the
+<strong>Date</strong> data type. You can learn about the <strong>WEEKNUM</strong> function in an official Microsoft Office help topic
+<a href="http://office.microsoft.com/en-gb/excel-help/weeknum-function-dax-HA102838299.aspx" target="_blank">
+here</a>.</p>
+<p>We also need columns that can be used to sort the <strong>&#39;Sunday Based Week&#39;</strong> and
+<strong>&#39;Monday Based Week&#39;</strong> columns into the correct order. These same sorting columns will also be used to sort the friendly versions of the week names.</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/76725.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x415/__key/communityserver-wikis-components-files/00-00-00-00-05/76725.5.png" style="border:0px solid currentcolor;" /></a></p>
+<p>&nbsp;</p>
+<p>A calculated column for &#39;Sunday Based Week Number&#39; can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>​=VALUE(&#39;Date&#39;[Year] &amp; RIGHT(&quot;00&quot; &amp; WEEKNUM(&#39;Date&#39;[Date], 1), 2))</code></span></div>
+</div>
+<p>A calculated column for &#39;Monday Based Week Number&#39; can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>​=VALUE(&#39;Date&#39;[Year] &amp; RIGHT(&quot;00&quot; &amp; WEEKNUM(&#39;Date&#39;[Date], 2), 2))</code></span></div>
+</div>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6433.6.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/538x231/__key/communityserver-wikis-components-files/00-00-00-00-05/6433.6.png" style="border:0px solid currentcolor;" /></a></p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3438.7.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/538x231/__key/communityserverquot; &amp; WEEKNUM(&#39;Date&#39;[Date], 1), 2))</code></span></div>
+</div>
+<p>A calculated column for &#39;Monday Based Week Number&#39; can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>​=VALUE(&#39;Date&#39;[Year] &amp; RIGHT(&quot;00&quot; &amp; WEEKNUM(&#39;Date&#39;[Date], 2), 2))</code></span></div>
+</div>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6433.6.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/538x231/__key/communityserver-wikis-components-files/00-00-00-00-05/6433.6.png" style="border:0px solid currentcolor;" /></a></p>
+<-wikis-components-files/00-00-00-00-05/3438.7.png" style="border:0px solid currentcolor;" /></a></p>
+<p>Now let&#39;s move on to our friendly week name columns…</p>
+<p>A calculated column for <strong>&#39;Friendly Sunday Based Week&#39;</strong> can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>=</code></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>&quot;Week &quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&amp; WEEKNUM(&#39;Date&#39;[Date], 1)</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>&amp; &quot; (&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&amp; FORMAT(</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>CALCULATE(</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MIN(&#39;Date&#39;[Date]),</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>ALLEXCEPT(</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&#39;Date&#39;,</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&#39;Date&#39;[Sunday Based Week]</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>)</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>),</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&quot;ddd d, MMM yy&quot;</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>)</code></span></span></div>
+<div><span><code>&nbsp;</code><span><code>&amp; &quot;)&quot;</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span></div>
+</div>
+<p>A calculated column for <strong>&#39;Friendly Monday Based Week&#39;</strong> can be defined as:</p>
+<div class="reCodeBlock">
+<div><span><code>=</code></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>&quot;Week &quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&amp; WEEKNUM(&#39;Date&#39;[Date], 2)</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>&amp; &quot; (&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&amp; FORMAT(</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>CALCULATE(</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MIN(&#39;Date&#39;[Date]),</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>ALLEXCEPT(</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&#39;Date&#39;,</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&#39;Date&#39;[Monday Based Week]</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>)&nbsp;&nbsp; </code>
+</span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>&nbsp;&nbsp;</code><span><code>),</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&quot;ddd d, MMM yy&quot;</code></span></span></div>
+<div style="background-color:#f5f5f5;"><span>&nbsp;</span><span><code>)</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>&amp; &quot;)&quot;</code></span></span></div>
+</div>
+<p>I will outline what&#39;s happening for the <strong>&#39;Friendly Sunday Based Week&#39;</strong> calculated column but near-identical logic applies to the Monday-based week version. The DAX formula does the following things for each row:</p>
+<ol>
+<li>Clear all the filters from the filter context, that was derived from the row context, except for on the
+<strong>&#39;Sunday Based Week&#39;</strong> column. </li><li>Find the first/earliest date within this context. </li><li>Format the date as ddd d, MMM yy e.g. &#39;Sun 1, Jan 06&#39;. </li><li>Determine the week number of the current row&#39;s <strong>&#39;Date&#39;</strong> column using the WEEKNUM function.
+</li><li>Build the text string &#39;Week &lt;Week Number&gt; (&lt;Formatted Date&gt;)&#39; e.g. &#39;Week 1 (Sun 1, Jan 06)&#39;.
+</li></ol>
+<strong>Note:</strong> The exact formatting used for the friendly week names in the examples presented are to illustrate the approach, but it&#39;s likely that you may require much shorter friendly names so that they fit comfortably on your charts. You can use
+ the FORMAT function and custom format strings to get the desired outcome such as &#39;Wk1 1-Jan-06&#39; instead of &#39;Week 1 (Sun 1, Jan 06)&#39;. Learn about the FORMAT function and custom format strings
+<a href="http://office.microsoft.com/en-gb/excel-help/format-function-dax-HA102838214.aspx" target="_blank">
+here</a> and <a href="http://office.microsoft.com/en-gb/excel-help/custom-date-and-time-formats-for-the-format-function-dax-HA102837261.aspx?CTT=5&amp;origin=HA102838214" target="_blank">
+here</a>. You may also notice that the first day for the first week will not always start on the corresponding Sunday or Monday. This is ok in this scenario because the friendly week name should only reflect the dates that would be implicitly filtered when
+ selecting or slicing the data.
+<p>These two columns need to be sorted using the same respective sort columns as their &#39;non-friendly&#39; week name counterparts and then we can use them to create friendly week name hierarchies.</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8168.9.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x485/__key/communityserver-wikis-components-files/00-00-00-00-05/8168.9.png" style="border:0px solid currentcolor;" /></a></p>
+<table>
+<tbody>
+<tr>
+<td><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0336.10.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/275x288/__key/communityserver-wikis-components-files/00-00-00-00-05/0336.10.png" style="border:0px solid currentcolor;" /></a>&nbsp;</td>
+<td>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2502.11.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/280x288/__key/communityserver-wikis-components-files/00-00-00-00-05/2502.11.png" style="border:0px solid currentcolor;" /></a></td>
+</tr>
+<tr>
+<td><strong>&nbsp;Pivot Table A</strong></td>
+<td><strong>Pivot Table B</strong>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>Now that we have these friendly week names, you can easily tell why the numbers are different. Without drilling down, would you be able to quickly tell the starting date of &#39;Week 11 2006&#39; in either of the Pivot Tables? The answer is most likely a &quot;yes&quot;.
+ If you needed to look at sales for the whole week containing the date 7th April 2006, would you be able to pick the correct week to drill-down on? The answer is probably &quot;yes&quot; to this question too!
+</p>
+<hr />
+<h1><a name="Conclusion"></a>Conclusion</h1>
+<p>Whenever creating calculated columns in our Power Pivot or SSAS Tabular models, if we expect that the column will ever be used as a label in Pivot Tables or charts, we should ensure that the values within it are unambiguous. Doing this will save end-users
+ some time whilst also helping to avoid the confusion that often surrounds ambiguous labels in reports and charts.</p>
+
+</div>
+    
+    

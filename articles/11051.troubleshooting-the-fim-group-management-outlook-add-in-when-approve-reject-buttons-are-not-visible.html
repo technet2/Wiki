@@ -1,0 +1,61 @@
+---
+layout: default
+title: Troubleshooting the FIM Group Management Outlook Add-In when Approve / Reject buttons are not visible - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>The easiest way for&nbsp;group owner&nbsp;to approve new group members is to use <a href="http://technet.microsoft.com/en-us/library/ff512688(v=WS.10).aspx">
+FIM Outlook Add-in</a>. But installing and configuring the add-in can introduce many problems. Probably the most common problem is that Approve / Reject buttons are not visible in Outlook. While there are number of things that can be misconfigured, even&nbsp;correctly
+ configured FIM and Outlook Add-in are not enough.</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Symptoms"></a>Symptoms</h2>
+<p>When receiving group joining approval emails the Approve / Reject buttons don&#39;t appear in Outlook.<br />
+<br />
+After making sure, the basic configuration is correct as described in <a href="http://social.technet.microsoft.com/wiki/contents/articles/762.aspx">
+Troubleshooting the FIM Group Management Outlook 2007 Add-In</a>, still isn&#39;t isn&#39;t solved.</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Cause"></a>Cause</h2>
+<p>FIM Outlook add-in tries to <strong>resolve</strong> the sender against address book(s). Only if that succeeds, it compares the senders address using MAPI property PR_SMTP_ADDRESS (0x39fe) and compares THAT with what is in the settings or registry. Sadly,
+ the trace file will not tell you if the comparison failed or the address simply didn&#39;t resolve.
+</p>
+<p>This is how the code sees the valid message from resolved FIM Service account:</p>
+<pre>Address              = /o=EDS/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=FIMService
+AddressEntryUserType = olExchangeUserAddressEntry
+Name                 = FIMService
+
+Resolved Sender      = FIMService@acme.com
+Valid Sender         = FIMService@acme.com</pre>
+<p>And this is how it sees the message if FIM Service is not in the GAL / is not resolvable.</p>
+<pre>Address              = FIMService@acme.com 
+AddressEntryUserType = olSmtpAddressEntry
+Name                 = FIMService@acme.com
+
+Valid Sender         = FIMService@acme.com 
+Resolved Sender      = 
+</pre>
+<p>So, the comparison of last two lines will fail, although the sender actually is correct, has correct email address but it isn&#39;t recognized as Exchange User Address entry.</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Resolution"></a>Resolution</h2>
+<p>Make sure that FIM Service account is in user&#39;s GAL and that the email alias will resolve in Outlook.</p>
+<p>I case with more than one domain when users in each domain see their own subset of the GAL one possible solution is adding &quot;All Users&quot; to last place in &quot;When sending mail, check names using these address lists in the following order&quot; list in Outlook configuration.</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="See_Also"></a>See Also</h2>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/762.aspx"><span style="color:#0066dd;">Troubleshooting the FIM Group Management Outlook 2007 Add-In</span></a>
+</li><li><a href="http://go.microsoft.com/fwlink/?LinkId=211780" target="_blank">Troubleshooting FIM 2010 Roadmap
+</a></li></ul>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;background-color:#c0c0c0;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;background-color:#f0f0f0;">To provide feedback about this article, create a post on the
+<a href="http://go.microsoft.com/fwlink/?LinkID=163230" target="_blank">FIM TechNet Forum</a>.</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+    
+    

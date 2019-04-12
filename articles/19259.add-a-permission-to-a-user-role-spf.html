@@ -1,0 +1,265 @@
+---
+layout: default
+title: Add a Permission to a User Role (SPF) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div id="mainBody">
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/contents/articles/19162.service-provider-foundation-programmers-guide-spf.aspx" title="Click to view the page titled: Service Provider Foundation Programmers Guide (SPF)">Service Provider Foundation Programmers Guide (SPF)</a>.</p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-heade-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Add a Permission to a User Role (SPF)</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div id="mainBody">
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/contents/articles/19162.service-provider-foundation-programmers-guide-spf.aspx" title="Click to view the page titled: Service Provider Foundation Programmers Guide (SPF)">Service Provider Foundation Programmers Guide (SPF)</a>.</p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-her"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#To_add_a_permission_to_a_user_role_with_NET">To add a permission to a user role with .NET</a></li><li class="hierarchy-item"><a href="#To_add_a_permission_to_a_user_role_with_HTTP">To add a permission to a user role with HTTP</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<p>In Service Provider Foundation, sometimes a user cannot accomplish a task because they are missing a required permission. Permissions can be added to a user (as long as the current user can manage permissions) by using the
+<strong>UserRoles</strong> OData collection. </p>
+<p>The way Service Provider Foundation works with User Role permissions may be confusing at first. A
+<strong>UserRole</strong> entity does not have a property to change permissions directly. Instead, you set the
+<strong>UserRole.PermissionInput</strong> property to a collection of <strong>UserRolePermission</strong> objects. Each
+<strong>UserRolePermission</strong> object represents all permissions the user has on a specific stamp. When the
+<strong>UserRole</strong> entity is updated, the <strong>UserRole.PermissionInput</strong> property is processed. Each
+<strong>UserRolePermission</strong> is read, and replaces all existing permissions (for the associated stamp) the user role has.
+</p>
+<p>You will likely want to preserve existing permissions by copying them to the <strong>
+UserRolePermission</strong> object, and then adding or removing specific permissions.
+</p>
+<div>
+<h2 class="heading"><a name="To_add_a_permission_to_a_user_role_with_NET"></a><strong>To add a permission to a user role with .NET</strong></h2>
+<div class="section" id="procedureSection0">
+<ol class="ordered">
+<li>
+<p>Connect to the Service Provider Foundation <strong>VMM</strong> service.</p>
+</li><li>
+<p>Obtain the <strong>SpfVMM.UserRole</strong> you want to add a permission to.</p>
+</li><li>
+<p>Create a new instance of the <strong>SpfVMM.UserRolePermission</strong> class.</p>
+</li><li>
+<p>Copy the <strong>UserRole.Permission</strong> to a new list or array of strings.</p>
+</li><li>
+<p>Add the new permissions to the list or array of permission strings.</p>
+</li><li>
+<p>Set the <strong>UserRolePermission.Permission</strong> property to a new instance of the
+<span style="text-decoration:underline;">System.Collections.ObjectModel.ObservableCollection&lt;string&gt;</span> class, providing the array of permission strings.
+</p>
+</li><li>
+<p>Set the <strong>UserRolePermission.StampId</strong> property to the stamp id the user permissions will apply to.</p>
+</li><li>
+<p>Add the <strong>UserRolePermission</strong> you created to the <strong>UserRole.PermissionInput</strong> collection.</p>
+</li><li>
+<p>Call the <strong>UpdateObject</strong> method on the <strong>VMM</strong> service object reference and pass in the changed
+<strong>UserRole</strong> object. </p>
+</li><li>
+<p>Call the <strong>SaveChanges</strong> method on the <strong>VMM</strong> service object reference.</p>
+</li></ol>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="To_add_a_permission_to_a_user_role_with_HTTP"></a><strong>To add a permission to a user role with HTTP</strong></h2>
+<div class="section" id="procedureSection1">
+<ol class="ordered">
+<li>
+<p>Create a new <strong>HTTP</strong> PUT or MERGE operation.</p>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/1205.Important.gif" />Important
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+If you supply only the key and changed properties, use a <strong>MERGE</strong> operation.
+<strong>PUT</strong> is used when you want to replace all properties on the entity with new or default values. The
+<strong>MERGE</strong> operation updates the existing entity with the properties supplied.
+<strong>PUT</strong> will update the existing entity with the properties supplied, but will reset all missing properties back to their default values.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li><li>
+<p>Set the URL to a specific user role identifier with the <strong>UserRoles</strong> collection: https://<em>server</em>:30005/<em>subscription-id</em>/services/systemcenter/vmm/UserRoles/<em>user-role-id</em>.</p>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/1205.Important.gif" />Important
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+The <em>subscription-id</em> being used must have permissions to alter the permissions of a user role.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/5773.Tip.gif" />Tip
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+Provide the GUID of the user role on the URL. The previous example uses <em>user-role-id</em> as a placeholder.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li><li>
+<p>Add the HTTP headers.</p>
+<p>Specifically, add the <strong>x-ms-principal-id</strong> header, which can be set to any value.</p>
+</li><li>
+<p>Create the HTTP payload containing the user role entity with at least the <strong>
+ID</strong> anr the permissions of a user role.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/5773.Tip.gif" />Tip
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+Provide the GUID of the user role on the URL. The previous example uses <em>user-role-id</em> as a placeholder.</td>
+</tr>
+d <strong>PermissionInput</strong> properties set. </p>
+</li><li>
+<p>Submit the HTTP request.</p>
+</li></ol>
+</div>
+</div>
+<h2 class="heading"><a name="Example"></a>Example</h2>
+<div class="section" id="codeExampleSection">
+<p>The following example shows how to add the <strong>Checkpoint</strong> permission to an existing user role with .NET. This example also preserves all existing permissions that the user role already has. For more information, see
+<a href="http://aka.ms/figpnj">Programming in Visual Studio with Service Provider Foundation Services</a>.
+</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<div class="reCodeBlock">
+<div><span><code>SpfVMM.VMM vmmService =
+</code><code style="font-weight:bold;">new</code> <code>
+SpfVMM.VMM(</code><code style="font-weight:bold;">new</code>
+<code>Uri(</code><code style="color:blue;">&quot;<a href="https://wapserver/">https://wapserver/</a>:30005/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/&quot;</code><code>));</code></span></div>
+<div><span><code>vmmService.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>// Get the existing user role</code></span></div>
+<div><span><code>var userRole = vmmService.UserRoles.Where(ur =&gt; ur.Name ==
+</code><code style="color:blue;">&quot;fred@fred.com_97fd50f3-1dc0-41b6-a7c0-2b4ff4c3f7e3&quot;</code><code>).FirstOrDefault();</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code style="font-weight:bold;">if</code>
+<code>(userRole != </code><code style="font-weight:bold;">null</code><code>)</code></span></div>
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>// Create the new permission</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>var permission =
+</code><code style="font-weight:bold;">new</code> <code>
+SpfVMM.UserRolePermission();</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>// Preserve the existing permissions using System.Linq extensions</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>var perms = userRole.Permission.ToList();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>// Add the new permission</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>perms.Add(</code><code style="color:blue;">&quot;Checkpoint&quot;</code><code>);</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>// create the new permission object</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>permission.Permission =
+</code><code style="font-weight:bold;">new</code> <code>
+System.Collections.ObjectModel.ObservableCollection&lt;</code><code style="font-weight:bold;">string</code><code>&gt;(perms);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>permission.StampId =
+</code><code style="font-weight:bold;">new</code> <code>
+Guid(</code><code style="color:blue;">&quot;ba4146fa-fb41-4f59-a193-ad00c52a138c&quot;</code><code>);</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>// Add the permissions to the user role</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>userRole.PermissionInput.Add(permission);</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>vmmService.UpdateObject(userRole);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>vmmService.SaveChanges();</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</div>
+<p>The following is an example HTTP request sent to the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>MERGE https://wapserver:30005/BA4146FA-FB41-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/UserRoles/97fd50f3-1dc0-41b6-a7c0-2b4ff4c3f7e3 HTTP/1.1
+DataServiceVersion: 3.0;NetFx
+MaxDataServiceVersion: 3.0;NetFx
+Accept: application/json;odata=minimalmetadata
+Accept-Charset: UTF-8
+DataServiceUrlConventions: KeyAsSegment
+User-Agent: Microsoft ADO.NET Data Services
+x-ms-principal-id: user@contoso.com
+Content-Type: application/json;odata=minimalmetadata
+Host: wapserver:30005
+Content-Length: 839
+Expect: 100-continue
+Authorization: Negotiate YIIGXgYGKwYBBQUCoIIGUjCCBk6gMDAuBgkqhkiC9xIBAgIGCSqGSIb3EgECAgYKKwYBBAGCNwICHgYKKwYBBAGCNwICCqKCBhgEggYUYIIGEAYJKoZIhvcSAQICAQBuggX/MIIF&#43;6ADAgEFoQMCAQ6iBwMFACAAAACjggSPYYIEizCCBIegAwIBBaEJGwdDRE0uTEFCoiMwIaADAgECoRowGBsESFRUUBsQc3Bmbi00NTcuY2RtLmxhYqOCBE4wggRKoAMCARKhAwIBC6KCBDwEggQ4T4e4nk0xr5YY8JQ/YNUEs7oIPtf2zX&#43;sn08&#43;M334CpUM75&#43;aH&#43;zZiH/HSzI3&#43;CF9DiGzVza&#43;jRm/UFjbU1FrMpGSlNtCNdOy1taOlSN1jiB1&#43;5kYZx4hEXRfkfQ27/H2g7oh/Z7M/UOsi2VEI8z/ZIqzw72X/JBA47REDCjoc&#43;okvAdH3EfWgsgsAS4BmQIJ58sc6vNEBTtrMNxrx4AIXAk5QPH/JJ7WOYTvXJdQgVm9KkfcHvdFU6jng7P7HNQ2GLDq/sP2AJU1/Uo3CLtrQFnjKTs/d1pvABO09tqOdyokI&#43;mu1DqZ2wIHFpljMSSJmrZKl0aMYYlx6nR4OuOGpaD5&#43;R/l29J3bK22dAdFbHMGJ1JxYG8x5kHlfjNXMJHrsGJ9WxPXqoSAyU2CRoyun9MtyVzeaLhw9mJtF6re&#43;hM1EGd6eDqqqnIOv24fdrBKnEB2HDEJPATYbh94/fC86LPo3KAo3GFL&#43;jIBKk8FHsPnNHiK28pcA7tkI4kUGnTj546oZogJhbvzMP35vnEMZtebiOdIHMYM8KhmEGnNBgfaxSWdpDTyFZxWrTED79abZHRlsGGljw/LfRXeS4qPEwwRkgEfrdL2JU1jcmU845v2vrptYr/visrcExaas35FMCxuxksVDT4d1AlwvNxusLZCssYSA/vVBVJy9qRvrbjAY4rNTtoEq1Am1K5ZpN8OwxmbVaEZQXrhOUIfC5ydp6A&#43;dqA423dTxLEi&#43;7/v77dwkpId0lLakHL8Gm4AaH98Th/OrhB3RNb2ENU&#43;a1FE2jBuaWsVolzmbMwIB5Q8ahxknSDgtNaGZ2ZQxWJcnns20Rj5AZ1e5op2RSffETRhZhQ5QgMF/eMnGdbWeDFPVsoVR5f/bXVmLKS4vhdTKKuYnLuwszpJUdmI7s9F&#43;dCbGYrgjlwifvEuSoAHNlL4PS&#43;zFnR2ITJZZpYCZMvXIQ17zrMGs0C4wB0goF&#43;uY4jEC0W3KRg/bF2GCsimOarMLtbuRz41NakkjZT7rSTJf&#43;DpB7OuzwjLbcF9acDtv1vI/62YJgBFrLbYxGQJpiqa5rhonun9MK88jhhrvU1fcoMU8sw/Zx6NSLqigzTEQtDhF2b9DeyXLOr2GV7wruOjiURmIt4qW1pfCOAMPJQBXnq2rAt03EZoxAdlIB7405PnVF&#43;x&#43;WjgK/TY4b93BsR7afZh1z/uaTjJGuW9xGZkOW23koOCzbC85y5wfNrnJ3a&#43;7sG971CyOnE3/lzYDuOz/RyXoTmYfG8538aQ9PK2Wl6wZO92QhWw5rHdAI/7nOsiuJygK8&#43;kr/MsERoyHynXX/2m0bnixjAHBPjlRJnWL6PIcrqmoFlnsEMAMuqlYi5mPk70FJU8RbPWNQbc&#43;YN5dfc295hsS931UTAkwyDobtq6E1NEpFz26IhSC4bgjThDa9jWdvGjA1jIpIIBUTCCAU2gAwIBEqKCAUQEggFA2B6rC9hN6kHxj6yUJU7ZOrgOt406u8FGUsr7gyvaVWLO8SZRsG3R/EJ6Qvd1u59GNJuwr3&#43;76ND0oqKYAgDBSkrA7sv42a/033flpTs3H3p4oJrKc03oLTnwXAe3&#43;moYSO5ia/Ek3rP522nk/SYXgqXQZRcEZtf0Tmqn4lziRwDWPL4OvpN9Tu8e62CmKhwwB4x7uUykI39WFzMLmWatcVxIZqasl6W6C2r/yQRMnNt91Lu1dNFAsJpsPhbBxHB6Nn9MoslcFrkUDBwTRrQuPXBGjQyZOHUFSf4mz5ZaM5iYBW/w3Yh&#43;W2VwIh3y48aJ31fNrtaJCrrxHMwSPAf67S1uDBdO6ECgNo1m2Iu5UWeJ8kJTbP4TUZnPBkRhTj0BWyORnrPltS3c1S2MJN3J6e1qHLVkkx7zKSurCT5lnZ0=
+
+{
+    &quot;ID&quot;: &quot;97fd50f3-1dc0-41b6-a7c0-2b4ff4c3f7e3&quot;,
+    &quot;PermissionInput&quot;: [{
+        &quot;Permission&quot;: [&quot;Create&quot;,
+                  &quot;PauseAndResume&quot;,
+                  &quot;Start&quot;,
+                  &quot;Stop&quot;,
+                  &quot;AllowLocalAdmin&quot;,
+                  &quot;Remove&quot;,
+                  &quot;Shutdown&quot;,
+                  &quot;Checkpoint&quot;,
+                  &quot;Author&quot;,
+                  &quot;CanShare&quot;,
+                  &quot;CanReceive&quot;,
+                  &quot;CreateFromVHDOrTemplate&quot;,
+                  &quot;CheckpointRestoreOnly&quot;,
+                  &quot;AuthorVMNetwork&quot;,
+                  &quot;Checkpoint&quot;
+        ],
+        &quot;Permission@odata.type&quot;: &quot;Collection(Edm.String)&quot;,
+        &quot;StampId&quot;: &quot;ba4146fa-fb41-4f59-a193-ad00c52a138c&quot;
+    }],
+    &quot;PermissionInput@odata.type&quot;: &quot;Collection(VMM.UserRolePermission)&quot;,
+    &quot;odata.type&quot;: &quot;VMM.UserRole&quot;
+}
+</pre>
+</div>
+<p>The following is an example HTTP response from the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>HTTP/1.1 204 No Content
+Cache-Control: no-cache
+Server: Microsoft-IIS/8.5
+x-ms-request-id: 0b494a73-66e6-4b86-b1cf-90d3a7432622
+X-Content-Type-Options: nosniff
+request-id: eda9bde6-834a-0000-95d9-aced4a83ce01
+DataServiceVersion: 1.0;
+X-AspNet-Version: 4.0.30319
+Persistent-Auth: true
+X-Powered-By: ASP.NET
+Date: Mon, 19 Aug 2013 21:59:34 GMT
+</pre>
+</div>
+</div>
+</div>
+
+</div>
+    
+    

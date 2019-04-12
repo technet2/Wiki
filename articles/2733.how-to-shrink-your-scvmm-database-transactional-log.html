@@ -1,0 +1,91 @@
+---
+layout: default
+title: How to Shrink Your SCVMM Database (Transactional Log) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="line-height:18px;font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:13px;">
+<h3 class="post-title entry-title" style="margin:0px;position:relative;">
+</h3>
+<div class="post-header" style="margin:0px 0px 1em;line-height:1.6;">
+<div class="post-headei-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">How to Shrink Your SCVMMr-line-1"></div>
+</div>
+<div class="post-body entry-content" id="post-body-2504062677132485112" style="width:536px;line-height:1.4;position:relative;">
+<div><span><em>(Generally speaking, this is not a ‘SCVMM-problem’. It`s linked to SQL, and the way the SQL server act when it comes to I/O, Memory, Data, - and log files.)</em></span></div>
+<br />
+<div><br />
+</div>
+<div><span>Ok, you have had your SCVMM server running for a while now, all roles and services installed on a single server. Remember that the SCVMM 2008 R2 server installs a SQL 2005 Express if you don’t specify another instance for this purpose.</span></div>
+<div><span>The storage limit for a database in SQL 2005 Express is 4GB, so what do you do when the VirtualManagerDB_log starts to grow out of control ?</span></div>
+<div><br />
+</div>
+<div><span>First, we have to locate our databases.</span></div>
+<div><br />
+</div>
+<div><span>SCVMM</span><span style="font-family:wingdings;">à</span><span>Administration</span><span style="font-family:wingdings;">à</span><span>General</span><span style="font-family:wingdings;">à</span><span>Database Connection</span></div>
+<div><br />
+</div>
+<div><span>Here we`ll find the information we need</span></div>
+<div><span>We`ll see the Database Server Name, Instance, and the name of our database.</span></div>
+<div><br />
+</div>
+<div class="separator" style="text-align:center;clear:both;"><a href="http://4.bp.blogspot.com/_GSTYPgZsHyQ/TPX-WA-USbI/AAAAAAAAAD8/x3-GpUR65PU/s1600/scvmm1.png" style="text-decoration:none;margin-right:1em;margin-left:1em;"><img width="320" height="214" alt=" " src="http://4.bp.blogspot.com/_GSTYPgZsHyQ/TPX-WA-USbI/AAAAAAAAAD8/x3-GpUR65PU/s320/scvmm1.png" /></a></div>
+<div><span><br />
+</span></div>
+<div><span>We should also locate the file location for the databases.</span></div>
+<div><br />
+</div>
+<div><span>Start</span><span style="font-family:wingdings;">à</span><span>cmd</span></div>
+<div><br />
+</div>
+<div><span>SQLCMD –S .\Microsoft$VMM$&nbsp; (Log on to your SQL instance with trusted connection)</span></div>
+<div><br />
+</div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>1.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Select * from sysdatabases where name = ‘VirtualManagerDB’</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>2.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Go</span></div>
+<div><br />
+</div>
+<div class="separator" style="text-align:center;clear:both;"><a href="http://1.bp.blogspot.com/_GSTYPgZsHyQ/TPX-W5hFKoI/AAAAAAAAAEA/bWU7tnZ5SYA/s1600/scvmm2.png" style="text-decoration:none;margin-right:1em;margin-left:1em;"><img width="320" height="208" alt=" " src="http://1.bp.blogspot.com/_GSTYPgZsHyQ/TPX-W5hFKoI/AAAAAAAAAEA/bWU7tnZ5SYA/s320/scvmm2.png" /></a></div>
+<div><span>Now we`ve located the database, and we can see that the log file is growing (the reason for this, is that the VirtualManagerDB has the ‘Recovery Model’ set to full, which allows the log file to grow since you are able to run log-backups, and can
+ restore the database to any point in time).</span></div>
+<div class="separator" style="text-align:center;clear:both;"><a href="http://3.bp.blogspot.com/_GSTYPgZsHyQ/TPX-vWhdwqI/AAAAAAAAAEE/zNFdEHTkwaY/s1600/scvmm3.png" style="text-decoration:none;margin-right:1em;margin-left:1em;"><img width="320" height="21" alt=" " src="http://3.bp.blogspot.com/_GSTYPgZsHyQ/TPX-vWhdwqI/AAAAAAAAAEE/zNFdEHTkwaY/s320/scvmm3.png" /></a></div>
+<div><br />
+</div>
+<div><span>We can actually shrink this log file in two ways.</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>1)<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>In a heavy way (Fullbackup-&gt;log backup-&gt;shrink log file (log backup and shrink log file x2)</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>2)<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>In a awesome way (sp_detach_db, rename log file, sp_attach_single_file_db)</span></div>
+<div><br />
+</div>
+<div><span>I`ll go for number 2.</span></div>
+<div><span>(Be careful if you are planning to do this in production, and off course have a solid backup and make a copy of the log file before editing).</span></div>
+<div><br />
+</div>
+<div><span>This procedure will cause the SCVMM server to be offline, since we are detaching the database from our SQL server.</span></div>
+<div><br />
+</div>
+<div><strong><span>Log on to your SQL server instance with SQLCMD –S .\Microsoft$VMM$</span></strong></div>
+<div><br />
+</div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>1.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Sp_detach_db virtualmanagerdb</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>2.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Go</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>3.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Rename the VirtualManagerDB_log to OLDVirtualManagerDB_log</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>4.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Sp_attach_single_file_db virtualmanagerdb, ‘C:\Program Files (x86)\Microsoft SQL Server\MSSQL.1\MSSQL\Data\virtualmanagerdb.mdf’</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>5.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Go</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>6.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>In the data folder for your SQL server, you will now have a newly created log file for VirtualManagerDB at the size of 512KB.</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>7.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Alter database VirtualManagerDB set recovery simple with no_wait</span></div>
+<div style="text-indent:-18pt;margin-left:36pt;"><span>8.<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span>Go</span></div>
+<div><br />
+</div>
+<div><span>The database is now in simple recovery, meaning that the log file will not grow out of control again but on a regularly basis create a checkpoint to the data file. (The way SQL uses its log files does not changes, whether you run full, bulk, or simple)</span></div>
+</div>
+</span>
+
+</div>
+    
+    

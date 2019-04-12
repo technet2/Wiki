@@ -1,0 +1,629 @@
+---
+layout: default
+title: Dynamics CRM Database Optimization with DMVs - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="post-body entry-content" id="post-body-5385406423818075717" style="width:648px;line-height:1.4;font-size:15px;position:relative;color:#333333;font-family:Arial,Tahoma,Helvetica,FreeSans,sans-serif;background-color:#ffffff;">
+On this article I will be covering mainly optimization around indexes and how DMV&#39;s can help to monitor and optimize indexes.<br />
+<br />
+<span style="color:#0b5394;font-size:large;text-decoration:underline;">Data management views (DMV&#39;s)</span><br />
+Dynamic management views store SQL transactional information which can be used to monitor health, performance and diagnose problems. DMV&#39;s are extremely helpful in particular around performance-tuning. The information is stored until you restart SQL server,
+ after a restart all is reset to 0.<br />
+<br />
+There are a number of DMV&#39;s to retrieve a different number of metrics for different purposes; we will be looking in particular at the<strong>&nbsp;<span style="color:#990000;">Index</span></strong>&nbsp;related and&nbsp;<span style="color:#990000;"><strong>Execution</strong></span>&nbsp;DMV&#39;s:<br />
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style-position:initial;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;">Index
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style:disc;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_index_operational_stats
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_index_physical_stats
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_index_usage_stats
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_missing_index_columns
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_missing_index_details
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_missing_index_group_stats
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_db_missing_index_groups
+</li></ul>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">Execution
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style:disc;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;"></li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_exec_query_stats
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">sys.dm_exec_requests </li></ul>
+</li></ul>
+<ol>
+<li style="padding:0px;margin:0px 0px 0.25em;"><a href="http://msdn.microsoft.com/en-us/library/ms187974(v=sql.105).aspx" style="text-decoration:initial;color:#6699cc;">http://msdn.microsoft.com/en-us/library/ms187974(v=sql.105).aspx</a>
+</li><li style="padding:0px;margin:0px 0px 0.25em;"><a href="http://msdn.microsoft.com/en-us/library/ms188068(v=sql.105).aspx" style="text-decoration:initial;color:#6699cc;">http://msdn.microsoft.com/en-us/library/ms188068(v=sql.105).asp</a>
+</li></ol>
+<span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;text-decoration:underline;">Indexes Overview</span><br />
+Imagine walking to a library with 1 million books stored across 5 floors, and ask for a book. If the library does not keep a record where each book is stored, which floor, shelf, categories etc... how long to you think staff would take to find your book? a
+ very long time. The same concept applies to databases, indexes are needed to improve response time when users request specific data.<br />
+<br />
+We will be mainly looking at optimization with indexes so before we do that I want to explain very briefly what they are and how they work. There are two types of indexes, clustered index and non-clustered index.<br />
+<br />
+<br />
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style-position:initial;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;"><span style="text-decoration:underline;"><strong>Non-Clustered Indexes</strong></span>This type of index, indexes a particular column and hold a reference to where on the table this data can be found.
+ The example below, shows if you want to find an order with an amount of 210 you would need to scan the entire table to find all orders with an amount of 210. If we create an index for the column &#39;Amount&#39;, the index it&#39;s ordered descendent and the query would
+ stop at the last 210 and there would be no need to continue the execution. </li></ul>
+<br />
+<br />
+<div class="separator" style="clear:both;text-align:center;"><a href="http://3.bp.blogspot.com/-zVXnZxr5gtM/UJvn-vgXUUI/AAAAAAAAATg/ZrRpJjJgNeU/s1600/nonClusteredIndex.png" style="text-decoration:initial;color:#6699cc;margin-left:1em;margin-right:1em;"><img alt=" " src="http://3.bp.blogspot.com/-zVXnZxr5gtM/UJvn-vgXUUI/AAAAAAAAATg/ZrRpJjJgNeU/s1600/nonClusteredIndex.png" style="border:0px none;position:relative;" /></a></div>
+<br />
+<br />
+<br />
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style-position:initial;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;"><span style="text-decoration:underline;"><strong>Clustered Indexes</strong></span>Clustered indexes have the same concept but, they sort the column &#39;Amount&#39;&nbsp;descendent on the table itself, when orders
+ with the amount 210 are found SQL does not need to lookup the reference to find the details of that order, the data is accessible immediately.&nbsp;
+</li></ul>
+<br />
+<div class="separator" style="clear:both;text-align:center;"><a href="http://2.bp.blogspot.com/-m_jyQkZdizA/UJvpxk45eqI/AAAAAAAAATw/uMRCzwtBHbo/s1600/ClusteredIndex.png" style="text-decoration:initial;color:#6699cc;margin-left:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-m_jyQkZdizA/UJvpxk45eqI/AAAAAAAAATw/uMRCzwtBHbo/s1600/ClusteredIndex.png" style="border:0px none;position:relative;" /></a></div>
+<span style="color:#0b5394;font-size:large;text-decoration:underline;"><br />
+</span>Both type of indexes have positive and negative areas, the clustered index has a higher cost when you need to re-index the column &#39;Amount&#39; because all the rows need to shift into the correct place, however the data it&#39;s immediately available when data
+ is found. The non-clustered indexes are quicker to re-index but require an extra lookup to gather the data on the table. Also note that the clustered indexes only one index can exist per table. The non-clustered indexes can be created for multiple columns
+ on the same table.<br />
+<span style="color:#0b5394;font-size:large;text-decoration:underline;"><br />
+</span><span style="color:#0b5394;font-size:large;text-decoration:underline;">Missing Indexes</span><br />
+DMV&#39;s store missing indexes when queries are optimized by the SQL query optimizer; if you have a customized CRM environment you should monitor these type of DMV&#39;s on a regular basis. Below a nice script you could use with references to missing indexes DMV&#39;s.<br />
+<br />
+<br />
+<div>
+<div id="highlighter_220662" class="syntaxhighlighter  sql" style="width:631px;">
+<div class="toolbar">
+<a href="http://quantusdynamics.blogspot.co.uk/2012/11/dynamics-crm-database-optimization-with.html#" class="toolbar_item command_help help">?</a></div>
+<table border="0" cellpadding="0" cellspacing="0" style="width:1040px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+<div class="line number2 index1 alt1">
+2</div>
+<div class="line number3 index2 alt2">
+3</div>
+<div class="line number4 index3 alt1">
+4</div>
+<div class="line number5 index4 alt2">
+5</div>
+<div class="line number6 index5 alt1">
+6</div>
+<div class="line number7 index6 alt2">
+7</div>
+<div class="line number8 index7 alt1">
+8</div>
+<div class="line number9 index8 alt2">
+9</div>
+<div class="line number10 index9 alt1">
+10</div>
+<div class="line number11 index10 alt2">
+11</div>
+<div class="line number12 index11 alt1">
+12</div>
+<div class="line number13 index12 alt2">
+13</div>
+<div class="line number14 index13 alt1">
+14</div>
+<div class="line number15 index14 alt2">
+15</div>
+<div class="line number16 index15 alt1">
+16</div>
+</td>
+<td class="code" style="width:998px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="sql keyword">SELECT</code></div>
+<div class="line number2 index1 alt1">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">migs.avg_total_user_cost
+ * (migs.avg_user_impact / 100.0) * (migs.user_seeks &#43; migs.user_scans) </code><code class="sql keyword">AS</code>
+<code class="sql plain">
+improvement_measure,</code></div>
+<div class="line number3 index2 alt2">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql string">&#39;CREATE
+ INDEX [myIndex_&#39;</code> <code class="sql plain">
+&#43; </code><code class="sql color2">CONVERT</code>
+<code class="sql plain">
+(</code><code class="sql keyword">varchar</code><code class="sql plain">,
+ mig.index_group_handle) &#43; </code><code class="sql string">&#39;_&#39;</code>
+<code class="sql plain">
+&#43; </code><code class="sql color2">CONVERT</code>
+<code class="sql plain">
+(</code><code class="sql keyword">varchar</code><code class="sql plain">,
+ mid.index_handle)</code></div>
+<div class="line number4 index3 alt1">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">&#43;
+</code><code class="sql string">&#39;_&#39;</code>
+<code class="sql plain">
+&#43; </code><code class="sql color2">LEFT</code>
+<code class="sql plain">
+(PARSENAME(mid.statement, 1), 32) &#43; </code><code class="sql string">&#39;]&#39;</code></div>
+<div class="line number5 index4 alt2">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">&#43;
+</code><code class="sql string">&#39;
+ ON &#39;</code> <code class="sql plain">
+&#43; mid.statement</code></div>
+<div class="line number6 index5 alt1">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">&#43;
+</code><code class="sql string">&#39;
+ (&#39;</code> <code class="sql plain">
+&#43; </code><code class="sql color2">ISNULL</code>
+<code class="sql plain">
+(mid.equality_columns,</code><code class="sql string">&#39;&#39;</code><code class="sql plain">)</code></div>
+<div class="line number7 index6 alt2">
+<code class="sql spaces">&nbsp;&nbsp;&nbsp;
+</code><code class="sql plain">&#43;
+</code><code class="sql color2">CASE</code>
+<code class="sql keyword">
+WHEN</code> <code class="sql plain">
+mid.equality_columns </code><code class="sql keyword">IS</code>
+<code class="sql color1">
+NOT</code> <code class="sql color1">
+NULL</code> <code class="sql color1">
+AND</code> <code class="sql plain">
+mid.inequality_columns </code><code class="sql keyword">IS</code>
+<code class="sql color1">
+NOT</code> <code class="sql color1">
+NULL</code> <code class="sql keyword">
+THEN</code> <code class="sql string">
+&#39;,&#39;</code> <code class="sql keyword">
+ELSE</code> <code class="sql string">
+&#39;&#39;</code> <code class="sql keyword">
+END</code></div>
+<div class="line number8 index7 alt1">
+<code class="sql spaces">&nbsp;&nbsp;&nbsp;
+</code><code class="sql plain">&#43;
+</code><code class="sql color2">ISNULL</code>
+<code class="sql plain">
+(mid.inequality_columns, </code><code class="sql string">&#39;&#39;</code><code class="sql plain">)</code></div>
+<div class="line number9 index8 alt2">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">&#43;
+</code><code class="sql string">&#39;)&#39;</code></div>
+<div class="line number10 index9 alt1">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">&#43;
+</code><code class="sql color2">ISNULL</code>
+<code class="sql plain">
+(</code><code class="sql string">&#39;
+ INCLUDE (&#39;</code> <code class="sql plain">
+&#43; mid.included_columns &#43; </code><code class="sql string">&#39;)&#39;</code><code class="sql plain">,
+</code><code class="sql string">&#39;&#39;</code><code class="sql plain">)
+</code><code class="sql keyword">AS</code>
+<code class="sql plain">
+create_index_statement,</code></div>
+<div class="line number11 index10 alt2">
+<code class="sql spaces">&nbsp;&nbsp;</code><code class="sql plain">migs.*,
+ mid.database_id, mid.[object_id]</code></div>
+<div class="line number12 index11 alt1">
+<code class="sql keyword">FROM</code>
+<code class="sql plain">
+sys.dm_db_missing_index_groups mig</code></div>
+<div class="line number13 index12 alt2">
+<code class="sql keyword">INNER</code>
+<code class="sql color1">
+JOIN</code> <code class="sql plain">
+sys.dm_db_missing_index_group_stats migs </code><code class="sql keyword">ON</code>
+<code class="sql plain">
+migs.group_handle = mig.index_group_handle</code></div>
+<div class="line number14 index13 alt1">
+<code class="sql keyword">INNER</code>
+<code class="sql color1">
+JOIN</code> <code class="sql plain">
+sys.dm_db_missing_index_details mid </code><code class="sql keyword">ON</code>
+<code class="sql plain">
+mig.index_handle = mid.index_handle</code></div>
+<div class="line number15 index14 alt2">
+<code class="sql keyword">WHERE</code>
+<code class="sql plain">
+migs.avg_total_user_cost * (migs.avg_user_impact / 100.0) * (migs.user_seeks &#43; migs.user_scans) &gt; 10</code></div>
+<div class="line number16 index15 alt1">
+<code class="sql keyword">ORDER</code>
+<code class="sql keyword">
+BY</code> <code class="sql plain">
+migs.avg_total_user_cost * migs.avg_user_impact * (migs.user_seeks &#43; migs.user_scans)
+</code><code class="sql keyword">DESC</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;text-decoration:underline;">Index Usage</span><br />
+It&#39;s important you check for Index usage because indexes consume&nbsp;memory and disk I/O&nbsp;resources when they need to be rebuild to keep the most up to date data.<br />
+<br />
+To check for index usage run the following query:<br />
+<br />
+<div>
+<div id="highlighter_941445" class="syntaxhighlighter  sql" style="width:631px;">
+<div class="toolbar">
+<a href="http://quantusdynamics.blogspot.co.uk/2012/11/dynamics-crm-database-optimization-with.html#" class="toolbar_item command_help help">?</a></div>
+<table border="0" cellpadding="0" cellspacing="0" style="width:631px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+<div class="line number2 index1 alt1">
+2</div>
+<div class="line number3 index2 alt2">
+3</div>
+<div class="line number4 index3 alt1">
+4</div>
+<div class="line number5 index4 alt2">
+5</div>
+<div class="line number6 index5 alt1">
+6</div>
+<div class="line number7 index6 alt2">
+7</div>
+<div class="line number8 index7 alt1">
+8</div>
+<div class="line number9 index8 alt2">
+9</div>
+</td>
+<td class="code" style="width:597px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="sql spaces">&nbsp;</code><code class="sql keyword">select</code>
+<code class="sql plain">
+OBJECT_NAME(a.object_id),b.</code><code class="sql keyword">name</code><code class="sql plain">,a.user_seeks,a.user_scans,a.*</code></div>
+<div class="line number2 index1 alt1">
+<code class="sql keyword">from</code>
+<code class="sql plain">
+sys.dm_db_index_usage_stats a </code><code class="sql color1">join</code>
+<code class="sql plain">
+ORG_MSCRM.sys.indexes b </code><code class="sql keyword">on</code></div>
+<div class="line number3 index2 alt2">
+<code class="sql plain">a.object_id
+ = b.object_id</code></div>
+<div class="line number4 index3 alt1">
+<code class="sql color1">and</code>
+<code class="sql plain">
+a.index_id = b.index_id</code></div>
+<div class="line number5 index4 alt2">
+<code class="sql keyword">where</code></div>
+<div class="line number6 index5 alt1">
+<code class="sql plain">a.database_id
+ = DB_ID(</code><code class="sql string">&#39;ORG_MSCRM&#39;</code><code class="sql plain">)</code></div>
+<div class="line number7 index6 alt2">
+<code class="sql color1">and</code>
+<code class="sql plain">
+b.</code><code class="sql keyword">name</code>
+<code class="sql color1">
+like</code> <code class="sql string">
+&#39;myIndex%&#39;</code></div>
+<div class="line number8 index7 alt1">
+<code class="sql keyword">order</code>
+<code class="sql keyword">
+by</code></div>
+<div class="line number9 index8 alt2">
+<code class="sql plain">b.</code><code class="sql keyword">name</code>
+<code class="sql keyword">
+asc</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+The output of this query would be something like:<br />
+<br />
+<div class="separator" style="clear:both;text-align:center;"><a href="http://2.bp.blogspot.com/-hfc_B49DH4c/UJfTXtKitCI/AAAAAAAAATI/kPktaAhnNnc/s1600/CRMIndexUsageDMV.png" style="text-decoration:>
+<code class="sql plain">a.database_id
+ = DB_ID(</code><code class="sql string">&#39;ORG_MSCRM&#39;</code><code class="sql plain">)</code></div>
+<div class="line number7 index6 alt2">
+<code class="sql color1">and</code>
+<code class="sql plain">
+b.</code><code class="sqlinitial;color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-hfc_B49DH4c/UJfTXtKitCI/AAAAAAAAATI/kPktaAhnNnc/s1600/CRMIndexUsageDMV.png" style="border:0px none;position:relative;" /></a></div>
+<span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><br />
+<span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;"><br />
+</span>From the above screenshot is clear that _DMV_09 has not been used since it was created and therefore should be deleted.<br />
+<span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;text-decoration:underline;">Fragmentation</span><br />
+CRM ships with built-in maintenance jobs which are configured during installation and are designed to optimize the database and reduce fragmentation. It&#39;s good practice to re-configure these jobs to run out-of-hours.<br />
+<br />
+To configure the built-in sql maintenance jobs download the following tool:<br />
+<a href="http://crmjobeditor.codeplex.com/" style="text-decoration:initial;color:#6699cc;">http://crmjobeditor.codeplex.com/</a><br />
+<br />
+Place the tool under&nbsp;<strong>C:\Program Files\Microsoft Dynamics CRM\Tools\</strong><br />
+<br />
+<div class="separator" style="clear:both;text-align:center;"><a href="http://2.bp.blogspot.com/-70OHt0vXy3Y/UJEx9rS1mHI/AAAAAAAAASw/3srhakPrlZs/s1600/CRMMaintenanceJobs.png" style="text-decoration:initial;color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-70OHt0vXy3Y/UJEx9rS1mHI/AAAAAAAAASw/3srhakPrlZs/s1600/CRMMaintenanceJobs.png" style="border:0px none;position:relative;" /></a></div>
+<a href="http://1.bp.blogspot.com/-bmpJCAmkLn0/UJzjz-YsbaI/AAAAAAAAAUI/nsfT2CIyKxY/s1600/CRMMaintenanceJobs2.png" style="text-decoration:initial;color:#6699cc;margin-left:1em;margin-right:1em;text-align:center;"><img alt=" " src="http://1.bp.blogspot.com/-bmpJCAmkLn0/UJzjz-YsbaI/AAAAAAAAAUI/nsfT2CIyKxY/s1600/CRMMaintenanceJobs2.png" style="border:0px none;position:relative;" /></a><br />
+<br />
+<br />
+<br />
+The tool provides a flexible and easy way to configure the maintenance jobs; note that the job will run once every day( every 1440 minutes), you can configure it to run more times during the day.<br />
+<br />
+Normally the CRM built-in maintenance jobs are designed to keep the system healthy and do a very good job, to understand if you need these jobs to run more often you can monitor fragmentation with the following queries:<br />
+<br />
+<div>
+<div id="highlighter_488530" class="syntaxhighlighter  sql" style="width:631px;">
+<div class="toolbar">
+<a href="http://quantusdynamics.blogspot.co.uk/2012/11/dynamics-crm-database-optimization-with.html#" class="toolbar_item command_help help">?</a></div>
+<table border="0" cellpadding="0" cellspacing="0" style="width:631px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+<div class="line number2 index1 alt1">
+2</div>
+<div class="line number3 index2 alt2">
+3</div>
+<div class="line number4 index3 alt1">
+4</div>
+<div class="line number5 index4 alt2">
+5</div>
+</td>
+<td class="code" style="width:597px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="sql keyword">SELECT</code>
+<code class="sql plain">
+OBJECT_NAME(OBJECT_ID), index_id,index_type_desc,index_level,</code></div>
+<div class="line number2 index1 alt1">
+<code class="sql plain">avg_fragmentation_in_percent,avg_page_space_used_in_percent,page_count</code></div>
+<div class="line number3 index2 alt2">
+<code class="sql keyword">FROM</code>
+<code class="sql plain">
+sys.dm_db_index_physical_stats</code></div>
+<div class="line number4 index3 alt1">
+<code class="sql plain">(DB_ID(N</code><code class="sql string">&#39;ORG_MSCRM&#39;</code><code class="sql plain">),
+</code><code class="sql color1">NULL</code><code class="sql plain">,
+</code><code class="sql color1">NULL</code><code class="sql plain">,
+</code><code class="sql color1">NULL</code>
+<code class="sql plain">
+, </code><code class="sql string">&#39;SAMPLED&#39;</code><code class="sql plain">)</code></div>
+<div class="line number5 index4 alt2">
+<code class="sql keyword">ORDER</code>
+<code class="sql keyword">
+BY</code> <code class="sql plain">
+avg_fragmentation_in_percent </code><code class="sql keyword">DESC</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<span style="font-family:monospace;line-height:19.450000762939453px;margin:0px;padding:0px;text-align:justify;"><br />
+</span><span style="margin:0px;padding:0px;font-family:&#39;Times New Roman&#39;;line-height:normal;text-align:start;">Or you can be more specific at the table level:</span><br />
+<span style="font-family:monospace;line-height:19.450000762939453px;margin:0px;padding:0px;text-align:justify;"><br />
+</span>
+<div>
+<div id="highlighter_418735" class="syntaxhighlighter  sql" style="width:631px;">
+<div class="toolbar">
+<a href="http://quantusdynamics.blogspot.co.uk/2012/11/dynamics-crm-database-optimization-with.html#" class="toolbar_item command_help help">?</a></div>
+<table border="0" cellpadding="0" cellspacing="0" style="width:631px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+<div class="line number2 index1 alt1">
+2</div>
+<div class="line number3 index2 alt2">
+3</div>
+</td>
+<td class="code" style="width:597px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="sql keyword">SELECT</code>
+<code class="sql plain">
+avg_fragmentation_in_percent,* </code><code class="sql keyword">FROM</code></div>
+<div class="line number2 index1 alt1">
+<code class="sql plain">sys.dm_db_index_physical_stats
+ ( db_id(</code><code class="sql string">&#39;ORG_MSCRM&#39;</code><code class="sql plain">),</code></div>
+<div class="line number3 index2 alt2">
+<code class="sql plain">OBJECT_ID(</code><code class="sql string">&#39;PrincipalObjectAccess&#39;</code><code class="sql plain">),
+</code><code class="sql color1">NULL</code><code class="sql plain">,
+</code><code class="sql color1">NULL</code><coder="0" cellpadding="0" cellspacing="0" style="width:631px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+< class="sql plain">,
+</code><code class="sql string">&#39;DETAILED&#39;</code><code class="sql plain">)</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<br />
+<br />
+You can check if the maintenance tasks have run successful by looking at the last time the indexes have been updated:&nbsp;<br />
+<div>
+<div id="highlighter_882448" class="syntaxhighlighter  sql" style="width:631px;">
+<div class="toolbar">
+<a href="http://quantusdynamics.blogspot.co.uk/2012/11/dynamics-crm-database-optimization-with.html#" class="toolbar_item command_help help">?</a></div>
+<table border="0" cellpadding="0" cellspacing="0" style="width:631px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+<div class="line number2 index1 alt1">
+2</div>
+<div class="line number3 index2 alt2">
+3</div>
+<div class="line number4 index3 alt1">
+4</div>
+</td>
+<td class="code" style="width:597px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="sql keyword">SELECT</code>
+<code class="sql keyword">
+name</code> <code class="sql keyword">
+AS</code> <code class="sql plain">
+index_name,</code></div>
+<div class="line number2 index1 alt1">
+<code class="sql plain">STATS_DATE(OBJECT_ID,
+ index_id) </code><code class="sql keyword">AS</code>
+<code class="sql plain">
+StatsUpdated</code></div>
+<div class="line number3 index2 alt2">
+<code class="sql keyword">FROM</code>
+<code class="sql plain">
+sys.indexes</code></div>
+<div class="line number4 index3 alt1">
+<code class="sql keyword">WHERE</code>
+<code class="sql plain">
+OBJECT_ID = OBJECT_ID(</code><code class="sql string">&#39;PrincipalObjectAccess&#39;</code><code class="sql plain">)</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<span style="color:#0b5394;font-size:large;text-decoration:underline;">Check for expensive queries</span><br />
+With a better understanding around indexes and DMV&#39;s we could start looking at top 20 most expensive queries in your CRM environment using&nbsp;<span style="color:#990000;"><strong>sys.dm_exec_query_stats</strong></span>&nbsp;to give you a better picture what is going
+ on under the hood and analyse whether tuning is needed for those queries.<br />
+<span style="color:#0b5394;font-size:large;"><br />
+</span>
+<div>
+<div id="highlighter_889564" class="syntaxhighlighter  sql" style="width:631px;">
+<div class="toolbar">
+<a href="http://quantusdynamics.blogspot.co.uk/2012/11/dynamics-crm-database-optimization-with.html#" class="toolbar_item command_help help">?</a></div>
+<table border="0" cellpadding="0" cellspacing="0" style="width:864px;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">
+1</div>
+<div class="line number2 index1 alt1">
+2</div>
+<div class="line number3 index2 alt2">
+3</div>
+<div class="line number4 index3 alt1">
+4</div>
+<div class="line number5 index4 alt2">
+5</div>
+<div class="line number6 index5 alt1">
+6</div>
+<div class="line number7 index6 alt2">
+7</div>
+<div class="line number8 index7 alt1">
+8</div>
+<div class="line number9 index8 alt2">
+9</div>
+<div class="line number10 index9 alt1">
+10</div>
+<div class="line number11 index10 alt2">
+11</div>
+<div class="line number12 index11 alt1">
+12</div>
+</td>
+<td class="code" style="width:822px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="sql keyword">SELECT</code>
+<code class="sql keyword">
+DISTINCT</code> <code class="sql keyword">
+TOP</code> <code class="sql plain">
+20</code></div>
+<div class="line number2 index1 alt1">
+<code class="sql plain">t.TEXT
+ QueryName,</code></div>
+<div class="line number3 index2 alt2">
+&nbsp;</div>
+<div class="line number4 index3 alt1">
+<code class="sql plain">s.execution_count
+</code><code class="sql keyword">AS</code>
+<code class="sql plain">
+ExecutionCount,</code></div>
+<div class="line number5 index4 alt2">
+<code class="sql plain">s.max_elapsed_time
+</code><code class="sql keyword">AS</code>
+<code class="sql plain">
+MaxElapsedTime,</code></div>
+<div class="line number6 index5 alt1">
+<code class="sql color2">ISNULL</code><code class="sql plain">(s.total_elapsed_time
+ / </code><code class="sql color2">NULLIF</code><code class="sql plain">(s.execution_count,0),
+ 0) </code><code class="sql keyword">AS</code>
+<code class="sql plain">
+AvgElapsedTime,</code></div>
+<div class="line number7 index6 alt2">
+<code class="sql plain">s.creation_time
+</code><code class="sql keyword">AS</code>
+<code class="sql plain">
+LogCreatedOn,</code></div>
+<div class="line number8 index7 alt1">
+<code class="sql color2">ISNULL</code><code class="sql plain">(s.execution_count
+ / </code><code class="sql color2">NULLIF</code><code class="sql plain">(DATEDIFF(s,
+ s.creation_time, GETDATE()),0), 0) </code><code class="sql keyword">AS</code>
+<code class="sql plain">
+FrequencyPerSec</code></div>
+<div class="line number9 index8 alt2">
+<code class="sql keyword">FROM</code>
+<code class="sql plain">
+sys.dm_exec_query_stats s</code></div>
+<div class="line number10 index9 alt1">
+<code class="sql color1">CROSS</code>
+<code class="sql plain">
+APPLY sys.dm_exec_sql_text( s.sql_handle ) t</code></div>
+<div class="line number11 index10 alt2">
+<code class="sql keyword">ORDER</code>
+<code class="sql keyword">
+BY</code></div>
+<div class="line number12 index11 alt1">
+<code class="sql plain">s.max_elapsed_time
+</code><code class="sql keyword">DESC</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<br />
+<span style="color:#0b5394;font-size:large;"><br />
+</span><span style="color:#0b5394;font-size:large;text-decoration:underline;">Database Maintenance</span><br />
+However CRM maintenance jobs do a really nice job in keeping the system healthy, I would still recommend &nbsp;creating SQL jobs to do regular out-of-hours database maintenance:<br />
+<br />
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style-position:initial;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;">Shrink the database
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style:disc;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;">DBCC SHRINKFILE (1, TRUNCATEONLY);
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">DBCC SHRINKFILE (2, TRUNCATEONLY);
+</li></ul>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">Rebuild indexes
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style:disc;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;">EXEC sp_msforeachtable &#39;DBCC DBREINDEX(&quot;?&quot;,&quot; &quot;,80)&#39;
+</li></ul>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;">Update statistics
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style:disc;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;">EXEC sp_updatestats; </li></ul>
+</li></ul>
+<br />
+<span style="color:#0b5394;font-size:large;text-decoration:underline;">Summary</span><br />
+There are a number of scripts and documentation on the internet around DMV&#39;s, is good practice monitor these metrics and optimize the system accordingly. Note that with each SQL version DMV&#39;s may change and new features added etc...<br />
+<br />
+We have covered basic SQL optimization around indexes and an overview on how indexes work and how they can help.&nbsp;I hope you enjoyed the article, please leave your feedback.<br />
+<span style="color:#0b5394;font-size:large;text-decoration:underline;"><br />
+</span><span style="color:#0b5394;font-size:large;text-decoration:underline;">References</span><br />
+<br />
+<ol>
+<li style="padding:0px;margin:0px 0px 0.25em;"><span style="color:#0b5394;text-decoration:underline;"><a href="http://blogs.msdn.com/b/bartd/archive/2007/07/19/are-you-using-sql-s-missing-index-dmvs.aspx" style="text-decoration:initial;color:#6699cc;">http://blogs.msdn.com/b/bartd/archive/2007/07/19/are-you-using-sql-s-missing-index-dmvs.aspx</a></span>
+</li><li style="padding:0px;margin:0px 0px 0.25em;"><span style="color:#0b5394;"><a href="http://msdn.microsoft.com/en-us/library/ms188068(v=sql.105).aspx" style="text-decoration:initial;color:#6699cc;">http://msdn.microsoft.com/en-us/library/ms188068(v=sql.105).aspx</a></span>
+</li></ol>
+</div>
+
+</div>
+    
+    

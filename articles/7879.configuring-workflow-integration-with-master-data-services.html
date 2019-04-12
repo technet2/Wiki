@@ -1,0 +1,718 @@
+---
+layout: default
+title: Configuring Workflow Integration with Master Data Services - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Prerequisites">Prerequisites</a></li><li class="hierarchy-item"><a href="#Workflow">Workflow</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Step_1_Installrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Configuring Workflow Integration with Master Data Services</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Prerequisites">Prerequisites</a></li><li class="hierarchy-item"><a href="#Workflow">Workflow</a><div class="hierarchy-list-_Master_Data_Services">Step 1:
+ Install Master Data Services</a></li><li class="hierarchy-item"><a href="#Step_2_Install_Visual_Studio">Step 2:
+ Install Visual Studio</a></li><li class="hierarchy-item"><a href="#Step_3_Optionally_Install_SharePoint">Step 3:
+ Optionally Install SharePoint</a></li><li class="hierarchy-item"><a href="#Step_4_Create_a_Local_User_for_the_MDS_Integration_Service">Step 4:
+ Create a Local User for the MDS Integration Service</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_a_local_MDS_Workflow_service_user_account">Create a
+ local MDS Workflow service user account</a></li><li class="hierarchy-item"><a href="#Grant_stored_procedure_permissions_to_the_MDS_Workflow_service_user">Grant
+ stored procedure permissions to the MDS Workflow service user</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Step_5_Create_a_Workflow_Handler_in_Visual_Studio">Step 5: Create a Workflow Handler in Visual Studio</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_a_SharePoint_workflow">Create a SharePoint workflow</a></li><li class="hierarchy-item"><a href="#Create_a_workflow_extender">Create a workflow extender</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Step_6_Update_the_MDS_Workflow_Integration_service_Web_Configuration_File">Step 6: Update the MDS Workflow Integration service Web Configuration File</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Edit_the_Master_Data_Services_web_configuration_file">Edit the Master Data Services web configuration file</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Step_7_Install_and_Start_the_Workflow_Integration_Service">Step 7:
+ Install and Start the Workflow Integration Service</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Grant_read_and_execute_permission_to_the_MDS_workflow_user">Grant read and execute permission to the MDS workflow user</a></li><li class="hierarchy-item"><a href="#Find_the_install_utility">Find the install utility</a></li><li class="hierarchy-item"><a href="#Install_the_service">Install the service</a></li><li class="hierarchy-item"><a href="#Start_the_Service">Start the Service</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Step_8_Create_and_Apply_Business_Rules_in_Master_Data_Manager">Step 8: Create and Apply Business Rules in Master Data Manager</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_and_Publish_a_Business_Rule">Create and Publish a Business Rule</a></li><li class="hierarchy-item"><a href="#Apply_Business_Rules">Apply
+ Business Rules</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Troubleshooting">Troubleshooting</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#The_Workflow_Handler_Doesn_rsquo_t_Receive_Data">The Workflow Handler Doesn’t Receive Data</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Debug_the_Workflow_Service">Debug the Workflow Service</a></li><li class="hierarchy-item"><a href="#View_the_Service_Broker_Queue">View the Service Broker Queue</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Custom_Workflow_Example_Code_and_XML_Description">Custom Workflow Example Code and XML Description</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Code_Example">Code Example</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">This paper details the steps necessary to configure Microsoft® SQL Server® 2012 Master Data Services to initiate a custom or Microsoft® SharePoint® workflow.</span><br />
+<br />
+<h1><a name="Introduction"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:22pt;">Introduction</span></h1>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Master Data Services uses business rules to create basic workflow solutions. You can automatically update and validate data and have e-mail notifications sent based on conditions
+ you specify. Business rules in Master Data Services are intended to manage the most common workflow scenarios.
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If your workflow needs require more complex event processing, such as multi-tiered approvals or complex decision trees, you can configure Master Data Services to send data
+ to a custom assembly that you create, or to SharePoint to start a SharePoint workflow.
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Each time you apply the start Workflow business rule to your entity, records that meet the business rule conditions are passed to the Service Broker queue of the Master Data
+ Services database. At regular intervals, the SQL Server MDS Workflow Integration service calls a stored procedure in the Master Data Services database. This stored procedure pulls the records from the Service Broker queue and passes them to the workflow component
+ that you specify. </span></p>
+<p><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Important Note:</span></strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"> The MDS Workflow Integration service that calls your
+ custom workflow code is meant to trigger simple processes. If your custom code requires complex processing, complete your&nbsp; processing either in a separate thread or outside of the MDS workflow process.</span></p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Prerequisites"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:22pt;">Prerequisites</span></h1>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+Before configuring Master Data Services to work with a workflow, you must have the following software available:</span></p>
+<ul>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">SQL Server 2012 Master Data Services or later</span></p>
+</li><li>
+<p><span style="font-size:16px;">Microsoft® Visual Studio® 2010 or later</span></p>
+</li></ul>
+<p>This software will be installed in the following procedures.<br />
+<br />
+</p>
+<h1 style="mar custom workflow code is meant to trigger simple processes. If your custom code requires complex processing, complete your&nbsp; processing either in a separate thread or outside of the MDS workflow process.</span></p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Prerequisites"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:22pt;">Prerequisites</span></h1>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+Before configuring Master Data Services to work with a workflow, you must have the following software available:</span></p>
+<ul>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">SQL Server 2012 Master Data Services or later</span></p>
+</li><li>
+<p><span gin:24pt 0in 0pt;"><a name="Workflow"></a>Workflow</h1>
+<br />
+To send master data from Master Data Services to a workflow, you will complete the following steps.<br />
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 1: Install Master Data Services</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 2: Install Visual Studio</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 3: Optionally Install SharePoint</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 4: Create a Local User for the MDS Integration Service</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 5: Create a Workflow Handler in Visual Studio</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 6: Update the MDS Workflow Integration Service Web Configuration File</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 7: Install and Start the Workflow Integration Service</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span>Step 8: Create and Apply Business Rules in Master Data Manager</p>
+<div></div>
+<h2><a name="Step_1_Install_Master_Data_Services"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Step 1:
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:20pt;">Install Master Data Services</span></h2>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+First, install Master Data Services. For more information, see the SQL Server Books Online topic “Install Master Data Services” (http://go.microsoft.com/fwlink/?LinkID=243036).
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">This white paper uses C:\Program Files as the folder where Master Data Services is installed.</span></p>
+<h2><a name="Step_2_Install_Visual_Studio"></a><span style="line-height:115%;font-size:18pt;">Step 2:
+</span><span style="line-height:115%;font-size:20pt;">Install Visual Studio</span></h2>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+Install Visual Studio 2010 or later. You will use Visual Studio to create your workflow handler.</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">You can install Visual Studio from:</span></p>
+<p><a href="http://www.microsoft.com/visualstudio/en-us/products/2010/default.mspx"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://www.microsoft.com/visualstudio/en-us/products/2010/default.mspx</span></a>&nbsp;</p>
+<h2><a name="Step_3_Optionally_Install_SharePoint"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Step 3:
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:20pt;">Optionally Install SharePoint</span></h2>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+If you use Master Data Services to start a SharePoint Workflow, Master Data Services requires a version of SharePoint to be on the server where Master Data Services is installed. This version of SharePoint can host the workflow, but it does not need to. If
+ you plan to use a custom workflow instead of a SharePoint workflow, you do not need to install SharePoint.</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The minimum version of SharePoint required is SharePoint Foundation 2010. You can install SharePoint Foundation from:</span></p>
+<p><a href="http://technet.microsoft.com/en-us/sharepoint/ee263910.aspx"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://technet.microsoft.com/en-us/sharepoint/ee263910.aspx</span></a><span>&nbsp;</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In certain situations, the SharePoint installation will stop the default web site on the server and set the SharePoint site to handle all requests coming to port 80. If you
+ have set up your Master Data Services site in the default web site, or to use port 80, these will conflict. To fix this problem, use Internet Information Services (IIS) manager to configure either Master Data Services or SharePoint to use a port other than
+ port 80. If Master Data Services is installed in the default web site, you will also need to restart the default web site.</span></p>
+<p><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Note:</span></strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"> The required collation for SharePoint Foundation database installations
+ is Latin1_General_C1_AS_KS_WS. Other collations are not supported. For more information about setting up the SharePoint Server, see the SharePoint topic “Setting Up the Development Environment for SharePoint Server” (</span><a href="http://msdn.microsoft.com/en-us/library/ee554869(office.14).aspx"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://msdn.microsoft.com/en-us/library/ee554869(office.14).aspx</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">).</span></p>
+<h2><a name="Step_4_Create_a_Local_User_for_the_MDS_Integration_Service"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Step 4:
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:20pt;">Create a Local User for the MDS Integration Service</span></h2>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+For the greatest security, create a local user on the Master Data Services server and grant this user only the permissions needed to perform the workflow operations that are detailed in subsequent procedures in this document. Alternately, if you will use SharePoint
+ workflows, you can use the W3WP identity used by the SharePoint Application Pool in Internet Information Services (IIS), normally Network Service. The remainder of this document shows you how to configure your system to use the mds_workflow_service Windows
+ user you create in this section. The steps are similar if you are using the W3WP SharePoint identity.</span></p>
+<h3><a name="Create_a_local_MDS_Workflow_service_user_account"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:16pt;">Create a
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">local MDS Workflow service user account</span></h3>
+<span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">
+<ol>
+<li>
+<div style="margin:0in 0in 10pt;">Open the Local Users and Groups manager. To open this component, click Run… on the Start Menu, type
+<strong>lusrmgr.msc</strong>, and press ENTER.</div>
+</li><li>
+<div style="margin:0in 0in 10pt;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Select the
+<strong>Users</strong> folder.</span></div>
+</li><li>
+<div style="margin:0in 0in 10pt;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Select
+<strong>New User…</strong> from the <strong>Action</strong> menu.</span></div>
+</li><li>
+<div style="margin:0in 0in 10pt;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Enter mds_workflow_service for User name and create a
+ secure password. Click the <strong>Create</strong> button to create the user.<br />
+<br />
+</span></div>
+</li></ol>
+</span>
+<h3 style="font-family:&#39;segoe ui&#39;,sans-serif;"><a name="Grant_stored_procedure_permissions_to_the_MDS_Workflow_service_user"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:16pt;">Grant
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">stored procedure permissions to the MDS Workflow service user</span></h3>
+<p style="font-family:&#39;segoe ui&#39;,sans-serif;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">For the greatest security, it is recommended that you configure your Master Data Services database to use Windows authentication.
+ Alternately, you can use mixed authentication and create a SQL Server login and user.
+<;,sans-serif;font-size:12pt;">Enter mds_workflow_service for User name and create a
+ secure password. Click the <strong>Create</strong> button to create the user.<br />
+<br />
+</span></div>
+</li></ol>
+</span>
+<h3 style="font-family:&#39;segoe ui&#39;,sans-serif;"><a name="Grant_stored_procedure_permissions_to_the_MDS_Workflow_service_user"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:16pt;">Grant
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">stored procedure permissions to the MDS Workflow service user</span></h3>
+<p style="font-family:&#39;segoe ui&#39;,sans-serif;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">For the greatest security, it is recommende/span></p>
+<ol style="font-family:&#39;segoe ui&#39;,sans-serif;">
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Open SQL Server Management Studio and connect to the SQL Server Database Engine instance that hosts the Master Data Services database.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Create a new login for the mds_workflow_service user you created in the previous section.
+ To create a new login, open the <strong>Security</strong> node in the Object Explorer, right click the
+<strong>Logins</strong> node, and select <strong>New Login…</strong>. In the <strong>
+Login</strong> dialog, enter &lt;your server name&gt;\mds_workflow_service for the <strong>
+Login name</strong>, make sure <strong>Windows authentication</strong> is selected, change the default database to the Master Data Services database, and click
+<strong>OK</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Create a user for the Master Data Services database and map it to the mds_workflow_service
+ login. To create and map a user, right click the mds_workflow_service login in the Object Explorer, and select
+<strong>Properties.</strong> On the properties dialog, navigate to the <strong>User Mapping</strong> page, check the
+<strong>Map</strong> checkbox for the Master Data Services database, and click <strong>
+OK</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Grant the mds_workflow_service user permission to the stored procedure required for
+ the MDS Workflow Integration service. To do this, open the Master Data Services database node in the Object Explorer, open the
+<strong>Security</strong> and <strong>Users</strong> nodes, right click the mds_workflow_service user, and select
+<strong>Properties</strong>. On the properties dialog, navigate to the <strong>Securables</strong> page, click the
+<strong>Search</strong> button and search for all objects of the stored procedures object type. Find [mdm].[udpExternalActionsGet] in the list and grant EXECUTE permission to it.</span></p>
+</li></ol>
+<h2 style="font-family:&#39;segoe ui&#39;,sans-serif;"><a name="Step_5_Create_a_Workflow_Handler_in_Visual_Studio"></a>Step 5: Create a Workflow Handler in Visual Studio</h2>
+<p style="font-family:&#39;segoe ui&#39;,sans-serif;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+A workflow handler is a .NET class library you create that can perform any actions you specify. One common scenario is to define SharePoint integration. In this case, the MDS workflow triggers the workflow created in the SharePoint site.</span></p>
+<h3 style="font-family:&#39;segoe ui&#39;,sans-serif;"><a name="Create_a_SharePoint_workflow"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Create a SharePoint workflow</span></h3>
+<p style="font-family:&#39;segoe ui&#39;,sans-serif;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><br />
+If you want to integrate MDS with SharePoint, you should start with the creation of the SharePoint workflow for your organization. If the MDS extender you are going to create does not rely on SharePoint, you don’t need to perform the steps below.</span></p>
+<ol style="font-family:&#39;segoe ui&#39;,sans-serif;">
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In Visual Studio 2010, create a new ‘Sequential Workflow’ project, select ‘site Workflow’ and complete the wizard . This project type is found in the SharePoint 2010 templates.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">An OnWorkflowActivated control is included by default in the designer for your solution.
+ Right-click the control and choose <strong>Generate Handlers</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Visual Studio generates a class that inherits from the SequentialWorkflowActivity class.
+ The class contains a <strong>workflowId</strong> property that contains the ID of the workflow, a
+<strong>workflowProperties</strong> class that contains data associated with the activity, and a method named
+<strong>onWorkflowActivated1_Invoked</strong> that is called when the workflow is activated. If you want to perform any custom handling for the workflow, include it in this method. The data that is passed from the workflow service is stored as a string in
+<strong>workflowProperties.InitiationData</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Compile and deploy your workflow. To do this, right-click the project in
+<strong>Solution Explorer</strong> and click <strong>Deploy</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Verification Step: Once the SharePoint workflow is deployed, start it manually and
+ verify that all the implemented actions are working as expected. If this step succeeds, we’ll be able to assume that the SharePoint workflow was successfully created and deployed.</span></p>
+</li></ol>
+<br />
+<h3><a name="Create_a_workflow_extender"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:16pt;">Create a workflow extender</span></h3>
+<p style="font-family:&#39;segoe ui&#39;,sans-serif;">A workflow extender is a .NET class library assembly that implements the
+<strong>Microsoft.MasterDataServices.WorkflowTypeExtender.IWorkflowTypeExtender</strong> interface. The workflow extender assembly must be a .NET 20 assembly, not a version after .NET 2.0. The MDS Workflow Integration service calls the
+<strong>StartWorkflow</strong> method to run your code. Follow these steps to create an assembly and configure the MDS Workflow Integration service to call its interface.</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Sample code for a SharePoint workflow extender and for a test workflow is associated withthe SharePoint workflow was successfully created and deployed.</span></p>
+</li></ol>
+<br />
+<h3><a name="Create_a_workflow_extender"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:16pt;">Create a workflow extender</span></h3>
+<p style="font-family:&#39;segoe ui&#39;,sans-serif;">A workflow extender is a .NET class library assembly that implements the
+<strong>Microsoft.MasterDataServices.WorkflowTypeExtender.IWorkflowTypeExtender</strong> interface. The workflow extender assembly must be a .NET 20 assembly, not a version after .NET 2.0. The MDS Workflow Integration service calls the
+<strong>StartWorkflow</strong> method to run your code. Follow these steps to create an assembly and configure the MDS Workflow Integration service to call its interface.</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Samp this document. You can use these files to guide you in the creation of your own extender
+ or you can import the class into your extender project and leverage the existent code. The extender class should replace the Class1.cs file in the instructions below (import the file instead of following steps 3-7).</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In Visual Studio, create a new Class Library project that uses the language of your choice. To create a C# Class Library, select the
+<strong>Visual C#\Windows</strong> project types and select the <strong>Class Library</strong> template. Enter a name for your project, such as MDSWorkflowExtender, and click OK.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Add a reference to
+<strong>Microsoft.MasterDataServices.WorkflowTypeExtender.dll</strong>. In the <strong>
+Solution Explorer</strong> pane, right click <strong>References</strong> and select
+<strong>Add Reference…</strong>. In the <strong>Add Reference</strong> dialog, go to the
+<strong>Browse</strong> tab and navigate to C:\Program Files\Microsoft SQL Server\110\Master Data Services\WebApplication\bin. Select
+<strong>Microsoft.MasterDataServices.WorkflowTypeExtender.dll</strong> and click OK.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Open the Class1.cs file by double-clicking it in the
+<strong>Solution Explorer</strong> pane.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Add ‘using Microsoft.MasterDataServices.WorkflowTypeExtender;’ below the other
+<strong>using</strong> statements.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Rename your class to MDSWorkflowExtender, and inherit from IWorkflowTypeExtender. The
+ class declaration should look something like the following:<br />
+<br />
+</span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">public class MDSWorkflowExtender : IWorkflowTypeExtender</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Implement the interface. Right-click IWorkflowTypeExtender
+ in the code file, select <strong>Implement Interface</strong>\<strong>Implement Interface</strong> in the menu. This creates stub code for all members in the interface.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Add whatever code you desire to the StartWorkflow method. This method is called by
+ the MDS Workflow Integration service to start your workflow. Complete sample code and a description of the parameters of the StartWorkflow method are included in the last section of this document.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Build the solution.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Copy your MDSWorkflowExtender.dll assembly to the location of the MDS Workflow Integration
+ service executable, in C:\Program Files\Microsoft SQL Server\110\Master Data Services\WebApplication\bin.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Depending on the configuration of your sever, you may need to grant the mds_workflow_service
+ user READ and EXECUTE permissions on MDSWorkflowExtender.dll. In Windows Explorer, right-click MDSWorkflowExtender.dll and select
+<strong>Properties</strong>. In the <strong>Properties</strong> dialog, go to the
+<strong>Security</strong> tab, click <strong>Edit…</strong>, click <strong>Add…</strong>, and add the &lt;server name&gt;\mds_workflow_service user. The mds_workflow_service user is granted READ and EXECUTE permissions by default. Click OK to close all the dialogs
+ that have opened.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Grant the mds_workflow_service user any additional permissions it needs to perform
+ the workflow operations, such as READ and </span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">WRITE permissions on another database in your system.</span></p>
+</li></ol>
+<br />
+<h2><a name="Step_6_Update_the_MDS_Workflow_Integration_service_Web_Configuration_File"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Step 6: Update the MDS Workflow Integration service Web Configuration File</span></h2>
+<br />
+<span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Edit the Master Data Services Web configuration file to include the name of your Master Data Services server and database and your custom workflow assembly.</span><br />
+<br />
+<h3><a name="Edit_the_Master_Data_Services_web_configuration_file"></a>Edit the Master Data Services web configuration file</h3>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If you are using Windows authentication you do not have to specify a user or password in the configuration file. Alternately, if you use SQL Server authentication, specify
+ the User ID and Password of a SQL Server login that has the necessary permissions on the Master Data Services database.</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">On the server where Master Data Services is installed, open an elevated command prompt.
+</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Open Microsoft.MasterDataServices.Workflow.exe.config in Notepad from C:\Program Files\Microsoft
+ SQL Server\110\Master Data Services\WebApplication\bin.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Find this setting:
+<br />
+<span class="CodeBlockChar" style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;background-color:gainsboro;">&lt;setting name=&quot;ConnectionString&quot; serializeAs=&quot;String&quot;&gt;</span></span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Update the value to reflect the server and database. If your SQL Server installation
+ uses case-sensitive collation, then the name of the database must be entered in the same case as in the database. For example, &lt;value&gt;Server=myServer;Database=myDatabase;Integrated Security=True&lt;/value&gt;.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Below the ConnectionString setting add another &lt;setting&gt; tag for your custom workflow. For example:<br />
+<br />
+<span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;background-color:gainsboro;">&lt;setting name=&quot;WorkflowTypeExtenders&quot; serializeAs=&quot;String&quot;&gt; &lt;value&gt;SPWF=Microsoft.MasterDataServices.SharePointWorkflow.SharePointWorkflowExtender, Microsoft.MasterDataServices.SharePointWorkflow&lt;/value&gt;<br />
+&lt;/setting&gt;</span></span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;background-color:gainsboro;"></span>The following guidelines will help you construct your &lt;setting&gt; tag:</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sansf;font-size:12pt;">Below the ConnectionString setting add another &lt;setting&gt; tag for your custom workflow. For example:<br />
+<br />
+<span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;background-color:gainsboro;">&lt;setting name=&quot;WorkflowTypeExtenders&quot; serializeAs=&quot;String&quot;&gt; &lt;value&gt;SPWF=Microsoft.MasterDataServices.SharePointWorkflow.SharePointWorkflowExtender, Microsoft.MasterDataServices.SharePointWorkflow&lt;/value&gt;<br />
+&lt;/setting&gt;</span></span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;background-color:gainsbo-serif;font-size:12pt;">The inner text of the &lt;value&gt; tag is in the form of &lt;Workflow ID&gt;=&lt;assembly-qualified
+ workflow type name&gt;. </span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Workflow ID&gt; is a string you use to identify this workflow assembly when you create
+ a business rule in Master Data Manager.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;assembly-qualified workflow type name&gt; is the namespace-qualified name of your workflow
+ class, followed by a comma, followed by the display name of the assembly. </span>
+</p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If your assembly is strongly named, you also have to include version information and
+ its PublicKeyToken.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If you have created multiple workflow handlers for different kinds of workflows, they
+ should be “;” separated in the &lt;value&gt; tag.</span></p>
+</li></ol>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Save and close the file.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Depending on the configuration of your server, you may see an “Access is denied” error
+ when you try to save the file. If this occurs, temporarily disable User Account Control (UAC) on the server. To do this, open Control Panel, click
+<strong>System and Security</strong>. Under <strong>Action Center</strong>, click
+<strong>Change User Account Control Settings</strong>. In the <strong>User Account Control Settings</strong> dialog, slide the bar to the bottom so that you are never notified. Click OK. Click Yes in the confirmation dialog. Restart your computer and repeat
+ the above procedure to edit your configuration file. After saving the file, reset your UAC settings to the default level.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">To do verification, proceed as follows:</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Open a command prompt.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Go to the location of your service and run the service in console mode by typing:
+<strong>Microsoft.MasterDataServices.Workflow.exe -console</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Press ENTER.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Expect output similar to the one below. The example below uses the SharePointWorkflowExtender
+ defined in the sample file. If you have custom code, the assembly name and workflow identifier will be different, but the key point is to ensure that your workflow extender was loaded properly.</span></p>
+</li></ol>
+</li></ol>
+<blockquote dir="ltr" style="margin-right:0px;">
+<blockquote dir="ltr" style="margin-right:0px;">
+<blockquote dir="ltr" style="margin-right:0px;">
+<p class="CodeBlock"><span style="background-color:gainsboro;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Loading workflow type extenders. For test purposes you may use: Microsoft.MasterDataServices.Workflow.WorkflowTypeTest,
+ Microsoft.MasterDataServices.Workflow, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91</span>
+<br />
+</span><span style="background-color:gainsboro;"><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Loading workflow type extender: SPWF=Microsoft.MasterDataServices.SharePointWorkflow.SharePointWorkflowExtender, Microsoft.MasterDataServices.SharePointWorkflow,
+ Version=1.0.0.0</span></strong><strong> <br />
+</strong></span><span style="background-color:gainsboro;"><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Loaded workflow type extender for: SPWF</span></strong><strong>
+<br />
+</strong></span><span style="background-color:gainsboro;"><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Testing database connection.</span>
+<br />
+</span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">Database connection successfully tested.</span>
+</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<p>&nbsp;</p>
+<h2><a name="Step_7_Install_and_Start_the_Workflow_Integration_Service"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Step 7:
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:20pt;">Install and Start the Workflow Integration Service</span>&nbsp;</h2>
+<p>&nbsp;<span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Install and start the SQL Server MDS Workflow Integration service.</span></p>
+<p>&nbsp;</p>
+<h3><a name="Grant_read_and_execute_permission_to_the_MDS_workflow_user"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Grant read and execute permission to the MDS workflow user</span>&nbsp;</h3>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Depending on the configuration of your server, you may need to grant the mds_workflow_service user READ and EXECUTE permissions on the MDS Workflow Integration service executable.</span></p>
+<ol>
+<li>
+<p><spaily:&n style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">On the server where Master Data Services is installed, open Windows Explorer and go to C:\Program Files\Microsoft SQL Server\110\Master Data Services\WebApplication\bin.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Right-click Microsoft.MasterDataServices.Workflow.exe and select
+<strong>Properties</strong>.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the
+<strong>Properties</strong> dialog, go to the <strong>Security</strong> tab, click
+<strong>Edit…</strong>, click <strong>Add…</strong>, and add the &lt;server name&gt;\mds_workflow_service user. The mds_workflow_service user is granted READ and EXECUTE permissions by default.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Click OK to close all the dialogs that have opened.</span></p>
+</li></ol>
+<h3><a name="Find_the_install_utility"></a>Find the install utility</h3>
+<br />
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">On the server where Master Data Services is installed, open an elevated command prompt.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Go to %windir%\Microsoft.NET.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If you have more than one Framework folder, determine which is the most recent and
+ go to that folder.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Go to the Framework folder’s subfolder, for example Framework\v4.0.30319.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Confirm that InstallUtil.exe is in the folder.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Copy the path for InstallUtil.exe, for example: C:\Windows\Microsoft.NET\Framework\v4.0.30319\InstallUtil.exe.</span></p>
+</li></ol>
+<h3><a name="Install_the_service"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Install the service</span>&nbsp;</h3>
+<br />
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">At the command prompt, go to C:\Program Files\Microsoft SQL Server\Master Data Services\WebApplication\bin.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Type: C:\Windows\Microsoft.NET\Framework\v4.0.30319\InstallUtil Microsoft.MasterDataServices.Workflow.exe</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Press ENTER. A dialog is displayed, prompting for a user name and password.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Type &lt;server name&gt;\mds_workflow_service for user name and the password you specified
+ when you created the user. The user must have Read and Execute permissions to any assemblies that handle the workflow processing, as well as appropriate access to any resources required by the workflow handler assembly, such as Read-Write access to a database
+ that the workflow handler will modify.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Click OK.</span></p>
+</li></ol>
+<h3><a name="Start_the_Service"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Start the Service</span>&nbsp;</h3>
+<p><span style="line-height:115%;font-family:calibri;font-size:12pt;"><br />
+</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:calibri;font-size:12pt;">From the Start menu, click Run.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-size:12pt;"></span><span style="line-height:115%;font-family:calibri;font-size:12pt;">Type: Services.msc</span></p>
+</li><li>
+<p><span style="line-height:115%;font-size:12pt;"></span><span style="line-height:115%;font-family:calibri;font-size:12pt;">Click OK. The Services snap-in opens.
+</span></p>
+</li><li>
+<p><span style="line-height:115%;font-size:12pt;"></span><span style="line-height:115%;font-family:calibri;font-size:12pt;">Find the service called SQL Server MDS Workflow Integration and select it.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-size:12pt;"></span><span style="line-height:115%;font-family:calibri;font-size:12pt;">Click the
+<strong>Start</strong> link.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-size:12pt;"></span><span style="line-height:115%;font-family:calibri;font-size:12pt;">After the service starts, close the Services snap-in.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-size:12pt;"></span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12pt;">Verification step: Wait for a few seconds, refresh the Services snap-in and ensure that the SQL Server MDS Workflow Integration
+ service is running.</span></p>
+</li></ol>
+<p>&nbsp;</p>
+<h2><a name="Step_8_Create_and_Apply_Business_Rules_in_Master_Data_Manager"></a>Step 8: Create and Apply Business Rules in Master Data Manager</h2>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Create a business rule in Master Data Manager. When data is validated against the business rule, the Service Broker queue in the Master Data Services database is populated.
+ The service periodically checks the queue, sends the data to the specified workflow handler, and then clears the queue.</span></p>
+<h3 style="margin:10pt 0in 0pt;"><a name="Create_and_Publish_a_Business_Rule"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Create and Publish a Business Rule</span>
+</h3>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">You must first create and publish the business rule that will start the workflow when applied.
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">You should ensure that your business rule contains actions that change attribute values, so that the rule evaluates to false after it has been applied once. For example, your
+ business rule might evaluate to true when a Price attribute value is greater than 500 and the Approved attribute value is blank. The rule can then include two actions: one to set the Approved attribute value to Pending and one to start the workflow.
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Alternatively, you may want to create a rule that uses the “has changed” condition and add your attributes to change tracking groups.</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">To create a business rule in Master Data Manager, you must have permission to the System Administration functional area and be a model administrator for the model you want
+ to create the business rule for. For more information, see &nbsp;</span><a href="http://go.microsoft.com/fwlink/?LinkId=243056"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Administrators (Master Data Services)</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">.</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In Master Data Manager, click System Administration.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">F="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">To create a business rule in Master Data Manager, you must have permission to the System Administration functional area and be a model administrator for the model you want
+ to create the business rule for. For more information, see &nbsp;</span><a href="http://go.microsoft.com/fwlink/?LinkId=243056"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Administrators (Master Data Services)</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">.</span></p>rom the menu bar, point to Manage and click Business Rules.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">On the Business Rule Maintenance page, select a model, entity, member type, and attribute.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Click Add business rule. A row is added to the table and is highlighted.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Click Edit selected business rule.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Components pane, expand the Conditions node.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Drag conditions to the IF pane’s Conditions node.
+</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Entity-Specific Attributes pane, click an attribute and drag it to the Edit
+ Action pane’s Select attribute label.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Edit Condition pane, complete any fields and click Save item.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Components pane, expand the Actions node.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Under External action, drag Start Workflow to the THEN pane’s Action label.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Entity-Specific Attributes pane, click any attribute and drag it to the Edit
+ Action pane’s Select attribute label. This attribute has no bearing on the workflow process.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Edit Action pane, in the Workflow type box, type the tag that identifies your
+ workflow handler. To start the sample SharePoint workflow, for example, type SPWF.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Optionally, select the Include member data check box. Choose this to include attribute
+ names and values in the XML that is passed </span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">to the workflow handler.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Workflow site box, type the name of a website. For a SharePoint workflow, this must be your SharePoint site. For example, http://site_name. For a custom workflow this
+ may not apply, but can be used for added context.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In the Workflow name box, type the name of your workflow from Visual Studio. In Visual
+ Studio Solution Explorer, this value is in the Display Name field. For a custom workflow this may not apply, but can be used for added context. Be sure to type the workflow name exactly as it appears in Visual Studio.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">At the bottom of the page, click Save.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">At the top of the page, click Back. The Business Rule Maintenance page opens.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Click Publish business rules.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">On the confirmation dialog box, click OK. The rule&#39;s status changes to Active.</span></p>
+</li></ol>
+<h3><a name="Apply_Business_Rules"></a><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:16pt;">Apply
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-serif;font-size:18pt;">Business Rules</span>&nbsp;</h3>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Now you must apply the business rule to your data. This action passes the data to the Service Broker queue.</span></p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">From the Master Data Manager home page, click Explorer.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Edit the entity with members you want to validate.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-sizee:16pt;">Apply
+</span><span style="line-height:115%;font-family:&#39;segoe ui semibold&#39;,sans-ser:12pt;">Click Apply business rules.</span></p>
+</li></ol>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The SQL Server Service Broker queue is populated. When the service checks the queue, it sends the data to the workflow handler and clears the queue.</span></p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Troubleshooting"></a>Troubleshooting</h1>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">When configuring Master Data Services to work with a workflow, you might encounter any of the following issues.</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="The_Workflow_Handler_Doesn_rsquo_t_Receive_Data"></a>The Workflow Handler Doesn’t Receive Data</h2>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If the workflow handler doesn’t receive data, you can try debugging the workflow service or viewing the Service Broker queue to determine if the correct data is still in the
+ queue.</span></p>
+<p><strong></strong></p>
+<h3><strong><a name="Debug_the_Workflow_Service"></a>Debug the Workflow Service</strong></h3>
+<strong></strong>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<ol>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Stop the service if it is running.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Open a command prompt.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Go to the location of your service and run the service in console mode by typing: Microsoft.MasterDataServices.Workflow.exe
+ -console</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Press ENTER.</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">In Master Data Manager, update your attribute and apply business rules again. Detailed
+ logs are displayed in the console window.</span></p>
+</li></ol>
+<p><strong></strong></p>
+<h3><strong><a name="View_the_Service_Broker_Queue"></a>View the Service Broker Queue</strong></h3>
+<strong></strong>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The Service Broker queue that contains the master data passed as part of the workflow is: mdm.microsoft/mdm/queue/externalaction. This queue can be found in SQL Server Management
+ Studio by opening the Master Data Services database in Object Explorer, then opening
+<strong>Service Broker</strong> and <strong>Queues</strong>. Right-click the queue and select
+<strong>Select Top 1000 Rows</strong> to view the top 1000 rows in the queue.</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If the service cleared the queue properly, this queue should be empty.
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">If there is data in the queue that you want to remove, you can run the following SQL script to clear the queue. You must change myDatabase to the name of your Master Data Services
+ database.</span></p>
+<p class="MtpsCodeSnippet"><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">declare @conversation uniqueidentifier<br />
+</span></strong><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">while exists (select 1 from [myDatabase].[mdm].[microsoft/mdm/queue/externalaction])<br />
+</span></strong><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">begin<br />
+</span></strong><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">set @conversation = (select top 1 conversation_handle from [myDatabase].[mdm].[microsoft/mdm/queue/externalaction] )<br />
+</span></strong><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">end conversation @conversation with cleanup<br />
+</span></strong><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;background-color:gainsboro;">end</span></strong></p>
+<br />
+<h1 style="margin:24pt 0in 0pt;"><a name="Custom_Workflow_Example_Code_and_XML_Description"></a>Custom Workflow Example Code and XML Description</h1>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">When you create a custom workflow class library, you create a class that implements the Microsoft.MasterDataServices.Core.WorkflowTypeExtender.IWorkflowTypeExtender interface.
+ This interface includes one method, StartWorkflow, that is called by the MDS Workflow Integration service when a workflow starts. The StartWorkflow method contains two parameters:
+<em>workflowType</em> contains the <strong>Workflow type</strong> you entered in Master Data Manager, and
+<em>dataElement</em> contains metadata and item data for the item that triggered the workflow business rule.</span></p>
+<br />
+<h2 style="margin:10pt 0in 0pt;"><a name="Code_Example"></a>Code Example</h2>
+<br />
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The TestWorkflow sample code associated with this document shows you how to implement the StartWorkflow method to extract the Name, Code, and LastChgUserName attributes from
+ the XML data for the element that triggered the workflow business rule, and how to call a stored procedure to insert them into another database.</span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The StartWorkflow method receives a block of XML that contains metadata and data about the item that triggered the workflow business rule. The following example shows what
+ the XML looks like:</span></p>
+<br />
+<p><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">ExternalAction</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span>&nbsp;<br />
+<span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Type</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">TEST<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Type</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">SendData</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">1<span style="color:blue;">&lt;/</span><span style="color:firebrick;">SendData</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Server_URL</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">This
+ is my test!<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Server_URL</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Action_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Test
+ Workflow<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Action_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Model_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">5<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Model_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Model_Name</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Customer<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Model_Name</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Entity_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">34<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Entity_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Entity_Name</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Customer<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Entity_Name</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Version_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">8<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Version_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">MemberType_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">1<span style="color:blue;">&lt;/</span><span style="color:firebrick;">MemberType_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Member_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">12<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Member_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">MemberData</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span>&nbsp;<br />
+<span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">12<span style="color:blue;">&lt;/</span><span style="color:firebrick;">ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Version_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">8<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Version_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">ValidationStatus_ID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">3<span style="color:blue;">&lt;/</span><span style="color:firebrick;">ValidationStatus_ID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp;
+</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">ChangeTrackingMask</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">0<span style="color:blue;">&lt;/</span><span style="color:firebrick;">ChangeTrackingMask</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterDTM</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">2011-02-25T20:16:36.650<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterDTM</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterUserID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">2<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterUserID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterUserName</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">MyUserName<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterUserName</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterUserMuid</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EEF91D48-B673-4D83-B95F-5A363C11DE91<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterUserMuid</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterVersionId</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">8<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterVersionId</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterVersionName</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">VERSION_1<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterVersionName</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EnterVersionMuid</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">52B788C2-2750-4651-9DB0-2CB05A88AA5A<span style="color:blue;">&lt;/</span><span style="color:firebrick;">EnterVersionMuid</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgDTM</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">2011-02-25T20:16:36.650<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgDTM</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgUserID</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">2<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgUserID</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgUserName</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">MyUserName<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgUserName</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgUserMuid</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">EEF91D48-B673-4D83-B95F-5A363C11DE91<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgUserMuid</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp;
+</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgVersionId</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">8<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgVersionId</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgVersionName</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">VERSION_1<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgVersionName</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">LastChgVersionMuid</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">52B788C2-2750-4651-9DB0-2CB05A88AA5A<span style="color:blue;">&lt;/</span><span style="color:firebrick;">LastChgVersionMuid</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Name</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Test
+ Customer<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Name</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Code</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span><span style="font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">TC<span style="color:blue;">&lt;/</span><span style="color:firebrick;">Code</span><span style="color:blue;">&gt;<br />
+</span></span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&nbsp; &lt;/</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">MemberData</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span>
+<br />
+<span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;/</span><span style="color:firebrick;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">ExternalAction</span><span style="color:blue;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&gt;</span>
+</p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The following table describes some of the tags contained in this XML:</span></p>
+<table border="1" cellspacing="0" cellpadding="0" style="border:currentColor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="padding:0in 5.4pt;border:1pt solid black;width:117.9pt;background-color:gainsboro;">
+<p><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Tag</span></strong></p>
+</td>
+<td valign="top" style="border-color:black black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-top-width:1pt;border-right-width:1pt;border-bottom-width:1pt;border-top-style:solid;border-right-style:solid;border-bottom-style:solid;background-color:gainsboro;">
+<p><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Description</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Type&gt;</span></p>
+</td>
+<td valignh:117.9pt;background-color:gainsboro;">
+<p><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Ta="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The
+<strong>Workflow type</strong> you entered in Master Data Manager to identify which custom workflow assembly to load.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;SendData&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">A Boolean value controlled by the
+<strong>Include member data in the message</strong> checkbox in Master Data Manager. A value of 1 means that the &lt;MemberData&gt; section is sent; otherwise the &lt;MemberData&gt; section is not sent.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Server_URL&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The text you entered in the
+<strong>Workflow site</strong> text box in Master Data Manager.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Action_ID&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The text you entered in the
+<strong>Workflow name</strong> text box in Master Data Manager.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;MemberData&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Contains the data of the member that triggered the workflow action. This is included only if the value of &lt;SendData&gt; is 1.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Enter<em>xxx</em>&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">This set of tags contains metadata about the creation of the member, such as when it was created and who created it.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;LastChg<em>xxx</em>&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">This set of tags contains metadata about the last change made to the member, such as when the change was made and who made it.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Name&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The first attribute of the member that was changed. This member contains only Name and Code attributes.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:hange made to the member, such as when the change was made and who made it.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-color:whitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-stywhitesmoke black black;padding:0in 5.4pt;width:117.9pt;border-right-width:1pt;border-bottom-width:1pt;border-left-width:1pt;border-right-style:solid;border-bottom-style:solid;border-left-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">&lt;Code&gt;</span></p>
+</td>
+<td valign="top" style="border-color:whitesmoke black black whitesmoke;padding:0in 5.4pt;width:360.9pt;border-right-width:1pt;border-bottom-width:1pt;border-right-style:solid;border-bottom-style:solid;background-color:transparent;">
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">The next attribute of the member that was changed. If this member contained more attributes, they would follow this one.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<br />
+<p><strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">For more information:</span></strong></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"><a href="http://go.microsoft.com/fwlink/?LinkId=243059">http://go.microsoft.com/fwlink/?LinkId=243059</a>: Master Data Services documentation</span></p>
+<p><a href="http://msdn.microsoft.com/en-us/sqlserver/ff943581.aspx"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://msdn.microsoft.com/en-us/sqlserver/ff943581.aspx</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">:
+ Master Data Services developer center</span></p>
+<p><a href="http://www.microsoft.com/sqlserver/"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://www.microsoft.com/sqlserver/</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">:
+ SQL Server Web site</span></p>
+<p><a href="http://technet.microsoft.com/en-us/sqlserver/"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://technet.microsoft.com/en-us/sqlserver/</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">:
+ SQL Server TechCenter </span></p>
+<p><a href="http://msdn.microsoft.com/en-us/sqlserver/"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">http://msdn.microsoft.com/en-us/sqlserver/</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">:
+ SQL Server DevCenter&nbsp; </span></p>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Did this paper help you? Please give us your feedback. Tell us on a scale of 1 (poor) to 5 (excellent), how would you rate this paper and why have you given it this rating?
+ For example:</span></p>
+<br />
+<ul>
+<li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Are you rating it high due to having good examples, excellent screen shots, clear writing, or another reason?
+</span></p>
+</li><li>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;"></span><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Are you rating it low due to poor examples, fuzzy screen shots, or unclear writing?</span></p>
+</li></ul>
+<p><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">This feedback will help us improve the quality of white papers we release.
+</span><a href="mailto:sqlfback@microsoft.com?subject=White%20Paper%20Feedback:%20SharePoint%20Workflow%20Integration%20with%20Master%20Data%20Services"><span style="color:blue;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">Send feedback</span></a><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:12pt;">.
+</span></p>
+<br />
+
+</div>
+    
+    

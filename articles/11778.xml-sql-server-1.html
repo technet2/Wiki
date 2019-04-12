@@ -1,0 +1,322 @@
+---
+layout: default
+title: Работа с XML в SQL Server (часть 1) - Статьи TechNet - Россия (Pусский) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;">Поддержка XML впервые появилась в SQL Server 2000 - в язык T-SQL были добавлены ключевые слова FOR XML и OPENXML,
+ которые позволяли разработчика&#1084;, соответственно, извлекать результаты запросов к база&#1084; данных в виде XML-потока и сохранять XML-доку&#1084;енты в базе данных. Эти воз&#1084;ожности были существенно расширены в SQL Server 2005 - был введен новый тип данных XML, поддерживающий
+ проверку на уровне XSD_схе&#1084;ы, выполнение XQuery_операций и индексирование. В SQL Server 2008 воз&#1084;ожности по работе с XML, как со встроенны&#1084; типо&#1084; данных, еще больше расширены.<br />
+<a name="cut"></a><br />
+Начне&#1084; с того, что кратко вспо&#1084;ни&#1084; ключевые воз&#1084;ожности по работе с XML, реализованные в предыдущих версиях SQL Server - SQL Server 2000 и SQL Server 2005.
+<br />
+Как я от&#1084;етил выше, в SQL Server 2000 в язык T-SQL были добавлены ключевые слова FOR XML и OPENXML. FOR XML - это атрибут ко&#1084;анды SELECT, указывающий на то, что результаты выполнения запроса должны быть представлены в виде XML-потока. При&#1084;ер использования данной
+ функциональности показан ниже. Следующий запрос:</span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">ProductID, ProductName</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">Products Product</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">FOR</code>
+<code style="color:#000000;">XML AUTO</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;<br />
+<span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;">вернет следующий XML-доку&#1084;ент:</span><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Product</code>
+<code style="color:#808080;">ProductID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">ProductName</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Widget&quot;</code><code style="color:#000000;">/&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Product</code>
+<code style="color:#808080;">ProductID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;2&quot;</code>
+<code style="color:#808080;">ProductName</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Sprocket&quot;</code><code style="color:#000000;">/&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">Функция OPENXML предназначена для выполнения обратных действий - создания записи на основе переданного ей XML-доку&#1084;ента. При&#1084;ер использования данной функциональности показан ниже. Следующий
+ запрос:<span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@doc nvarchar(1000)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">SET</code>
+<code style="color:#000000;">@doc = </code><code style="color:blue;">&#39;&lt;Order OrderID = &quot;1011&quot;&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:blue;">&lt;Item ProductID=&quot;1&quot; Quantity=&quot;2&quot;/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code><span><code style="color:blue;">&lt;Item ProductID=&quot;2&quot; Quantity=&quot;1&quot;/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:blue;">&lt;/Order&gt;&#39;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@xmlDoc </code><code style="color:#006699;font-weight:bold;">integer</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">EXEC</code>
+<code style="color:#000000;">sp_XML-preparedocument @xmlDoc </code><code style="color:#006699;font-weight:bold;">OUTPUT</code><code style="color:#000000;">, @doc</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">* </code><code style="color:#006699;font-weight:bold;">FROM</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">OPENXML (@xmlDoc,
+</code><code style="color:blue;">&#39;Order/Item&#39;</code><code style="color:#000000;">, 1)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">WITH</code></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:#000000;">(OrderID
+</code><code style="color:#006699;font-weight:bold;">integer</code> <code style="color:blue;">
+&#39;../@OrderID&#39;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code><span><code style="color:#000000;">ProductID
+</code><code style="color:#006699;font-weight:bold;">integer</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:#000000;">Quantity
+</code><code style="color:#006699;font-weight:bold;">integer</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">EXEC</code>
+<code style="color:#000000;">sp_XML-removedocument @xmlDoc</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;приведет к созданию такой записи:<span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">OrderID ProductID Quantity</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">1011 1 2</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">1011 2 1</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">Обратите вни&#1084;ание на использование храни&#1084;ых процедур sp_XML-preparedocument и sp_XML-removedocument для создания XML-доку&#1084;ента в па&#1084;яти и его удаления после записи в базу данных.<br />
+<br />
+В SQL Server 2005 атрибут FOR XML был расширен воз&#1084;ожностью задания новых опций для корневых эле&#1084;ентов и и&#1084;ен эле&#1084;ентов доку&#1084;ента, была включена поддержка вложенных вызовов запросов с FOR XML, позволя<span style="line-height:20.78993034362793px;">ю</span>щих
+ создавать сложные иерархии внутри XML-доку&#1084;ентов, а также новый режи&#1084; PATH, позволяющий описать структуру по<span style="line-height:15.6pt;font-size:12.1px;">лучае&#1084;ого XML-доку&#1084;ента с по&#1084;ощью синтаксиса XPath. При&#1084;ер использования данной функциональности
+ показан ниже. Следующий запрос:</span></div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;"><span lang="EN-US" style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">ProductID </code><code style="color:#006699;font-weight:bold;">AS</code>
+<code style="color:blue;">&#39;@ProductID&#39;</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">ProductName
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:blue;">
+&#39;ProductName&#39;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">Products</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">FOR</code>
+<code style="color:#000000;">XML PATH (</code><code style="color:blue;">&#39;Product&#39;</code><code style="color:#000000;">), ROOT (</code><code style="color:blue;">&#39;Products&#39;</code><code style="color:#000000;">)</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;">создаст такой XML-доку&#1084;ент:</span></div>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;Products&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;Product ProductID=</code><code style="color:blue;">&quot;1&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;ProductName&gt;Widget&lt;/ProductName&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;/Product&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;Product ProductID=</code><code style="color:blue;">&quot;2&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;ProductName&gt;Sprocket&lt;/ProductName&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;/Product&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/Products&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;">&nbsp;<br />
+По&#1084;и&#1084;о расширений функциональности, впервые появившейся в SQL Server 2000, в SQL Server 2005 появился встроенный тип данных XML, использование которого позволяет создавать пере&#1084;енные и колонки для хранения XML-данных. При&#1084;ер использования данной функциональности
+ показан ниже.<span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">TABLE</code> <code style="color:#000000;">
+SalesOrders</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">(OrderID
+</code><code style="color:#006699;font-weight:bold;">integer</code> <code style="color:#006699;font-weight:bold;">
+PRIMARY</code> <code style="color:#006699;font-weight:bold;">KEY</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">OrderDate datetime,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">CustomerID
+</code><code style="color:#006699;font-weight:bold;">integer</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">OrderNotes xml)</code></span></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;Тип данных xml &#1084;ожет использоваться для хранения в базе данных отфор&#1084;атированных доку&#1084;ентов (HTML, XML, XHTML и т. п.) или полуструктурированных данных. Можно хранить нетипизованные или типизованные
+ XML-данные - последние &#1084;огут быть проверены на соответствие XSD-схе&#1084;е. Для задания схе&#1084;ы, используе&#1084;ой для проверки вводи&#1084;ых данных, используется ко&#1084;анда СREATE XML SCHEMA COLLECTION:</div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#000000;">XML </code><code style="color:#006699;font-weight:bold;">SCHEMA</code>
+<code style="color:#000000;">COLLECTION ProductSchema </code><code style="color:#006699;font-weight:bold;">AS</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&#39;&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF_16&quot;?&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;xs:schema xmlns:xs=&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;!- Здесь располагается са&#1084;а схе&#1084;а -&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/xs:schema&gt;&#39;</code></span></span></div>
+</div>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"><br />
+После того как схе&#1084;а описана, она ассоциируется с XML-пере&#1084;енной или колонкой соответствующего типа - при&#1084;ер показан ниже.</span></div>
+<span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;">
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">TABLE</code> <code style="color:#000000;">
+SalesOrders</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">(OrderID
+</code><code style="color:#006699;font-weight:bold;">integer</code> <code style="color:#006699;font-weight:bold;">
+PRIMARY</code> <code style="color:#006699;font-weight:bold;">KEY</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">OrderDate datetime,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">CustomerID
+</code><code style="color:#0066t;font-family:tahoma,sans-serif;color:#010101;">
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">TABLE</code> <code style="color:#000000;">
+SalesOrders</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">(OrderID
+</code><code style="color:#006699;font-weight:bold;">integer</code> <code style="color:#006699;font-weight:bold;">
+PRIMARY</code> <code style="color:#006699;font-weight:bold;">KEY</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">OrderDate datetime,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">CustomerID
+</code><code style="c99;font-weight:bold;">integer</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">OrderNotes xml(ProductSchema))</code></span></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">Проверка типизованного XML на соответствие ассоциированной с пере&#1084;енной или колонкой соответствующего типа схе&#1084;е происходит при записи или обновлении данных - эта воз&#1084;ожность позволяет, напри&#1084;ер,
+ гарантировать соответствие вводи&#1084;ых данных приняты&#1084; стандарта&#1084; или обеспечить сов&#1084;ести&#1084;ость с доку&#1084;ента&#1084;и различных типов.<br />
+Тип данных xml также поддерживает ряд &#1084;етодов, которые &#1084;огут использоваться для выполнения запросов или &#1084;анипуляции с XML-данны&#1084;и. Напри&#1084;ер, &#1084;ожно использовать &#1084;етод query для выборки данных, как это показано в следующе&#1084; при&#1084;ере:</div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">@x xml</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@x=</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&#39;&lt;Invoices&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Invoice&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Customer&gt;Kim Abercrombie&lt;/Customer&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Items&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Item ProductID=&quot;2&quot; Price=&quot;1.99&quot; Quantity=&quot;1&quot; /&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Item ProductID=&quot;3&quot; Price=&quot;2.99&quot; Quantity=&quot;2&quot; /&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Item ProductID=&quot;5&quot; Price=&quot;1.99&quot; Quantity=&quot;1&quot; /&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/Items&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/Invoice&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Invoice&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Customer&gt;Margaret Smith&lt;/Customer&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Items&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;Item ProductID=&quot;2&quot; Price=&quot;1.99&quot; Quantity=&quot;1&quot;/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/Items&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/Invoice&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/Invoices&gt;&#39;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">@x.query(</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">&#39;&lt;CustomerList&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">for $invoice in /Invoices/Invoice</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">return $invoice/Customer</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:blue;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:blue;">&lt;/CustomerList&gt;&#39;</code><code style="color:#000000;">)</code></span></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;</div>
+</span>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;">В приведенно&#1084; выше запросе используется XQuery_синтаксис, с по&#1084;ощью которого ищутся все эле&#1084;енты Invoice, находящиеся
+ в данно&#1084; доку&#1084;енте, и возвращается XML-доку&#1084;ент, который содержит эле&#1084;ент Customer для каждого эле&#1084;ента Invoice - при&#1084;ер результирующего доку&#1084;ента показан ниже.</span><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"><br />
+</span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">CustomerList</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Customer</code><code style="color:#000000;">&gt;Kim Abercrombie&lt;/</code><code style="color:#006699;font-weight:bold;">Customer</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Customer</code><code style="color:#000000;">&gt;Margaret Smith&lt;/</code><code style="color:#006699;font-weight:bold;">Customer</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">CustomerList</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;<br />
+Другая новинка, относящаяся к поддержке XML и появившаяся в SQL Server 2005 - это поддержка XML-индексов. И&#1084;еется воз&#1084;ожность создания первичных и вторичных XML-индексов для колонок типа xml, что позволяет повысить производительность запросов к XML-данны&#1084;.
+ Первичный XML-индекс - это сжатое представление все ветвей XML-доку&#1084;ента, которые процессор обработки запросов использует для быстрого нахождения ветвей в доку&#1084;енте. После того как первичный XML-индекс создан, &#1084;ожно создать вторичный XML-индекс, который по&#1084;ожет
+ повысить производительность при выполнении ряда специфических запросо:bold;">Customer</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">CustomerList</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;в. В следующе&#1084; при&#1084;ере показано, как создать первичный XML-индекс и вторичный XML-индекс типа PATH, который позволит улучшить производительность при выполнении XPath_ запросов к данно&#1084;у XML-доку&#1084;енту.</div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">PRIMARY</code> <code style="color:#000000;">
+XML </code><code style="color:#006699;font-weight:bold;">INDEX</code> <code style="color:#000000;">
+idx_XML-Notes</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">ON</code>
+<code style="color:#000000;">SalesOrders (Notes)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">GO</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#000000;">XML </code><code style="color:#006699;font-weight:bold;">INDEX</code>
+<code style="color:#000000;">idx_XML-Path_Notes</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">ON</code>
+<code style="color:#000000;">SalesOrders (Notes)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">USING XML
+</code><code style="color:#006699;font-weight:bold;">INDEX</code> <code style="color:#000000;">
+idx_XML-Notes</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">FOR</code>
+<code style="color:#000000;">PATH</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">GO</code></span></span></div>
+</div>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"><br />
+Функциональность, реализованная в SQL Server 2000 и 2005, была расширена в SQL Server 2008. К ключевы&#1084; расширения&#1084; в области поддержки работы с XML в SQL Server 2008 &#1084;ожно отнести улучшенные воз&#1084;ожности проверки данных на соответствие схе&#1084;е, расширенную поддержку
+ XQuery и расширенную функциональность при вставке XML-данных средства&#1084;и DML (Data Manipulation Language).<br />
+<br />
+<strong>Расширения XSD</strong><br />
+Проверка данных на соответствие схе&#1084;е позволяет убедиться в то&#1084;, что XML-доку&#1084;ент, храни&#1084;ый в SQL Server, соответствует определенно&#1084;у стандарту и заданны&#1084; на уровне схе&#1084;ы бизнес_правила&#1084;. На уровне схе&#1084;ы задаются допусти&#1084;ые в XML-доку&#1084;енте эле&#1084;енты и атрибуты,
+ что позволяет убедиться в то&#1084;, что XML-доку&#1084;ент содержит требуе&#1084;ые данные в ра&#1084;ках предопределенной структуры.<br />
+В SQL Server 2005 появилась поддержка проверки XML-данных на основе коллекций XSD_ схе&#1084;. Подход заключается в то&#1084;, что вы создаете коллекцию схе&#1084;, которая содержит схе&#1084;ы с правила&#1084;и для XML-данных, используя ко&#1084;анду CREATE XML SCHEMA COLLECTION, а зате&#1084; ссылаетесь
+ на и&#1084;я коллекции при задании колонки или пере&#1084;енной типа xml, которая должна соответствовать правила&#1084;, описанны&#1084; на уровне схе&#1084;ы.<br />
+SQL Server выполняет проверку вводи&#1084;ых или обновляе&#1084;ых данных на соответствие указанной коллекции схе&#1084;. В SQL Server 2005 реализовано под&#1084;ножество полной спецификации XML Schema и поддерживаются ключевые сценарии проверки вводи&#1084;ых XML-данных.<br />
+В SQL Server 2008 поддержка XSD_схе&#1084; расширена за счет введения дополнительных воз&#1084;ожностей, к которы&#1084; относятся поддержка проверки на уровне any (т. н. lax validation), полная поддержка проверки на уровне dateTime, time и date, включая сохранение инфор&#1084;ации
+ о часовых поясах и улучшенная поддержка типов union и list. <br />
+Поддержка проверки на уровне шаблонов реализована на уровне конструкций any, anyAttribute и anyType. Напри&#1084;ер, следующая схе&#1084;а:</span><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"></span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:complexType</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Order&quot;</code>
+<code style="color:#808080;">mixed</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:sequence</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:element</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;CustomerName&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:element</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OrderTotal&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:any</code>
+<code style="color="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:element</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;CustomerName&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:element</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OrderTotal&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="back:#808080;">namespace</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;##other&quot;</code>
+<code style="color:#808080;">processContents</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;skip&quot;</code>&nbsp;
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;0&quot;</code>
+<code style="color:#808080;">maxOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;unbounded&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xs:sequence</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xs:complexType</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 10pt;line-height:15.6pt;">&nbsp;задает XML-эле&#1084;ент с и&#1084;ене&#1084; Order, который должен содержать вложенные эле&#1084;енты с и&#1084;ена&#1084;и CustomerName и OrderTotal. По&#1084;и&#1084;о этого, эле&#1084;ент &#1084;ожет содержать неограниченное число других эле&#1084;ентов,
+ относящихся к пространства&#1084; и&#1084;ен, отличны&#1084; от того, в которо&#1084; определен тип Order.<br />
+Следующий XML-доку&#1084;ент содержит экзе&#1084;пляр эле&#1084;ента Order, соответствующий описанию схе&#1084;ы. Обратите вни&#1084;ание на то, что в доку&#1084;енте также содержится эле&#1084;ент shp:Delivery, который не описан в схе&#1084;е.</div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Invoice</code>
+<code style="color:#808080;">xmlns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://adventure_works.com/order">http://adventure_works.com/order</a>&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code><span><code style="color:#808080;">xmlns:shp</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://adventure_works.com/shipping">http://adventure_works.com/shipping</a>&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Order</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">CustomerName</code><code style="color:#000000;">&gt;Graeme Malcolm&lt;/</code><code style="color:#006699;font-weight:bold;">CustomerName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OrderTotal</code><code style="color:#000000;">&gt;299.99&lt;/</code><code style="color:#006699;font-weight:bold;">OrderTotal</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">shp:Delivery</code><code style="color:#000000;">&gt;Express&lt;/</code><code style="color:#006699;font-weight:bold;">shp:Delivery</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code></code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Order</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Invoice</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;"><span lang="EN-US" style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"><br />
+</span><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;">Проверка на соответствие шаблону зависит от атрибута processContents для секции схе&#1084;ы, в которой описываются шаблоны. В SQL Server 2005 схе&#1084;ы &#1084;огут содержать значения атрибута
+ processContents - skip и strict для объявлений any и anyAttribute. В предыдуще&#1084; при&#1084;ере атрибут processContents для шаблона и&#1084;ел значение skip - таки&#1084; образо&#1084;, содержи&#1084;ое данного эле&#1084;ента не проверялось. Даже если в схе&#1084;е описан эле&#1084;ент shp:Delivery, он не
+ будет проверяться до тех пор, пока в описании шаблона для эле&#1084;ента Order значение атрибута processContents не будет установлено в strict.<br />
+<br />
+В SQL Server 2008 добавлено третье воз&#1084;ожное значение атрибута processContents - lax, которое позволяет указать на то, что все эле&#1084;енты, описанные в схе&#1084;е, должны быть включены в проверку, а эле&#1084;енты, не содержащиеся в схе&#1084;е, &#1084;огут быть проигнорированы. Таки&#1084;
+ образо&#1084;, если в предыдуще&#1084; при&#1084;ере присвоить атрибуту processContents для шаблона значение lax, и добавить в схе&#1084;у описание эле&#1084;ента shp:Delivery, этот эле&#1084;ент будет включен в проверку. Но так как эле&#1084;ент shp:Delivery не описан в схе&#1084;е, он не будет включен
+ в проверку. По&#1084;и&#1084;о этого, спецификация XML Schema определяет, что атрибут anyType авто&#1084;атически подлежит проверке согласно описанны&#1084; выше правила&#1084;. В SQL Server 2005 lax-проверка не поддерживалась - по у&#1084;олчанию выполнялась проверка на уровне strict.<br />
+Для задания данных, описывающих дату и вре&#1084;я, в XML-схе&#1084;ах используется тип данных dateTime. Дата и вре&#1084;я задаются в следующе&#1084; фор&#1084;ате: 2007 12 01T21:11:20:000Z, который представляет собой 1-е декабря 2007 года, 11 часов 20 &#1084;инут по Гринвичу - UTC (000Z). Другие
+ часовые пояса в следующе&#1084; фор&#1084;ате: 000&#43;3:00, напри&#1084;ер, описывает &#1084;осковское вре&#1084;я. Спецификация XML Schema задает ко&#1084;понент часового пояса типов данных dateTime, date и time как опциональный. Те&#1084; не &#1084;енее, в SQL Server 2005 требовалось указание часового пояса
+ при задании данных типа date_Time, date и time.<br />
+По&#1084;и&#1084;о этого, в SQL Server 2005 данные о часово&#1084; поясе не сохранялись, а приводились к UTC - напри&#1084;ер, значение 2007_12_25T06:00:00:000_8:00 превращалось в 2007_12_25T14:00:00:000Z. В SQL Server 2008 эти ограничения удалены - при задании даты и вре&#1084;ени &#1084;ожно
+ не указывать часовой пояс, но если он указан, данные сохраняются корректно.<br />
+Разработчики &#1084;огут использовать XML-схе&#1084;ы для задания типов данных для XML-данных так, что эти данные &#1084;огут содержать набор значений, присваивае&#1084;ых эле&#1084;ента&#1084; и атрибута&#1084;. Напри&#1084;ер, &#1084;ожно определить тип sizeListType, который ограничивает список воз&#1084;ожных значений,
+ присваивае&#1084;ых эле&#1084;енту AvaliableSizes до S, M и L. В SQL Server 2005 поддерживаются схе&#1084;ы, содержащие простые определения типов и соответствующие ограничения. Напри&#1084;ер, &#1084;ожно использовать тип list для задания воз&#1084;ожных раз&#1084;еров, как показано в следующе&#1084; при&#1084;ере:</span></div>
+<span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#7d7d7d;">
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:simpleType</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;sizeListType&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:list</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:simpleType</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:restriction</code>
+<code style="color:#808080;">base</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xs:string&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:enumeration</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;S&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:enumeration</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;M&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xs:enumeration</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;L&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xs:restriction</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xs:simpleType</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xs:list</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xs:simpleType</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+</span>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;"><span style="font-size:8.5pt;font-family:tahoma,sans-serif;color:#010101;"><br />
+Такое описание схе&#1084;ы позволяет создать эле&#1084;ент, который содержит все воз&#1084;ожные раз&#1084;еры в виде списка значений, разделенных пробела&#1084;и - это показано в следующе&#1084; при&#1084;ере:<br />
+</span><span style="font-size:12.1px;">&nbsp;</span></div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">AvailableSizes</code><code style="color:#000000;">&gt;S M L&lt;/</code><code style="color:#006699;font-weight:bold;">AvailableSizes</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<div style="margin:0cm 0cm 0pt;line-height:15.6pt;">Продолжение в
+<a href="http://social.technet.microsoft.com/wiki/ru-ru/contents/articles/12007.xml-2.aspx">
+части 2</a>.<br />
+<br />
+&nbsp;</div>
+<p>&nbsp;</p>
+<span lang="EN-US" style="font-family:calibri;"></span>
+
+</div>
+    
+    

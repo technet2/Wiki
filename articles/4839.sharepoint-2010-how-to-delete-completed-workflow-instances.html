@@ -1,0 +1,90 @@
+---
+layout: default
+title: SharePoint 2010&#58; How to Delete Completed Workflow Instances - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction:</a></li><li class="hierarchy-item"><a href="#C_Code_Example">C# Code Example:</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<h1><a name="Introduction"></a>Introduction:</h1>
+Few days back a contributor requested me to write a tool that will cleanup completed workflow instances from a list. Hence I have developed this script, it takes site url and list name as input and then it spans through all items in the list and clears up all
+ completed workflow instances.<br />
+<br />
+This works for sharepoint 2007 as well as sharepoint 2010. This can be executed from any WFE in the farm. The code is as below:<br />
+<br />
+<h1><a name="C_Code_Example"></a>C# Code Example:</h1>
+<div class="reCodeBlock" style="overflow-y:auto;">
+<div><span><code style="font-weight:bold;">using</code>
+<code>System;</code></span></div>
+<div><span><code style="font-weight:bold;">using</code>
+<code>System.Collections.Generic;</code></span></div>
+<div><span><code style="font-weight:bold;">using</code>
+<code>System.Linq;</code></span></div>
+<div><span><code style="font-weight:bold;">using</code>
+<code>System.Text;</code></span></div>
+<div><span><code style="font-weight:bold;">using</code>
+<code>Microsoft.SharePoint;</code></span></div>
+<div><span><code style="font-weight:bold;">using</code>
+<code>Microsoft.SharePoint.Workflow;</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code style="font-weight:bold;">namespace</code>
+<code>CompletedWorkflowCleanUp</code></span></div>
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">class</code>
+<code>Program</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">static</code>
+<code style="font-weight:bold;">void</code> <code>
+Main(</code><code style="font-weight:bold;">string</code><code>[] args)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Console.WriteLine(</code><code style="color:blue;">&quot;Please enter the site url&quot;</code><code>);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>String siteUrl = Console.ReadLine();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Console.WriteLine(</code><code style="color:blue;">&quot;Please enter the list title&quot;</code><code>);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>String listName = Console.ReadLine();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">using</code>
+<code>(SPSite site = </code><code style="font-weight:bold;">new</code>
+<code>SPSite(siteUrl))</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>SPWorkflowManager workflowManager = site.WorkflowManager;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">using</code>
+<code>(SPWeb web = site.OpenWeb())</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>SPList list = web.Lists[listName];</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>SPListItemCollection listItems = list.Items;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">foreach</code>
+<code>(SPListItem listItem </code><code style="font-weight:bold;">in</code>
+<code>listItems)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>SPWorkflowCollection wCollection = listItem.Workflows;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">for</code>
+<code>(</code><code style="font-weight:bold;">int</code>
+<code>i = 0; i &lt; wCollection.Count; i&#43;&#43;)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">if</code>
+<code>(wCollection[i].IsCompleted)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>workflowManager.RemoveWorkflowFromListItem(wCollection[i]);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>listItem.Update();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Console.WriteLine(</code><code style="color:blue;">&quot;Completed workflow instances are deleted for the
+ list&quot;</code> <code>&#43;list);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Console.ReadLine();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+
+</div>
+    
+    

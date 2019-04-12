@@ -1,0 +1,258 @@
+---
+layout: default
+title: Cấu hình Active Directory Rights Management Services (AD RMS) trên Windows Server 2012 - Phần 1 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong style="font-size:12.1px;">I- GIỚI THIỆU</strong></p>
+<p>Active Directory Rights Management Service (AD RMS) là dịch vụ được tích hợp sẵn trong Windows cho phép bảo vệ các tài liệu nhạy cảm trong doanh nghiệp bằng cách cho phép người dùng tùy ý phân quyền trên các tài liệu của mình và ngăn chặn việc đưa các tài
+ liệu nhạy cảm ra khỏi môi trường doanh nghiệp. Trong loạt bài viết về AD RMS này, tôi sẽ trình bày các thao tác cài đặt và cấu hình AD RMS để phân quyền và bảo vệ các tài liệu trong tổ chức, phân quyền cho người dùng thuộc tổ chức khác và tích hợp với
+<a href="http://www.mcthub.com/technologies/microsoft/windows-server/193-c-u-hinh-dynamic-access-control-dac-tren-windows-server-2012-ph-n-2-phan-lo-i-d-li-u.html">
+Dynamic Access Control (DAC)</a> để tự động bảo vệ các tài liệu nhạy cảm dựa theo điều kiện xác định.</p>
+<p>Trong phần 1 của loạt bài viết này tôi sẽ trình bày thao tác cơ bản bao gồm cài đặt và phân quyền cho các tài liệu nhạy cảm bằng ADRMS trên Windows Server 2012.</p>
+<p><strong>II- TRIỂN KHAI CHI TIẾT</strong></p>
+<p>Bài LAB sử dụng 2 server:</p>
+<p><strong><em>- DC2012:</em></strong> Domain Controller (domain <strong><em>mcthub.local</em></strong>) chạy Windows Serrer 2012</p>
+<p><strong><em>- CLIENT1:</em></strong> Domain Member chạy Windows 8 đã cài đặt Office 2010</p>
+<p>Bạn có thể tích tích hợp 2 máy này bằng cách cài đặt Office 2007/2010/2013 lên máy Domain Controller</p>
+<p>Bài LAB gồm các bước chính sau đây</p>
+<p>1- Chuẩn bị</p>
+<p>2- Cài đặt ADRMS</p>
+<p>3- Kiểm tra hoạt động của ADRMS</p>
+<p>4- Cấu hình RAC (Rights Account Certificate) và User Exclusion Policy</p>
+<p><strong>1- Chuẩn bị</strong></p>
+<p>Trên máy <strong><em>DC2012</em></strong>, mở <strong><em>Active Directory Users and Computers</em></strong>. Tạo một OU tên là
+<strong><em>RMS</em></strong>. Trong OU <strong><em>RMS</em></strong>, lần lượt tạo các user
+<strong><em>nam, trong, hien, duy</em></strong> và <strong><em>RMSSRVC </em></strong>(đây là account cần thiết để cài đặt ADRMS). Sau đó add user
+<strong><em>RMSSRVC</em></strong> vào group <strong><em>Domain Admins </em></strong>bằng cách bấm phải chuột lên user
+<strong><em>RMSSRVC - Add to a group</em></strong></p>
+<p><img alt=" " width="720" height="423" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image001.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn group <strong><em>Domain Admins</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="471" height="258" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image002.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Do ADRMS phân quyền bằng địa chỉ E-Mail, do đó bạn cần khai báo thuộc tính E-Mail cho các user. bấm phải chuột user
+<strong><em>duy</em></strong> - chọn <strong><em>Properties</em></strong></p>
+<p><img alt=" " width="720" height="423" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image003.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>E-Mail</em></strong>: Nhập <strong><em>duy@mcthub.local - OK</em></strong></p>
+<p><img alt=" " width="425" height="545" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image004.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tương tự như trên, lần lượt khai báo thuộc tính E-Mail Address cho các user như sau:</p>
+<p>- nam: <strong><em>nam@mcthub.local</em></strong></p>
+<p>- trong: <strong><em>trong@mcthub.local</em></strong></p>
+<p>- hien: <strong><em>hien@mcthub.local</em></strong></p>
+<p>Tạo một Universal group mới tên là <strong><em>Manager</em></strong></p>
+<p><img alt=" " width="720" height="423" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image005.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Group name</em></strong>: Nhập <strong><em>Manager</em></strong></p>
+<p>Mục <strong><em>Group scope</em></strong>: Chọn Universal - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="451" height="385" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image006.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tạo một Universal group mới tên là <strong><em>IT</em></strong></p>
+<p><img alt=" " width="720" height="423" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image007.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Group name</em></strong>: Nhập <strong><em>IT</em></strong></p>
+<p>Mục <strong><em>Group scope</em></strong>: Chọn Universal - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="451" height="385" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image008.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Khai báo thuộc tính E-Mail và thêm thành viên cho Group <strong><em>Manager</em></strong></p>
+<p><img alt=" " width="720" height="423" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image009.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tab General, trong khung <strong><em>E-Mail</em></strong>: nhập <strong><em>Manager@mcthub.local -
+</em></strong>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="414" height="462" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image010.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tương tự bạn khai báo thuộc tính E-Mail cho group <strong><em>IT</em></strong> là
+<strong><em>IT@mcthub.local</em></strong></p>
+<p>Add 2 user <strong><em>nam</em></strong> và <strong><em>trong</em></strong> vào danh sách thành viên group
+<strong><em>Manager</em></strong> <img alt=" " width="414" height="462" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image011.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Add 2 user <strong><em>duy </em></strong>và <strong><em>trong</em></strong> vào danh sách thành viên group
+<strong><em>IT</em></strong></p>
+<p><img alt=" " width="414" height="462" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image012.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tạo 2 thư mục <strong><em>C:\Data</em></strong> và <strong><em>C:\Public</em></strong></p>
+<p><img alt=" " width="720" height="355" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image013.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau đó lần lượt share 2 thư mục này cho <strong><em>Everyone</em></strong> quyền
+<strong><em>Full Control</em></strong></p>
+<p><img alt=" " width="720" height="464" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image014.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>2- Cài đặt ADRMS</strong></p>
+<p>Trên máy <strong><em>DC2012</em></strong>, mở <strong><em>Server Manager</em></strong> - Chọn
+<strong><em>Add Roles and Features</em></strong></p>
+<p><img alt=" " width="720" height="443" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image015.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image016.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image017.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image018.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu chọn dịch vụ <strong><em>Active Directory Rights Management Services</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image019.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Add Features</em></strong> để cài đặt các chức năng cần thiết cho dịch vụ</p>
+<p><img alt=" " width="420" height="438" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image020.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image021.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image022.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bảo đảm chọn role service <strong><em>Active Directory Rights Management Server</em></strong>. Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image023.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image024.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chấp nhận các thành phần cần thiết mặc định cho ADRMS - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image025.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Install</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image026.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi quá trình cài đặt hoàn tất, chọn <strong><em>Perform additional configuration</em></strong> để cấu hình cho ADRMS Server</p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image027.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image028.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Do đây là ADRMS Server đầu tiên được cài đặt - chọn <strong><em>Create a new Active Directory RMS root cluster</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image029.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>ADRMS cần sử dụng database để quản lý dữ liệu, bạn có thể dùng SQL Server hoặc Windows Internal Database (có sẵn trên Windows) để lưu trữ Database. SQL Server thích hợp hơn cho một hệ thống lớn. Trong bài LAB này do không cần thiết nên bạn chọn
+<strong><em>Use Windows Internal Database on this server</em></strong> - Nhấn <strong>
+<em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image030.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Specify</em></strong> để chỉ định account cài đặt</p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image031.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhập Username và Password của account <strong><em>RMSSRVC</em></strong> đã tạo ở bước chuẩn bị - Nhấn
+<strong><em>OK</em></strong></p>
+<p><img alt=" " width="429" height="316" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image032.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image033.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn chế độ cho thuật toán mã hóa RSA là <strong><em>Cryptographic Mode 2</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image034.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Do ADRMS cần một key dùng cho việc khôi phục sự cố và dùng để cái đặt các ADRMS Server thêm vào hệ thống. Bạn chọn
+<strong><em>User ADRMS centrally managed key storage</em></strong> để lưu trữ key này trên ADRMS Server - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image035.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhập Key Password tùy ý để mã hóa Key - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image036.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn trang Web mặc định cho ADRMS sử dụng là <strong><em>Default Web Site</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image037.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Để ADRMS có tính bảo mật cao hơn, bạn có thể cấu hình phương pháp mã hóa SSL cho Web Site cho thể chạy bằng HTTPS. Trong bài LAB này, do không cần thiết nên bạn có thể chọn
+<strong><em>Use an unencrypted connection (http://)</em></strong> - Nhập FQDN của máy ADRMS Server là
+<strong><em>dc2012.mcthub.local</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image038.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Khung <strong><em>Name</em></strong>: Chấp nhận tên mặc định - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image039.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Register the SCP Now</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image040.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Install</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image041.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi quá trình cài đặt và cấu hình hoàn tất - Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image042.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image043.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi cài đặt, bạn cần logoff, sau đó logon lại <strong><em>MCTHUB\Administrator</em></strong> và mở
+<strong><em>Active Directory Rights Management Services</em></strong></p>
+<p><img alt=" " width="720" height="446" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image044.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra ADRMS Console mở thành công. Đến đây ADRMS có thể hoạt động với các chức năng cơ bản mà không cần phải thực hiện thêm thao tác cấu hình nào</p>
+<p><img alt=" " width="719" height="419" src="http://mcthub.com/images/Conte hoàn tất - Nhấn <strong><em>Close</em></strong>ntLab/RMS-P1_files/image045.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>3- Kiểm tra hoạt động của ADRMS</strong></p>
+<p>Sang máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\nam</em></strong>, mở
+<strong><em>Word 2010</em></strong> và soạn thảo một văn bản với nội dung như bên dưới.</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image046.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bảo vệ văn bản và phân quyền đọc cho user <strong><em>trong</em></strong> truy cập bằng cách chọn
+<strong><em>File - Info - Protect Document - Restrict Permission by People - Restricted Access</em></strong></p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image047.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Xác nhận username và password - <strong><em>OK</em></strong></p>
+<p><img alt=" " width="439" height="316" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image048.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu <strong><em>Restrict permission to this document</em></strong></p>
+<p>Trong khung Read..: nhập <strong><em>trong@mcthub.local - </em></strong>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="450" height="344" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image049.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Lưu văn bản bằng cách nhấn <strong><em>Save</em></strong></p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image050.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Lưu văn bản vào thư mục <strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong>: Trong khung
+<strong><em>File name</em></strong>: Nhập <strong><em>\\DC2012\Data\DocumentOfNam</em></strong> - Nhấn
+<strong><em>Save</em></strong></p>
+<p><img alt=" " width="625" height="506" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image051.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trên máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\trong</em></strong>, truy cập thư mục
+<strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="413" height="213" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image052.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Mở văn bản <strong><em>DocumentOfNam</em></strong></p>
+<p><img alt=" " width="720" height="319" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image053.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Xác nhận username và password - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="429" height="307" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image054.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Microsoft Office Word sẽ thông báo văn bản đã bị giới hạn truy cập - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="560" height="167" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image055.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Quan sát user <strong><em>trong</em></strong> chỉ có thể đọc văn bản, ngoài ra không thể sửa chữa nội dung. Nhấn nút
+<strong><em>View Permission</em></strong> để xem chi tiết quyền truy cập</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image056.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Quan sát quyền truy cập của user <strong><em>trong - </em></strong>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="320" height="329" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image057.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Thử chọn một đoạn văn bản và bấm phải chuột lên đoạn văn bản đã chọn, quan sát các chức năng
+<strong><em>Copy, Cut.. </em></strong>đều bị vô hiệu hóa.</p>
+<p><img alt=" " width="720" height="491" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image058.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn menu <strong><em>File</em></strong>, quan sát các chức năng <strong><em>Save, Save as, Print</em></strong> đều bị vô hiệu hóa</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image059.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trên máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\duy, </em>
+</strong>truy cập thư mục <strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="413" height="213" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image052.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Mở văn bản <strong><em>DocumentOfNam</em></strong></p>
+<p><img alt=" " width="720" height="294" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image060.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Xác nhận username và password - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="429" height="307" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image061.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Microsoft Office Word sẽ thông báo văn bản đã bị giới hạn truy cập - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="560" height="167" src="http://mcthubtyle:solid;" /></p>
+<p>Trên máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\duy, </em>
+</strong>truy cập thư mục <strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="413" height="213" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image052.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Mở văn bản <strong><em>DocumentOfNam</em></strong></p>
+<p><img alt=" " width="720" height="294" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image060.jpg" style="border-width:0px;border-style:solid.com/images/ContentLab/RMS-P1_files/image055.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra user <strong><em>duy</em></strong> không được phân quyền nên không thể đọc được văn bản, hộp thoại thông báo đưa ra 3 lựa chọn</p>
+<p><strong><em>- Change user</em></strong>: Truy cập với quyền của user khác</p>
+<p><strong><em>- Yes:</em></strong> Gửi yêu cầu xin quyền truy cập bằng E-Mail đến địa chỉ nam@mcthub.local</p>
+<p><strong><em>- No:</em></strong> Không gửi yêu cầu xin quyền truy cập và thoát- Nhấn
+<strong><em>No</em></strong></p>
+<p><img alt=" " width="608" height="118" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image062.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>4- Cấu hình RAC (Rights Account Certificate) và User Exclusion Policy</strong></p>
+<p>Ngoài việc người dùng có thể phân quyền trên tài liệu của mình, RMS cho phép dùng RAC và User Exclution Policy để loại trừ quyền truy cập của người dùng chỉ định. Trong ví dụ này tôi sẽ loại trừ quyền đọc của user
+<strong><em>nam. </em></strong>Chọn<strong><em> Exclusion Policies - Users - Enable User Exclusion</em></strong></p>
+<p><img alt=" " width="719" height="363" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image063.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Exclude RAC</em></strong></p>
+<p><img alt=" " width="719" height="363" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image064.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>User name</em></strong>: Nhập <strong><em>nam@mcthub.local</em></strong> - Nhấn
+<strong><em>Finish</em></strong></p>
+<p><img alt=" " width="702" height="551" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image065.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra</p>
+<p><img alt=" " width="719" height="397" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image066.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\duy</em></strong>, mở Word 2010 tạo văn bản với nội dung như bên dưới</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image067.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bảo vệ văn bản và phân quyền đọc cho group <strong><em>Manager </em></strong>và quyền thay đổi văn bản cho group<strong><em> IT
+</em></strong>bằng cách chọn <strong><em>File - Info - Protect Document - Restrict Permission by People - Restricted Access</em></strong></p>
+<p><img alt=" " width="720" height="493" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image068.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu <strong><em>Restrict permission to this document</em></strong></p>
+<p>Trong khung <strong><em>Read..:</em></strong> Nhập <strong><em>Manager@mcthub.local</em></strong></p>
+<p>Trong khung <strong><em>Change</em></strong>..: Nhập <strong><em>IT@mcthub.local</em></strong></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="450" height="344" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image069.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Save</em></strong> để lưu văn bản</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image070.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Lưu văn bản vào thư mục <strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong>: Trong khung
+<strong><em>File name</em></strong>: Nhập <strong><em>\\DC2012\Data\IT-Document</em></strong>- Nhấn
+<strong><em>Save</em></strong></p>
+<p><img alt=" " width="625" height="506" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image071.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trên máy <strong><em>CLIENT</em></strong>, logon <strong><em>MCTHUB\nam</em></strong>, truy cập sang thư mục
+<strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="413" height="213" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image052.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Mở văn bản <strong><em>IT-Document</em></strong></p>
+<p><img alt=" " width="720" height="320" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image072.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Xác nhận username và password - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="429" height="307" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image073.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Microsoft Office Word sẽ thông báo văn bản đã bị giới hạn truy cập - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="560" height="167" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image055.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Microsoft Ofice Word thông báo không thể truy cập văn bản mặc dù user <strong>
+<em>nam</em></strong> là thành viên của group <strong><em>Manager</em></strong> - Nhấn
+<strong><em>OK</em></strong></p>
+<p><img alt=" " width="491" height="112" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image074.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="370" height="220" src="http://mcthub.com/images/ContentLab/RMS-P1_files/image075.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><em>Bài viết liên quan&nbsp;</em></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/windows-server/238-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-ad-rms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-2.html">Cấu hình Active Directory Rights Management Service (ADRMS)
+ trên Windows Server 2012 - Phần 2</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/windows-server/239-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-ad-rms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-3.html">Cấu hình Active Directory Rights Management Service (ADRMS)
+ trên Windows Server 2012 - Phần 3</a></p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a>
+<br />
+<a href="http://www.mcthub.com/technologies/microsoft/windows-server/237-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-adrms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-1.html">mcthub.com</a>
+
+</div>
+    
+    

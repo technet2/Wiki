@@ -1,0 +1,131 @@
+---
+layout: default
+title: Using and Packaging SQLDeploy Utility to deploy Dacpac - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div>
+<p style="margin:0px;">I recently hit a problem where we were trying to build DACPAC using VSTS2012, to be deployed in SQL Server 2008 R2. I believe this is worth sharing.<br />
+<br />
+To deploy DAC the following approach can be leveraged:<br />
+&nbsp;</p>
+</div>
+<h2><a name="DAC_Depolyment_Approach"></a>DAC Depolyment Approach</h2>
+<div>
+<p style="margin:0px;">1. Using SSMS</p>
+</div>
+<div>
+<p style="margin:0px;">2. Using SqlPackagement page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Using and Packaging SQLDeploy Utility to deploy Dacpac </h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div>
+<p style="margin:0px;">I recently hit a problem where we were trying to build DACPAC using VSTS2012, to be deployed in SQL Server 2008 R2. I believe this is wor</p>
+</div>
+<div></div>
+<div>
+<p style="margin:0px;">Please note the DACPAC referred here is built using VSTS 2012.</p>
+</div>
+<div></div>
+<h2><a name="Using_SSMS"></a><br />
+Using SSMS</h2>
+<div></div>
+<div>
+<p style="margin:0px;">When trying to import DACPAC using SSMS of 2008 R2 it refused to run throwing this serialization exception.</p>
+</div>
+<div></div>
+<p class="separator" style="margin:0px;clear:both;text-align:center;"><a href="http://2.bp.blogspot.com/-MXb--aquoNE/Ukq4ixak2II/AAAAAAAAAhQ/G8hM006ninU/s1600/error.jpg" style="margin-left:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-MXb--aquoNE/Ukq4ixak2II/AAAAAAAAAhQ/G8hM006ninU/s1600/error.jpg" style="border-width:0px;border-style:solid;" /></a></p>
+<div></div>
+<div></div>
+<div>
+<p style="margin:0px;">Quite anticipated as the DACPAC was built using new version of DAC version.</p>
+</div>
+<div></div>
+<div>
+<p style="margin:0px;">So workaround is to connect to SQL Server 2008 R2 using SSMS from SQL Server 2012 and import the data tier application. It will work perfectly as below snapshot says.</p>
+</div>
+<div></div>
+<div></div>
+<p class="separator" style="margin:0px;clear:both;text-align:center;"><a href="http://2.bp.blogspot.com/-ck5-PbHFpYw/Ukq50zLZJrI/AAAAAAAAAhg/S1xCU7s11lA/s1600/success.png" style="margin-left:1em;margin-right:1em;"><img alt=" " height="366" src="http://2.bp.blogspot.com/-ck5-PbHFpYw/Ukq50zLZJrI/AAAAAAAAAhg/S1xCU7s11lA/s400/success.png" width="400" style="border-width:0px;border-style:solid;" /></a></p>
+<div></div>
+<h2><a name="Using_SQLPackage_exe_MSDN"></a><br />
+Using SQLPackage.exe&nbsp;<a href="http://msdn.microsoft.com/en-us/library/hh550080(v=vs.103).aspx">MSDN</a><br />
+<br />
+</h2>
+<div>
+<p style="margin:0px;"><span style="font-size:12.1px;">I tried to follow the steps from&nbsp;</span><a href="http://technet.microsoft.com/en-us/library/ee210569%28v=sql.105%29.aspx" style="font-size:12.1px;">http://technet.microsoft.com/en-us/library/ee210569%28v=sql.105%29.aspx</a><span style="font-size:12.1px;">&nbsp;but
+ it didn&#39;t work for me.&nbsp;<br />
+</span><br />
+For me deployment is happening in target system which didn&#39;t had Sql Server 2012, Which means I have to provide SqlDeploy.exe as part of my deployment package.<br />
+When I found out that it worked with VSTS 2010 DACPAC package. I decided to switch to SqlDeploy.&nbsp;You can find SqlDeploy.exe&nbsp;@&nbsp;C:\Program Files (x86)\Microsoft SQL Server\110\DAC\bin\ &nbsp;location, if Sql Server 2012 is deployed.&nbsp;</p>
+</div>
+<div></div>
+<div></div>
+<h3><a name="Workaround_found"></a>Workaround found</h3>
+<ol>
+<li>I found the link&nbsp;<a href="http://sqlblog.com/blogs/jamie_thomson/archive/2012/05/30/redistribution-of-sqlpackage-exe-ssdt.aspx">http://sqlblog.com/blogs/jamie_thomson/archive/2012/05/30/redistribution-of-sqlpackage-exe-ssdt.aspx</a>, which provided me option
+ to install 4-5 msi in the deployment machine but that again requires quite an effort especially when this need to deployed in multiple environments.
+</li><li>Download ISO from&nbsp;<a href="http://download.microsoft.com/download/3/4/5/3458A46A-5593-40B2-BA56-81A713D21B81/SSDT_11.1.30914.0_EN.iso">http://download.microsoft.com/download/3/4/5/3458A46A-5593-40B2-BA56-81A713D21B81/SSDT_11.1.30914.0_EN.iso</a>&nbsp;and deploy
+ in the machine which handles deployment. Same reason waste of effort for small tool. My problem is we had all the database instances running in SQL Server 2008 R2 and installing&nbsp;<a href="http://www.microsoft.com/en-us/download/details.aspx?id=29065">SSDT</a>&nbsp;tool
+ though free was a major amount of effort in all the environments dev, test, integration, pre-production, etc.<br />
+<br />
+Since the above two workaround didn&#39;t work for me, I decided to find one myself and came up with one.
+</li></ol>
+<h3><a name="Wrap_SqlDeploy_Utility_in_deployment_package"></a>Wrap SqlDeploy Utility in deployment package</h3>
+<div>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-size:medium;"><span style="font-size:12px;">So I decided to wrap SQLDeploy utility in my deployment package itself. This requires to find all the dependencies which are required by this utility. After some research I
+ was able to find the set of dependent assemblies and files which can be independently taken to any environment and executed in standalone. It worked fine in most of the environments. Most of the files you can find from any SQL server 2012 deployed machine(C:\Program
+ Files (x86)\Microsoft SQL Server\110\DAC\bin\) with the exception for Microsoft.SqlServer.TransactSql.ScriptDom.dll, which you can find in C:\Program Files (x86)\Microsoft SQL Server\110\SDK\Assemblies folder.</span></p>
+<ol style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</ol>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://3.bp.blogspot.com/-rwjP9XDFCYU/UkrEHA7KD2I/AAAAAAAAAhs/0ZJHIDLLRhs/s1600/amb.png" style="margin-left:1em;margin-right:1em;"><img alt=" " src="http://3.bp.blogspot.com/-rwjP9XDFCYU/UkrEHA7KD2I/AAAAAAAAAhs/0ZJHIDLLRhs/s1600/amb.png" style="border-width:0px;border-style:solid;" /></a></p>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<h2 style="color:#000000;font-family:&#39;Times New Roman&#39;;line-height:normal;"><a name="SqlDeploy_Command_Example"></a>SqlDeploy Command Example</h2>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-size:medium;">
+<p style="margin:0px;"><span style="font-size:12px;">SqlPackage /Action:Publish &nbsp;/Sf:Northwind.dacpac &nbsp;/TargetDatabaseName:Testdac &nbsp;/TargetServerName:MyServer /Variables:INSERTDATA=0 /Variables:IPADDRESS=127.0.0.1 /Variables:DATABASE_CONNECTIONSTRING=&quot;Data Source=.;initial
+ catalog=Engine;integrated security=True;MultipleActiveResultSets=True;&quot;</span></p>
+</div>
+<div style="color:#000000;font-size:medium;">
+<p style="margin:0px;"><span style="font-size:12px;"><br />
+</span></p>
+</div>
+<div style="color:#000000;font-size:medium;">
+<p style="margin:0px;"><span style="font-size:12px;">Please let me know if you are able to import DACPAC using the above files.</span></p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New estdac &nbsp;/TargetServerName:MyServer /Variables:INSERTDATA=0 /Variables:IPADDRESS=127.0.0.1 /Variables:DATABASE_CONNECTIONSTRING=&quot;Data Source=.;initial
+ catalog=Engine;integrated security=True;MultipleActiveResultSets=True;&quot;</span></p>
+</div>
+<div style="color:#000000;font-size:medium;">
+<p style="margin:0px;"><span style="font-size:12px;"><br />
+</span></p>
+</div>
+<div style="color:#000000;font-size:medium;">
+<p style="margin:0px;"><span style="font-size:12px;">Please let me know if you are able to import DACPAC using the above files.</span></p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times NewRoman&#39;;font-size:medium;"></div>
+</div>
+
+</div>
+    
+    

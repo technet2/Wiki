@@ -1,0 +1,101 @@
+---
+layout: default
+title: Deploying AD RMS in Windows Server 2008 R2 SP1 with SQL Server 2012 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>This article is for those who are attempting to deploy Active Directory Rights Management Servili>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-topces (AD RMS) on a server computer running Windows Server 2008 R2 SP1 that uses SQL Server 2012 to support the AD RMS databases.</p>
+<p>While the steps to accomplish AD RMS role deployment in Windows Server 2012 using SQL Server 2012 are covered fully in the
+<a href="http://technet.microsoft.com/en-us/library/adrms-test-lab-guide-base.aspx">
+Test Lab Guide: Deploying an AD RMS Cluster</a>, some additional instructions are needed to be able to use SQL Server 2012 with AD RMS in earlier versions of Windows Server.
+</p>
+<p><strong>Why are new instructions needed to cover AD RMS deployment for Windows Server 2008 R2 SP1 with SQL Server 2012?</strong></p>
+<p dir="ltr" style="margin-right:0px;">Specifically, if you try to deploy AD RMS in Windows Server 2008 or Windows Server 2008 R2, you will&nbsp;not be able to complete role deployment using a SQL Server 2012 intallation as expected. This is because SQL Server 2012
+ does not contain a stored procedure, <strong>sp_dboption</strong>, that the legacy AD RMS deployments require and are expecting to be present. A hotfix&nbsp;is available&nbsp;for AD RMS that can be applied to your Windows Server 2008 R2 SP1 installation to workaround
+ this issue and utilize SQL Server 2012. </p>
+<blockquote><strong>Note</strong><br />
+The hot fix described above only applies to Windows Server 2008 R2 SP1. For earlier versions of Windows Server, no hot fix is available.
+</blockquote>
+<h2><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a><a name="To_deploy_AD_RMS_in_Windows_Server_2008_R2_SP1_with_SQL_Server_2012"></a>To
+ deploy AD RMS in Windows Server 2008 R2 SP1 with SQL Server 2012</h2>
+<ol>
+<li>Install Windows Server 2008 R2 SP1 (if needed). </li><li>
+<p>Install the AD RMS server role using Windows PowerShell.</p>
+<p>Open an elevated Windows PowerShell prompt and run the following command to load the Server Manager cmdlet module.</p>
+<code>Import-Module ServerManager</code>
+<p>Enter the following command to install the AD RMS server role. (Note: include the
+<b>-IncludeAllSubFeatures</b> switch if you also want to add the Identify Federation Support role feature.)</p>
+<br />
+<code>Add-WindowsFeature ADRMS</code> <br />
+<br />
+</li><li>Install the hot fix for AD RMS on Windows Server 2008 R2 SP1 from here: <a href="http://support.microsoft.com/kb/2619256">
+http://support.microsoft.com/kb/2619256</a> </li><li>
+<p>Deploy the AD RMS cluster using Windows PowerShell.</p>
+<p>Open an elevated Windows PowerShell prompt and run the following command to load the AD RMS deployment cmdlet module.
+<code>Import-Module ADRMS</code> </p>
+<p>You can then use Windows PowerShell commands as needed to complete the AD RMS deployment process. For an example of the types of command that are necessary to deploy an AD RMS cluster, you can refer to the following example set of commands.</p>
+&nbsp;
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">Import-Module ADRMS</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">New-PSDrive -PSProvider ADRMSInstall -Name RC -Root RootCluster</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-color:white;"><span><code style="color:black;"># Set the AD RMS service account</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">$adrmssvc = Get-Credential</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-ItemProperty –Path RC:\ -Name ServiceAccount -Value $adrmssvc</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"># Configure the AD RMS server to use the SQL1 server and the default instance</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-ItemProperty –Path RC:\ClusterDatabase -Name ServerName -Value SQL1</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">Set-ItemProperty –Path RC:\ClusterDatabase -Name InstanceName -Value MSSQLSERVER</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-color:white;"><span><code style="color:black;"># Securely store the cluster key password string in a variable and assign it to your AD RMS installation</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">$password = Read-Host -AsSecureString -Prompt &quot;Password:&quot;</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-ItemProperty -Path RC:\ClusterKey -Name CentrallyManagedPassword -Value $password</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"># Set the AD RMS cluster address</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-ItemProperty -Path RC:\ -Name ClusterURL -Value http://app1.corp.contoso.com:80</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"># Set the SLC name for your AD RMS installation</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-ItemProperty -Path RC:\ -Name SLCName -Value &quot;APP1&quot;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code>Set-ItemProperty -Path RC:\ClusterKey -Name CentrallyManagedPassword -Value $password</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-col</span>&nbsp;</div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"># Register the SCP connection point
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-ItemProperty -Path RC:\ -Name RegisterSCP -Value $true</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"></code></span>&nbsp;</div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;"># Install the AD RMS root cluster using the settings provided</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">Set-Location RC:\</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">Install-ADRMS –Path.</code></span></div>
+</div>
+<p>For more information on using AD RMS cmdlets for Windows PowerShell, see <a href="http://technet.microsoft.com/en-us/library/ee221099.aspx">
+Using Windows PowerShell to Deploy AD RMS</a> and <a href="http://technet.microsoft.com/en-us/library/ee617271.aspx">
+AD RMS Cmdlets in Windows PowerShell</a>.</p>
+</li></ol>
+<h2><a name="Troubleshooting_issues_related_to_hot_fix_for_Windows_Server_2008_R2_SP1_and_AD_RMS"></a><a name="Troubleshooting_issues_related_to_hot_fix_for_Windows_Server_2008_R2_SP1_and_AD_RMS"></a><a name="Troubleshooting_issues_related_to_hot_fix_for_Windows_Server_2008_R2_SP1_and_AD_RMS"></a>Troubleshooting issues related to hot fix for Windows Server 2008 R2 SP1 and AD RMS
+</h2>
+
+<p><strong>Issue</strong> - After an administrator creates (or join upgrades) a cluster using WS2008 R2 SP1 AD RMS (with the hotfix) to SQL 2012, they cannot join other WS2008 R2 SP1 servers (with the hotfix) to that cluster. When they run the PowerShell cmdlet
+ to set the DatabaseName value to the DRMS_Config_&lt;cluster&gt;_&lt;port&gt; database, they will get this error:</p>
+<blockquote><code>Validating Config Database Info. Returning message :AD RMS cannot join the specified cluster because the root cluster computer is running a later version of Windows Server than this computer. Upgrade this computer to the same version of Windows
+ Server (or later) as the root cluster computer before attempting to add the AD RMS role to this computer.
+</code></blockquote>
+<p><strong>Cause</strong> - When the first server creates (or join-upgrades) the cluster, it sets the AdRmsFileVersion to 6.1.7601.21820 because of the hotfix. The default AdRmsFileVersion for WS2008 R2 SP1 is 6.1.7601.17514. When the second server tries to
+ join a cluster, the joining code expects the version to be the default 6.1.7601.17514, but it sees 6.1.7601.21820. So the code blocks setting the DatabaseName to that cluster.</p>
+<p><strong>Workaround</strong> - Administrators can manually reset the AdRmsFileVersion value back to 6.1.7601.17514 and the joining code will not block setting the DatabaseName. Note that the second join will also increment the version number, so customers
+ will&nbsp;have to reset it again before joining any other R2 SP1 servers to that database.</p>
+
+<p><span style="font-size:10px;"></span></p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

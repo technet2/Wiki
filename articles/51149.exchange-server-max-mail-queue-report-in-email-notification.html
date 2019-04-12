@@ -1,0 +1,145 @@
+---
+layout: default
+title: Exchange Server Max Mail Queue Report in Email Notification - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="text-align:justify;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Steps">Steps</a></li><li class="hierarchy-item"><a href="#Creating_bat_File">Creating .bat File</a></li><li class=ass="r2 fiji-r"hierarchy-item"><a href="#Creating_PS1_Script">Creating .PS1 Script</a></li><li class="hierarchy-item"><a href="#Scheduling_a_Task_in_Exchange">Scheduling a Task in Exchange</a></li><li class="hierarchy-item"><a href="#Results_in_Email">Results in Email</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<hr />
+<br />
+<br />
+Exchange Server Queue is one of the most important topics for every Exchange administrator. Queue Viewer is part of the Exchange Toolbox that&#39;s installed on Mailbox servers and Edge Transport server in Exchange Server 2016. Queue Viewer is a most important
+ tool to quickly troubleshoot the mail flow related stuff. Most of the administrator doesn&#39;t have time to Logon to each Exchange Server to have to view on mail queue.
+<br />
+<br />
+Here we will see how we can schedule a task to keep an eye on Max queue of Exchange Server in our inbox. We need to create a batch file and PS1 file and keep them somewhere in you Exchange Server.
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="Steps"></a>Steps</h1>
+<div style="text-align:justify;"><br />
+We need to create two files and keep them somewhere in your Exchange drives my docs, download or C:\ drive etc where you have full permission to run these file in-case if you have used delegated account for Exchange installation. File names with extension are
+ as below:- <br />
+<br />
+<ul>
+<li>ExchangeMaxMailQueue.bat </li><li>ExchangeMaxMailQueue.PS1 </li></ul>
+</div>
+<h1 style="text-align:justify;"><a name="Creating_bat_File"></a>Creating .bat File
+</h1>
+<div style="text-align:justify;"><br />
+Open the ExchangeMaxMailQueue.bat file and paste the following path which can vary to your environment, or as per your Exchange application installation.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PowerShell.exe -PSConsoleFile &quot;D:\Program Files\Microsoft\Exchange Server\V15\Bin\ExShell.psc1&quot; -Command &quot;. &#39;C:\Program Files\Update Services\Exchange
+ Bats\Exchange Bats\ExchangeMaxMailQueue.ps1&#39;&quot;</code></span></div>
+</div>
+<br />
+You can point to this PowerShell.exe where your Exchange is installed. In this case its installed in D:\ so its using that path,&nbsp; the 2nd part of the command is the path of your .PS1 script where your place it.
+<br />
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="Creating_PS1_Script"></a>Creating .PS1 Script
+</h1>
+<div style="text-align:justify;"><br />
+We will open the ExchangeMaxMailQueue.PS1 script in any editor and fill the following information.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">01.</code><span><code style="color:#000000;">function check_queue</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">02.</code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">03.</code><span><code style="color:#000000;">$a = get-transportservice | get-queue
+ | measure-object MessageCount -max</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">04.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">05.</code><span><code style="color:#000000;">if ($a.Maximum -gt 10)</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">06.</code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">07.</code><span><code style="color:#000000;">send_email $a.Maximum</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">08.</code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">09.</code><span><code style="color:#000000;">start-sleep -s 300</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">10.</code><span><code style="color:#000000;">check_queue</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">11.</code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">12.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">13.</code><span><code style="color:#000000;">function send_email</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">14.</code><span><code style="color:#000000;">{param ($queue_size)</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">15.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">16.</code><span><code style="color:#000000;">$emailFrom = &quot;ExchangeMailQueue@mstechguru.ae&quot;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">17.</code><span><code style="color:#000000;">$emailTo = &quot;shakir.hussain@mstechguru.ae&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">18.</code><span><code style="color:#000000;">$subject = &quot;Exchange Max Mail QUEUE&quot;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">19.</code><span><code style="color:#000000;">$body = &quot;Message Queues are high, max
+ value $queue_size&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">20.</code><span><codngeMailQueue@mstechguru.ae&quot;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">17.</code><span><code style="color:#000000;">$emailTo = &quot;shakir.hussain@mstechguru.ae&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">18.</code><span><code style="color:#000000;">$subject = &quot;Exchange Max Mail QUEUE&quot;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:e style="color:#000000;">$smtpServer = &quot;smtp.mstechguru.ae&quot;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">21.</code><span><code style="color:#000000;">$smtp = new-object Net.Mail.SmtpClient($smtpServer)</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">22.</code><span><code style="color:#000000;">$smtp.Send($emailFrom, $emailTo, $subject,
+ $body)</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">23.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">24.</code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">25.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;text-align:right;color:#5c5c5c;padding-right:0.3em;display:block;float:left;">26.</code><span><code style="color:#000000;">check_queue</code></span></div>
+</div>
+<br />
+In Script you can change Subject value, From Value, To Value and SmtpServer value as per your environment. In From value we can put any dummy email ID which will later appear in Email from option. So no need to put any valid email address in From. In To option
+ we have to put some valid email address for Exchange Administrator who will receive email on daily basis and will keep an eye on increasing disk size.
+<br />
+<br />
+At this point we have created both files and keep them in C:\ drive somewhere. Now we will create a Schedule Task to run this .bat file on daily basis at particular time like when administrator takes coffee or tea at morning he/she can schedule this at that
+ time to have a view to his inbox for Exchange Disk status. <br />
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="Scheduling_a_Task_in_Exchange"></a>Scheduling a Task in Exchange</h1>
+<div style="text-align:justify;"><br />
+Open the Task Scheduler and click Create Basic Task<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1817.2018_2D00_02_2D00_02_5F00_23_2D00_06_2D00_54.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1817.2018_2D00_02_2D00_02_5F00_23_2D00_06_2D00_54.png" style="border-width:0px;border-style:solid;" /></a>&nbsp;<span class="field-item-input"><a class="internal-link upload-file" id="ctl00_content_ctl16_ctl01_Insert"><span></span></a><br />
+<br />
+Click Next, select Daily and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2728.2018_2D00_02_2D00_02_5F00_23_2D00_07_2D00_56.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2728.2018_2D00_02_2D00_02_5F00_23_2D00_07_2D00_56.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Click Next, select the Date and time as per your time zone and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2313.2018_2D00_02_2D00_02_5F00_23_2D00_08_2D00_29.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2313.2018_2D00_02_2D00_02_5F00_23_2D00_08_2D00_29.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Select Start a Program and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7384.2018_2D00_02_2D00_02_5F00_23_2D00_09_2D00_01.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7384.2018_2D00_02_2D00_02_5F00_23_2D00_09_2D00_01.png" style="border-width:0px;border-style:solid;" /></a><br />
+</span><br />
+Click Next<br />
+<br />
+You can select the path of your Bat file where you place it<br />
+<br />
+&quot;C:\Program Files\Update Services\Exchange Bats\Exchange Bats\ExchangeMaxMailQueue.bat&quot;<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4666.2018_2D00_02_2D00_03_5F00_0_2D00_26_2D00_51.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4666.2018_2D00_02_2D00_03_5F00_0_2D00_26_2D00_51.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Click Next <br />
+<br />
+Click Open the Properties dialog checkbox and click Finish<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7127.2018_2D00_02_2D00_03_5F00_0_2D00_36_2D00_39.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7127.2018_2D00_02_2D00_03_5F00_0_2D00_36_2D00_39.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Go to Trigger and click Edit to edit the condition, you can get the queue hourly basis so that you should have a record of your mail queue but you can configure it as per your need and environment.
+<br />
+<br />
+Click Repeat Task Evey Checkbox, click OK and OK to save the task<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2438.2018_2D00_02_2D00_03_5F00_1_2D00_08_2D00_58.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2438.2018_2D00_02_2D00_03_5F00_1_2D00_08_2D00_58.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+We can have a view of the schedule timings and date etc, and Click OK to finish the Task.<br />
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="Results_in_Email"></a>Results in Email</h1>
+<div style="text-align:justify;"><br />
+When task will trigger you will receive an email having Max queue details as below.<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1122.2018_2D00_02_2D00_03_5F00_1_2D00_33_2D00_07.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1122.2018_2D00_02_2D00_03_5F00_1_2D00_33_2D00_07.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+This will help you to keep an eye on Mail Queue in the mail. <br />
+<hr />
+<br />
+</div>
+
+</div>
+    
+    

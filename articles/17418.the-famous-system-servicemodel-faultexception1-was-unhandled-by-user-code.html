@@ -1,0 +1,87 @@
+---
+layout: default
+title: The famous System.ServiceModel.FaultException`1 was unhandled by user code - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Introduction"></a><span style="font-size:12px;font-family:&#39;Segoe UI&#39;;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#The_FaultContract">The FaultContract</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Server_side_code">Server side code:</a></li><li class="hierarchy-item"><a href="#Client_side_code">Client side code:</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Desabling_the_error">Disabling the error</a></li></ul><div class="hierarchy-list-footer"> </div></div></span><br />
+Introduction</h1>
+<div><br />
+Years ago, I personally met the famous error &quot;System.ServiceModel.FaultException&#39;1 was not handle by user code&quot; in one of my WCF project. Since that tile I get a lot of great comment on my blog on that same issue still today. In order to bring to that topic
+ a better visibility, I decided to write and update that article here on this wiki.<br />
+<br />
+Managing a correct error handling process in an application is a nightmare if you want to do it properly and I would say that it is not always the best exciting part, but it is absolutly needed to prevent as much as possible unhandle situation. In a normal
+ application you simply place the code inside try-catch block with the exception type, and there are handle as normal .net exception object that you can bubble up.</div>
+<div>With WCF service I have discover around different reading that it is a bit different, simply because WCF need to guaranty interoperability with any client application in order that they are able to catch error returned.</div>
+<div>For that WCF need to convert the “normal .NEt exception” into a SOAP message exception that will be understandable from client application.</div>
+<div>&nbsp;<br />
+</div>
+<h1><a name="The_FaultContract"></a>The FaultContract</h1>
+<div>To achive this you need to specify a <strong>FaultContract </strong>attrribute in your service either declaratively or imperatively way. For my case I have done it with declarative.</div>
+<div>&nbsp;You specify the declarative FaultContrat as follow for your service method:<br />
+</div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="color:#000000;">OperationContract]</code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;</code><code style="color:#000000;">[FaultContract (</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(MyError))]</code></div>
+<div style="background-color:#ffffff;"><code>&nbsp;</code><code style="color:#000000;">Boolean myMethod();</code></div>
+</div>
+<div><br />
+MyError is here a custom type which define an error message</div>
+<div></div>
+<div>After having configured the service FaultContractAttribute, next you need to raise the exception from your server side service method code as follow :<br />
+<br />
+</div>
+<h2><a name="Server_side_code"></a>Server side code:</h2>
+<div><br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception exc)</code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;</code><code style="color:#000000;">{</code></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">MyError ErrLog =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Maillefer.Nomos.Types.Common.MyError (“This </code><code style="color:#006699;font-weight:bold;">is</code>
+<code style="color:#000000;">an error”,”Critical”);</code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">FaultException&lt;MyError&gt; fe =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+FaultException&lt;MyError &gt;(ErrLog, </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">FaultReason(ErrLog.Message));</code></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;</code><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#000000;">fe;</code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;</code><code style="color:#000000;">}</code></div>
+</div>
+</div>
+<h2>&nbsp;</h2>
+<h2><a name="Client_side_code"></a>Client side code:</h2>
+<p>From the client application side you simply need to catch the FaultException error type as you normally do and retrive the message return by the Servcie SOAP message as follow:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(FaultException &lt;MyError&gt; MyError)</code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;</code><code style="color:#000000;">{</code></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">msg = Error.Detail.Message; </code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">MessageBox.Show (msg);</code></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">wcfclient.Close();</code></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;</code><code style="color:#000000;">}<br />
+</code></div>
+</div>
+<p dir="ltr">You then receive the error message send from your server, inside your client application.. Hmmm this is what I was expecting but it was not behaving as expected. I spend days to cross check my code and verify impementation to get the exception
+ correctly thrown but when runnig my application my service was stoping at the time it was throwing the exception (throw fe). The error return from that execution was something strange like :
+</p>
+<p dir="ltr"><em>“<strong>System.ServiceModel.FaultException`1 was unhandled by user code</strong>“</em>
+</p>
+<p dir="ltr">After a lot of research I find out the solution on a post mentionning that it was due to some setting of
+<strong>debugging scenario of my VS environement</strong>, which make my code execution stop at each exception with not really logic message wich was giving a lot of confusion.
+</p>
+<br />
+<h1><a name="Desabling_the_error"></a>Disabling the error</h1>
+<p>To remove this behaviour it was advise to uncheck the 2 following options from theVisual Studio Editor&nbsp;Tools-&gt;Option menu of IDE:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0654.Capture.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x300/__key/communityserver-wikis-components-files/00-00-00-00-05/0654.Capture.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+So simple thing which could save your weeks.</p>
+
+</div>
+    
+    

@@ -1,0 +1,128 @@
+---
+layout: default
+title: Create a Custom Root Folder in all the Mailboxes (Bulk) in Exchange 2010 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Refer the below link for the original script , and Customized it a little</p>
+<p><a href="http://blogs.msdn.com/b/akashb/arcavigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 clashive/2011/07/23/creating-folder-using-ews-managed-api-1-1-from-powershell.aspx">http://blogs.msdn.com/b/akashb/archive/2011/07/23/creating-folder-using-ews-managed-api-1-1-from-powershell.aspx</a></p>
+<p><strong></strong></p>
+<p><strong>And Please Test in your lab – Before</strong> <strong>proceeding into your live Environment</strong></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>There is a a good script where we can use to create a Custom root Folder in all the Mailboxes in your environment.</p>
+<p>&nbsp;</p>
+<p>Were we can create Custom Folders Like below for single mailbox and for all the mailboxes in Bulk</p>
+<p><a class="gallery_colorbox cboxElement" href="http://careexchange.in/wp-content/uploads/2012/02/image58.png"><img title="image" alt="image" src="http://careexchange.in/wp-content/uploads/2012/02/image_thumb58.png" width="243" height="208" style="border-width:0px;border-style:solid;display:inline;" /></a></p>
+<p>&nbsp;</p>
+<p>Prerequisites -</p>
+<p>Download and Install in your Server</p>
+<p>Exchange Web Services Managed API</p>
+<p><a title="http://www.microsoft.com/download/en/details.aspx?id=13480" href="http://www.microsoft.com/en-us/download/details.aspx?id=28952">http://www.microsoft.com/en-us/download/details.aspx?id=28952</a></p>
+<p>——</p>
+<p>Add the User to the “ApplicationImpersonation” Role assignment</p>
+<p>New-managementroleassignment –Role “ApplicationImpersonation” –user administrator</p>
+<p>&nbsp;</p>
+<p><a class="gallery_colorbox cboxElement" href="http://careexchange.in/wp-content/uploads/2012/02/image59.png"><img title="image" alt="image" src="http://careexchange.in/wp-content/uploads/2012/02/image_thumb59.png" width="1028" height="156" style="border-width:0px;border-style:solid;display:inline;" /></a></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Now you can go ahead and use the script—</p>
+<p>Please Try for the One Mailbox – And Please Test in your lab – Before proceeding into your live Environment</p>
+<p>&nbsp;</p>
+<p>[string]$info = “White” # Color for informational messages<br />
+[string]$warning = “Yellow” # Color for warning messages<br />
+[string]$error = “Red” # Color for error messages<br />
+[string]$LogFile = “C:\Temp\Log.txt” # Path of the Log File</p>
+<p>function CreateFolder($MailboxName)<br />
+{<br />
+Write-host “Creating Folder for Mailbox Name:” $MailboxName -foregroundcolor $info<br />
+Add-Content $LogFile (“Creating Folder for Mailbox Name:” &#43; $MailboxName)</p>
+<p>#Change the user to Impersonate<br />
+$service.ImpersonatedUserId = new-object Microsoft.Exchange.WebServices.Data.ImpersonatedUserId([Microsoft.Exchange.WebServices.Data.ConnectingIdType]::SmtpAddress,$MailboxName);</p>
+<p>#Create the folder object</p>
+<p>$oFolder = new-object Microsoft.Exchange.WebServices.Data.Folder($service)<br />
+$oFolder.DisplayName = $FolderName</p>
+<p>#Call Save to actually create the folder<br />
+$oFolder.Save([Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::<strong>msgfolderroot</strong>)</p>
+<p>Write-host “Folder Created for ” $MailboxName -foregroundcolor $warning<br />
+Add-Content $LogFile (“Folder Created for ” &#43; $MailboxName)</p>
+<p>$service.ImpersonatedUserId = $null<br />
+}</p>
+<p>#Change the name of the folder<br />
+$FolderName = “<strong>Customer Folder Name</strong>”<br />
+Import-Module -Name “C:\Program Files\Microsoft\Exchange\Web Services\1.1\Microsoft.Exchange.WebServices.dll”</p>
+<p>$service = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService([Microsoft.Exchange.WebServices.Data.ExchangeVersion]::Exchange2010_SP1)</p>
+<p># Set the Credentials<br />
+$service.Credentials = new-object Microsoft.Exchange.WebServices.Data.WebCredentials<strong>(“Administrator”,”Type your Password Here”,”careexchange.in”)</strong></p>
+<p># Change the URL to point to your cas server<br />
+$service.Url= new-object Uri(“<a href="https://localhost/EWS/Exchange.asmx%22)">https://localhost/EWS/Exchange.asmx%22)</a></p>
+<p># Set $UseAutoDiscover to $true if you want to use AutoDiscover else it will use the URL set above<br />
+$UseAutoDiscover = $false<br />
+<strong>$a = get-mailbox</strong></p>
+<p>$a | foreach-object {<br />
+$WindowsEmailAddress = $_.WindowsEmailAddress.ToString()</p>
+<p>#if ($UseAutoDiscover -eq $true) {<br />
+# Write-host “Autodiscovering..” -foregroundcolor $info<br />
+#$UseAutoDiscover = $false<br />
+$service.AutodiscoverUrl($WindowsEmailAddress)<br />
+#Write-host “Autodiscovering Done!” -foregroundcolor $info<br />
+# Write-host “EWS URL set to :” $service.Url -foregroundcolor $info</p>
+<p># }<br />
+#To catch the Exceptions generated<br />
+# trap [System.Exception]<br />
+# {<br />
+# Write-host (“Error: ” &#43; $_.Exception.Message) -foregroundcolor $error;<br />
+# Add-Content $LogFile (“Error: ” &#43; $_.Exception.Message);<br />
+# continue;<br />
+# }<br />
+CreateFolder($WindowsEmailAddress)<br />
+}</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Do the Edits Required in the Script –</p>
+<p>****</p>
+<p><strong>msgfolderroot denotes the Root of the Mailbox , If you specify inbox for example it creates the folder below the inbox</strong></p>
+<p>****</p>
+<p>Change your</p>
+<p>User name – Password – Domain Name -</p>
+<p>****</p>
+<p><strong>$a = get-mailbox</strong> denotes all the mailbox</p>
+<p>To Run for a single mailbox (use the alias)</p>
+<p><strong>$a = get-mailbox</strong> “User1”</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Save it a Notepad and Rename it to .ps1 file</p>
+<p>&nbsp;</p>
+<p>And Open Power shell locate your powershell into the folder you saved the script</p>
+<p>.\create.ps1 for example</p>
+<p><a class="gallery_colorbox cboxElement" href="http://careexchange.in/wp-content/uploads/2012/02/image60.png"><img title="image" alt="image" src="http://careexchange.in/wp-content/uploads/2012/02/image_thumb60.png" width="712" height="193ss)<br />
+}</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Do the Edits Required " style="border-width:0px;border-style:solid;display:inline;" /></a></p>
+<p>&nbsp;</p>
+<p>Download Script -</p>
+<p><a href="http://gallery.technet.microsoft.com/Create-a-Custom-root-3aac61da" target="_blank">CustomRootFolder.ps1</a></p>
+<p>Great !!</p>
+<p>You learnt how to create Custom root folders in all the mailboxes</p>
+<p>&nbsp;</p>
+<p>Regards</p>
+<p>Satheshwaran Manoharan</p>
+
+</div>
+    
+    

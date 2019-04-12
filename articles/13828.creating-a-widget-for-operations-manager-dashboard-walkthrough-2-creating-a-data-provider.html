@@ -1,0 +1,1104 @@
+---
+layout: default
+title: Creating a Widget for Operations Manager Dashboard - Walkthrough #2 - Creating a Data Provider - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>This walkthrough will show you how to build a data provider and corresponding query that can be used by an Operations Manager 2012 (OM12) Widget that can be used in a dashboard created in the Operations Console. In this walk through you will learn the following:</p>
+<ol>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Create a
+</span><span style="line-height:115%;font-family:consolas;font-size:12px;">[<span style="color:steelblue;font-size:12px;">DataProvider</span>]
+</span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">class that contains a
+</span><span style="line-height:115%;font-family:consolas;font-size:12px;">[<span style="color:steelblue;font-size:12px;">DataCommand</span>]
+</span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">public method. Once the assembly that contains this class is registered in a management pack and is deployed to the server when the management pack is installed, a new dataProvider
+ is then available for access via a query.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Create a class that performs as a “query”. It uses the
+</span><span style="color:steelblue;line-height:115%;font-family:consolas;font-size:12px;">IDataGateway
+</span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">interface to access the dataProvider that was just implemented. This code, which runs on the client side, provides a public property titled Output. Visual components can bind
+ to this property to receive the data supplied by the dataProvider.</span> </li></ol>
+<h1><a name="Create_Data_Provider"></a>1. Create Data Provider</h1>
+<p>The DataProvider component contains:</p>
+<ul>
+<li>Code to retrieve the data it is designed to provide. This data can be retrieved via the SDK, the Data Warehouse, or an external data source.
+</li><li>One or more data commands that can be called to access the data.&nbsp; </li></ul>
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">The code must use attributes on classes and methods to identify the dataProvider’s entry points.</span><br />
+<br />
+<h2>1.1 <a name="Create_the_DataProvider_Project"></a>Create the DataProvider Project
+</h2>
+<ol>
+<li>Start Visual Studio and select <strong>File </strong>| <strong>New </strong>|
+<strong>Project</strong>. </li><li>Select <strong>Visual C#</strong>. </li><li>In the right pane, select <strong>Class Library</strong>. </li><li><span style="font-size:12px;">Name the project <em>SimpleDataProvider</em> and click
+<strong>OK</strong>. </span></li><li><span style="font-size:12px;">Delete the <strong>Class1.cs</strong> file that was automatically added to the project.
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add a new Class:
+<br />
+</span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Right click the project title and select
+<strong>Add </strong>| <strong>New Item</strong>.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Select
+<strong>Class</strong>.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Name the class
+<em>SimpleProvider.cs </em>and click <strong>Add</strong>.</span> </li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><span style="font-size:12px;">Add a reference to&nbsp;<span style="font-size:12px;font-weight:bold;">Microsoft.EnterpriseManagement.Presentation.Core</span> assemblies:</span><br />
+</span>
+<ol style="list-style-type:lower-alpha;">
+<li>Copy <em>Microsoft.EnterpriseManagement.Presentation.Core.dll</em> from the <em>
+SimpleDataProvider\bin\Debug</em> folder of the <a href="http://gallery.technet.microsoft.com/Creating-a-Widget-for-281285a2">
+sample files for this walkthrough</a>. </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Select the
+<span style="font-size:12px;font-weight:bold;">Browse </span>tab.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Navigate to the assembly and then click
+<span style="font-size:12px;font-weight:bold;">OK</span>.</span> </li></ol>
+</li></ol>
+<h2><a name="Add_DataProvider_Class"></a>1.2 Add DataProvider Class</h2>
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">It is possible to create multiple dataProvider classes in the assembly.&nbsp;&nbsp; Each dataProvider class can have one or more data commands defined.&nbsp; In this example only a single dataProvider
+ will be created.</span><br />
+<ol>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Replace the code in SimpleProvider.cs</span> with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Collections.Generic;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Linq;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Text;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EnterpriseManagement.Presentation.DataAccess;</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">namespace</c"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Collections.Generic;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Linq;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Text;</code></span></divode>
+<code style="color:black;">SimpleDataProvider</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">[DataProvider]</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">class</code> <code style="color:black;">
+SimpleProvider</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">}</code></span></div>
+</div>
+<p>Notable lines in this code include:</p>
+<ul>
+<li>Line 1: Creates a local data structure that will be used to receive data from OM12.
+</li></ul>
+</li></ol>
+<h2><a name="Add_Data_Command"></a>1.3 Add Data Command</h2>
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><span style="font-size:12px;">A data provider must have at least one data command which retrieves the data provided by the data provider. The data command must return one of the following:<br />
+</span>
+<ul>
+<li><span style="font-size:12px;">Simple data type </span></li><li><span style="font-size:12px;">Collection of a simple data type </span></li><li><span style="font-size:12px;">IDataObject </span></li><li><span style="font-size:12px;">Collection of an iDataObject </span></li></ul>
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">The command method name can be whatever you choose and it can take whatever parameters you require.&nbsp;&nbsp; Note that the method must be marked with the
+</span><span style="line-height:115%;font-family:consolas;font-size:12px;">[<span style="color:steelblue;font-size:12px;">DataCommand</span>]</span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"> attribute.
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">In this sample the dataProvider does not access any SCOM data or external data. To keep this sample as simple as possible the data provide generates a simple List of strings.</span>
+ You could replace this code with code that accesses a database or some other source of data.</span><br />
+</span>
+<ol>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add the following code to SimpleProvider.cs within the SimpleProvider class</span><span style="font-size:12px;">:</span><br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">[DataCommand]</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:black;">ICollection&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; GetStrings()</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">return</code>
+<code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">List&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; {
+</code><code style="color:blue;">&quot;Hello&quot;</code><code style="color:black;">, </code>
+<code style="color:blue;">&quot;World&quot;</code><code style="color:black;">, </code><code style="color:blue;">&quot;a&quot;</code><code style="color:black;">,
+</code><code style="color:blue;">&quot;b&quot;</code><code style="color:black;">, </code><code style="color:blue;">&quot;c&quot;</code>
+<code style="color:black;">};</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+</div>
+<br />
+<p>Notable lines in this code include:</p>
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Line 1: Identifies the method as a DataCommand</span><span style="font-size:12px;">.
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Line 4: Generates the data and returns a List of strings</span><span style="font-size:12px;">.
+</span></li></ul>
+</li></ol>
+<h1><a name="Add_Data_Provider_to_Management_Pack"></a>2 Add Data Provider to Management Pack</h1>
+<h2><a name="Create_the_Management_Pack_project"></a>2.1 Create the Management Pack project</h2>
+<ol>
+<li>Create the project:
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click on the solution and select&nbsp;<span style="font-size:12px;font-weight:bold;">Add</span> |
+<span style="font-size:12px;font-weight:bold;">New</span> <span style="font-size:12px;font-weight:bold;">
+Project</span>. </span></li><li><span style="font-size:12px;">Expand <span style="font-size:12px;font-weight:bold;">
+Management Pack</span> &nbsp;and select <span style="font-size:12px;font-weight:bold;">
+Operations Manager.</span></span> </li><li><span style="font-size:12px;">In the right pane, select <span style="font-size:12px;font-weight:bold;">
+Operations Manager 2012 Add-on Management Pack</span>. </span></li><li><span style="font-size:12px;">Name the project&nbsp;<em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">DataProviderPack</span></em> and click
+<span style="font-size:12px;font-weight:bold;">OK</span>. </span></li></ol>
+</li><li><span style="font-size:12px;">Add a Management Pack fragment: </span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click on <span style="font-size:12px;font-weight:bold;">
+DataProviderPack</span> project in Solution Explorer and select <span style="font-size:12px;font-weight:bold;">
+Add</span> | <span style="font-size:12px;font-weight:bold;">New Item</span>. </span>
+</li><li><span style="font-size:12px;">Select <span style="font-size:12px;font-weight:bold;">
+Empty Management Pack Fragment</span>. </span></li><li><span style="font-size:12px;">Name the fragment&nbsp;<em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">DataProvider</span></em><span style="font-size:12px;font-style:italic;">.mpx</span> and click Add.
+</span></li></ol>
+</li></ol>
+<h2><a name="Add_configuration_for_the_assembly"></a>2.2 Add configuration for the assembly:</h2>
+<ol>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add the following code to DataProvider.mpx</span><span style="font-size:12px;">:</span><br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Category</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;Microsoft.EnterpriseManagement.Monitoring.DataProviders.Category&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Target</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleDataProvider&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.DataProviderAssembly&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleDataProvider&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">QualifiedName</code><code style="color:black;">=</code><code style="color:blue;"l;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleDataProvider&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">QualifiedName</code><code style="color:black;">=</code><code style="color:bl>&quot;SimpleDataProvider, Version=1.0.0.0, Culture=neutral,
+ PublicKeyToken=null&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">FileName</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleDataProvider.dll&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">HasNullStream</code><code style="color:black;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="font-size:12px;">Line 4: <span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">
+Identifies the SimpleDataProvider component as a DataProvider.</span></span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Lines 10-14:
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Identify the assembly that contains the dataProvider</span>.</span>
+</li></ul>
+</li></ol>
+<h2><a name="Add_reference_to_assembly"></a>2.3 Add reference to assembly</h2>
+<ol>
+<li>Right click <strong>References</strong> and select <strong>Add Reference</strong>.
+</li><li>On the <strong>Projects </strong>tab, select <strong>SimpleDataProvider</strong> and click
+<strong>OK</strong>. </li><li>Right click <strong>SimpleDataProvider</strong> and select <strong>Properties</strong>.
+</li><li>Change the value for <strong>Package To Bundle</strong> to <strong>True</strong>.
+</li></ol>
+<h1><a name="Create_Query"></a>3 Create Query</h1>
+<p>The query component, like the data provider component, provides no visualization. Its purpose is to pull data from a data provider.&nbsp; The data provider component runs on the server while the query component runs on the client.
+</p>
+<h2><a name="Create_a_Query_Project"></a>3.1 Create a Query Project</h2>
+<ol>
+<li><span style="font-size:12px;">Create the project: </span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click on the solution and select&nbsp;<span style="font-size:12px;font-weight:bold;">Add</span> |
+<span style="font-size:12px;font-weight:bold;">New</span> <span style="font-size:12px;font-weight:bold;">
+Project</span>. </span></li><li><span style="font-size:12px;">Select <strong>Visual C#</strong>.</span> </li><li><span style="font-size:12px;">In the right pane, select <strong>Class Library</strong>.
+</span></li><li><span style="font-size:12px;">Name the project&nbsp;<em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">SimpleQueryWPF</span></em> and click
+<span style="font-size:12px;font-weight:bold;">OK</span>. </span></li></ol>
+</li><li><span style="font-size:12px;">Delete the <strong>Class1.cs</strong> file that was automatically added to the project.
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add a new Class:
+</span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click the project title and select <strong>
+Add </strong>| <strong>New Item</strong>. </span></li><li><span style="font-size:12px;">Select <strong>Class</strong>. </span></li><li><span style="font-size:12px;">Name the class <em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Query</span>.cs</em> and click
+<strong>Add</strong>. </span></li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add references to the following assemblies:
+</span><span style="font-size:12px;"><br />
+</span>
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">System.ComponentModel.Composition</span>&nbsp;</strong><br />
+<br />
+</span></li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">On the
+<strong>.NET</strong> tab locate the assembly and then click <span style="font-size:12px;font-weight:bold;">
+OK</span>.</span> </li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add references to the following assemblies:<br />
+</span>
+<ul>
+<li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong></span>
+</li><li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Microsoft.EnterpriseManagement.CompositionEngine.Extensibility</span></strong></span></strong></span>
+</li><li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;font-weight:bold;">Microsoft.EnterpriseManagement.Presentation.Core</span></strong></span></strong></span>
+</li><li><span style="font-size:12px;"><strong><span style="line-h-family:calibri,sans-serif;font-size:12px;">Add references to the following assemblies:<br />
+</span>
+<ul>
+<li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong></span>
+</li><li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Microsoft.EnterpriseManagement.CompositionEngine.Extensibility</span></strong></span></strong></span>
+</li><li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,saeight:115%;font-family:calibri,sans-serif;font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;font-weight:bold;">Microsoft.Practices.Unity<br />
+<br />
+</span></strong></span></strong></span></li></ul>
+<ol>
+<li>Copy <em>Microsoft.EnterpriseManagement.Presentation.Core.dll</em> from the <em>
+SimpleQueryWPF\bin\Debug</em> folder of the <a href="http://gallery.technet.microsoft.com/Creating-a-Widget-for-281285a2">
+sample files for this walkthrough</a>. </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Select the
+<span style="font-size:12px;font-weight:bold;">Browse </span>tab.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Navigate to the assembly and click
+<strong>OK</strong>.<br />
+</span></li></ol>
+</li><li>Add the following directives to <em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Query</span>.cs:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.ComponentModel.Composition;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.ComponentModel;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EnterpriseManagement.CompositionEngine;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.Practices.Unity;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EnterpriseManagement.Presentation.DataAccess;</code></span></div>
+</div>
+<br />
+</em></li><li>Add the following code to <em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Query</span>.cs</em> inside the
+<em>Query </em>class:<em><br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">[Export]</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">[PartCreationPolicy(CreationPolicy.NonShared)]</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">[ComponentBuildUpRequired]</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">class</code> <code style="color:black;">
+SimpleQuery: INotifyPropertyChanged, INotifyInitialized</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:teal;font-weight:bold;">bool</code> <code style="color:black;">
+initialized;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:black;">ICollection&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; output;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:teal;font-weight:bold;">int</code> <code style="color:black;">maxItemCount = -1;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">event</code> <code style="color:black;">
+PropertyChangedEventHandler PropertyChanged;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">[Dependency]</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:black;">IDataGateway Gateway { </code><code style="color:teal;font-weight:bold;">get</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">set</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:black;">ICollection&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; Output</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">get</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">return</code>
+<code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.output;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">set</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.output = value;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.OnPropertyChanged(</code><code style="color:blue;">&quot;Output&quot;</code><code style="color:black;">);</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">int</code> <code style="color:black;">MaxItemCount</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">get</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">return</code>
+<code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.maxItemCount;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">set</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.maxItemCount = value;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.RunQuery();</code></span></span></div>
+<div style="background-color:white;"><spadiv>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">set</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.maxItemCount = value;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code styn><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.OnPropertyChanged(</code><code style="color:blue;">&quot;MaxItemCount&quot;</code><code style="color:black;">);</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:teal;font-weight:bold;">void</code> <code style="color:black;">
+OnPropertyChanged(</code><code style="color:teal;font-weight:bold;">string</code>
+<code style="color:black;">property)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(</code><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.PropertyChanged !=
+</code><code style="color:teal;font-weight:bold;">null</code><code style="color:black;">)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.PropertyChanged(</code><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">,
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+PropertyChangedEventArgs(property));</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">void</code> <code style="color:black;">
+Notify()</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.initialized =
+</code><code style="color:teal;font-weight:bold;">true</code><code style="color:black;">;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.RunQuery();</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:teal;font-weight:bold;">void</code> <code style="color:black;">
+RunQuery()</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(</code><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.initialized &amp;&amp;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.maxItemCount &gt; 0)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">//Data Access - Call DataProvider</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">var dataObjectsCommand =
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">new</code>
+<code style="color:black;">AsyncDataCommand&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt;(</code><code style="color:blue;">&quot;DemoDataProvider!SimpleProvider/GetStrings&quot;</code><code style="color:black;">);</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nb;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">//Data Access - Call DataProvider</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">var dataObjectsCommand =
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">new</code>
+<code style="color:black;">AsyncDataCommand&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt;(</code><code style="color:blue;">&quot;DemoDataProvider!SimpleProvider/GetStrings&quot;</code><cosp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">dataObjectsCommand.CommandCompleted &#43;= OnDataCommandComplete;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.Gateway.ExecuteAsync(dataObjectsCommand);</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}&nbsp;&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:teal;font-weight:bold;">void</code> <code style="color:black;">
+OnDataCommandComplete(</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">object</code>
+<code style="color:black;">sender, </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">AsyncDataCommandCompletedEventArgs&lt;IEnumerable&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt;&gt;
+ args)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(args.Error == </code><code style="color:teal;font-weight:bold;">null</code><code style="color:black;">)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">List&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; list =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+List&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt;();</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">int</code>
+<code style="color:black;">count = </code><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.maxItemCount;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">foreach</code>
+<code style="color:black;">(</code><code style="color:teal;font-weight:bold;">string</code>
+<code style="color:black;">s </code><code style="color:teal;font-weight:bold;">in</code>
+<code style="color:black;">args.Result)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(count == 0)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">break</code><code style="color:black;">;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">list.Add(s);</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">count--;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.Output = list;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+</em><br />
+<span style="font-size:12px;">Notable lines in this code include:<br />
+</span>
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Lines 1-3: Class attributes that must be assigned to the class</span><span style="font-size:12px;">.
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Line 6: Declares the bool variable
+<em>initialized</em>. The design of this class is that the query should not return data unless this variable is true. This variable is set to true in the Notify() method, which is called by OM12() when all bindings have been initialized.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Line 13: Declares a variable of the type IDataGateway. The IDataGateway class is used to make server side calls.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Lines 15-27: Define the public property
+<em>OutPut</em>. This is a required property for a query.&nbsp;</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Lines 59-71: Make the call to the dataProvider</span>.</span>
+</li></ul>
+</li></ol>
+<h2><a name="Create_a_Silverlight_Query_Project"></a>3.2 Create a Silverlight Query Project</h2>
+<p><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">The Silverlight version of the SimpleQuery will share the xaml and code behind from the WPF project.</span></p>
+<ol>
+<li><span style="font-size:12px;">Create the project: </span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click on the solution and select&nbsp;<span style="font-size:12px;font-weight:bold;">Add</span> |
+<span style="font-size:12px;font-weight:bold;">New</span> <span style="font-size:12px;font-weight:bold;">
+Project</span>. </span></li><li><span style="font-size:12px;">Expand <strong>Visual C#</strong> and select <strong>
+Silverlight</strong>.</span> </li><li><span style="font-size:12px;">In the right pane, select <strong>Silverlight Class Library</strong>.
+</span></li><li><span style="font-size:12px;">Name the project&nbsp;<em><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">SimpleQuerySL</span>
+</em>and click <span style="font-size:12px;font-weight:bold;">OK</span>. </span></li><li><span style="font-size:12px;">When prompted for the Silverlight version, select
+<strong>Silverlight 4</strong> and click <strong>OK</strong>.<br />
+</span></li></ol>
+</li><li><span style="font-size:12px;">Delete the <strong>Class1.cs</strong> file that was automatically added to the project.
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add a link to the query in the WPF project:
+</span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click the project title and select <strong>
+Add </strong>| <strong>Existing Item</strong>. </span></li><li><span style="font-size:12px;">Navigate to the <strong>SimpleQueryWPF </strong>
+folder. </span></li><li><span style="font-size:12px;">Select <strong>Query.cs</strong>. </span></li><li><span style="font-size:12px;">Click the dropdown on the <strong>Add</strong> button and select
+<strong>Add as Link</strong>. </span></li></ol>
+</li><li><span style="font-size:12px;">Add a reference to the following assemblies<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong>:</strong></span></span><br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">&nbsp;
+<strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">System.ComponentModel.Comp;font-size:12px;">Add a link to the query in the WPF project:
+</span>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="font-size:12px;">Right click the project title and select <strong>
+Add </strong>| <strong>Existing Item</strong>. </span></li><li><span style="font-size:12px;">Navigate to the <strong>SimpleQueryWPF </strong>
+folder. </span></li><li><span style="font-size:12px;">Select <strong>Query.cs</strong>. </span></li><li><span style="font-size:12px;">Click the dropdown on the <strong>Add</strong> button and select
+<strong>Add as Link</strong>. </span></li></ol>
+</li><li><span style="font-size:12px;">Add a reference to the following assemblies<span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong>:</strong></span></span><br />
+<ul>
+<li><sosition</span></strong></span><br />
+<br />
+</li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">On the
+<strong>.NET</strong> tab locate the assembly and then click <span style="font-size:12px;font-weight:bold;">
+OK</span>.</span> </li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Add references to the Silverlight version of the following assemblies.&nbsp;&nbsp;<span style="font-size:12px;font-weight:bold;">
+<br />
+</span></span>
+<ul>
+<li><span style="font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong></span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Microsoft.EnterpriseManagement.CompositionEngine.Extensibility</span></strong><br />
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;font-weight:bold;">Microsoft.EnterpriseManagement.Presentation.Core</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;"><strong>Microsoft.Practices.Unity.Silverlight</strong><br />
+<br />
+</span></li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li>Copy <em>Microsoft.EnterpriseManagement.Presentation.Core.dll</em> from the <em>
+SimpleQuerySL\bin\Debug</em> folder of the <a href="http://gallery.technet.microsoft.com/Creating-a-Widget-for-281285a2">
+sample files for this walkthrough</a>. </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Select the
+<strong>Browse </strong>tab.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:12px;">Navigate to the assembly and click
+<strong>OK</strong>.<br />
+</span></li></ol>
+</li></ol>
+<h1><a name="Create_Visualization"></a>4 Create Visualization</h1>
+<p>A user control is needed to display the data obtained from the data provider.</p>
+<h2><a name="Create_Control_Project"></a>4.1 Create Control Project</h2>
+<ol>
+<li>Create the project:
+<ol style="list-style-type:lower-alpha;">
+<li>Right click on the solution and select&nbsp;<span style="font-weight:bold;">Add</span> |
+<span style="font-weight:bold;">New</span> <span style="font-weight:bold;">Project</span>.
+</li><li>Select <strong>Visual C#</strong>.<span style="font-weight:bold;"></span> </li><li>In the right pane, select <strong>WPF User Control Library</strong>. </li><li>Name the project <em>Test<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">WPF</span></em> and click
+<span style="font-weight:bold;">OK</span>. </li><li>Right click the <strong>TestWPF </strong>project and select <strong>Properties</strong>.
+</li><li>In <strong>Target framework</strong>, select <strong>.NET Framework 4</strong>.
+</li></ol>
+</li><li>Delete the <strong>UserControl1.xaml</strong> file that was automatically added to the project.
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Add a new user control:
+</span>
+<ol style="list-style-type:lower-alpha;">
+<li>Right click the project title and select <strong>Add </strong>| <strong>New Item</strong>.
+</li><li>Select <strong>Visual C#</strong>. </li><li>In the right pane, select <strong>User Control (WPF)</strong>. </li><li>Name the user control <em>TestControl<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"></span>.xaml</em> and click
+<strong>Add</strong>. </li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Add references to the following assemblies:
+<span style="font-weight:bold;"><br />
+</span></span>
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">System.ComponentModel.Composition</span></strong></span>
+</li></ul>
+<br />
+<ol style="list-style-type:lower-alpha;">
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">On the
+<strong>.NET</strong> tab locate the assembly and then click <span style="font-weight:bold;">
+OK</span>.</span> </li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Add references to the following assemblies:
+<span style="font-weight:bold;"><br />
+</span></span>
+<ul>
+<li><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><strong>Microsoft.EnterpriseManagement.Presentation.Core
+</strong><br />
+<br />
+</span></li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li>Copy <em>Microsoft.EnterpriseManagement.Presentation.Core.dll</em> from the <em>
+TestWPF\bin\Debug</em> folder of the <a href="http://gallery.technet.microsoft.com/Creating-a-Widget-for-281285a2">
+sample files for this walkthrough</a>. </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;ces to the following assemblies:
+<span style="font-weight:bold;"><br />
+</span></span>
+<ul>
+<li><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><strong>Microsoft.EnterpriseManagement.Presentation.Core
+</strong><br />
+<br />
+</span></li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li>Copy <em>Microsoft.EnterpriseManagement.Presentation.Core.dll</em> from the <em>
+TestWPF\bin\Debug</em> folder of the <a href="http://gallery.technet.microsoft.com/Creating-a-Widget-for-281285a2">
+sample files for this walkthrough</a>. </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Referefont-size:11pt;">Select the
+<strong>Browse </strong>tab.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Navigate to the assembly and click
+<strong>OK</strong>.<br />
+</span></li></ol>
+</li></ol>
+<h2><a name="Configure_the_User_Control"></a>4.2 Configure the User Control</h2>
+<ol>
+<li>Replace the XML in <em>TestControl.xaml</em> with the following<em>:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">UserControl</code>
+<code style="color:gray;">x:Class</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestWPF.TestControl&quot;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">xmlns</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml/presentation">http://schemas.microsoft.com/winfx/2006/xaml/presentation</a>&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">xmlns:x</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml">http://schemas.microsoft.com/winfx/2006/xaml</a>&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">xmlns:d</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/expression/blend/2008">http://schemas.microsoft.com/expression/blend/2008</a>&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">xmlns:mc</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://schemas.openxmlformats.org/markup-compatibility/2006">http://schemas.openxmlformats.org/markup-compatibility/2006</a>&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">mc:Ignorable</code><code style="color:black;">=</code><code style="color:blue;">&quot;d&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">d:DesignHeight</code><code style="color:black;">=</code><code style="color:blue;">&quot;115&quot;</code>
+<code style="color:gray;">d:DesignWidth</code><code style="color:black;">=</code><code style="color:blue;">&quot;395&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Grid</code>
+<code style="color:gray;">x:Name</code><code style="color:black;">=</code><code style="color:blue;">&quot;LayoutRoot&quot;</code>
+<code style="color:gray;">Background</code><code style="color:black;">=</code><code style="color:blue;">&quot;White&quot;</code>
+<code style="color:gray;">Height</code><code style="color:black;">=</code><code style="color:blue;">&quot;87&quot;</code>
+<code style="color:gray;">Width</code><code style="color:black;">=</code><code style="color:blue;">&quot;372&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Grid.ColumnDefinitions</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ColumnDefinition</code>
+<code style="color:gray;">Width</code><code style="color:black;">=</code><code style="color:blue;">&quot;Auto&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ColumnDefinition</code>
+<code style="color:gray;">Width</code><code style="color:black;">=</code><code style="color:blue;">&quot;*&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Grid.ColumnDefinitions</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">TextBlock</code>
+<code style="color:gray;">Grid.Column</code><code style="color:black;">=</code><code style="color:blue;">&quot;0&quot;</code><code style="color:black;">&gt;List from SimpleDataProvider:&nbsp; &lt;/</code><code style="color:teal;font-weight:bold;">TextBlock</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ListBox</code>
+<code style="color:gray;">x:Name</code><code style="color:black;">=</code><code style="color:blue;">&quot;listBox&quot;</code>
+<code style="color:gray;">Grid.Column</code><code style="color:black;">=</code><code style="color:blue;">&quot;1&quot;</code><code style="color:black;">&gt;&lt;/</code><code style="color:teal;font-weight:bold;">ListBox</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Grid</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">UserControl</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+</em>Notable lines in this code include:<em><br />
+</em>
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 15:
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Places a list box control on the page. This list box will display the set of strings received from the data provider</span></span>.<br />
+<br />
+</li></ul>
+</li><li>Replace the contents of the code behind <em>TestControl.xaml.cs</em> with the following code:
+<em><br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Collections.Generic;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Linq;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Net;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows.Controls;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows.Documents;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows.Input;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows.Media;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows.Media.Animation;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.Windows.Shapes;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.ComponentModel;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">System.ComponentModel.Composition;</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EnterpriseManagement.CompositionEngine;</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">namespace</code>
+<code>TestWPF</code><code style="color:black;"></code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">[Export]</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">[PartCreationPolicy(CreationPolicy.NonShared)]</code></span></span></div>
+<ComponentModel.Composition;</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EnterpriseManagement.CompositionEngine;</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">namespace</code>
+<code>TestWPF</code><code style="color:black;"></code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:white;"><span><code>&nbdiv style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">partial</code> <code style="color:teal;font-weight:bold;">
+class</code> <code style="color:black;">TestControl : UserControl, INotifyPropertyChanged</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">private</code>
+<code style="color:black;">ICollection&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; _stringList;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:black;">ICollection&lt;</code><code style="color:teal;font-weight:bold;">string</code><code style="color:black;">&gt; StringList</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">get</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">return</code>
+<code style="color:teal;font-weight:bold;">this</code><code style="color:black;">._stringList;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">set</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(value != </code><code style="color:teal;font-weight:bold;">null</code><code style="color:black;">)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">._stringList = value;</code></span></span><span>
+<br />
+</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">.listBox.ItemsSource = value;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:black;">TestControl()</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">InitializeComponent();
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">public</code>
+<code style="color:teal;font-weight:bold;">event</code> <code style="color:black;">
+PropertyChangedEventHandler PropertyChanged;</code></span></se="cpan></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">protected</code>
+<code style="color:teal;font-weight:bold;">void</code> <code style="color:black;">
+OnPropertyChanged(</code><code style="color:teal;font-weight:bold;">string</code>
+<code style="color:black;">propertyName)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(PropertyChanged != </code><code style="color:teal;font-weight:bold;">null</code><code style="color:black;">)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">PropertyChanged(</code><code style="color:teal;font-weight:bold;">this</code><code style="color:black;">,
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+PropertyChangedEventArgs(propertyName));</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+<br />
+</em>Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Line 23: The user control must inherit from the INotifyPropertyChanged class.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 26 – 44: Provide the StringList property that will receive the data from the data provider.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 52 – 60: Provide the PropertyChangedEventHandler, which is required because the class inherits
+ from INotifyPropertyChanged.</span><br />
+</span></li></ul>
+<em><br />
+</em></li></ol>
+<h2><a name="Create_a_Silverlight_user_control_project"></a>4.3 Create a Silverlight user control project</h2>
+<p><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">The Silverlight version of the UserControl will share the xaml and code behind from the WPF project.</span></p>
+<ol>
+<li>Create the project:
+<ol style="list-style-type:lower-alpha;">
+<li>Right click on the solution and select&nbsp;<span style="font-weight:bold;">Add</span> |
+<span style="font-weight:bold;">New</span> <span style="font-weight:bold;">Project</span>.
+</li><li>Expand <strong>Visual C#</strong> and select <strong>Silverlight</strong>. </li><li>In the right pane, select <strong>Silverlight Class Library</strong>. </li><li>Name the project <em>TestSL</em> and click <span style="font-weight:bold;">OK</span>.
+</li><li><span style="font-size:12px;">When prompted for the Silverlight version, select
+<strong>Silverlight 4</strong> and click <strong>OK</strong>.</span> </li></ol>
+</li><li>Delete the <strong>Class1.cs</strong> file that was automatically added to the project.
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Add a link to the query in the WPF project:</span>
+<ol style="list-style-type:lower-alpha;">
+<li>Right click the project title and select <strong>Add </strong>| <strong>Existing Item</strong>.
+</li><li>Navigate to the <strong>TestWPF </strong>folder. </li><li>Select <strong>TestControl.xaml</strong>. </li><li>Click the dropdown on the <strong>Add </strong>button and select <strong>Add as Link</strong>.
+</li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Add a reference to the following assemblies:<br />
+</span>
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">System.ComponentModel.Composition<br />
+<br />
+</span></strong></span></li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">On the
+<strong>.NET</strong> tab locate the assembly and then click <span style="font-weight:bold;">
+OK</span>.</span> </li></ol>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Add references to the Silverlight version of the following assemblies.<span style="font-weight:bold;">
+<br />
+</span></span>
+<ul>
+<li><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;font-weight:bold;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Microsoft.EnterpriseManagement.CompositionEngine</span></strong>.Extensibility</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"></span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;font-weight:bold;"><strong><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Microsoft.EnterpriseManagement.</span></strong></span>Presentation.Core
+</strong><br />
+<br />
+</span></li></ul>
+<ol style="list-style-type:lower-alpha;">
+<li>Copy <em>Microsoft.EnterpriseManagement.Presentation.Core.dll</em> from the <em>
+TestSL\bin\Debug</em> folder of the <a href="http://gallery.technet.microsoft.com/Creating-a-Widget-for-281285a2">
+sample files for this walkthrough</a>. </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Right-click
+<strong>References </strong>in the Solution Explorer and select <strong>Add Reference</strong>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Select the
+<strong>Browse </strong>tab.<br />
+</span></li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Navigate to the assembly and then click
+<strong>OK</strong>.</span> </li></ol>
+</li></ol>
+<h1><a name="Create_Management_Pack"></a>5 Configure Management Pack</h1>
+<p>The management pack needs to define the following components:</p>
+<ul>
+<li>Data provider </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Query to access the data provider from Silverlight code</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Query to access the DataProvider from WPF code</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Silverlight UserControl to receive and display the data from the DataProvider</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">WPF UserControl to receive and display the data from the DataProvider</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">A composite component that will act as a dashboard to host the Silverlight/WPF UserControl</span>
+</li></ul>
+<h2><a name="Add_Management_Pack_Fragment_for_the_Query"></a>5.1 Add Management Pack Fragment for the Query</h2>
+<ol>
+<li>Right click on <span style="font-weight:bold;">DataProviderPack</span> project in Solution Explorer and select
+<span style="font-weight:bold;">Add</span> | <span style="font-weight:bold;">New Item</span>.
+</li><li>Select <span style="font-weight:bold;">Empty Management Pack Fragment</span>. </li><li>Name the fragment <span style="font-style:italic;">Query.mpx</span> and click <strong>
+Add</strong>. </li><li>Replace the XML of the fragment with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code>
+<code style="color:gray;">SchemaVersion</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentTypes</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentType</code>code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&
+<code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;MySimpleQuery&quot;</code>
+<code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Property</code>
+<code style="color:gray;">Name</code><code style="color:black;">=</code><code style="color:blue;">&quot;Output&quot;</code>
+<code style="color:gray;">Type</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a>xsd://string</a>[]&quot;</code>
+<code style="color:gray;">BindingDirection</code><code style="color:black;">=</code><code style="color:blue;">&quot;Out&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Property</code>
+<code style="color:gray;">Name</code><code style="color:black;">=</code><code style="color:blue;">&quot;MaxItemCount&quot;</code>
+<code style="color:gray;">Type</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a>xsd://int</a>&quot;</code>
+<code style="color:gray;">BindingDirection</code><code style="color:black;">=</code><code style="color:blue;">&quot;In&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentType</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentTypes</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 4-7: Defines the query that will be used by the Silverlight and WPF components.</span>
+</li></ul>
+</li></ol>
+<h2><a name="Add_Management_Pack_Fragment_for_the_Silverlight_Query"></a>5.2 Add Management Pack Fragment for the Silverlight Query</h2>
+<ol>
+<li>Right click on <span style="font-weight:bold;">DataProviderPack</span> project in Solution Explorer and select
+<span style="font-weight:bold;">Add</span> | <span style="font-weight:bold;">New Item</span>.
+</li><li>Select <span style="font-weight:bold;">Empty Management Pack Fragment</span>. </li><li>Name the fragment <span style="font-style:italic;">QuerySL.mpx</span> and click
+<strong>Add</strong>. </li><li>Replace the XML of the fragment with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code>
+<code style="color:gray;">SchemaVersion</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Category</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;SilverlightCategory&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Target</code><code style="color:black;">=</code><code style="color:blue;">&quot;SilverlightAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.SilverlightComponentAssembly&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gTarget</code><code style="color:black;">=</code><code style="color:blue;">&quot;SilverlightAssembly&t;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentImplementations</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;MySimpleQuery&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;MySimpleQuerySLImplementation&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Platform</code><code style="color:black;">=</code><code style="color:blue;">&quot;Silverlight&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Unit</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ContractFactory</code><code style="color:black;">&gt;SimpleQuerySL.SimpleQuery&lt;/</code><code style="color:teal;font-weight:bold;">ContractFactory</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Unit</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementations</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;SilverlightAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">QualifiedName</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleQuerySL, Version=1.0.0.0, Culture=neutral,
+ PublicKeyToken=null&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">FileName</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleQuerySL.dll&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">HasNullStream</code><code style="color:black;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 3-6: Defines a category for the assembly using the Silverlight visualization from the library.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 11-19: Defines the implementation for the Silverlight query identifying it as a&nbsp;<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">as a unit
+ component contained in an assembly</span>.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 24-29:
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Defines the assembly for the data provider referring to the compiled DLL.<br />
+</span><br />
+</span></li></ul>
+</li><li>Right click <strong>References</strong> and select <strong>Add Reference</strong>.
+</li><li>On the <strong>Projects </strong>tab, select <strong>SimpleDataProvider</strong> and click
+<strong>OK</strong>. </li><li>Right click <strong>QuerySL</strong> and select <strong>Properties</strong>. </li><li>Change the value for <strong>Package To Bundle</strong> to <strong>True</strong>.
+</li></ol>
+<h2><a name="Add_Management_Pack_Fragment_for_the_Silverlight_User_Control"></a>5.3 Add Management Pack Fragment for the Silverlight User Control</h2>
+<ol>
+<li>Right click on <span style="font-weight:bold;">DataProviderPack</span> project in Solution Explorer and select
+<span style="font-weight:bold;">Add</span> | <span style="font-weight:bold;">New Item</span>.
+</li><li>Select <span style="font-weight:bold;">Empty Management Pack Fragment</span>. </li><li>Name the fragment <span style="font-style:italic;">UserControlSL.mpx</span> and click
+<strong>Add</strong>. </li><li>Replace the XML of the fragment with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code>
+<code style="color:gray;">SchemaVersion</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Category</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;SLUnitComponentsCategory&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Target</code><code style="color:black;">=</code><code style="color:blue;">&quot;SLUnitComponentsAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.SilverlightComponentAssembly&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="coloquot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-r:blue;">&quot;SLUnitComponentsAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">QualifiedName</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestSL, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">FileName</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestSL.dll&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">HasNullStream</code><code style="color:black;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 3-6: Defines a category for the assembly using the Silverlight visualization from the library.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 10-15: Defines the implementation for the Silverlight query identifying it as a&nbsp;<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">as a unit
+ component contained in an assembly</span>.<br />
+<br />
+</span></li></ul>
+</li><li>Right click <strong>References</strong> and select <strong>Add Reference</strong>.
+</li><li>On the <strong>Projects </strong>tab, select <strong>TestSL</strong> and click
+<strong>OK</strong>. </li><li>Right click <strong>TestSL</strong> and select <strong>Properties</strong>. </li><li>Change the value for <strong>Package To Bundle</strong> to <strong>True</strong>.
+</li></ol>
+<h2><a name="Add_Management_Pack_Fragment_for_the_WPF_Query"></a>5.4 Add Management Pack Fragment for the WPF Query</h2>
+<ol>
+<li>Right click on <span style="font-weight:bold;">DataProviderPack</span> project in Solution Explorer and select
+<span style="font-weight:bold;">Add</span> | <span style="font-weight:bold;">New Item</span>.
+</li><li>Select <span style="font-weight:bold;">Empty Management Pack Fragment</span>. </li><li>Name the fragment <span style="font-style:italic;">QueryWPF.mpx</span> and click
+<strong>Add</strong>. </li><li>Replace the XML of the fragment with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code>
+<code style="color:gray;">SchemaVersion</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Category</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;WPFCategory&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Target</code><code style="color:black;">=</code><code style="color:blue;">&quot;WPFAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.WpfComponentAssembly&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Componnbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.WpfCentImplementations</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;MySimpleQuery&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;MySimpleQueryWPFImplementation&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Platform</code><code style="color:black;">=</code><code style="color:blue;">&quot;Wpf&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Unit</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ContractFactory</code><code style="color:black;">&gt;SimpleQueryWPF.SimpleQuery&lt;/</code><code style="color:teal;font-weight:bold;">ContractFactory</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Unit</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementations</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;WPFAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">QualifiedName</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleQueryWPF, Version=1.0.0.0, Culture=neutral,
+ PublicKeyToken=null&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">FileName</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleQueryWPF.dll&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">HasNullStream</code><code style="color:black;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 3-6: Defines a category for the assembly using the WPF visualization from the library.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 11-19: Defines the implementation for the WPF query identifying it as a&nbsp;<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">as a unit component
+ contained in an assembly</span>.</span> </li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 24-29:
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Defines the assembly for the data provider referring to the compiled DLL.<br />
+</span><br />
+</span></li></ul>
+</li><li>Right click <strong>References</strong> and select <strong>Add Reference</strong>.
+</li><li>On the <strong>Projects </strong>tab, select <strong>SimpleQueryWPF</strong> and click
+<strong>OK</strong>. </li><li>Right click <strong>SimpleQueryWPF</strong> and select <strong>Properties</strong>.
+</li><li>Change the value for <strong>Package To Bundle</strong> to <strong>True</strong>.
+</li></ol>
+<h2><a name="Add_Management_Pack_Fragment_for_the_WPF_User_Control"></a>5.5 Add Management Pack Fragment for the WPF User Control</h2>
+<ol>
+<li>Right click on <span style="font-weight:bold;">DataProviderPack</span> project in Solution Explorer and select
+<span style="font-weight:bold;">Add</span> | <span style="font-weight:bold;">New Item</span>.
+</li><li>Select <span style="font-weight:bold;">Empty Management Pack Fragment</span>. </li><li>Name the fragment <span style="font-style:italic;">UserControlWPF.mpx</span> and click
+<strong>Add</strong>. </li><li>Replace the XML of the fragment with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code>
+<code style="color:gray;">SchemaVersion</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Category</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;WPFUnitComponentsCategory&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Target</code><code style="color:black;">=</code><code style="color:blue;">&quot;WPFUnitComponentsAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.WpfComponentAssembly&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Categories</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;WPFUnitComponentsAssembly&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">QualifiedName</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestWPF, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null&quot;</code></span></span></div>
+<div style="lor:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Assembly</code></span></span></div>
+<div background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">FileName</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestWPF.dll&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">HasNullStream</code><code style="color:black;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Resources</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 3-6: Defines a category for the assembly using the WPF visualization from the library.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 10-15: Defines the implementation for the WPF query identifying it as a&nbsp;<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">as a unit component
+ contained in an assembly</span>.<br />
+<br />
+</span></li></ul>
+</li><li>Right click <strong>References</strong> and select <strong>Add Reference</strong>.
+</li><li>On the <strong>Projects </strong>tab, select <strong>TestWPF </strong>and click
+<strong>OK</strong>. </li><li>Right click <strong>TestWPF</strong> and select <strong>Properties</strong>. </li><li>Change the value for <strong>Package To Bundle</strong> to <strong>True</strong>.
+</li></ol>
+<h2><a name="Add_Management_Pack_Fragment_for_the_Composite_Component"></a>5.6 Add Management Pack Fragment for the Composite Component</h2>
+<ol>
+<li>Right click on <span style="font-weight:bold;">DataProviderPack</span> project in Solution Explorer and select
+<span style="font-weight:bold;">Add</span> | <span style="font-weight:bold;">New Item</span>.
+</li><li>Select <span style="font-weight:bold;">Empty Management Pack Fragment</span>. </li><li>Name the fragment <span style="font-style:italic;">CompositeComponent.mpx</span> and click
+<strong>Add</strong>. </li><li>Replace the XML of the fragment with the following:<br />
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code>
+<code style="color:gray;">SchemaVersion</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0&quot;</code>
+<code style="color:gray;">xmlns:xsd</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentTypes</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentType</code>
+<code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControl&quot;</code>
+<code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Property</code>
+<code style="color:gray;">Name</code><code style="color:black;">=</code><code style="color:blue;">&quot;StringList&quot;</code>
+<code style="color:gray;">Type</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a>xsd://string</a>[]&quot;</code>
+<code style="color:gray;">BindingDirection</code><code style="color:black;">=</code><code style="color:blue;">&quot;In&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentType</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentType</code>
+<code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControlHost&quot;</code>
+<code style="ccode style="color:blue;">&quot;StringList&quot;</code>
+<code style="color:gray;">Type</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a>xsd://string</a>[]&quot;</code>
+<code style="color:gray;">BindingDirection</code><code style="color:black;">=</code><code style=olor:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentTypes</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentReferences</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentReference</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControlHostReference&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">TypeID</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControlHost&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Parent</code><code style="color:black;">=</code><code style="color:blue;">&quot;SC!Microsoft.SystemCenter.Monitoring.ViewFolder.Root&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentReferences</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentImplementations</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControl&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControlImplementation&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Platform</code><code style="color:black;">=</code><code style="color:blue;">&quot;All&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Unit</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ContractFactory</code><code style="color:black;">&gt;TestDataProviderControl.TestControl&lt;/</code><code style="color:teal;font-weight:bold;">ContractFactory</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Unit</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControlHost&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">ID</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControlHostImplementation&quot;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Accessibility</code><code style="color:black;">=</code><code style="color:blue;">&quot;Public&quot;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">Platform</code><code style="color:black;">=</code><code style="color:blue;">&quot;All&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Composite</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Variable</code>
+<code style="color:gray;">Id</code><code style="color:black;">=</code><code style="color:blue;">&quot;SimpleData&quot;</code>
+<code style="color:gray;">Type</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a>xsd://string</a>[]&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Component</code>
+<code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visualization!Microsoft.SystemCenter.Visualization.ComponentContainer&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Binding</code>
+<code style="color:gray;">PropertyId</code><code style="color:black;">=</code><code style="color:blue;">&quot;Visual&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Component</code>
+<code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;TestControl&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Binding</code>
+<code style="color:gray;">PropertyId</code><code style="color:black;">=</code><code style="color:blue;">&quot;StringList&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Reference</code><code style="color:black;">&gt;$Variable/SimpleData$&lt;/</code><code style="color:teal;font-weight:bold;">Reference</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Binding</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Component</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Binding</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbdiv>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Binding</code><code style="color:black;">&gt;</code></span></span></div>sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Binding</code>
+<code style="color:gray;">PropertyId</code><code style="color:black;">=</code><code style="color:blue;">&quot;Objects&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Component</code>
+<code style="color:gray;">TypeId</code><code style="color:black;">=</code><code style="color:blue;">&quot;MySimpleQuery&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Binding</code>
+<code style="color:gray;">PropertyId</code><code style="color:black;">=</code><code style="color:blue;">&quot;MaxItemCount&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">SimpleValue</code>
+<code style="color:gray;">Type</code><code style="color:black;">=</code><code style="color:blue;">&quot;<a>xsd://int</a>&quot;</code>
+<code style="color:gray;">Value</code><code style="color:black;">=</code><code style="color:blue;">&quot;10&quot;</code><code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Binding</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Binding</code>
+<code style="color:gray;">PropertyId</code><code style="color:black;">=</code><code style="color:blue;">&quot;Output&quot;</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:teal;font-weight:bold;">Reference</code><code style="color:black;">&gt;$Variable/SimpleData$&lt;/</code><code style="color:teal;font-weight:bold;">Reference</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Binding</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Component</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Binding</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Component</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Composite</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementations</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">Presentation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ManagementPackFragment</code><code style="color:black;">&gt;</code></span></div>
+</div>
+<br />
+Notable lines in this code include:<br />
+<ul>
+<li><span style="line-height:115%;font-family:calibricode style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementation</code><code style="color:black;">&gt;</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:teal;font-weight:bold;">ComponentImplementations</code><code style=",sans-serif;font-size:11pt;">Line 15: Places the host component at the root level of the Monitoring tree.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 24-26: Identifies the user control being provided from an assembly.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Line 34: Provides a local variable that will be used to bind the user control to the output from the query.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 38-40: Bind the local variable
+<em>SimpleData </em>to the public property of the user control <em>StringList</em>.</span>
+</li><li><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Lines 48-50: Bind the output of the query
+<em>Output </em>to the local variable <em>SimpleData</em>.<br />
+</span></li></ul>
+</li></ol>
+<h1><a name="Install_and_Test_Management_Pack"></a>6 Install and Test Management Pack</h1>
+<ol>
+<li>To install the <strong>SimpleDataProvider</strong> management pack from Visual Studio, press F5 or select
+<span style="font-weight:bold;">Debug </span>| <span style="font-weight:bold;">Start debugging</span>.<br />
+The management pack will be installed, and the component will be in the Monitoring Tree with the title DataProviderPack!TestControl.
+</li><li>Click on the title to see the component displayed in the right pane.<br />
+The component should appear similar to the following image:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2480.SimpleDataProvider.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2480.SimpleDataProvider.png" style="border-width:0px;border-style:solid;" /></a>
+</li></ol>
+
+</div>
+    
+    

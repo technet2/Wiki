@@ -1,0 +1,70 @@
+---
+layout: default
+title: Using Goals to Enable Cumulative Notifications in Microsoft Dynamics CRM - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Many people use workflows in Microsoft Dynamics CRM to trigger and send record-based notifications—for exa/ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-mple, notifying sale representatives when a new account is assigned to them, or notifying a customer when a case is closed. But sometimes you don’t
+ want a single-record notification—you want a cumulative notification when a certain threshold is reached.</p>
+<p>Let’s say an investment manager wants to get alerted if a client calls in more than two times during a month to question portfolio performance so she can call the client and save the relationship before it reaches a critical state, and the firm uses Microsoft
+ Dynamics CRM cases to track client issues.</p>
+<p>Workflow alone will not satisfy this requirement—standard workflow can be triggered by any single record event, such as creation, deletion, assignment, or update of any field on the record or a child record. However, if you want to do a notification based
+ on a multiple records, such as X number of records created during a specific time period, you will need some mechanism to rollup or aggregate the records, then trigger the notification.</p>
+<p>In CRM version 4 or earlier, you would need a fair amount of customization to handle this requirement, such as a custom plugin. However, CRM 2011 now includes a built in rollup mechanism—goals.</p>
+<p>The goal functionality is most commonly used for sales goals or other performance metrics, but the unique capability to rollup a count of any type of record for any timeframe makes it a very useful feature for other unconventional requirements.</p>
+<p>So, getting back to our example, I want to receive a notification if we receive more than 3 cases with a specific type of issue this quarter. First, I’m going to create a goal to handle the count of cases.</p>
+<p>1. Create the number of cases metric.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea3f9970b-pi"><img width="644" height="363" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8a85970c-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>I want the metric to be a “Count” metric, and I call the metric “No. of Cases.” The goal metric link is typically located in the Sales area of Microsoft Dynamics CRM.</p>
+<p>2. Add the rollup field</p>
+<p>From the Metric record, select the rollup field grid and click “add new rollup field.”</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea467970b-pi"><img width="644" height="334" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8aca970c-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Select “Actual” for the Rollup Field, Case for the record type. I didn’t select a state or status, because I want to count all cases created, not just a specific status. For date field, select “Created on,” because we want to get a count of all cases created
+ during the goal’s time period.</p>
+<p>3. Create the goal</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8b06970c-pi"><img width="644" height="401" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8b45970c-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Link the “No. of Cases” metric created in step 1 to the goal in the “Goal Metric” lookup field, then select the desired time period in the “time period” section of the goal form. Set the target to the threshold level at which you wish to be alerted. In our
+ example, I select 3, since I want to be alerted if there are 3 or more cases during the goal period.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8b7f970c-pi"><img width="644" height="225" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8bea970c-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Scroll down to the “Goal Criteria” section of the goal form. Set “Record Set for Rollup” to “All.”</p>
+<p><strong>Note—this is probably the most common reason why goals don’t rollup as expected—this field defaults to “owned by goal owner,” which will just count records owned by the user who owns the goal. In our example, we changed it to “all,” because we want
+ to count all cases created by all users during the goal time period.</strong></p>
+<p>4. Create the Rollup Query</p>
+<p>So far we have created a metric which counts the cases created, and a goal which defines the time period during which to count the cases, but we need to do one final thing—we need to create a filter that will filter the rollup to just the type of cases we
+ want to count. In our example, cases, where the priority is “high.”</p>
+<p>From the goal record, click the lookup button for “rollup query.” From the lookup dialog, select “new” to create a new rollup filter.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea528970b-pi"><img width="644" height="292" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea562970b-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>The rollup query allows you to create an advanced find filter that will filter the rollup to a subset of records—in our example, priority = ”High.” Remember, you don’t need to specify date ranges or record statuses in rollup queries—those are specified by
+ he goal and goal metric records.</p>
+<p>This also means that if you want to have several goals based on the number of cases, you only need to create one metric, number of cases, and you can associate it with multiple goals with different goal time periods or rollup query filters. This makes goal
+ management easy, as you can reuse all components except for the goal header.</p>
+<p>Now that your goal is complete, CRM will automatically calculate the number of cases that meet the criteria that you have specified. This rollup happens by default every 24 hours. You can force the rollup to happen by selecting the goal and clicking the
+ “Recalculate” button in the ribbon.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba1159970d-pi"><img width="111" height="148" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba1184970d-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Now the Goal record will show the total cases during the time period that meet the criteria, as well as the percentage of the target number achieved.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea69e970b-pi"><img width="644" height="179" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba11d4970d-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p><strong><span style="font-size:small;">Creating the notification workflow</span></strong></p>
+<p>No
+ “Recalculate” button in the ribbon.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba1159970d-pi"><img width="111" height="148" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba1184970d-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Now the Goal record will show the total cases during the time period that meet the criteria, as well as the percentage of the target number achieved.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea69e970b-pi"><img width="644" heighw that the goal is created, we can create the cumulative notification workflow. Create a new workflow, selecting “Goal” as the entity.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea708970b-pi"><img width="644" height="305" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba127c970d-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Set the workflow to run upon update of the goal Percentage Achieved field.</p>
+<p>Then add a “Check condition” step, with the following two conditions:</p>
+<ul>
+<li>Goal equals <em>name of goal</em> </li><li>Percentage Achieved is greater than or equal to 100 </li></ul>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016763aea754970b-pi"><img width="644" height="183" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f8833016302ba1293970d-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Then add a send e-mail substep to send the notification e-mail to the appropriate person, and publish your workflow.</p>
+<p>When high priority cases are created and the goal rollup recalculates the number of cases that meet the criteria for the current quarter, a workflow will notify the appropriate parties when the specified threshold is met or exceeded.</p>
+<p><a href="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8db4970c-pi"><img width="644" height="363" title="image" alt="image" src="http://blog.customereffective.com/.a/6a00e54fb34b6f88330168e8af8dbd970c-pi" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>This is just one of the many unexpected uses for the goal rollup functionality in CRM, and it can be considered for just about any requirement for an automatically recalculating rollup.</p>
+
+</div>
+    
+    

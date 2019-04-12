@@ -1,0 +1,76 @@
+---
+layout: default
+title: PerfGuide&#58; Out of System Committed Memory - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#The_Commit_Limit">System committed memory</a></li><li class="hierarchy-item"><a href="#Process_Committed_Memory">Process Committed Memory</a></li><li class="hierarchy-item"><a href="#Windows_Virtual_Memory_Minimum_Too_Low">Windows - Virtual Memory Minimum Too Low</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Troubleshooting">Troubleshooting</a></li><li class="hierarchy-item"><a href="#Treating_the_Symptoms">Treating the Symptoms</a></li></ul><div class="hierarchy-list-footer"> <><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">PerfGuide: Out of System Committed Memory</h1>
+    
+
+    <div class="post-content user-defined-ma/div></li><li class="hierarchy-item"><a href="#More_Information">More Information</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<br />
+You have arrived here because you have identified a high system commit usage condition.&nbsp;If this is not correct, then return to the
+<a href="http://blogs.technet.com/b/perfguide/archive/2010/09/28/the-microsoft-pfe-performance-guide-start-here.aspx">
+Start</a> of the Performance Guide.
+<h2>System committed memory<a name="The_Commit_Limit"></a></h2>
+<p>The system commit limit of Windows and Windows Server&nbsp;is the sum of&nbsp;physical memory and the size of all of the page files combined&nbsp;on the system. It is the maximum amount of physical resources that the system can use to back committed memory. It is a factitious
+ resource that prevents the system from over committing or over&nbsp;&quot;promising&quot; too much physical resources. With that said, when the system is unable to commit anymore memory, then applications&nbsp;may fail to function and the system may hang indefinitely.<br />
+<br />
+The System Commit Charge&nbsp;is the total amount of memory used/committed by the operating system and all processes running on the computer. This memory is considered &quot;in use&quot;, but does not mean that the memory has been written to or &quot;touched&quot;. This means that
+ it is possible that the system commit charge can reach the system commit limit, but still have plenty of available physical memory and plenty of free space on the paging files.<br />
+<br />
+<a href="http://blogs.technet.com/blogfiles/clinth/WindowsLiveWriter/TheCaseoftheEnormousPageFile_11279/Taskmanager_2.gif"><img width="412" height="482" title="Taskmanager" alt="Taskmanager" src="http://blogs.technet.com/blogfiles/clinth/WindowsLiveWriter/TheCaseoftheEnormousPageFile_11279/Taskmanager_thumb_2.gif" style="border:0px solid currentColor;display:inline;" /></a>&nbsp;<br />
+<br />
+The above screenshot is of Windows Task Manager on Windows 7. Highlighted in red is&nbsp;the&nbsp;System&nbsp;Commit Charge (2074 MB) and&nbsp;the&nbsp;System&nbsp;Commit Limit (8058 MB).<br />
+<br />
+If the System Commit Charge&nbsp;reaches the&nbsp;System Commit Limit, then the system will attempt to increase the page file size (if set to System Managed), otherwise, the system will be&nbsp;in an out of memory condition. The percentage of the System Commit Charge compared
+ to the System Commit Limit can be measured using the &quot;\Memory\% Committed Bytes In use&quot; performance counter.</p>
+<h2><a name="Process_Committed_Memory"></a>Process Committed Memory</h2>
+<p>Processes operate in virtual memory and are unaware of the true physical environment of the computer, but when an application &quot;commits&quot; memory, then the operating system guarantees physical resources (physical memory and paging files) will back the allocation.
+ When the application writes to memory such as writing a value to a variable, then the memory is mapped to physical memory.</p>
+<h2><a name="Windows_Virtual_Memory_Minimum_Too_Low"></a>Windows - Virtual Memory Minimum Too Low</h2>
+<p>When the Windows operating system reports that it is low on &quot;virtual memory&quot; and mentions increasing the paging file, then&nbsp;it means that the System Commit Charge&nbsp;has reached the System Commit Limit. The paging file is commonly referred to as &quot;virtual memory&quot;,
+ hense this reference. Unfortunately,&nbsp;the&nbsp;concept of process and kernel&nbsp;virtual memory is an entirely different subject unrelated to the system commit limit.<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/4010.OutOfCommitLimit.gif" style="border:0px solid currentColor;" />&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8625.001.png"><img alt="Close programs to prevent information loss" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8625.001.png" style="border-width:0px;border-style:solid;width:260px;height:203px;" /></a></p>
+<h3><a name="Troubleshooting"></a>Troubleshooting</h3>
+<p>If the &quot;\Memory\% Committed Bytes In use&quot; performance counter is over 75%, then the system is close to running out of memory (both RAM and all page files). To troubleshoot this issue, try to find the highest consumers of committed memory:</p>
+<ol>
+<li><strong>Identify which processes are consuming the most committed memory:</strong> The “Private Bytes” of a process is the amount of&nbsp;private committed memory (process heap memory)&nbsp;within a process. Look at “\Process(*)\Private Bytes” to see which processes
+ are consuming the most and which are on an increasing trend over a long period of time. Keep in mind that&nbsp;Private Bytes is potential pagable memory and cannot be measured by looking at just physical memory usage (Working Set) alone. If you have identified
+ processes consuming significant amounts of committed memory, then go here. [Link to future article]
+</li><li><strong>Kernel pool memory:</strong> Drivers store their memory into the kernel memory pools Paged Pool and Nonpaged Pool. The memory in both of these pools is charged against the system commit charge. The memory usage of these pools are shown in the Performance
+ tab of Task Manager or by using the counters \Memory\Pool Paged Bytes and \Memory\Pool Nonpaged Bytes.
+</li><li><strong>Driver locked memory:</strong> Drivers can lock memory and that memory will be charged to the system commit charge. An example of driver locked memory is the Hyper-V driver locking memory for a virtual machine. Driver locked memory can be shown
+ using the Sysinternals tool <a href="http://live.sysinternals.com/rammap.exe" target="_blank">
+RAMMap</a>. Also, VMWare&#39;s memory &quot;ballooning&quot; will show up as Driver Locked. </li><li><strong>System committed backed shared memory sections:</strong> An application can create a shared memory section and this memory allocation will add to the system commit charge immediately. As&nbsp;the process(es) use the shared memory, that memory will be
+ mapped into their respective virtual address spaces, but if the shared memory is allocated, but not used, then it is nearly impossible to identify which process created it. Since there is no owner to look up, thounters \Memory\Pool Paged Bytes and \Memory\Pool Nonpaged Bytes.
+</li><li><strong>Driver locked memory:</strong> Drivers can lock memory and that memory will be charged to the system commit charge. An example of driver locked memory is the Hyper-V driver locking memory for a virtual machine. Driver locked memory can be shown
+ using the Sysinternals tool <a href="http://live.sysinternals.com/rammap.exe" target="_blank">
+RAMMap</a>. Also, VMWare&#e Sysinternals tools VMMap, RAMMap, and Process
+ Explorer cannot show any further details. With that said, kernel debugging will show the existence of this resource as &quot;Shared Commit&quot; in the output of &quot;!vm&quot;.
+</li><li><strong>Kernel debugging:</strong> Use the Windows Debugger (WinDBG) to attach to the kernel and do a &quot;!vm&quot; command. This will show other memory areas that count towards the system commit charge such as shared committed, session committed memory and driver
+ committed. </li></ol>
+<h3><a name="Treating_the_Symptoms"></a>Treating the Symptoms</h3>
+<p>If all of the above troubleshooting steps have been exhausted, then the symptoms of&nbsp;a high system commit charge&nbsp;can be treated with one or more of the following:</p>
+<ol>
+<li><strong>Add physical memory:</strong> More physical memory will increase the system commit limit. If the system is low on committed memory, the dynamic memory feature of Hyper-V can add physical memory to a virtual machine while the virtual machine is still
+ running. </li><li><strong>Add or increase the size of page files:</strong> When the computer is low on committed memory, it will try to increase the size of the page file if it has not yet reached its maximum size. System managed paging files will increase up to three times
+ physical memory or 4 GB whichever is larger. </li><li><strong>Avoid “Memory Optimizers”:</strong> Windows is very efficient at managing memory. So called, “memory optimizers” simply force the kernel to delete its disk cache and trim the working sets (more paging) of processes. All this does is cause a lot
+ of unnecessary disk I/O. </li></ol>
+<h2><a name="More_Information"></a>More Information</h2>
+<p><strong>Vital Signs Workshop:</strong> Microsoft Services offers an&nbsp;instructor led workshop called, &quot;Vital Signs&quot;, which goes in depth into Windows architecture focused on Windows performance analysis. If you are interested, then contact your Microsoft Technical
+ Account Manager (TAM). If you do not have a Microsoft Premier Support contract, then consider the great benefits of having one by going to our Microsoft Services Premier Support web site at:
+<a href="http://www.microsoft.com/microsoftservices/en/us/support_premier.aspx"><span>http://www.microsoft.com/microsoftservices/en/us/support_premier.aspx</span></a><br />
+<br />
+&nbsp;</p>
+
+</div>
+    
+    

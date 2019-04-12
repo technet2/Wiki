@@ -1,0 +1,127 @@
+---
+layout: default
+title: StreamInsight for Non-Programmers - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div id="mainBody">
+<p><em>[</em><a href="http://social.msdn.microsoft.com/profile/roman%20schindlauer/"><em>Roman Schindlauer</em></a><em>&nbsp;and
+</em><a href="http://social.technet.microsoft.com/profile/devbiker/?ws=usercard-mini"><em>J Sawyer</em></a><em>&nbsp;contributed to this article]</em></p>
+<p>Microsoft StreamInsight consists of a set of programming tools, and most of what is written about StreamInsight is written specifically for programmers.</p>
+<p>But what if you are, for example, a database administrator or data analyst without an extensive programming background? You&#39;re wondering if StreamInsight might be a solution for a problem you have, but the existing documentation leaves you scratching your
+ head. </p>
+<p>Hopefully this ariv><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">StreamInsight for Non-Programmers</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div id="mainBody">
+<p><em>[</em><a href="http://social.msdn.microsoft.com/profile/roman%20schindlauer/"><em>Roman Schindlauer</em></a><em>&nbsp;and
+</em><a href="http://social.technet.microsoft.com/profile/devbiker/?ws=usercard-mini"><em>J Sawyer</em></a><em>&nbsp;contributed to this article]</em></p>
+<p>Microsoft StreamInsight ticle will help. It offers an overview of StreamInsight from a non-programmer&#39;s point-of-view, with the goal of helping you evaluate what StreamInsight is and what it can do.</p>
+<div>
+<h2 class="heading"><a name="Streams_of_Data"></a>Streams of Data</h2>
+<div id="sectionSection0" class="section">
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2577.Stream.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/300x300/__key/communityserver-wikis-components-files/00-00-00-00-05/2577.Stream.jpg" style="border-width:0px;border-style:solid;width:200px;height:146px;margin-top:0px;margin-right:3px;float:left;" /></a>Just
+ as Microsoft SQL Server is designed to manage static data, StreamInsight is designed to analyze dynamic data. To StreamInsight, a
+<strong><em>stream</em></strong> is a sequence of data that has time associated with it. Examples would be a stock ticker stream that provides the prices of different stocks in an exchange as they change over time, or a temperature sensor stream that provides
+ temperature values reported by the sensor over time. </p>
+<p><span style="font-size:12px;">A StreamInsight program passes the stream through a set of queries that analyze the data, watching for interesting information. It then outputs information derived from the queries, such as an alert that was generated because
+ a query identified an anomaly.</span></p>
+<p><span style="font-size:12px;">You can read a more detailed description of the components of StreamInsight in
+<a href="http://msdn.microsoft.com/en-us/library/jj136801(SQL.111).aspx">StreamInsight Concepts</a>.</span></p>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="Queries"></a>Queries</h2>
+<div id="sectionSection1" class="section">
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1057.StreamInsight-Queries.jpg"><img alt=" " align="right" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/200x200/__key/communityserver-wikis-components-files/00-00-00-00-05/1057.StreamInsight-Queries.jpg" style="border-width:0px;border-style:solid;float:right;" /></a>Queries
+ are the heart of StreamInsight. You can define one or more queries that pick through the data of a moving stream, looking for interesting values or patterns. For example, you might define a query over a stock ticker stream that watches for large and rapid
+ fluctuations in a particular stock price.</p>
+<p>The query language used in StreamInsight is a variation of LINQ (<a href="http://msdn.microsoft.com/en-us/library/bb397897.aspx" target="_blank">Language-Integrated Query</a>). Similar to the way T-SQL allows you to query SQL databases, StreamInsight LINQ
+ allows you to query streaming data.</p>
+<p>For example, in SQL Server you might have a database table named &quot;Tollbooth&quot; that contains information on cars that passed through a tollbooth over the past week. Using T-SQL, you could select the cars that had Washington state license plates using a query
+ like this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">select *
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">from Tollbooth</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">where LicenseState = &quot;WA&quot;</code></span></span></div>
+</div>
+<p>Now suppose that instead of a static database of historical tollbooth readings you had live data coming from the tollbooth in real time. In this case you could use StreamInsight to watch for any license plate from Washington and identify it immediately.
+ You could find these cars with a very similar-looking LINQ query:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var myQuery = from car in TollStream</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where car.LicenseState = &quot;WA&quot;</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select car;</code></span></div>
+</div>
+<p>However, because a data stream also includes a time component, StreamInsight LINQ gives you the additional ability to compose time-related queries. For example, suppose you wanted to count the number of cars that pass through the tollbooth in a 3 minute
+ window, updating that count every minute:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var countStream = from win in tollStream.HoppingWindow(TimeSpan.FromMinutes(3),</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">TimeSpan.FromMinutes(1))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select win.Count();</code></span></div>
+</div>
+<p>This query uses a &quot;hopping window&quot; - a window 3 minutes long that &quot;hops&quot; forward every minute. Here&#39;s a picture of how this works:</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7245.HoppingWindow.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/500x500/__key/communityserver-wikis-components-files/00-00-00-00-05/7245.HoppingWindow.jpg" style="border-width:2px;border-style:solid;width:480px;height:192px;" /></a></p>
+<div style="text-align:left;">&nbsp;</div>
+<p>In the example figure, you can see that there were 3 cars in the the first 3-minute window, 2 in the next, and so on. Not only would a query like this be much more complex in T-SQL, but, as opposed to SQL,&nbsp;this count is being performed in real time as the
+ cars are passing through the tollbooth.</p>
+<p>Here is the crucial difference between StreamInsight and a database: StreamInsight never stores the data anywhere! Instead, the query is kept active at all te. Here&#39;s a picture of how this works:</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/times, and every new reading (we call them “events”) will immediately, upon arrival, trigger a new
+ computation and generate a new result. The StreamInsight computation engine keeps just as much data in memory as necessary - in the example above, the counter is kept for the duration of the 3-minute window. Every new incoming event causes an incremental update
+ of StreamInsight’s internal data structures, and, if the query semantics require it, an output event. So even though the StreamInsight LINQ queries look very much like SQL queries, their execution (once deployed to the engine) happens very differently: event-driven
+ and continuously. </p>
+<p>An excellent tutorial on queries is <a href="http://blogs.msdn.com/b/streaminsight/archive/2012/08/01/a-hitchhiker-s-guide-to-streaminsight-2-1-queries.aspx" target="_blank">
+A Hitchhiker&#39;s Guide to StreamInsight Queries</a>. The technical details of StreamInsight LINQ can be found in the MSDN documentation under
+<a href="http://msdn.microsoft.com/en-us/library/ee362394(SQL.111).aspx">Using StreamInsight LINQ</a>.</p>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="Moving_Data_In_and_Out"></a>Moving Data In and Out</h2>
+<div id="sectionSection2" class="section">
+<p>A StreamInsight program brings incoming data to the queries using a data <strong>
+<em>source</em></strong>, and the output of the queries is delivered through a data
+<strong><em>sink</em></strong>. A programmer creates these sources and sinks using functions available in StreamInsight.</p>
+<p>Data stream sources can receive data from manufacturing applications, financial trading applications, Web analytics, operational analytics, etc. - even a static database can be used as a source to provide reference information. Data stream sinks could be
+ pagers, monitoring devices, KPI dashboards, trading stations, or databases – any device or system that needs to use what the query has found.</p>
+<p>A StreamInsight program can have multiple data sources, and queries can combine these sources using standard operations such as joins and unions. Similarly, a StreamInsight program can have multiple data sinks, accepting data from one or more queries.</p>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="Clients_and_Servers"></a>Clients and Servers</h2>
+<div id="sectionSection3" class="section">
+<p>StreamInsight is based on a client-server architecture. The client program defines the data source, the queries, and the data sink, and copies these definitions to the server. The server then does the ongoing work of running the queries over live data.</p>
+<p>The advantage of this system is that the server that actually does the real-time work can be running on a dedicated system designed for that type of computational load. Also, you can have multiple clients copying data source, query, and data sink definitions
+ to the same server, and then these components can be shared on the server. For example, multiple queries from different clients could be performing different analyses over data from a single shared source.</p>
+<p>Another advantage is still to come: Microsoft is developing a StreamInsight server that will run in Windows Azure. This means that you will be able to choose to have the ongoing work of data movement and analysis performed in the cloud. You can follow the
+ progress of this project (currently codenamed <em>Austin</em>) on the&nbsp;<a href="http://blogs.msdn.com/b/streaminsight/" target="_blank">StreamInsight Blog</a> - watch for posts such as this announcement from a few months ago:
+<a href="http://blogs.msdn.com/b/streaminsight/archive/2012/02/23/streaminsight-in-windows-azure-austin-february-ctp.aspx" target="_blank">
+StreamInsight in Windows Azure: Austin February CTP</a>. </p>
+<p>If you want more detail on how this client-server architecture works, you can read
+<a href="http://msdn.microsoft.com/en-us/library/jj149394(SQL.111).aspx" target="_blank">
+Deploying StreamInsight Entities to a StreamInsight Server</a> (you can just ignore the code examples).</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1680.StreamInsight-Server-Flow.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x150/__key/communityserver-wikis-components-files/00-00-00-00-05/1680.StreamInsight-Server-Flow.jpg" style="border-width:0px;border-style:solid;" /></a></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1680.StreamInsight-Server-Flow.jpg">
+<div style="text-align:left;">&nbsp;</div>
+</a></div>
+</div>
+<div>
+<h2 class="heading"><a name="Want_More_Information"></a>Want More Information?</h2>
+<div id="sectionSection4" class="section">
+<p>If you want to dig a little further and get more details on StreamInsight, you might start with <a class="ExistingPageLink" href="/wiki/contents/articles/14436.get-started-with-streaminsight-2-1.aspx" title="Click to view the page titled: Get Started with Streaminsight 2.1">Get Started with Streaminsight 2.1</a>. Included in that article are links to some case studies of companies using StreamInsight, as well as a good training course.</p>
+<p>You also can post questions or comments here or in the <a href="http://social.msdn.microsoft.com/Forums/en-US/streaminsight" target="_blank">
+StreamInsight Forum</a>.</p>
+</div>
+</div>
+</div>
+
+</div>
+    
+    

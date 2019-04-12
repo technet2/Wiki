@@ -1,0 +1,129 @@
+---
+layout: default
+title: How to Remotely Enable RDP NLA on a List of Computers - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Purpose">Purpose</a></li><li class="hierarchy-item"><a href="#Notes">Notes</a></li><li class="hierarchy-item"><a href="#What_the_Script_Does">What the Script Does</a></li><li class="hierarchy-item"><a href="#Download_amp_Execute_enablenla_bat_script_against_a_list_of_remote_computers">Download &amp; Execute
+ 
+“enablenla.bat” script against a list of remote computers</a></li><li class="hierarchy-item"><a href="#Assumptions">Assumptions</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+</p>
+<h1><a name="Purpose"></a>Purpose</h1>
+<p>Enhance Network Security by Ensuring RDP Sessions can be Initiated ONLY from NLA-capable Computers</p>
+<p>During the initial setup of Windows servers and workstations, many administrators may have set a lower security setting, when allowing Remote Desktop Protocol (RDP) connections to the computer being built. This weaker setting will be shown during the configuration
+ phase, and is under the “Remote” tab of “Computer Properties.” It is &quot;Allow connections from computers running any version of Remote Desktop (less secure)&quot;:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3617.rdp1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3617.rdp1.png" width="366" height="441" style="border:0px solid currentColor;" /></a></p>
+<p>As a point of security auditing and improving overall security posture, security auditors will issue a warning note, if they detect this less secure setting on any of your servers or workstations. By using this weaker setting, you are, in essence, allowing
+ connections from older operating systems and older RDP versions, which do not offer nor require Network-Level Authentication (NLA).</p>
+<p>As part of security remediation you, as a system, network or security administrator (admin), must visit each computer with this weaker setting and change it to the more secure setting of “Allow connections only from computers running Remote Desktop Protocol
+ with Network Level Authentication (more secure):”</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8831.rdp2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8831.rdp2.png" width="370" height="537" style="border:0px solid currentColor;" /></a></p>
+<p>A labor-intensive and time-intensive problem arises when the administrator of a large number of computers and/or a large number of remote sites must remediate this setting. In such a situation, it is best to utilize a script, such as
+<a href="http://gallery.technet.microsoft.com/Windows-Shell-Script-bat-3dc5859b/file/95981/2/enablenla.bat">
+“enablenla.bat,”</a> in order to expeditiously change the remote servers to recommended setting.</p>
+<p>The&nbsp;<a href="http://gallery.technet.microsoft.com/Windows-Shell-Script-bat-3dc5859b/file/95981/2/enablenla.bat">&quot;enablenla.bat&quot;</a> script was developed to enable the RDP NLA feature on a list of remote (target) computers, so that the target computers will
+ require any connecting/controlling (source) computer to utilize NLA-capable RDP - i.e. Windows 7 or higher and Windows Server 2008 or higher (or older O/S with NLA-compliant RDP).</p>
+<h1><a name="Notes"></a>Notes</h1>
+<p>After making this setting change, to make the change take effect, the admin must, at some point, restart the target computer, since the registry key being changed is an HKLM (i.e., “Local Machine”) key.</p>
+<p>After making this setting change, you no longer will be able to connect to the target system via systems that run Windows XP or older, or Windows Server 2003 or older, unless those systems have had RDP upgraded to NLA-capable RDP versions.</p>
+<br />
+<h1><a name="What_the_Script_Does"></a>What the Script Does<span style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:12px;">&nbsp;</span></h1>
+<p>The script simply changes a registry key on the target computer so that, when the target computer is restarted, the requirement will be enforced to allow only NLA-capable RDP sessions to the remote computer. Following is a snippet (portion) of the “enablenla.bat”
+ script – download the&nbsp;<a href="http://gallery.technet.microsoft.com/Windows-Shell-Script-bat-3dc5859b/file/95981/2/enablenla.bat">enablenla.bat</a> full script for full code and functionality.<span style="font-size:12px;">&nbsp;<br />
+</span></p>
+<div class="reCodeBlock" style="overflow-y:auto;">
+<div><span style="font-family:Segoe UI;"><code>@echo off</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem =================================================================================</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem - Script: enablenla.bat</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp; How to Run this script:</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;
+</code><code>1</code><code>) Save this script as
+</code><code style="color:blue;">&quot;c:\scripts\enablenla.bat&quot;</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp; a) To run against a single computer</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Execute this script, passing the remote computer name as the only parameter, redirect output/errors to a
+ log file</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; c:\scripts\enablenla.bat Server</code><code>1</code>
+<code>&gt;&gt; c:\scripts\nla-log.txt </code><code>2</code><code>&gt;&amp;</code><code>1</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; where Server</code><code>1</code>
+<code>is the remote computer needing RDP-NLA to be enabled</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp; b) To run against multiple computers:</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i. Make a wrapper
+</code><code style="color:blue;">&quot;bat&quot;</code> <code>file to
+</code><code style="color:blue;">&#39;call&#39;</code> <code>this (enablenla.bat) script -</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; There is a
+</code><code style="color:blue;">&quot;wrapper file&quot;</code> <code>
+example in the </code><code style="color:blue;">&quot;rem&quot;</code> <code>
+statements at the end of this script</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ii. In the
+</code><code style="color:blue;">&quot;wrapper&quot;</code> <code>file, place a series of
+</code><code style="color:blue;">&quot;call&quot;</code> <code>statements, each on a single line, for each remote computer</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i.e.
+</code><code style="color:blue;">&quot;call c:\scripts\enablenla Server1&quot;</code> <code>
+(that runs this script against the remote computer </code><code style="color:blue;">&quot;Server1&quot;</code><code>)</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iii. Once you&#39;ve entered
+</code><code>all</code> <code>
+the lines containing </code><code>all</code> <code>
+the target remote computer names,</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; save that
+</code><code style="color:blue;">&quot;wrapper&quot;</code> <code>script as
+</code><code style="color:blue;">&quot;c:\scripts\callnla.bat&quot;</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iv. Execute the
+</code><code style="color:blue;">&quot;wrapper&quot;</code> <code>file, redirecting output &amp; errors to a log file:</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; c:\scripts\callnla.bat &gt;&gt; c:\scripts\nla-log.txt
+</code><code>2</code><code>&gt;&amp;</code><code>1</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem -&nbsp;&nbsp;&nbsp;&nbsp; c) Examine log for successes and to troubleshoot any errors (</code><code style="color:blue;">&quot;notepad&nbsp; c:\scripts\nla-log.txt&quot;</code><code>)</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>==========================================================================================================================</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>rem</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>echo.</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>echo
+</code><code style="color:blue;">&quot;Adding NLA-ONLY key to remote computer %1&quot;</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>echo.</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>[remotely add specific hklm key on remote computer]…</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>echo.</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>echo
+</code><code style="color:blue;">&quot;Finished adding NLA key to remote computer %1&quot;</code></span></div>
+<div><span style="font-family:Segoe UI;"><code>[End of
+</code><code>code</code> <code>
+snippet]</code></span></div>
+</div>
+<br />
+&nbsp; &nbsp; &nbsp;<strong>
+<h1><a name="Download_amp_Execute_enablenla_bat_script_against_a_list_of_remote_computers"></a>Download &amp; Execute
+<a href="http://gallery.technet.microsoft.com/Windows-Shell-Script-bat-3dc5859b/file/95981/2/enablenla.bat">
+“enablenla.bat”</a> script against a list of remote computers</h1>
+<h1></h1>
+</strong>
+<h1></h1>
+<p><span style="font-size:11px;">1)<span style="line-height:normal;font-size:11px;font-style:normal;font-weight:normal;">&nbsp; &nbsp;Save this script as &quot;c:\scripts\enablenla.bat&quot;<br />
+<br />
+2)<span style="line-height:normal;font-size:11px;font-style:normal;font-weight:normal;">&nbsp;&nbsp;&nbsp; Execute this script against individual or multiple remote computers</span></span></span></p>
+<p>&nbsp;&nbsp;&nbsp; a) To run against a single computer<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Execute this script, passing the remote computer name as the only parameter, redirecting output/errors to a log file<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c:\scripts\enablenla.bat Server1 &gt;&gt; c:\scripts\nla-log.txt 2&gt;&amp;1<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="GramE">where Server1 is the remote computer needing RDP-NLA to be enabled</span></p>
+<p>&nbsp;&nbsp;&nbsp; b) To run against multiple computers:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="SpellE">i. Make a wrapper &quot;bat&quot; file to &#39;call&#39; this (enablenla.bat) script -&nbsp;<br />
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; There is a &quot;wrapper file&quot; example in the &quot;rem&quot; statements at the end of this script</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ii. In the &quot;wrapper&quot; file, place a series of &quot;call&quot; statements, each on a single line, for each remote computer<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i.e. &quot;call c:\scripts\enablenla Server1&quot; (that would run this script against to modify the remote computer &quot;Server1&quot;)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; iii. Once you&#39;ve entered all the lines containing all the target remote computer names,&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="GramE">save that &quot;wrapper&quot; script as &quot;c:\scripts\callnla.bat&quot;</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iv. Execute the &quot;wrapper&quot; file, redirecting output &amp; errors to a log file:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; c:\scripts\callnla.bat &gt;&gt; c:\scripts\nla-log.txt 2&gt;&amp;1</p>
+<p>&nbsp;&nbsp;&nbsp; c) Examine log for successes and to troubleshoot any errors (&quot;<span class="GramE">notepad&nbsp; c:\scripts\nla-log.txt&quot;)</span><span style="font-size:12px;">&nbsp; &nbsp;</span></p>
+<h1><a name="Assumptions"></a>Assumptions<span style="line-height:normal;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:12px;">&nbsp;</span><span style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:12px;">&nbsp;</span></h1>
+<p>1) You can create/save this script and a wrapper script to a c:\scripts folder</p>
+<p>2) You have the necessary privileges and rights to modify the HKLM key on the targeted remote computers<span style="font-size:12px;">&nbsp;</span></p>
+<hr />
+<h1><a name="See_Also"></a>See Also<span style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:12px;">&nbsp;</span></h1>
+<p>The related&nbsp;<a href="http://gallery.technet.microsoft.com/Windows-Shell-Script-bat-3dc5859b/file/95981/2/enablenla.bat">“enablenla.bat”</a> script</p>
+<p>TechNet article on <a href="http://technet.microsoft.com/en-us/library/cc732713.aspx">
+configuring RDP NLA</a></p>
+<hr />
+
+</div>
+    
+    

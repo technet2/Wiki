@@ -1,0 +1,80 @@
+---
+layout: default
+title: Tif Manipulation - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<strong>Tif Manipulation:</strong><br />
+- Verify if tif is multipage<br />
+- Split multipage tif into one page tif<br />
+<br />
+<strong>Code:</strong> <br />
+<br />
+public class ImageManager<br />
+{<br />
+public static bool IsMultiPageTiff(string fileFullname)<br />
+{<br />
+Image tifImage = Image.FromFile(fileFullname);<br />
+FrameDimension frameDimensions = new FrameDimension(tifImage.FrameDimensionsList[0]);<br />
+Guid objGuid = tifImage.FrameDimensionsList[0];<br />
+<br />
+int numPages = tifImage.GetFrameCount(frameDimensions);<br />
+tifImage.Dispose();<br />
+<br />
+return numPages &gt; 1;<br />
+}<br />
+<br />
+/// &lt;summary&gt;<br />
+public static ArrayList SplitTiffMultiPage(string fileFullname, bool savePages)<br />
+{<br />
+ArrayList results = new ArrayList();<br />
+<br />
+Image tifImage = Image.FromFile(fileFullname);<br />
+FrameDimension frameDimensions = new FrameDimension(tifImage.FrameDimensionsList[0]);<br />
+Guid objGuid = tifImage.FrameDimensionsList[0];<br />
+<br />
+string extension = Path.GetExtension(fileFullname);<br />
+string fileFullnameWithoutExt = fileFullname.Replace(extension, &quot;&quot;);<br />
+<br />
+for (int i = 0; i != tifImage.GetFrameCount(frameDimensions); i&#43;&#43;)<br />
+{<br />
+string newTiffFullname = string.Format(&quot;{0}_{1}{2}&quot;, fileFullnameWithoutExt, i.ToString(), extension.ToUpper());<br />
+<br />
+if (savePages)<br />
+SaveTiffPage(newTiffFullname, tifImage, frameDimensions, i);<br />
+<br />
+results.Add(newTiffFullname);<br />
+}<br />
+<br />
+tifImage.Dispose();<br />
+<br />
+File.Delete(fileFullname);<br />
+<br />
+return results;<br />
+}<br />
+<br />
+public static void SaveTiffPage(string newTiffFullname, Image tifImage, FrameDimension frameDimensions, int pageNumber)<br />
+{<br />
+tifImage.SelectActiveFrame(frameDimensions, pageNumber);<br />
+tifImage.Save(newTiffFullname, ImageFormat.Tiff);<br />
+}<br />
+<br />
+/// &lt;summary&gt;<br />
+/// Gets the page number.<br />
+/// &lt;/summary&gt;<br />
+public static int GetPageNumber(Image tifImage)<br />
+{<br />
+Guid objGuid = tifImage.FrameDimensionsList[0];<br />
+FrameDimension objDimension = new FrameDimension(objGuid);<br />
+<br />
+int PageNumber = tifImage.GetFrameCount(objDimension);<br />
+<br />
+return PageNumber;<br />
+} <br />
+}
+
+</div>
+    
+    

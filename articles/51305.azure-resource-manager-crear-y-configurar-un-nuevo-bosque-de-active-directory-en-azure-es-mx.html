@@ -1,0 +1,122 @@
+---
+layout: default
+title: Azure Resource Manager&#58; Crear y configurar un nuevo bosque de Active Directory en Azure (ES-MX) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Credits"></a>Credits</h1>
+<p>Este artículo fue originalmente escrito en:&nbsp;<a href="https://social.technet.microsoft.com/wiki/contents/articles/51304.create-and-configure-a-new-active-directory-forest-in-azure-using-azure-resource-manager.aspx">https://social.technet.microsoft.com/wiki/contents/articles/51304.create-and-configure-a-new-active-directory-forest-in-azure-using-azure-resource-manager.aspx</a></p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Credits">Credits</a></li><li class="hierarchy-item"><a href="#Introduction">Introducción</a></li><li class="hierarchy-item"><a href="#Scenario">Escenario</a></li><li class="hierarchy-item"><a href="#Create_an_Azure_Virtual_Network_VNET">Crear Red Virtual en Azure (VNET)</a></li><li class="hierarchy-item"><a href="#Create_VMs_to_run_the_domain_controller_and_DNS_server_roles">Crear máquinas virtuales para ejecutar las funciones de controlador de dominio y servidor DNS</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Attach_a_Disk_to_VM">Añadir Disco a Máquina Virtual 
+ 
+Note :</a></li><li class="hierarchy-item"><a href="#Prepare_Data_Disk">Prepare el Disco de Datos</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Reserve_a_Static_IP_address">Reserve una Dirección IP Estática Static IP address</a></li><li class="hierarchy-item"><a href="#Install_Windows_Server_Active_Directory">Instale Windows Server Active Directory</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Remove_DNS_Forwarder_Setting">Remueva la configuración de Redirección DNS</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Update_the_DNS_server_setting_for_the_virtual_network">Actualice la configuración del Servidor de DNS para la Red Virtual</a></li><li class="hierarchy-item"><a href="#Summary">Conclusión</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Introduction"></a>Introducción</h1>
+Azure es un conjunto completo de servicios en la nube que los desarrolladores y profesionales de TI utilizan para crear, implementar y administrar aplicaciones a través de nuestra red global de centros de datos. Las herramientas integradas, DevOps y un mercado
+ lo ayudan a desarrollar de forma eficiente cualquier cosa, desde simples aplicaciones móviles hasta soluciones a escala de Internet.Microsoft Azure se convirtió en un nuevo componente de infraestructura de la administración tradicional de centros de datos.
+<br />
+<br />
+Todos los clientes están trasladando sus cargas de trabajo de las aplicaciones del servidor Windows locales a la nube azul para ahorrar en costos operativos, escalabilidad e implementación rápida. Las aplicaciones de Windows tradicionales alojadas en la nube
+ necesitan Active Directory en la nube para autenticación y autorización.<br />
+<br />
+En este post voy a proporcionar instrucciones paso a paso para configurar un nuevo bosque de directorio activo usando el servidor de PaaS de Windows Azure Windows Server 2016.
+<h1><a name="Scenario"></a>Escenario</h1>
+En este escenario, los usuarios externos acceden a servidores de aplicaciones alojados en azul desde Internet. Los servidores de aplicaciones son servidores unidos a un dominio y usan AD como fuente de identidad para autenticación y autorización. Las máquinas
+ virtuales del servidor de aplicaciones azure y las máquinas virtuales de controlador de dominio se están ejecutando en una red virtual de Azure. También se incluyen dentro de un conjunto de disponibilidad para una tolerancia a fallas mejorada.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4520.AAD_2D00_DC_2D00_01.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4520.AAD_2D00_DC_2D00_01.jpg" /></a></p>
+<h1><a name="Create_an_Azure_Virtual_Network_VNET"></a>Crear Red Virtual en Azure (VNET)</h1>
+Inicie sesión en el portal de gestión azul - portal.azure.com. Elija Redes y luego seleccione Crear una red virtual o haga clic en Agregar.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0121.AAD_2D00_DC_2D00_02.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0121.AAD_2D00_DC_2D00_02.jpg" /></a></p>
+Seleccione un nombre para su red virtual, cree un espacio de direcciones más grande y una subred y seleccione Crear.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5582.AAD_2D00_DC_2D00_03.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5582.AAD_2D00_DC_2D00_03.jpg" /></a></p>
+<h1><a name="Create_VMs_to_run_the_domain_controller_and_DNS_server_roles"></a>Crear máquinas virtuales para ejecutar las funciones de controlador de dominio y servidor DNS</h1>
+Una vez que se crea la red virtual, podemos seguir adelante y crear las máquinas virtuales base que se ejecutarán como controladores de dominio de directorio activo.En Azure Portal, elija máquinas virtuales à Windows Server y luego Windows Server 2016 Datacenter
+ Image
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4428.AAD_2D00_DC_2D00_04.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4428.AAD_2D00_DC_2D00_04.jpg" /></a></p>
+Seleccione el modelo de despliegue como Resource Manager y seleccione crear. En la pantalla siguiente ingrese la información básica para la máquina virtual.
+<p><strong></strong></p>
+Nombre: escriba un nombre de etiqueta único (como AzureDC1).
+<p><strong></strong></p>
+Tipo de disco VM: seleccione el tipo de disco necesario para esta máquina virtual.
+<p>Nombre de usuario y contraseña: escriba el nombre de un usuario. Este usuario será miembro del grupo de administradores locales en la VM. Necesitará este nombre para iniciar sesión en la máquina virtual por primera vez. La cuenta integrada llamada Administrador
+ no funcionará.</p>
+<p>Grupo de recursos: seleccione el nombre del grupo de recursos queashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4428.AAD_2D00_DC_2D00_04.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4428.AAD_2D00_DC_2D00_04.jpg" /></a></p>
+Seleccione el modelo de despliegue como Resource Manager y seleccione crear. En la pantalla siguiente ingrese la información básica para la máquina virtual.
+<p><strong></strong></p>
+Nombre: escriba un nombre de etiqueta único (como AzureDC1).
+<p><strong></strong></p>
+Tipo de disco VM: seleccione el tipo de disco necesario para esta máquina virtual.
+<p>Nombre de usuario y contraseña: escriba el nombre de un usuario. Este  creamos durante la creación de VNET</p>
+<p>Ubicación: elija una ubicación </p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6675.AAD_2D00_DC_2D00_06.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6675.AAD_2D00_DC_2D00_06.jpg" /></a></p>
+Haga clic en Aceptar y en la siguiente pantalla seleccione una plantilla de máquina virtual según su requisito
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7802.AAD_2D00_DC_2D00_07.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7802.AAD_2D00_DC_2D00_07.jpg" /></a></p>
+En la página Configuración, cree el conjunto de disponibilidad y otras configuraciones y haga clic en Aceptar
+<p>Conjunto de disponibilidad: para proporcionar redundancia a su aplicación, le recomendamos que agrupe dos o más máquinas virtuales en un conjunto de disponibilidad. Esta configuración garantiza que, durante un evento de mantenimiento planificado o no planificado,
+ al menos una máquina virtual estará disponible y cumplirá con el 99.95% de Azure SLA. El conjunto de disponibilidad de una máquina virtual no se puede cambiar después de haber sido creado.</p>
+<p>Almacenamiento: habilite esta función para que Azure administre automáticamente la disponibilidad de discos para proporcionar redundancia de datos y tolerancia a fallas.</p>
+<p>Red: elija la red virtual que creamos en el primer paso</p>
+<p>Subnet - Elija la subred</p>
+<p>Dirección IP pública: se usa para comunicarse con la máquina virtual desde Internet</p>
+<p>Network Security Group - Conjunto de reglas de firewall para controlar el tráfico hacia y desde la máquina virtual
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.AAD_2D00_DC_2D00_08.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.AAD_2D00_DC_2D00_08.jpg" /></a></p>
+Valide la configuración en la página Resumen y haga clic en Crear.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0003.AAD_2D00_DC_2D00_09.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0003.AAD_2D00_DC_2D00_09.jpg" /></a></p>
+<h2><a name="Attach_a_Disk_to_VM"></a><strong>Añadir Disco a Máquina Virtual<br />
+</strong><strong style="color:#333333;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:12.1px;"><br />
+Note</strong><span style="font-size:12.1px;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;color:#333333;">:
+</span></h2>
+<span style="font-size:12.1px;">Cuando crea una máquina virtual en Windows Azure, se le proporciona un almacenamiento temporal automáticamente. Este almacenamiento temporal es &quot;D:&quot; en una máquina virtual de Windows y es &quot;/ dev / sdb1&quot; en una máquina virtual
+ Linux. Este almacenamiento temporal no se debe usar para almacenar datos que no está dispuesto a perder.<br />
+</span><br />
+<span style="font-size:12.1px;">Una vez que se implementa la máquina virtual, seleccione la máquina virtual y haga clic en Discos y luego Agregue Disco de Datos à Crear Disco</span><br />
+<span style="font-size:12.1px;"><br />
+</span><br />
+<span style="font-size:12.1px;">Ingrese el tamaño como 10 GB y cree, y deje la preferencia de caché del host establecida en Ninguna. Una vez que se crea el disco, haga clic en Guardar. El disco adicional es necesario para almacenar la base de datos de AD, los
+ registros y SYSVOL.</span>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4505.AAD_2D00_DC_2D00_10.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4505.AAD_2D00_DC_2D00_10.jpg" /></a></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7331.AAD_2D00_DC_2D00_11.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7331.AAD_2D00_DC_2D00_11.jpg" /></a></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7635.AAD_2D00_DC_2D00_11a.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7635.AAD_2D00_DC_2D00_11a.jpg" /></a></p>
+<h2><a name="Prepare_Data_Disk"></a>Prepare el Disco de Datos</h2>
+Inicie sesión en la máquina virtual y abra el Administrador del servidor&gt; Servicios de archivos y almacenamiento. Seleccione Disks y haga clic con el botón derecho en el disco de 10 GB que creamos y en el Nuevo volumen.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3146.AAD_2D00_DC_2D00_12.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3146.AAD_2D00_DC_2D00_12.jpg" /></a></p>
+<p>Cree un Volumen NTFS y elija el disco&nbsp; F:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5037.AAD_2D00_DC_2D00_13.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5037.AAD_2D00_DC_2D00_13.jpg" /></a></p>
+<h1><a name="Reserve_a_Static_IP_address"></a>Reserve una Dirección IP Estática Static IP address</h1>
+El control de dominio debe tener una dirección IP estática configurada.
+<p>Seleccione su máquina virtual AzureDC1, seleccione Redes y haga clic en el nombre de la interfaz de red
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2046.AAD_2D00_DC_2D00_14.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2046.AAD_2D00_DC_2D00_14.jpg" /></a></p>
+En la página de la interfaz de red, seleccione configuraciones de IP y haga clic en ipconfig1
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7723.AAD_2D00_DC_2D00_15.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7723.AAD_2D00_DC_2D00_15.jpg" /></a></p>
+En Configuración de dirección IP privada, cambie el tipo de asignación a Estático y haga clic en Guardar
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0702.AAD_2D00_DC_2D00_16.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0702.AAD_2D00_DC_2D00_16.jpg" /></a></p>
+<h1><a name="Install_Windows_Server_Active_Directory"></a>Instale Windows Server Active Directory</h1>
+<p><strong></strong></p>
+Use la misma rutina para instalar AD DS que usa en las instalaciones. Para la base de datos de Active Directory, registros y SYSVOL, cambie la ubicación de almacenamiento predeterminada de la unidad del sistema operativo al disco de datos adicional que conectó
+ a la VM.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5123.AAD_2D00_DC_2D00_17.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5123.AAD_2D00_DC_2D00_17.jpg" /></a></p>
+Después de que finalice la instalación de DC, conéctese de nuevo a la VM e inicie sesión en el DC.
+<h2><a name="Remove_DNS_Forwarder_Setting"></a>Remueva la configuración de Redirección DNS</h2>
+En el Administrador del servidor, haga clic en Herramientas&gt; DNS.
+<p>En el Administrador de DNS, haga clic con el botón derecho en el nombre del servidor DNS y haga clic en Propiedades.</p>
+<p>En la pestaña Reenviadores, haga clic en la dirección IP del reenviador y haga clic en Editar. Seleccione la dirección IP y haga clic en Eliminar.
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6747.AAD_2D00_DC_2D00_18.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-0microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5123.AAD_2D00_DC_2D00_17.jpg" /></a></p>
+Después de que finalice la instalación de DC, conéctese de nuevo a la VM e inicie sesión en el DC.
+<h2><a name="Remove_DNS_Forwarder_Setting"></a>Remueva la configuración de Redirección DNS</h2>
+En el Administrador del servidor, haga clic en Herramientas&gt; DNS.
+<p>En el Administrador de DNS, haga clic con el botón derecho en el nombre del servidor DNS y haga clic en Propiedades.</p>
+<p>En la pestaña Reenviadores, haga clic en la dirección IP del reenviador y haga clic en Editar. Seleccione la dirección IP y 0-00-00-05/6747.AAD_2D00_DC_2D00_18.jpg" /></a></p>
+Haga clic en Aceptar para cerrar el editor y nuevamente en Aceptar para cerrar las propiedades del servidor DNS.
+<h1><a name="Update_the_DNS_server_setting_for_the_virtual_network"></a>Actualice la configuración del Servidor de DNS para la Red Virtual</h1>
+Haga clic en Redes virtuales&gt; haga doble clic en la red virtual que creó&gt; Configurar&gt; Servidores DNS, escriba el nombre y la dirección IP de una de las máquinas virtuales que ejecuta el rol del servidor DC / DNS y haga clic en Guardar.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0310.AAD_2D00_DC_2D00_19.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0310.AAD_2D00_DC_2D00_19.jpg" /></a></p>
+Seleccione la máquina virtual y haga clic en Reiniciar para que la máquina virtual configure las configuraciones del sistema de resolución de DNS con la dirección IP del nuevo servidor DNS.
+<h1><a name="Summary"></a>Conclusión</h1>
+<p>Realice los pasos de nuevo para promocionar un controlador de dominio adicional en el mismo dominio. Ahora las máquinas virtuales que está agregando el mismo VNET tendrán un controlador de dominio</p>
+
+</div>
+    
+    

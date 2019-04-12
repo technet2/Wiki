@@ -1,0 +1,235 @@
+---
+layout: default
+title: Обработка входных данных с Портала самообслуживания в связке SCSM2012-Orchestrator-PowerShell. Альтернатива Authoring Tool. - Статьи TechNet - Россия (Pусский) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0cm 0cm 8pt;"><span style="font-size:12px;font-family:Verdana;">Очень &#1084;ногие ад&#1084;инистраторы, перед которы&#1084;и встала задача внедрения SCSM, задаются вопросо&#1084;: как создать собственные касто&#1084;ные фор&#1084;ы Запроса на обслуживание или Инцидента, содержащие
+ нужные поля, фор&#1084;атирование и т. п.? Основной способ, трактуе&#1084;ый в Интернете и на Технете в частности – использование Authoring Tool. Не буде&#1084; описывать всех достоинств и недостатков данного &#1084;етода. Остави&#1084; его на суд читателя. Единственное, что от&#1084;ечу, проникнуться
+ данны&#1084; &#1084;етодо&#1084; всё же стоит, т. к. он предоставляет довольно широкое пони&#1084;ание о структуре Пакетов управления и о внутренней работе &#1084;еханиз&#1084;ов SCSM в цело&#1084;.</span></p>
+<p style="margin:0cm 0cm 8pt;"><span style="font-size:12px;font-family:Verdana;">В этой статье речь пойдёт о своеобразно&#1084; workaround-решении: как &#1084;ожно обойтись штатны&#1084;и фор&#1084;а&#1084;и, не использовать гро&#1084;оздкий &#1084;еханиз&#1084; Authoring Tool, но при это&#1084;, обрабатывая совершенно
+ произвольный набор данных, вводи&#1084;ых пользователе&#1084; через Портал са&#1084;ообслуживания (Self Service Portal). Подчеркну, что &#1084;етодика, расс&#1084;отренная в данной статье, не претендует на звание идеальной и предоставляется «как есть». Здесь не буде&#1084; детально вникать в
+ описание скриптов, настройки и подобные вещи – вы и са&#1084;и разберётесь при желании. Данный при&#1084;ер, в первую очередь, направлен на раскрытие &#1084;етодики работы связки SCSM&lt;-&gt;Orchestrator.</span></p>
+<p style="margin:0cm 0cm 8pt;"><span style="font-size:12px;font-family:Verdana;">На&#1084; понадобится:</span></p>
+<ul>
+<li><span style="font-size:12px;font-family:Verdana;">Собственно SCSM 2012; </span>
+</li><li><span style="font-size:12px;font-family:Verdana;">System Center Orchestrator 2012;
+</span></li><li><span style="font-size:12px;font-family:Verdana;"><a href="http://technet.microsoft.com/en-us/library/hh830706.aspx"><span style="font-size:12px;color:#0066dd;">SCSM 2012 Orchestrator Integration Pack</span></a>;
+</span></li><li><span style="font-size:12px;font-family:Verdana;"><a href="http://orchestrator.codeplex.com/releases/view/76101"><span style="font-size:12px;color:#0066dd;">Execute PowerShell Script Orchestrator Integration Pack</span></a>;
+</span></li><li><span style="font-size:12px;font-family:Verdana;">PowerShell; </span></li><li><span style="font-size:12px;font-family:Verdana;"><a href="http://smlets.codeplex.com/"><span style="font-size:12px;color:#0066dd;">SMLets</span></a>;
+</span></li><li><span style="font-size:12px;font-family:Verdana;">Корректно настроенные права доступа и делегирование (SPN) для учётной записи, от и&#1084;ени которой будут запускаться скрипты (сервисная учётная запись Оркетсратора), в то&#1084; числе удалённый запуск скриптов (PowerShell
+ Remoting, WinRM). </span></li></ul>
+<p style="margin:0cm 0cm 8pt;"><span style="font-size:12px;font-family:Verdana;">Задача для простого при&#1084;ера, который буде&#1084; разбирать. Предположи&#1084;, на&#1084; требуется создать предложение запроса на за&#1084;ену картриджа офисного принтера. Запрос подаётся пользователе&#1084;
+ через портал са&#1084;ообслуживания. Входные данные: Принтер, Цветность картриджа, Цвет картриджа для цветных принтеров. Требуется акку&#1084;улировать входные данные в штатную фор&#1084;у Запроса на обслуживание и назначить задачу инженеру технической поддержки.</span></p>
+<p style="margin:0cm 0cm 8pt;"><span style="font-size:16px;font-family:Verdana;"><strong>Шаг 1.</strong></span></p>
+<p><span style="font-size:12px;font-family:Verdana;">В голове или на бу&#1084;аге (или ещё каки&#1084; удобны&#1084; способо&#1084;) &#1084;ы должны построить алгорит&#1084; прохождения будущего запроса. То есть последовательность ключевых действий. У нас он будет очень просты&#1084;:</span></p>
+<ol>
+<li><span style="font-size:12px;font-family:Verdana;">Первый этап. Ранбук – Фор&#1084;ирование запроса. Тут &#1084;ы буде&#1084; обрабатывать данные, введённые пользователе&#1084;, фор&#1084;ировать описание запроса, подцеплять эле&#1084;енты конфигурации и т. п. Собственно это ключевая задача,
+ ради которой эта статья и затевалась. </span></li><li><span style="font-size:12px;font-family:Verdana;">Второй этап. Ручное действие. Задача для сотрудника технической поддержки, который будет исполнителе&#1084; запроса.
+</span></li></ol>
+<p><span style="font-size:12px;font-family:Verdana;"><span style="font-family:Verdana;">Запо&#1084;ните эти этапы, далее они будут упо&#1084;инаться.</span><br />
+<span style="font-size:12px;"><strong><br />
+<span style="font-size:16px;">Шаг 2.</span></strong></span></span></p>
+<span style="font-size:12px;font-family:Verdana;"></span>
+<p><span style="font-size:12px;font-family:Verdana;"><span style="font-family:Verdana;">Открывае&#1084; Оркестратор и начинае&#1084; рисовать ранбук. Добавляе&#1084; первый шаг «Инициализация данных».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0537.01.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0537.01.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Добавляе&#1084; три пара&#1084;етра, как показано на рисунке. «GUID» – это уникальный систе&#1084;ный 32-хзначный но&#1084;ер, по которо&#1084;у обработчико&#1084; будет осуществляться идентификация объекта, в наше&#1084; случае – конкретного запроса. Последовательность
+ пара&#1084;етров тут значения не и&#1084;еет. У &#1084;ногих &#1084;ожет возникнуть вопрос: а где же «Принтер»? Принтер у нас будет затрагивае&#1084;ы&#1084; эле&#1084;енто&#1084; конфигурации, и он будет обрабатываться несколько иначе. Ниже будет ясность.</span><br />
+<br />
+<span style="font-size:16px;"><strong>Шаг 3.</strong></span></span></p>
+<p><span style="font-size:12px;font-family:Verdana;"><span style="font-family:Verdana;">Добавляе&#1084; следующий шаг и связывае&#1084; с предыдущи&#1084;. Этот шаг будет выбирать нужный запрос из &#1084;ножества при по&#1084;ощи GUID. Добавляе&#1084; активность «Get Object» из «SCSM 2012 Integration
+ Pack». Настраивае&#1084; пара&#1084;етр фильтра, как на рисунке. Подписывае&#1084;ся на GUID из «Инициализации данных» (правой кнопкой на поле «Value»).</span><br /1084;ный 32-хзначный но&#1084;ер, по которо&#1084;у обработчико&#1084; будет осуществляться идентификация объекта, в наше&#1084; случае – конкретного запроса. Последовательность
+ пара&#1084;етров тут значения не и&#1084;еет. У &#1084;ногих &#1084;ожет возникнуть вопрос: а где же «Принтер»? Принтер у нас будет затрагивае&#1084;ы&#1084; эле&#1084;енто&#1084; конфигурации, и он будет обрабатываться несколько иначе. Ниже будет ясность.</span><br />
+<br />
+<span style="font-size:16px;"><strong>Шаг 3.</strong></span></span></p>
+<p><span style="font-size:12px;font-family:Verdana;"><span style="font-family:Verdana;">Добавляе&#1084; следующий шаг и связывае&#1084; с предыдущи&#1084;. Этот шаг будет выбирать нужный запрос из &#1084;ножества при по&#1084;ощи GUID. Добавляе&#1084; активность «Get Object» из «SCSM 2012 Integration
+ Pack».>
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3175.02.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3175.02.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Теперь более сложный шаг. На&#1084; нужно выцепить конфигурационные эле&#1084;енты: Принтер и Автора запроса. Я делаю это при по&#1084;ощи PowerShell (хотя &#1084;ожно сделать это и при по&#1084;ощи активности «Get Relationship»). Добави&#1084; активность «Execute
+ PS Script – Global». Так как на&#1084; надо получить два связанных эле&#1084;ента разного типа, то создади&#1084; в этой активности два вложенных скрипта.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.03.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.03.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">«PS Script 01» – тут &#1084;ы получи&#1084; затрагивае&#1084;ого пользователя, т. е. автора запроса.</span><br />
+<br />
+<em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">$Session = New-PSSession -ComputerName SC-SM<br />
+</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Invoke-Command -Session $Session -ScriptBlock {</span></em><em style="font-family:Verdana;">
+<br />
+</em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;">Import-Module SMLets<br />
+</span></em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;">$ServiceRequest = Get-SCSMObject -Class (Get-SCSMClass -Name System.WorkItem.ServiceRequest$) -Filter
+<span style="background-color:yellow;font-size:12px;">&quot;ID -eq ???&quot;<br />
+</span></span></em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;">$GetInput = [xml] $ServiceRequest.UserInput<br />
+</span></em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;">$GetAffectedUserName = (Get-SCSMRelationshipObject -BySource $ServiceRequest | ?{$_.RelationshipID -eq &quot;dff9be66-38b0-b6d6-6144-a412a3ebd4ce&quot;}).TargetObject.DisplayName<br />
+</span></em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;">$GetAffectedUserName<br />
+</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">}</span></em><em style="font-family:Verdana;">
+</em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;"><br />
+<br />
+</span></em><span style="font-family:Verdana;">Блок </span><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Invoke</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">-</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Command</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">
+ -</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Session</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;"> $</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Session</span></em><span style="font-family:Verdana;">
+ тут является условны&#1084; (выделено жёлты&#1084;). Дело в то&#1084;, что у &#1084;еня скрипты исполняются удалённо, на стороне сервера SCSM, а не сервера Orchestrator. Если у вас исполнение скриптов корректно настроено на стороне Orchestrator, то удалите эти строки.
+</span><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">&quot;</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">ID</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">
+ -</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">eq</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;"> ???&quot;</span></em><em style="font-family:Verdana;">
+</em><span style="font-family:Verdana;">– тут сделайте подписку (правой кнопкой &#1084;ыши) на «ИД» из шага «Получае&#1084; запрос».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7801.04.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7801.04.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">«PS Script 02» – тут &#1084;ы получи&#1084; принтер.</span><br />
+<br />
+<em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">$Session = New-PSSession -ComputerName SC-SM<br />
+Invoke-Command -Session $Session -ScriptBlock {</span></em><em style="font-family:Verdana;"><span style="line-height:107%;font-size:12px;"><br />
+Import-Module SMLets<br />
+$ServiceRequest = Get-SCSMObject -Class (Get-SCSMClт сделайте подписку (правой кнопкой &#1084;ыши) на «ИД» из шага «Получае&#10ass -Name System.WorkItem.ServiceRequest$) -Filter
+<span style="background-color:yellow;font-size:12px;">&quot;ID -eq ???&quot;</span><br />
+$GetInput = [xml] $ServiceRequest.UserInput<br />
+[xml] $GetValuesPrinter = $GetInput.UserInputs.UserInput | Where-Object {$_.Question -eq $GetInput.UserInputs.<span style="background-color:yellow;font-size:12px;">UserInput[0]</span>.Question} | %{$_.Answer}<br />
+$GetPrinterName = $GetValuesPrinter.Values.Value | %{$_.DisplayName}<br />
+$GetPrinterName = $GetPrinterName -join &quot;; &quot;<br />
+$GetPrinterName<br />
+<span style="background-color:yellow;font-size:12px;">}<br />
+<br />
+</span></span></em><span style="font-family:Verdana;">Здесь аналогично. Удалите блок
+</span><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Invoke</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">-</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Command</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">
+ -</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Session</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;"> $</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">Session</span></em><span style="font-family:Verdana;">
+ по необходи&#1084;ости. Подпишитесь на ИД из шага «Получае&#1084; запрос». Теперь вни&#1084;ание! </span>
+<em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">UserInput</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">[0]</span></em><span style="font-family:Verdana;">
+ – тут ва&#1084; необходи&#1084;о в квадратных скобках указывать цифру, в соответствии с последовательны&#1084; но&#1084;еро&#1084; поля, в которое будут добавляться конфигурационные эле&#1084;енты на Портале са&#1084;ообслуживания. В наше&#1084; при&#1084;ере это поле «Принтер». По счёту оно будет запрашиваться
+ первы&#1084;. Но с учёто&#1084; правил фор&#1084;ирования &#1084;ассивов, ну&#1084;ерация начинается с нулевого эле&#1084;ента, поэто&#1084;у стави&#1084; ноль. Если бы наше поле для выбора принтера стояло последни&#1084; (третьи&#1084; по счёту), то &#1084;ы бы поставили
+</span><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">UserInput</span></em><em style="font-family:Verdana;"><span style="background-color:yellow;line-height:107%;font-size:12px;">[2]</span></em><span style="font-family:Verdana;">.
+ Если эле&#1084;ентов будет несколько, то на выходе скрипта вы получите читабельный перечень связанных эле&#1084;ентов конфигурации, разделённых точкой с запятой.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1754.05.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1754.05.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<strong style="font-family:Verdana;"><span style="font-size:12px;"><span style="font-size:16px;">Шаг 4.</span><br />
+</span><br />
+</strong><span style="font-family:Verdana;">Теперь сфор&#1084;ируе&#1084; из полученных данных описание запроса по свое&#1084;у вкусу. Добавляе&#1084; активность «Update Object», соединяе&#1084;. Настраивае&#1084;, как на рисунке.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4370.06.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4370.06.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Заполняе&#1084; поле «Описание». Подписывае&#1084;ся на полученные данные.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.07.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.07.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<strong style="font-family:Verdana;"><span style="font-size:16px;">Шаг 5.</span></strong><br />
+<br />
+<span style="font-family:Verdana;">Теперь несколько упрости&#1084; жизнь нашей техподдержке. Вы же по&#1084;ните, что наш будущий запрос состоит из двух этапов: «Ранбук» и «Ручное действие». Так вот, добави&#1084; наше описание также в «Ручное действие» (во второй логический
+ этап), непосредственно с которы&#1084; и будет работать инженер технической поддержки. Для этого добави&#1084; последовательно ещё две активности. Первая «Get Activity». Эти&#1084; шаго&#1084; &#1084;ы получи&#1084; все активности родительского запроса (а у нас она одна).</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0435.08.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0435.08.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Второй активностью «Update Activity» сфор&#1084;ируе&#1084; описание «Ручного действия», полученного на предыдуще&#1084; шаге. Значение поля «Описание» просто скопируе&#1084; из сфор&#1084;ированного ранее, на шаге 4.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8037.09.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8037.09.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<strong style="font-family:Verdana;"><span style="font-size:16px;">Шаг 6.</span></strong><br />
+<br />
+<span style="font-family:Verdana;">Наш ранбук полностью готов. Сохраняе&#1084; его, нажав «Вернуть», закрывае&#1084; Оркестратор. Открывае&#1084; Консоль SCSM. Синхронизируе&#1084; коннектор Оркестратора. Убеждае&#1084;ся, что наш ранбук появился в Библиотке.</span><br />
+<br />
+<strong style="font-family:Verdana;"><span style="font-size:16px;">Шаг 7.</span></strong><br />
+<br />
+<span style="font-family:Verdana;">Итак, &#1084;ы создали ранбук. Что же теперь с ни&#1084; делать? Перейде&#1084; к работе с Консолью SCSM и создади&#1084; новый Пакет управления «За&#1084;ена картриджа». Далее создае&#1084; новый Шаблон для ранбука со следующи&#1084;и пара&#1084;етра&#1084;и. Все шаблоны и настройки
+ здесь и далее сохраняе&#1084; в наше&#1084; Пакете управления «За&#1084;ена картриджа».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5516.10.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5516.10.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">ОБЯЗАТЕЛЬНО стави&#1084; галочку «Готово к авто&#1084;атизации».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3835.11.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ена картриджа». Далее создае&#1084; новый Шаблон для ранбука со следующи&#1084;и пара&#1084;етра&#1084;и. Все шаблоны и настройки
+ здесь и далее сохраняе&#1084; в наше&#1084; Пакете управления «За&#1084;ена картриджа».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5516.10.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5516.10.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">ОБЯЗАТЕЛЬНО стави&#1084; галочку «Готово к авто&#1084;атизации».</span><br />
+<br />
+<a href="http://social.technetashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3835.11.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Переходи&#1084; во вкладку «Runbook», выбирае&#1084; наш ранбук и больше ничего не &#1084;еняе&#1084;, нажи&#1084;ае&#1084; «ОК».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1134.12.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1134.12.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<br />
+<br />
+<strong style="font-family:Verdana;"><span style="font-size:16px;">Шаг 8.</span></strong><br />
+<br />
+<span style="font-family:Verdana;">Создае&#1084; шаблон Запроса на обслуживание.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5543.13.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5543.13.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Заполняе&#1084; основные поля шаблона в соответствии с установленны&#1084;и у вас требования&#1084;и.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3554.14.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3554.14.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Во вкладке действия, первы&#1084; шаго&#1084; добавляе&#1084; наш, созданный ранее, шаблон ранбука «За&#1084;ена картриджа». Откроется его шаблон. Теперь будьте вни&#1084;ательны. Тут на&#1084; надо привязать GUID, заданный в ранбуке, к родительско&#1084;у ЗНО. Для
+ этого во вкладке «Runbook» наж&#1084;ите «Из&#1084;енить сопоставление» напротив поля «GUID». Выберите сопоставление «Запрос на обслуживание», «Объект», «Id». Все как на рисунке. Сохраните шаблон, нажав «ОК».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1122.15.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1122.15.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Мы вернулись к шаблону нашего ЗНО, вкладка «Действия».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0412.16.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0412.16.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Теперь добави&#1084; сюда «Ручное действие по у&#1084;олчанию» для нашей техподдержки. Заполни&#1084; название – «За&#1084;ена картриджа», остальные поля на ваше ус&#1084;отрение. Сохраните, нажав «ОК». В итоге у нас получилась последовательность, как на
+ рисунке ниже. Сохраняе&#1084; наш шаблон ЗНО «За&#1084;ена картриджа», нажав «ОК».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7180.17.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7180.17.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<strong><span style="font-size:16px;">Шаг 9.</span></strong><br />
+<br />
+<span style="font-family:Verdana;">Шаблон у нас готов, остается последний шаг. Создание предложения запроса.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.18.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.18.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Заполняе&#1084; поля приглашений. В поле «Принтер» выбирае&#1084; тип «Результаты запроса». Остальное, как на картинке.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8156.19.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8156.19.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">На следующе&#1084; шаге настройки приглашений наfile.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.18.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.18.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Заполняе&#1084; поля приглашений. В поле «Принтер» выбирае&#1084; тип «Результаты запроса». Остальное, как на картинке.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-fileж&#1084;ите «Настроить» для настройки пара&#1084;етров приглашения. Для поля «Принтер» выберите класс «Принтеры Active Directory», во вкладке «Отображение столбцов» выберите требуе&#1084;ые поля. И&#1084;енно
+ их будет видеть пользователь на портале са&#1084;ообслуживания.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1731.20.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1731.20.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Вкладка «Пара&#1084;етры» у нас будет выглядеть следующи&#1084; образо&#1084;.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2781.21.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2781.21.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Для «Цветности», аналогичны&#1084; способо&#1084;, настрои&#1084; выпадающий список, как на картинке.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.22.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.22.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">На следующе&#1084; шаге сопостави&#1084; заданные поля с соответствующи&#1084; свойство&#1084; нашего ранбука.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1881.23.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1881.23.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Ду&#1084;аю, оставшиеся шаги по офор&#1084;лению предложения запроса не вызовут у вас затруднений. Главное не забудьте перевести запрос в статус «Опубликовано».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7652.24.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7652.24.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="margin:0cm 0cm 8pt;"><span style="font-size:12px;font-family:Verdana;"><br />
+<strong><span style="font-size:16px;">Шаг 10.</span></strong><br />
+<br />
+<span style="font-family:Verdana;">В обще&#1084; и цело&#1084; – работа завершена :). Осталось протестировать наш запрос и проанализировать работу ранбука. Заходи&#1084; на портал, заполняе&#1084; поля и жде&#1084; несколько &#1084;инут, пока отработает ранбук.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0160.25.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0160.25.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Результат вполне соответствующий и оправдывающий ожидания!</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8372.26.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8372.26.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Аналогично во вложенно&#1084; «Ручно&#1084; действии».</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7506.27.png" style="font-family:Verdana;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7506.27.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="font-family:Verdana;">Резю&#1084;ируе&#1084; результат. Мы получили вполне полноценное, читабельное описание в штатной фор&#1084;е запроса. В при&#1084;ере &#1084;ы работали с фор&#1084;ой Запроса на обслуживание. С Инцидента&#1084;и &#1084;ожно работать аналогичны&#1084; способо&#1084;.</span></span></p>
+
+</div>
+    
+    

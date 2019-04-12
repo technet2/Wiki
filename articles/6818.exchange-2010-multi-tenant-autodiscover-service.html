@@ -1,0 +1,203 @@
+---
+layout: default
+title: Exchange 2010 Multi-Tenant AutoDiscover Service - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-family:calibri;">Autodiscover is essential for providing external access to you Exchange multi-tenant users.&nbsp; What I would like to cover is how to properly deploy autodiscover for Exchange 2010 Multi-Tenant /hosting deployments.&nbsp;&nbsp; To get
+ a better understanding of autodiscover you can read </span><a href="http://technet.microsoft.com/en-us/library/bb332063(EXCHG.80).aspx"><span style="font-family:calibri;color:#0000ff;">White Paper: Exchange 2007 Autodiscover Service</span></a><span style="font-family:calibri;">.
+ The mechanisms between Exchange 2007 and Exchangcontent-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Exchange 2010 Multi-Tenant AutoDiscover Service</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p><span style="font-family:calibri;">Autodiscover is essential for providing external access to you Exchange multi-tenant users.&nbsp; What I would like to cover is how to properly deploy autodiscover for Exchange 2010 Multi-Tenant /hosting deployments.&nbsp;&nbsp; To get
+ a better understanding of autodiscover you can read </span><a href="http://technet.microsoft.com/en-us/library/bb332063(EXCHG.80).aspx"><span style="font-family:calibri;color:#0000ff;">White Paper: Exchange 2007 Autodiscover Service</span></a><span style="font-family:calibri;">.
+ The mechanisme 2010 are the same so the article will apply here. Below is a chart from that article that provides you with four different scenarios to configure Autodiscover for an Exchange Environment.&nbsp;
+<br />
+<br />
+Scenario 1: Using a certificate that supports multiple DNS names<br />
+<strong>Scenario 2: Using one single-name certificate</strong><br />
+Scenario 3: Using two single-name certificates<br />
+<strong>Scenario 4: Using the Autodiscover service with redirection<br />
+</strong><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4784.image-1.jpg"><img alt=" " width="713" height="250" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4784.image-1.jpg" style="border-width:0px;border-style:solid;width:644px;height:237px;" /></a><br />
+<br />
+<br />
+As you can see there are multiple scenarios for connecting to the autodiscover service from the internet. So what I want to do explain how to deploy autodiscover for an Exchange Multi-tenant /hosting environment. In essence there are 2 ways to publish autodiscover
+ for the hosted email tenants. <br />
+<br />
+<strong><span style="font-size:14px;">Autodiscover SRV Record</span></strong> <br />
+<br />
+In this scenario you will use a single-name on the certificate and will only be implementing SRV records for autodiscover. You will only require 1 public ip address since the SRV record will point to the FQDN name on that certificate.
+<br />
+<br />
+With this solution the Outlook 2007/2010 client will use the SRV record when trying to resolve the autodiscover record for that users smtp address. That client will directly connect to you Exchange CAS server’s public ip address. Your Tenant administrator will
+ have to create a SRV record with the DNS service provider handling the tenant’s public DNS records.
+<br />
+<br />
+For more information on configuring a SRV record go to the following link: <br />
+<a href="http://support.microsoft.com/kb/940881">http://support.microsoft.com/kb/940881</a> &nbsp;<br />
+<br />
+Note In this example, mail.contoso.com is a name for which your certificate is valid. Usually, this is the same DNS name that you use for Outlook Anywhere and for Outlook Web Access.
+<br />
+<br />
+In this example, the Autodiscover service does the following when the client tries to contact the Autodiscover service:
+<br />
+<br />
+1. Autodiscover posts to <strong>https://testorg1.org/Autodiscover/Autodiscover.xml</strong>. This fails.
+<br />
+2. Autodiscover posts to <strong>https://autodiscover.testorg1.org/Autodiscover/Autodiscover.xml</strong>. This fails.
+<br />
+3. Autodiscover posts to <strong>http://autodiscover.testorg1.org/Autodiscover/Autodiscover.xml</strong> This fails.
+<br />
+4. Autodiscover performs the following redirect check using the looking for SRV record:
+<br />
+5. Autodiscover uses DNS SRV lookup for<strong> _autodiscover._tcp.testorg1.com</strong>, and then &quot;<strong>mail.contoso.com</strong>&quot; is returned.
+<br />
+6. Outlook asks permission from the user to continue with Autodiscover to post to
+<strong>https://mail.contoso.com/autodiscover/autodiscover.xml</strong>. <br />
+7. Autodiscover&#39;s POST request is successfully posted to<strong> https://mail.contoso.com/autodiscover/autodiscover.xml</strong>.
+<br />
+<br />
+Here is an Example of a Test-E-mail AutoConfiguration connection <br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3108.image2.jpg"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5554.image-2.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5554.image-2.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Note: Not all DNS service providers have the ability to create SRV records. If the DNS provider being used is unable to create a SRV records then the autodiscover redirection
+<br />
+method can be used. <br />
+<br />
+<strong><span style="font-size:14px;">Autodiscover redirection method<br />
+</span></strong><br />
+This method permits your tenant users to connect to your Exchange using the same SSL certificate despite the domain that your tenants use. For the autodiscover feature to work with hosted e-email domains you must redirect the request to the matching name on
+ the SSL certificate on the Exchange. The preferred method is to use create a redirect website as per the following Technet article. This will require a dedicated ip address for the autodiscover redirect and a second ip address for your Exchange server.<br />
+</span></p>
+<span style="font-family:calibri;"><a href="http://technet.microsoft.com/en-us/library/ff923256.aspx" target="_blank"><span style="font-family:calibri;color:#0000ff;">Configure Autodiscover Redirection for the Multi-Tenant Organization</span></a><br />
+<br />
+Note: The Client Access Server and the Domain controller can’t be the same server.
+<br />
+<br />
+At this point let me give you a bird’s eye view of what is happening with the client connection and why this is the best choice for you and your organization. In this scenario you will need the following:
+<br />
+<br />
+1. Certificate with on the CAS server with your External URLS&#39;s that your clients will use to Connect
+<br />
+2. Two dedicated public ip address assigned for you Multi-Tenant Environment&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;a. <strong>Public IP address 1</strong> = Public ip address pointing to you IIS Redirect Servers&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;b. <strong>Public IP address 2</strong> = Public IP address pointing to your CAS servers
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6327.image-3.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-filehe same server.
+<br />
+<br />
+At this point let me give you a bird’s eye view of what is happening with the client connection and why this is the best choice for you and your organization. In this scenario you will need the following:
+<br />
+<br />
+1. Certificate with on the CAS server with your External URLS&#39;s that your clients will use to Connect
+<br />
+2. Two dedicated public ip address assigned for you Multi-Tenant Environment&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;a. <strong>Public IP address 1</strong> = Public ip address pointing to you IIS Redirect Servers&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;b. <strong>Public IP address 2</strong> = Public IP address pointing to your CAS servers
+<br />
+<br />
+<a href="http://social.technet.s/00-00-00-00-05/6327.image-3.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<strong>Step 1:</strong> The Outlook client will attempt to locate and connect to the autodiscover server based on the email domain provided by the client. In the Test-Email AutoConfiguration output you will see the following
+<br />
+<br />
+1. Autodiscover posts to https://testorg1.org/Autodiscover/Autodiscover.xml. This fails.
+<br />
+2. Autodiscover posts to https://autodiscover.testorg1.org/Autodiscover/Autodiscover.xml. This fails.
+<br />
+3. Autodiscover posts to http://autodiscover.testorg1.org/Autodiscover/Autodiscover.xml. Connect to Redirect site
+<br />
+<br />
+<strong>Step 2:</strong> The IIS Redirect server will then redirect the client to the Redirect URL for example:
+<br />
+<br />
+https://mail.contoso.com/autodiscover/autodiscover.xml <br />
+<br />
+<strong>Step 3:</strong> The client will then try to connect to the Autodiscover Service using the Redirected URL. The autodiscover service will require authenticating
+<br />
+<strong>Step 4:</strong> Outlook client will then get the Exchange Services URL provided by the autodiscover service.
+<br />
+<br />
+Here is an Example of a Test-E-mail AutoConfiguration connection <br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0647.image-4.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0647.image-4.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+The majority of the support calls I get in CSS are autodiscover issues when administrators try to deploy the autodiscover redirect directly on the Client Access Server. As per the TechNet
+<a href="http://technet.microsoft.com/en-us/library/ff923256.aspx" target="_blank">
+article </a>I provided states that the prerequisites is that the autodiscover redirect can’t be on the same server as the Client Access Server. This will cause Exchange Management Shell to fail when trying to connect to the Client access server and hosted tenant
+ to fail with autodiscover. <br />
+<br />
+Now let’s talk about adding redundancy to your Exchange Organization for Auto Discover request. I believe the below diagram will show you how scalable having dedicated IIS servers are and how easy it is to implement some sort of a network load balancing.
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4048.image-5.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4048.image-5.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<strong>Note:</strong> I’m aware that TMG can be utilized to perform the redirection for the hosted email address and a single public ip address can be used but that configuration is out of the scope of this article.
+<br />
+<br />
+<span style="font-size:14px;"><strong>Configure the Client Access Servers Services
+<br />
+</strong></span><br />
+After configuring the how the tenant users will connect to your Exchange environment you will need to configure the public facing client access servers to handle the autodiscover requests for the following services.
+<br />
+<br />
+• Outlook Anywhere <br />
+• Offline address book <br />
+• Autodiscover <br />
+• Exchange Web Services <br />
+• Exchange Control Panel (ECP) <br />
+• Exchange Active Sync<br />
+<br />
+The commands are listed in the following <a href="http://technet.microsoft.com/en-us/library/ff923256.aspx" target="_blank">
+link</a><br />
+<br />
+<strong>OUTLOOK ANYWHERE <br />
+</strong>Enable-OutlookAnywhere -Server CAS01 -ExternalHostname &quot;mail.contoso.com&quot; -DefaultAuthenticationMethod &quot;Basic&quot; -SSLOffloading:$False
+<br />
+<br />
+<strong>OFFLINE ADDRESS BOOK (OAB) <br />
+</strong>Set-OABVirtualDirectory -identity &quot;CAS01\OAB (Default Web Site)&quot; -externalurl https://mail.contoso.com/OAB -RequireSSL:$true
+<br />
+<br />
+<strong>AUTODISCOVER <br />
+</strong>Set-AutodiscoverVirtualDirectory -identity &quot;CAS01\Autodiscover (Default Web Site)&quot; -externalurl https://mail.contoso.com/autodiscover/autodiscover.xml
+<br />
+<br />
+<strong>EXCHANGE WEB SERVICE (EWS) <br />
+</strong>Set-WebServicesVirtualDirectory -identity &quot;CAS01\EWS (Default Web Site)&quot; -externalurl https://mail.contoso.com/EWS/Exchange.asmx -BasicAuthentication:$True
+<br />
+<br />
+<strong>EXCHANGE CONTROL PANEL (ECP)</strong> <br />
+Set-EcpVirtualDirectory -identity &quot;CAS01\ECP (Default Web Site)&quot; -ExternalUrl https://mail.contoso.com/ecp
+<br />
+<br />
+<strong>Exchange Active Sync <br />
+</strong>Set-ActiveSyncVirtualDirectory -Identity &quot;CAS01\microsoft-server-activesync&quot; -BasicAuthEnabled:$true -ExternalURL https://mail.contoso.com/Microsoft-Server-ActiveSync
+<br />
+<br />
+<strong><span style="font-size:14px;">Conclusion</span></strong> <br />
+<br />
+We’ve discussed how autodiscover clients will try to connect to the Exchange autodiscover service. Once the client does connect to the Autodiscover service you will need to configure the Exchange Server to publish the correct ExernalURL’s. If you would like
+ to get more information about configuring DNS and IIS redirection you can read my other blog.&nbsp;<br />
+&nbsp;<br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/5787.aspx" target="_blank">Exchange 2010 Multi-Tenant AutoDiscover and DNS Configuration</a>
+<br />
+<br />
+<br />
+written: Ed Bringas<br />
+reviewed: Konstantin Papadakis</span>
+
+</div>
+    
+    

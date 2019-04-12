@@ -1,0 +1,168 @@
+---
+layout: default
+title: SharePoint 2010&#58; SQL Server 2008R2 SA Recovery and Autoshrink - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="text-align:center;"><img alt=" " src="http://www.gknzcfc.net/style/sa01.jpg" width="317" height="320" /></p>
+<p style="text-align:left;">This caped hero came to simplify (y)our world one database at a time. His queries will dazzle you. His keystrokes will simplify. With SQLMan there are no transactions logs.
+<br />
+SQLMan fears only one thing, GokMan. If you ask what’s his secret weapon………………………celery and kidney beans.
+<br />
+Source to them for the great image: <a href="http://danmagyar.blogspot.be/2008/02/sql-man.html">
+http://danmagyar.blogspot.be/2008/02/sql-man.html</a> </p>
+<p style="text-align:left;">The last week I began with SQLMan a new project for a Multinational society in my country. I had to terminate the job from the former SharePoint Administrator. I received 1500 pages of documentation for read, but all went to the “Recycle
+ Bin” :) <br />
+On Command Prompt, I wrote MSTSC and began my analysis. First thing that I remarked was that the SQL Server wasn’t in mixed mode and there wasn’t a SA user/Password. So the first question was:</p>
+<p style="text-align:left;"><span class="style1"><strong><span style="color:#0099ff;">“How to recover SA password ”</span></strong></span></p>
+<ol style="list-style-type:decimal;">
+<li><strong>Start</strong> SQL Server Configuration Manager </li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa02.png" width="263" height="162" style="border:0px solid;" /></p>
+<ol style="list-style-type:decimal;">
+<li><strong>Stop</strong> the SQL services </li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa03.png" width="600" height="150" style="border:0px solid;" /></p>
+<p><br clear="all" />
+&nbsp;</p>
+<ol style="list-style-type:decimal;">
+<li><strong>Edit</strong> the properties of the SQL Service </li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa04.png" width="600" height="180" style="border:0px solid;" /></p>
+<ol style="list-style-type:decimal;">
+<li><strong>Change</strong> the startup parameters of the SQL service by adding a
+<strong>–m;</strong> in front of the existing parameters </li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa05.png" width="362" height="246" style="border:0px solid;" /></p>
+<ol style="list-style-type:decimal;">
+<li>Start the SQL services. These are now running in<strong> Single User Mode</strong>.
+</li><li>Start <strong>CMD</strong> on the SQL server </li><li>Start the <strong>SQLCMD</strong> command. Now you will see following screen </li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa06.png" width="506" height="86" style="border:0px solid;" /></p>
+<p><br />
+</p>
+<ol style="list-style-type:decimal;">
+<li>Now we create a new user. Enter following commands </li></ol>
+<div>
+<p>CREATE LOGIN GKNZCFC WITH PASSWORD = ‘1#GKNSP#1′ (Remember SQL server has default strong password policy)<br />
+Go</p>
+</div>
+<ol style="list-style-type:decimal;">
+<li>Now this user is created. Now we grant the user SYSADMIN roles using the same SQLCMD window.
+</li></ol>
+<div>
+<p>sp_addsrvrolemember ‘GKNZCFC’, ‘sysadmin’<br />
+go</p>
+</div>
+<ol style="list-style-type:decimal;">
+<li>Stop the SQL service again </li><li>Change the SQL service properties back to the default settings </li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa07.png" width="350" height="264" style="border:0px solid;" /></p>
+<ol style="list-style-type:decimal;">
+<li>Start the <strong>SQL service again</strong> and use the new created login (recovery in my example)
+</li><li>Go via the security panel to the properties and change the password of the SA account.
+</li></ol>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa08.png" width="600" height="218" style="border:0px solid;" /></p>
+<ol style="list-style-type:decimal;">
+<li>Now write down the new<strong> SA password.</strong> </li></ol>
+<p>But this was not the only way to do it, here some other possibilities all chooses randomly on Google or BING.
+</p>
+<p>&nbsp;</p>
+<p><span class="style1"><strong><span style="color:#0099ff;">To reset the SA password,</span></strong></span> you can make the following:</p>
+<ul>
+<li>Open the SQL Server express management studio </li><li>Connect to SQL Server using windows authentication </li><li>Right click the server name and choose properties </li><li>Go to security tab. Change server authentication to “SQL Server and Windows Authentication mode”
+</li><li>Click OK and restart SQL Server </li><li>Go to SQL Server studio management express </li><li>Expand the server and choose security and expand logins </li><li>Right click on SA, from properties modify the password and confirm password </li></ul>
+<p><span class="style1"><strong><span style="color:#0099ff;">OR</span></strong></span> To reset the SA password, you can make the following:</p>
+<ul>
+<li>Login to the SQL Server box as the Administrator. </li><li>Run SQL Server Enterprise Manager. </li><li>Right-click the server name and choose ‘Edit SQL Server Registration properties’.
+</li><li>Choose ‘Use Windows authentication’ and click OK button. </li><li>Expand a server, expand a Security and click Logins. </li><li>Double-click the sa login and specify new password on the General tab. (enable Login to)
+</li></ul>
+<p class="style1">OR <span style="text-decoration:underline;">From a Query</span></p>
+<ul>
+<li>USE [master] </li><li>GO </li><li>ALTER LOGIN [sa] WITH DEFAULT_DATABASE=[master], </li><li>DEFAULT_LANGUAGE=[us_english], CHECK_EXPIRATION=ON, CHECK_POLICY=ON </li><li>GOUSE [master] </li><li>GO </li><li>ALTER LOGIN [sa] WITH PASSWORD=N’&lt;insert_new_password_here&gt;’ MUST_CHANGE </li><li>GO </li></ul>
+<p class="style1">OR <span style="text-decoration:underline;">From a command prompt</span></p>
+<ul>
+<li>OSQL -S &lt;insert_servername_here&gt; -E </li><li>1&gt; EXEC sp_password NULL, ‘&lt;insert_new_password_here&gt;’, ‘sa’ </li><li>2&gt; GO </li></ul>
+<p>Finally I could connect with my SQL Account on my SQL Server. I was thinking that everything was OK, but another stranger error was shown.</p>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa09.png" width="600" height="121" style="border:0px solid;" /></p>
+<ul>
+<li><strong><span style="text-decoration:underline;">Problem:</span></strong><strong> The transaction log for database ‘Search Database’ is full</strong>&quot; when tried to save the updated settings on SharePoint.
+</li><li><strong><span style="text-decoration:underline;">Finding</span></strong><span style="text-decoration:underline;">:</span> Found that the drive that containing the
+<strong>Crawl database</strong> log is having very little space remaining. </li><li><strong><span style="text-decoration:underline;">Why:</span></strong> Because there was not a backup (SQL Agent, PS1, … ) on the server with the option Autogrowth = “ON”. Who makes the LOG file larger and larger.
+</li><li><strong><span style="text-decoration:underline;">Resolution:</span></strong><strong>
+</strong>Following steps will help you to resolve this issue </li></ul>
+<p class="style1"><span style="text-decoration:underline;">From the SQL UI</span></p>
+<ol style="list-style-type:decimal;">
+<li>Do full backups of all the SharePoint databases. </li><li>Open the database, right click SharePoint Crawl database &gt; <strong>Properties</strong>
+</li><li>Select <strong>Simple </strong>under <strong>Recovery model </strong>list &gt; Click
+<strong>OK</strong> </li><li>Right click the database, <strong>Tasks </strong>&gt; <strong>Shrink </strong>&gt; <strong>
+Files</strong> </li><li>In <strong>File type</strong> select <strong>Log</strong> </li><li>Click <strong>OK</strong> </li></ol>
+<p class="style1"><span style="text-decoration:underline;">From a Query </span></p>
+<ul>
+<li>Run SQL Management Studio and login to your SharePoint instance. </li><li>Click on ‘New Query’ </li><li>Type in the following commands: </li><li>USE [database name];<br />
+BACKUP LOG [database name] WITH TRUNCATE_ONLY;<br />
+DBCC<br />
+SHRINKFILE ([log file name], 1); </li><li>Replace [database name] and [log file name] with your log file. </li><li>This will truncate your log file to 1mb <strong>if there was a backup before</strong>
+</li></ul>
+<p>When planning the capacity for your SharePoint 2010 Farm, we don’t have to forget about the size of our Search databases. SharePoint 2010 Search leverages three distinct databases, with very separate roles as follows:</p>
+<ul>
+<li>Search Administration Database </li><li>Crawl Database </li><li>Property Database </li></ul>
+<p>Per <strong>TechNet</strong>, the recommendations are as follows:</p>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="0" width="98%">
+<tbody>
+<tr>
+<td><br />
+<strong>Size estimation recommendation </strong></td>
+<td style="width:2%;"></td>
+</tr>
+<tr>
+<td>
+<p>Search requires three databases. Your environment may include multiple Property and Crawl databases.The Search administration database is typically small: allocate 10 GB.To estimate the required storage for your Property and Crawl databases, use the following
+ multipliers:</p>
+<ul>
+<li>Crawl: 0.046 × (sum of content databases) </li><li>Property: 0.015 × (sum of content databases) </li></ul>
+<p>The IOPS requirements for Search are significant.</p>
+<ul>
+<li>For the Crawl database, search requires from 3,500 to 7,000 IOPS. </li><li>For the Property database, search requires 2,000 IOPS. </li></ul>
+<p>For detailed information about how to estimate capacity required for Search, see
+<a class="style1" href="http://technet.microsoft.com/en-us/library/cc298801.aspx#section1c" target="_blank">
+<strong><span style="color:#0099ff;">http://technet.microsoft.com/en-us/library/cc298801.aspx#section1c</span></strong></a></p>
+</td>
+<td style="width:2%;"><strong><span style="color:#0099ff;"></span></strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong><span style="color:#0099ff;"></span></strong></p>
+<p><br clear="all" />
+&nbsp;</p>
+<p>But what when you want to Shrink all your databases? Ikarstein has the solution for us: Here is his script:<br />
+<a href="http://ikarstein.wordpress.com/2011/08/28/truncate-shrink-log-files-of-databases-in-sql-server-2008-r2/">http://ikarstein.wordpress.com/2011/08/28/truncate-shrink-log-files-of-databases-in-sql-server-2008-r2/</a></p>
+<p><img alt=" " src="http://www.gknzcfc.net/style/sa10.png" width="600" height="497" style="border:0px solid;" /></p>
+<p>&nbsp;</p>
+<p>So why using this script and not the option “<strong>Auto-Shrink</strong>” from SQL Server?
+</p>
+<p><span style="text-decoration:underline;"><strong><span style="color:#0099ff;">Here are the words of Paul Randal – MSFT
+</span></strong></span></p>
+<p>In my opinion, this feature causes way more problems than it solves (in fact, I can&#39;t think of a single problem it solves) and should be removed from the product. Remember I&#39;m talking about auto-shrink, not manual shrink. Post a comment or drop me a line
+ if you think there&#39;s a scenario where it&#39;s required.<br />
+So why?</p>
+<ol style="list-style-type:decimal;">
+<li>The algorithms that shrink use are basically brute force. It starts at the end of the data file, picks up allocated pages and moves them as near to the front of the data file as it can, fixing up all the links as it goes. This is fine as long as there are
+ no indexes involved - if there are, every time shrink moves a non-clustered index leaf-page, or a clustered index data-page, it&#39;s causing fragmentation. Yes, any shrink (apart from a TRUNCATEONLY) can cause fragmentation - this is not widely known, although
+ every opportunity I get to explain this I do. I updated the Books Online for DBCC SHRINKDATABASE in SQL Server 2005 to call this out as a reason not to run shrink in general. So, although this affects all shrink operations, its still a very good reason not
+ to run shrink automatically. </li><li>You can&#39;t control when it kicks in. Although it doesn&#39;t have any effect like long-term blocking, it does take up a lot of resources, both IO and CPU. It also moves a lot of data through the buffer pool and so can cause hot pages to be pushed out to disk,
+ slowing things down further. If the server is already pushing the limits of the IO subsystem, running shrink may push it over, causing long disk queue lengths and possibly IO timeouts.
+</li><li>You can&#39;t control when it kicks in - it will start up every 30 minutes and try to shrink one of the databases that has AUTO_SHRINK turned on.
+</li><li>You&#39;re likely to get into a death-spiral of auto-grow then auto-shrink then auto-grow then auto-shrink... (in my experience, if someone is using auto-shrink, they&#39;re most likely using and relying on auto-grow too). An active database usually requires free
+ space for normal operations - so if you take that free space away then the database just has to grow again. This is bad for several reasons:
+<ul style="list-style-type:circle;">
+<li>Repeatedly shrinking and growing the data files will cause file-system level fragmentation, which can slow down performance
+</li><li>It wastes a huge amount of resources, basically running the shrink algorithm for no reason
+</li><li>Auto-grow itself can be bad, especially if you&#39;re using SQL Server 2000 (or don&#39;t have Instant File Initialization turned on - see
+<a href="http://www.sqlskills.com/blogs/kimberly/2007/03/04/InstantInitializationWhatWhyAndHow.aspx">
+this recent post</a> from Kimberly&#39;s blog) where all allocations to the file being grown are blocked while the new portion of the file is being zero-initialized.
+</li></ul>
+</li></ol>
+<p>So - if that hasn&#39;t convinced you to make sure its turned off, I don&#39;t know what will. For databases created on SQL Server 2005, the AUTO_SHRINK option is off by default. You can use ALTER DATABASE yourdb SET AUTO_SHRINK OFF for all others, especially the
+ MODEL database, so new databases don&#39;t inherit the setting unwittingly.</p>
+
+</div>
+    
+    

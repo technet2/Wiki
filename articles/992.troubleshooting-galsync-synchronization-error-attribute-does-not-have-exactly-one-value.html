@@ -1,0 +1,216 @@
+---
+layout: default
+title: Troubleshooting GALSYNC Synchronization Error "Attribute Does Not Have Exactly One Value" - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>The goal of this document is to provide an explanation of the problem, and to provide steps on how to modify the GalSync source code to correct the problem.&nbsp;<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Cause">Cause</a></li><li class="hierarchy-item"><a href="#Resolution">Resolution</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Changing_the_name_of_the_GalSync_Solution_to_a_unique_name">Changing the name of the GalSync Solution to a unique name</a></li><li class="hierarchy-item"><a href="#Updating_the_build_path_to_not_to_build_in_the_Extensions_folder">Updating the build path to not to build in the Extensions folder</a></li><li class="hierarchy-item"><a href="#Applying_code_modifications">Applying code modifications</a></li><li class="hierarchy-item"><a href="#Updating_the_Identity_Manager">Updating the Identity Manager</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Source_Code">Source Code</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Original_GAL_Sync_source_code">Original GAL Sync source code</a></li><li class="hierarchy-item"><a href="#Updated_GAL_Sync_source_code">Updated GAL Sync source code</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Additional_Information">Additional Information</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<p>Executing a Delta Synchronization, we receive several “<em>Extension-DLL-Exception</em>” synchronization errors. The review of the Synchronization Error displays that we are working with the
+<strong>msExchMasterAccountHistory</strong> data source attribute. The review of the stack trace, we discover more information. The stack trace displays the message “<em>Attribute does not have exactly one value.</em>”</p>
+<p><img alt=" " width="612" height="360" src="http://public.bay.livefilestore.com/y1p7YQBhVhBAjg1TSvVLamPJVoV-YpdL4ZDLdqY5eLcAnkFxNoEr7Hk6HegugRW5vL1v44CjM0AM2owvTPHwrjQYw/timmac01.jpg" /></p>
+<p style="text-decoration:underline;"><strong>Stack Trace</strong></p>
+<div style="width:620px;overflow:scroll;background-color:#e6e6e6;">
+<pre style="font-family:&#39;courier new&#39;;font-size:11px;background-color:#e6e6e6;">Extension File Name: GALSync.dll
+Extension Type: export-flow
+Extension Context: msExchMasterAccountHistoryMappingForwards
+
+System.InvalidOperationException: attribute does not have exactly one value
+at Microsoft.MetadirectoryServices.Impl.AttributeImpl.get_Value()
+at Microsoft.MetadirectoryServices.GALSync.MASynchronizer.EAFmsExchMasterAccountHistoryForwards(CSEntry&amp; csentry, MVEntry&amp; mventry)
+at Microsoft.MetadirectoryServices.GALSync.MASynchronizer.MapAttributesForExport(String FlowRuleName, MVEntry mventry, CSEntry csentry)
+</pre>
+</div>
+<p>&nbsp;</p>
+<h2 style="color:#365f91;font-size:14px;font-weight:bold;"><a name="Cause"></a>Cause</h2>
+<p>The cause of the extension-dll-exception is a line of code within the Private Sub Routine &quot;<em>EAFmsExchMasterAccountHistoryForwards</em>&quot; in the GalSync source code.
+<br />
+The line of code is working with the <em>msExchMasterAccountHistory</em> and <em>
+SIDHistory</em> as single value attributes. <br />
+Here is the line of code: </p>
+<pre style="font-family:&#39;courier new&#39;;font-size:11px;background-color:#e6e6e6;">csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(SID_HISTORY).Value
+</pre>
+<p>This line of code does occur in a couple different places within this sub routine. You will find this line of code one time for the Group Object, and once for the Person Object.
+</p>
+<h2 style="color:#365f91;font-size:14px;font-weight:bold;"><a name="Resolution"></a>Resolution</h2>
+<p>In order to fix the “<em>extension-dll-exception</em>” we will need to modify the GalSync solution that is provided with the installation of the Microsoft Identity Lifecycle Manager 2007 Feature Pack 1 product.
+<br />
+Specifically, we will need to modify the <em>&quot;EAFmsExchMasterAccountHistoryForwards&quot;</em> Sub Routine.</p>
+<p>To resolve the issue, you perform the following steps: </p>
+<ol>
+<li>Change the name of the GalSync Solution to a unique name </li><li>Update the build path to not to build in the Extensions folder </li><li>Apply code modifications </li><li>Update the Identity Manager Console </li></ol>
+<h3 style="color:#365f91;font-size:13px;font-weight:bold;"><a name="Changing_the_name_of_the_GalSync_Solution_to_a_unique_name"></a>Changing the name of the GalSync Solution to a unique name</h3>
+<p>To change the name of the GalSync Solution to a unique name, perform the following steps:</p>
+<ol>
+<li>Open <strong>Microsoft Visual Studio</strong> (2005, 2008 or 2010) </li><li>Open the <strong>GalSync Solution</strong> (%programfiles%\Microsoft Identity Integration Server\Source Code\GalSync)
+<ol>
+<li>If you have Forefront Identity Manager 2010 then the path is (%programfiles%\Microsoft Forefront Identity Manager\2010\Synchronization Service\Source Code\GalSync)&nbsp;
+</li></ol>
+</li><li>
+<table cellspacing="0" cellpau perform the following steps: </p>
+<ol>
+<li>Change the name of the GalSync Solution to a unique name </li><li>Update the build path to not to build in the Extensions folder </li><li>Apply code modifications </li><li>Update the Identity Manager Console </li></ol>
+<h3 style="color:#365f91;fontdding="0" style="width:100%;">
+<tbody>
+<tr>
+<th style="text-align:left;background-color:#c0c0c0;"><img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />Note
+</th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;">You may go through a conversion wizard, as the project was originally developed in Visual Studio .NET 2003 using .NET Framework v1.1.
+<br />
+If you do get the wizard, go through the wizard, and “Load Project Normally”</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+</li><li>In <strong>Solution Explorer</strong>, right click on the project name and choose
+<strong>Rename</strong> </li><li>Give it a <strong>unique name</strong> (e.g. &lt;company name or company acronym&gt;galsync)
+</li><li>From the <strong>Project</strong> menu, select <strong>unique name galsync properties
+</strong></li><li>Select <strong>Application</strong>. (it may already be selected by default) </li><li>Modify the <strong>Assembly Name</strong> so that it matches your new solution name.
+</li></ol>
+<h3 style="color:#365f91;font-size:13px;font-weight:bold;"><a name="Updating_the_build_path_to_not_to_build_in_the_Extensions_folder"></a>Updating the build path to not to build in the Extensions folder</h3>
+<ol>
+<li>Under the <strong>Project</strong> menu select <strong>unique name galsync properties.</strong>
+</li><li>Select <strong>Compile</strong> </li><li>Review the “<strong>Build output path</strong>”
+<p>&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;">
+<tbody>
+<tr>
+<th style="text-align:left;background-color:#c0c0c0;"><img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />Note
+</th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;">You will want to point this to another directory rather than the Extensions folder.
+<br />
+Maybe create yourself a Build folder, and point to that folder. </td>
+</tr>
+</tbody>
+</table>
+</li></ol>
+<p>&nbsp;</p>
+<h3 style="color:#365f91;font-size:13px;font-weight:bold;"><a name="Applying_code_modifications"></a>Applying code modifications</h3>
+<p>To apply the code modifications, perform the following steps:</p>
+<ol>
+<li>Open the <strong>GalMA.VB</strong> file </li><li>Locate the <strong>EAFmsExchMasterAccountHistoryForwards</strong> sub routine:
+</li><li>Locate the following line of code in both the group section, and the person section and then comment it out:
+<pre style="font-family:&#39;courier new&#39;;font-size:11px;background-color:#e6e6e6;">csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(SID_HISTORY).Value
+</pre>
+</li><li>Add the following lines of code either above or below that line, but inside of the
+<strong>IF...THEN</strong> statement.
+<pre style="font-family:&#39;courier new&#39;;font-size:11px;background-color:#e6e6e6;"> Dim SIDHistoryEntry As Value
+For Each SIDHistoryEntry In mventry(SID_HISTORY).Values
+   csentry(MASTER_ACCOUNT_HISTORY).Values.Add(SIDHistoryEntry)
+Next
+</pre>
+</li><li>To build the solution, select <strong>Build Solution</strong> for the <strong>
+Build</strong> menu. </li><li><strong>Copy/Move</strong> your newly created DLL to the <strong>Extensions</strong> folder
+</li></ol>
+<h3 style="color:#365f91;font-size:13px;font-weight:bold;"><a name="Updating_the_Identity_Manager"></a>Updating the Identity Manager</h3>
+<p>To update the Identity Manager:</p>
+<ol>
+<li>Open Identity Manager. </li><li>To open the Options dialog, select Options from the Tools menu. </li><li>In the <strong>Rules extension name</strong> textbox, type the name of the new dll.
+</li><li>To close the <strong>Options</strong> dialog, click <strong>OK</strong>. </li></ol>
+<p>For each affected management agent, perform the following steps:</p>
+<ol>
+<li>In the <strong>Management Agents</strong> view, select the affected management agent.
+</li><li>To open the <strong>Properties</strong> dialog, select <strong>Properties</strong> from the
+<strong>Actions</strong> menu. </li><li>In the <strong>Management Agent Designer</strong>, select <strong>Configure Extensions.</strong>
+</li><li>In the <strong>Rules extension name</strong> textbox, type the name of the new DLL.
+</li><li>To close the <strong>Properties</strong> dialog, click <strong>OK</strong>. </li></ol>
+<h2 style="color:#365f91;font-size:14px;font-weight:bold;"><a name="Source_Code"></a>Source Code</h2>
+<p>This section lists the original and the updated source code.</p>
+<h3 style="color:#365f91;font-size:13px;font-weight:bold;"><a name="Original_GAL_Sync_source_code"></a>Original GAL Sync source code</h3>
+<div style="width:620px;overflow:scroll;background-color:#e6e6e6;">
+<pre lang="x-js" style="font-family:&#39;courier new&#39;;font-size:11px;background-color:#e6e6e6;">Private Sub EAFmsExchMasterAccountHistoryForwards(ByRef csentry As CSEntry, ByRef mventry As MVEntry)
+   &#39; Variables
+   Dim uac As Long
+
+   &#39; Clear master account history
+   csentry.Item(MASTER_ACCOUNT_HISTORY).Delete()
+
+   &#39; Handle groups
+   &#39; Only security mv group object result in stamping of resulting contact when dealing with GROUPS
+   Dim MAConfig As GALMA = FindMA(csentry)
+   Dim isTrustEnabled As Boolean = MAConfig.XFDelegation
+   If isTrustEnabled AndAlso mventry(SID_HISTORY).IsPresent AndAlso mventry.ObjectType.Equals(GROUP) Then
+      Dim isSecurityGroup As Boolean = (mventry.Item(DISTRIBUTION_GROUP_TYPE).Value And SECURITY_GROUP_TYPE_CODE) = SECURITY_GROUP_TYPE_CODE
+      If isSecurityGroup AndAlso mventry.Item(MAIL_NICKNAME).IsPresent Then
+         csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(SID_HISTORY).Value
+      End If
+   End If
+
+   If isTrustEnabled AndAlso mventry.ObjectType.Equals(PERSON) AndAlso mventry(USER_ACCOUNT_CONTROL).IsPresent Then
+      &#39; Get enabled user, flow SID hositry to Master Account history
+      uac = mventry(USER_ACCOUNT_CONTROL).IntegerValue
+      If ((uac And UAC_USER_ACCOUNT) &gt; 0) AndAlso Not mventry(MASTER_ACCOUNT_SID).IsPresent Then
+         If mventry.Item(SID_HISTORY).IsPresent Then
+            csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(SID_HISTORY).Value
+         End If
+
+      &#39; If disabled user and MasterAccountSID is not set to SELFSID, flow MasterAccountSid to master account history
+      ElseIf ((uac And MyBase.UAC_DISABLED_USER) &gt; 0) Then
+         If mventry(MASTER_ACCOUNT_SID).IsPresent AndAlso mventry(MASTER_ACCOUNT_SID).Value &lt;&gt; SELFSID Then
+            csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(MASTER_ACCOUNT_SID).Value
+         End If
+      End If
+   End If
+End Sub
+</pre>
+</div>
+<h3 style="color:#365f91;font-size:13px;font-weight:bold;"><a name="Updated_GAL_Sync_source_code"></a>Updated GAL Sync source code</h3>
+<div style="width:620px;overflow:scroll;background-color:#e6e6e6;">
+<pre lang="x-js" style="font-family:&#39;courier new&#39;;font-size:11px;background-color:#e6e6e6;">Private Sub EAFmsExchMasterAccountHistoryForwards(ByRef csentry As CSEntry, ByRef mventry As MVEntry)
+   &#39; Variables
+   Dim uac As Long
+
+   &#39; Clear master account history
+   csentry.Item(MASTER_ACCOUNT_HISTORY).Delete()
+
+   &#39; Handle groups
+   &#39; Only security mv group object result in stamping of resulting contact when dealing with GROUPS
+   Dim MAConfig As GALMA = FindMA(csentry)
+   Dim isTrustEnabled As Boolean = MAConfig.XFDelegation
+   If isTrustEnabled AndAlso mventry(SID_HISTORY).IsPresent AndAlso mventry.ObjectType.Equals(GROUP) Then
+      Dim isSecurityGroup As Boolean = (mventry.Item(DISTRIBUTION_GROUP_TYPE).Value And SECURITY_GROUP_TYPE_CODE) = SECURITY_GROUP_TYPE_CODE
+      If isSecurityGroup AndAlso mventry.Item(MAIL_NICKNAME).IsPresent Then
+         ‘ csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(SID_HISTORY).Value
+         Dim SIDHistoryEntry As Value
+         For Each SIDHistoryEntry In mventry(SID_HISTORY).Values
+            csentry(MASTER_ACCOUNT_HISTORY).Values.Add(SIDHistoryEntry)
+         Next
+      End If
+   End If
+   
+   If isTrustEnabled AndAlso mventry.ObjectType.Equals(PERSON) AndAlso mventry(USER_ACCOUNT_CONTROL).IsPresent Then
+      &#39; Get enabled user, flow SID hositry to Master Account history
+      uac = mventry(USER_ACCOUNT_CONTROL).IntegerValue
+      If ((uac And UAC_USER_ACCOUNT) &gt; 0) AndAlso Not mventry(MASTER_ACCOUNT_SID).IsPresent Then
+         If mventry.Item(SID_HISTORY).IsPresent Then
+            ‘ csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(SID_HISTORY).Value
+            Dim SIDHistoryEntry As Value
+            For Each SIDHistoryEntry In mventry(SID_HISTORY).Values
+               csentry(MASTER_ACCOUNT_HISTORY).Values.Add(SIDHistoryEntry)
+            Next
+         End If
+      &#39; If disabled user and MasterAccountSID is not set to SELFSID, flow MasterAccountSid to master account history
+      ElseIf ((uac And MyBase.UAC_DISABLED_USER) &gt; 0) Then
+         If mventry(MASTER_ACCOUNT_SID).IsPresent AndAlso mventry(MASTER_ACCOUNT_SID).Value &lt;&gt; SELFSID Then
+            csentry(MASTER_ACCOUNT_HISTORY).Value = mventry(MASTER_ACCOUNT_SID).Value
+         End If
+      End If
+   End If
+End Sub
+</pre>
+</div>
+<h2 style="color:#365f91;font-size:14px;font-weight:bold;"><a name="Additional_Information"></a>Additional Information</h2>
+<ul>
+<li><a href="http://social.technet.microsoft.com/Forums/en-US/identitylifecyclemanager/thread/84ff35c9-b235-4b91-b846-6f609f855390" target="_blank">extension-dll-exception &quot;attribute does not have exactly one value...&quot;</a>
+</li></ul>
+
+</div>
+    
+    

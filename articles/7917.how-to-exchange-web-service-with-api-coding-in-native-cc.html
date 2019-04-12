@@ -1,0 +1,207 @@
+---
+layout: default
+title: How-to&#58; Exchange Web Service with API coding in native C/C++ - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Before_beginning">Before beginning</a></li><li class="hierarchy-item"><a href="#Why_to_code_in_native_language_for_EWS">Why to code in native language for EWS</a></li><li class="hierarchy-item"><a href="#Why_to_NOT_use_native_language_for_E/div></div>
+<div class="content-fragment page noWS">Why to NOT use native language for EWS</a></li><li class="hierarchy-item"><a href="#The_setup_used">The setup used</a></li><li class="hierarchy-item"><a href="#What_you_will_need">What you will need</a></li><li class="hierarchy-item"><a href="#What_to_do">What to do</a></li><li class="hierarchy-item"><a href="#Reference">Reference</a></li><li class="hierarchy-item"><a href="#Other_Languages">Other Languages</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<h2>&nbsp;</h2>
+<h2><a name="Before_beginning"></a><hr />
+Before beginning</h2>
+<ul>
+    <li>English is not my native language, so feel free to correct me. </li>
+    <li>I will use the acronym EWS a lot for the article&#39;s clarity. (for Exchange Web Service)&nbsp; </li>
+</ul>
+<hr />
+<h2><a name="Why_to_code_in_native_language_for_EWS"></a>Why to code in native language for EWS</h2>
+<ul>
+    <li>&nbsp;Code is a lot more portable between Operating System; some examples below
+    <ul>
+        <li>Allow to make a simple cgi by example that would run on a IIS or apache web server to talk with your Exchange Server. (To make by example a cgi that read the free/busy of a helpdesk mailbox, and to send&nbsp;request there by your users) </li>
+        <li>Allow the code to talk to your Exchange Server from like an android handheld </li>
+    </ul>
+    </li>
+    <li>Allow to learn all the basic behind basic HTTP/HTTPS I/O </li>
+    <li>The output&nbsp;is usually faster and smaller </li>
+</ul>
+<hr />
+<h2><a name="Why_to_NOT_use_native_language_for_EWS"></a>Why to NOT use native language for EWS</h2>
+<ul>
+    <li>The learning step is harder </li>
+    <li>Coding in like .NET is really faster and easier </li>
+    <li>.NET IDE usually have some wizards to help make the same task easily </li>
+</ul>
+<h2><a name="The_setup_used"></a><hr />
+The setup used</h2>
+<p>For the example below, I used Visual Studio Express 2010 SP1 under Windows.</p>
+<h2><a name="What_you_will_need"></a><hr />
+What you will need</h2>
+<ul>
+    <li>A compiler or an IDE </li>
+    <li><a href="http://www.slproweb.com/products/Win32OpenSSL.html">OpenSSL library</a> for Windows </li>
+    <li><a href="http://www.nongnu.org/libntlm/">LibNTLM library</a> </li>
+</ul>
+<p>&nbsp;A lot of other options exist for the NTLM library and to handle&nbsp;SSL (like&nbsp;<a href="http://curl.haxx.se/libcurl/">libcurl</a> or <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa382925%28v=vs.85%29.aspx">WinHTTP</a>)<br />
+<br />
+Exchange answer in XML, so you can use <a href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms752838%28v=vs.85%29.aspx">xmllite</a>, <a href="http://www.minixml.org/">minixml</a> or just decode the XML manually, it&#39;s your choice.</p>
+<h2><a name="What_to_do"></a><hr />
+What to do</h2>
+<ul>
+    <li>Uncompress all library and make a simple empty project. </li>
+    <li>From the libntlm library, export the .def from the libntlm-0.dll and make a .lib. </li>
+    <li>In your project link the .lib for libntlm, OpenSSL and Winsock. </li>
+</ul>
+<blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3666.Sans-titre4.png"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3666.Sans-titre4.png" /></a></p>
+</blockquote></blockquote>
+<ul>
+    <li>Include the OpenSSL &amp; libntlm&#39;s library </li>
+</ul>
+<blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+<p><span style="font-family:consolas;color:#0000ff;font-size:13px;">#include</span><span style="font-family:consolas;font-size:13px;"> </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&lt;openssl/ssl.h&gt;<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">#include</span><span style="font-family:consolas;font-size:13px;"> </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&lt;openssl/err.h&gt;<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">#include</span><span style="font-family:consolas;font-size:13px;"> </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&lt;openssl/bio.h&gt;<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">#include</span><span style="font-family:consolas;font-size:13px;"> </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;ntlm.h&quot;</span>&nbsp;</p>
+</blockquote></blockquote>
+<ul>
+    <li>&nbsp;Use the Winsock API to connect to your Exchange Server, a bit like that; (no error control!) </li>
+</ul>
+<blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+<p><span style="font-family:consolas;color:#0000ff;font-size:13px;">struct</span><span style="font-family:consolas;font-size:13px;"> hostent *hp;<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">struct</span><span style="font-family:consolas;font-size:13px;"> sockaddr_in addr;<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;"><span style="font-family:consolas;font-size:13px;">WORD wVersionRequested = MAKEWORD(2,2);<br />
+<span style="font-family:consolas;color:#0000ff;font-size:13px;">int</span><span style="font-family:consolas;font-size:13px;"> sock;<br />
+WSADATA wsaData;</span><br />
+</span><span style="font-family:consolas;font-size:13px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+WSAStartup(wVersionRequested, &amp;wsaData);</span><br />
+if</span><span style="font-family:consolas;font-size:13px;">(!(hp=gethostbyname(&quot;server_host&quot;)))<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">&nbsp;&nbsp;&nbsp;&nbsp;return</span> 0; <br />
+memset(&amp;addr,0,<br />
+<span style="font-family:consolas;color:#0000ff;font-size:13px;">sizeof</span><span style="font-family:consolas;font-size:13px;">(addr));<br />
+addr.sin_addr=*(</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">struct</span><span styl00ff;font-size:13px;"><span style="font-family:consolas;font-size:13px;">WORD wVersionRequested = MAKEWORD(2,2);<br />
+<span style="font-family:consolas;color:#0000ff;font-size:13px;">int</span><span style="font-family:consolas;font-size:13px;"> sock;<br />
+WSADATA wsaData;</span><br />
+</span><span style="font-family:consolas;font-size:13px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+WSAStartup(wVersionRequested, &amp;wsaData);</span><br />
+if</span><span style="font-family:consolas;font-size:13px;">(!(hp=gethostbyname(&quot;server_host&quot;)))<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13pe="font-family:consolas;font-size:13px;"> in_addr*)<br />
+hp-&gt;h_addr_list[0];<br />
+addr.sin_family=AF_INET;<br />
+addr.sin_port=htons(443);<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">if</span><span style="font-family:consolas;font-size:13px;">((sock=socket(AF_INET,SOCK_STREAM, IPPROTO_TCP))&lt;0)<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">&nbsp;&nbsp;&nbsp;return</span> 0; <br />
+<span style="font-family:consolas;color:#0000ff;font-size:13px;">if</span><span style="font-family:consolas;font-size:13px;">(connect(sock,(</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">struct</span><span style="font-family:consolas;font-size:13px;"> sockaddr *)&amp;addr, </span><span style="font-family:consolas;color:#0000ff;font-size:13px;">sizeof</span><span style="font-family:consolas;font-size:13px;">(addr))&lt;0)<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">&nbsp;&nbsp;&nbsp;return</span> 0; <br />
+<span style="font-family:consolas;color:#0000ff;font-size:13px;">return</span> 1; </p>
+</blockquote></blockquote>
+<ul>
+    <li>Use the OpenSSL API to connect in SSL with the &quot;sock&quot; received from Winsock, a bit like that; (no error control! and I don&#39;t check the remote certificate at all!)
+    <ul></ul>
+        <blockquote style="margin-right:0px;" dir="ltr">
+        <p><span style="font-family:consolas;color:#0000ff;font-size:13px;">const</span><span style="font-family:consolas;font-size:13px;"> SSL_METHOD *meth;<br />
+        <span style="font-family:consolas;font-size:13px;">SSL *ssl;<br />
+        BIO *sbio;<br />
+        BIO *rbio;<br />
+        BIO *wbio;<br />
+        </span><span style="font-family:consolas;font-size:13px;">SSL_CTX *ctx;<br />
+        </span></span><span style="font-family:consolas;font-size:13px;"><br />
+        SSL_library_init();<br />
+        SSL_load_error_strings();<br />
+        </span><span style="font-family:consolas;font-size:13px;">meth=SSLv23_method();<br />
+        </span>ctx=SSL_CTX_new(meth); </p>
+        <p>ssl=SSL_new(ctx);<br />
+        <span style="font-family:consolas;font-size:13px;">sbio=BIO_new_socket(sock,BIO_NOCLOSE);</span></p>
+        </blockquote></li>
+    </ul>
+    <blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+    <p><span style="font-family:consolas;font-size:13px;">SSL_set_bio(ssl,sbio,sbio);<br />
+    </span><span style="font-family:consolas;font-size:13px;">SSL_connect(ssl);</span></p>
+    </blockquote></blockquote>
+    <ul>
+        <li>&nbsp;Send a dummy request to your Exchange Server to generate a 401 error. The 401 error mean you need to use the NTLM authentification against your Exchange Server </li>
+    </ul>
+    <blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+    <p><span style="font-family:consolas;color:#a31515;font-size:13px;">SSL_write(ssl,&quot;GET&nbsp;<span style="font-family:consolas;color:#a31515;font-size:13px;">/EWS/Services.wsdl </span>HTTP/1.1\r\nUser-Agent: test<span style="font-family:consolas;color:#a31515;font-size:13px;">\r\nHost: serverhost:443\r\n\r\n&quot;</span>,strlen(&quot;GET&nbsp;<span style="font-family:consolas;color:#a31515;font-size:13px;">/EWS/Services.wsdl </span>HTTP/1.1\r\nUser-Agent: test<span style="font-family:consolas;color:#a31515;font-size:13px;">\r\nHost: serverhost:443\r\n\r\n&quot;</span>));</span></p>
+    </blockquote></blockquote><span style="font-family:consolas;color:#a31515;font-size:13px;"><blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr"><span></span>
+    <p><span>Check the answer for &quot;WWW-Authenticate: NTLM&quot;. If it&#39;s not there, be sure it&#39;s enabled on your IIS of your Exchange Server with the CAS role.</span></p>
+    <span></span></blockquote></blockquote></span><blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+    <p>&nbsp;</p>
+    </blockquote></blockquote>
+    <ul>
+        <li>Use the libntlm library to authentificate (I use two base64 function, enc.Base64enc &amp; enc.Base64dec. I didn&#39;t paste them to keep the code clean, but it&#39;s easy to find function (like <a href="http://www.frank4dd.com/howto/various/base64_stringencode_c.htm">there</a> or <a href="http://www.adp-gmbh.ch/cpp/common/base64.html">there</a>) </li>
+    </ul>
+    <span style="font-family:consolas;font-size:13px;"><blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr"><span></span>
+    <p><span>string encoded, encodedpass, decoded, sBuffer;</span></p>
+    <span></span></blockquote></blockquote></span><blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+    <p><span style="font-family:consolas;color:#0000ff;font-size:13px;">char</span><span style="font-family:consolas;font-size:13px;"> cRequest[1024];<br />
+    </span><span style="font-family:consolas;color:#0000ff;font-size:13px;">char</span><span style="font-family:consolas;font-size:13px;"> cBuffer[1024];<br />
+    tSmbNtlmAuthRequest request;<br />
+    tSmbNtlmAuthResponse response;<br />
+    <br />
+    </span><span style="font-family:consolas;font-size:13px;">ZeroMemory(cRequest, 1024);<br />
+    buildSmbNtlmAuthRequest (&amp;request, &quot;username&quot;, &quot;domain&quot;);<br />
+    </span><span style="font-family:consolas;color:#0000ff;font-size:13px;">if</span><span style="font-family:consolas;font-size:13px;"> (SmbLength(&amp;request) &gt; 1024)<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">return</span><span style="font-family:consolas;font-size:13px;"> 0;<br />
+    encoded = enc.Base64enc((</span><span style="font-family:consolas;color:#0000ff;font-size:13px;">unsigned</span><span style="font-family:consolas;font-size:13px;"> </span><span style="font-family:consolas;color:#0000ff;font-size:13px;">char</span><span style="font-family:consolas;font-size:13px;"> *) &amp;request, SmbLength(&amp;request));<br />
+    _snprintf(cRequest, 1024, </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;GET&nbsp;<span style="font-family:consolas;color:#a31515;font-size:13px;">/EWS/Services.wsdl</span> HTTP/1.1\r\nHost: serverhost\r\nConnection: Keep-Alive\r\nAuthorization: NTLM %s\r\n\r\n&quot;</span><span style="font-family:consolas;font-size:13px;">, encoded.c_str());<br />
+    </span>SSL_write(ssl, cRequest);</p>
+    </blockquote></blockquote><blockquote style="margin-right:0px;" dir="ltr"><blockquote style="margin-right:0px;" dir="ltr">
+    <p>// read the answer, sBuffer = NTLM answer<br />
+    <br />
+    decoded = enc.Base64dec(sBuffer);<br />
+    buildSmbNtlmAuthResponse((tSmbNtlmAuthChallenge *)decoded.c_str(), &amp;response, &quot;username&quot;, &quot;password&quot;);<br />
+    encodedpass = enc.Base64enc((<span style="font-family:consolas;color:#0000ff;font-size:13px;">unsigned</span><span style="font-family:consolas;font-size:13px;"> </span><span style="font-family:consolas;color:#0000ff;font-size:13px;">char</span><span style="font-family:consolas;font-size:13px;"> *) &amp;response, SmbLength(&amp;response));<br />
+    _snprintf(cRequest, 1024, </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;GET&nbsp;<span style="font-family:consolas;color:#a31515;font-size:13px;">/EWS/Services.wsdl</span> HTTP/1.1\r\nHost: servername\r\nConnection: Keep-Alive\r\nAuthorization: NTLM %s\r\n\r\n&quot;</span>, encodedpass.c_str());<br />
+    SSL_write(ssl, cRequest);<br />
+    <br />
+    // If IIS answer with 200 then your password was ok !</p>
+    </blockquote></blockquote>
+    <ul dir="ltr">
+        <li>Now you are ready to send command to your Exchange Server ! </li>
+    </ul>
+    <blockquote style="margin-right:0px;" dir="ltr">
+    <p dir="ltr"><em>Like to receive a distribution group member&#39;s list:<br />
+    </em><br />
+    <span style="font-family:consolas;color:#0000ff;font-size:13px;">char</span><span style="font-family:consolas;font-size:13px;"> cRequest[1024];<br />
+    </span><span style="font-family:consolas;color:#0000ff;font-size:13px;">char</span><span style="font-family:consolas;font-size:13px;"> request[1024] =<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;&lt;?xml version=\&quot;1.0\&quot; encoding=\&quot;utf-8\&quot;?&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;&lt;soap:Envelope xmlns:soap=\<a href="http://schemas.xmlsoap.org/soap/envelope//">http://schemas.xmlsoap.org/soap/envelope//</a><br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; xmlns:t=\&quot;http://schemas.microsoft.com/exchange/services/2006/types\&quot;&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;soap:Body&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;ExpandDL xmlns=\<a href="http://schemas.microsoft.com/exchange/services/2006/messages/">http://schemas.microsoft.com/exchange/services/2006/messages/</a><br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; xmlns:t=\&quot;http://schemas.microsoft.com/exchange/services/2006/types\&quot;&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;Mailbox xmlns=\&quot;http://schemas.microsoft.com/exchange/services/2006/messages\&quot;&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;EmailAddress xmlns=\&quot;http://schemas.microsoft.com/exchange/services/2006/types\&quot;&gt;test@constoco.com&lt;/EmailAddress&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;/Mailbox&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;/ExpandDL&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot; &lt;/soap:Body&gt;&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;&lt;/soap:Envelope&gt;&quot;</span>; </p>
+    <p dir="ltr">ZeroMemory(cRequest, 1024);<br />
+    _snprintf(cRequest, 1024, <span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;POST /ews/Exchange.asmx HTTP/1.1\r\n&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;Host: servername\r\n&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;Content-Length: %d\r\n&quot;<br />
+    </span><span style="font-family:consolas;color:#a31515;font-size:13px;">&quot;Content-Type: text/xml\r\n\r\n%s&quot;</span>, strlen(request), request); </p>
+    &nbsp;// send it and decode the answer...<br />
+    <br />
+    <br />
+    </blockquote>
+    <ul>
+        <li>&nbsp;<span style="font-size:14px;text-decoration:underline;">Now from this point you can make anything with EWS</span> </li>
+    </ul>
+    <p>&nbsp;</p>
+    <h2><a name="Reference"></a><hr />
+    Reference</h2>
+    <p dir="ltr"><span class="breadcrumb-item"><a href="http://blogs.msdn.com/b/exchangedev/archive/2009/02/05/quick-and-dirty-unix-shell-scripting-with-ews.aspx">Quick and Dirty UNIX Shell Scripting with EWS</a>&nbsp;- The idea that started it all for me was there.<br />
+    <a href="https://ewseditor.codeplex.com/">EWSEditor</a>&nbsp;- To generate some SOAP message easily.<br />
+    <a href="http://msdn.microsoft.com/en-us/library/dd877045%28v=exchg.140%29.aspx">Exchange Web Services (EWS)</a>&nbsp;- MSDN referance with a lot of examples.<br />
+    <a href="http://www.winprog.org/tutorial/">theForger&#39;s Win32 API Programming Tutorial</a>&nbsp;-&nbsp;A really good tutorial&nbsp;for direct API programming.<br />
+    <br />
+    </span></p>
+    <h2 style="line-height:25px;background-color:#ffffff;font-size:1.65em;"><a name="Other_Languages"></a>Other Languages</h2>
+    <p style="line-height:18px;background-color:#ffffff;">This article is also available the following languages:</p>
+    <ul>
+        <li><a href="http://social.technet.microsoft.com/wiki/contents/articles/8067.comment-programmer-en-code-natif-api-pour-exchange-web-service-en-cc-fr-fr.aspx" target="_blank">Comment programmer en code natif (API) pour Exchange Web Service en C/C++ (fr-FR)</a> </li>
+    </ul></div>
+    
+    

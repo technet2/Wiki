@@ -1,0 +1,518 @@
+---
+layout: default
+title: MS Exchange 2013 Server Transition in a Co-existed Environment - Complete Steps - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-family:Arial;"><span style="font-size:16px;"><stron            </li>
+        
+</ul>
+<divg>Precautionary Measures:</strong><br />
+</span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0508.Backup-of-DB.png" style="font-family:Arial;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0508.Backup-of-DB.png" style="border-width:0px;border-style:solid;" /></a><br />
+</span></p>
+<ol style="margin-top:0in;list-style-type:decimal;">
+<li><span style="font-family:Arial;">Take the backup of your AD Architecture &amp;&nbsp;Exchange 2003 Information store&nbsp;and test / verify the backup as explained in above figure.</span>
+</li><li><span style="font-family:Arial;">Update Active Directory Functional Levels (Both Forest &amp; Domain) to Windows 2003 (min).</span>
+</li><li><span style="font-family:Arial;">Change MS Exchange 2003 Mode (from Mix) to Native.</span>
+</li><li><span style="font-family:Arial;">If there&#39;s only MS Windows 2003 Domain architecture then atleast update its schema to MS Windows 2008 (@ minimum if you don&#39;t want to add ADC of MS Windows 2008).</span>
+</li><li><span style="font-family:Arial;">Before launching setup of MS Exchange 2010, set MS Exchange 2003 permissions using Media of MS Exchange 2010&nbsp;(i.e. Setup.com /PrepareLegacyExchangePermissions)</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Start deployment in Internet Facing AD Site.</span>
+</li></ol>
+<p><strong><span style="font-family:Arial;font-size:16px;">What is Internet Facing AD-Site?</span></strong></p>
+<p><span style="font-family:Arial;"><span style="font-family:Arial;">Some time it makes some confusions when you think of AD &#43; internet means you have to expose your AD to the internet. No Way! Actually it means &quot;you must have an Active Directory site that has
+ internet connectivity, typically through a router and preferably through a firewall too&quot; simple! isn&#39;t it?</span><br />
+<strong><span style="font-size:16px;"><br />
+Environment Scenario</span></strong></span></p>
+<p><span style="font-family:Arial;">Single Forest Single Tree architecture of AD using MS Windows 2003 R2 Enterprise 32bit with Forest and Domain functional level “MS Windows 2003”. MS Exchange 2003 SP2 is installed and now going to start the transitioning phase
+ with Co-existence.</span></p>
+<p><span style="font-family:Arial;"><strong>Step#1 - Updating AD-Schema Using MS Windows 2008 Server Media<br />
+<br />
+Admin Rights are required for updating the Active Directory Schema. Before you start, follow some of the important guidelines.</strong><br />
+<br />
+</span></p>
+<ol style="margin-top:0in;list-style-type:decimal;">
+<li><span style="font-family:Arial;">On the TLD (Top Level Domain holding Schema Master Role), using elevated command prompt (right click on the command prompt application and select run as administrator), enter following command.</span>
+</li><li><span style="font-family:Arial;">Upgrade Forest using MS Windows 2008 Media with the following command</span>
+</li></ol>
+<blockquote style="margin:0px 0px 0px 40px;border:medium none;padding:0px;">
+<p><span style="font-family:Arial;">a.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adprep32 /forestprep</span></p>
+</blockquote>
+<blockquote style="margin:0px 0px 0px 40px;border:medium none;padding:0px;">
+<p><span style="font-family:Arial;">b.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adprep32 /DomainPrep</span></p>
+</blockquote>
+<blockquote style="margin:0px 0px 0px 40px;border:medium none;padding:0px;">
+<p><span style="font-family:Arial;">c.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Adprep32 /Domainprep /ugprep</span></p>
+</blockquote>
+<p><span style="font-family:Arial;">Note: if the OS is x64bit then<strong>&nbsp;Adprep.exe</strong>&nbsp;command would used instead of<strong>&nbsp;AdPrep32.exe</strong>&nbsp;as mentioned above.</span></p>
+<p><strong><span style="font-family:Arial;">Deploying MS Windows 2008 Server R2 / MS Windows 2012 as an Additional Domain Controller - ADC</span></strong></p>
+<ol style="margin-top:0in;list-style-type:decimal;">
+<li><span style="font-family:Arial;">Prepare Additional Domain Controller (MS Windows 2008 / 2012) right after this upgrade.</span>
+</li><li><span style="font-family:Arial;">Configure DNS Settings on ADC and verify NTFRS replication.</span>
+</li><li><span style="font-family:Arial;">Transfer FSMO Roles from MS Windows 2003 to MS Windows 2008</span>
+</li></ol>
+<p><span style="font-family:Arial;">a.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For&nbsp;Transferring&nbsp;Schema Master apply the following command on the server having Schema master FSMO</span></p>
+<p><span style="font-family:Arial;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>regsvr32</strong>&nbsp;schmmgmt.<strong>dll</strong></span></p>
+<p><span style="font-family:Arial;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ii.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Open MMC console and Add Schema Management snap-in</strong></span></p>
+<p><span style="font-family:Arial;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iii.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Connect to the transferring Domain Controller and Transfer the roles</strong></span></p>
+<p><span style="font-family:Arial;"><strong>Note:&nbsp; Step#3 is an optional thing, if you do not want to transfer FSMOs then its fine you can run your environment without transferring FSMOs to Windows 2008 server but Windows 2008 ADC existence is important for
+ deployment of MS Exchange 2010 Server.</strong><br />
+<br />
+</span></p>
+<p><strong><span style="font-family:Arial;">Deploying MS Exchange 2010 Server in a Co-existence of MS Exchange 2003 Server</span></strong></p>
+<p><span style="font-family:Arial;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4456.exch03_5F00_Schema_5F00_update.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4456.exch03_5F00_Schema_5F00_update.png" style="border-width:0px;border-style:solid;" /></a><br />
+Using elevated Command prompt, change the directory to MSEx2010 m><span style="font-family:Arial;"><strong>Note:&nbsp; Step#3 is an optional thing, if you do not want to transfer FSMOs then its fine you can run your environment without transferring FSMOs to Windows 2008 server but Windows 2008 ADC existence is important for
+ deployment of MS Exchange 2010 Server.</strong><br />
+<br />
+</span></p>
+<p><strong><span style="font-family:Arial;">Deploying MS Exchange 2010 Server in a Co-existence of MS Exchange 2003 Server</span></strong></p>
+<p><span style="font-family:Arial;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4456.exch03_5F00_Schema_5F00_updaedia and apply following commands, above figure shows below mentioned activity</span></p>
+<blockquote style="margin:0px 0px 0px 40px;border:medium none;padding:0px;">
+<p><span style="font-family:Arial;">a.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Setup.com /PrepareLegacyExchangePermissions</span></p>
+<p><span style="font-family:Arial;">b.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Setup.com /PrepareSchema</span></p>
+<p><span style="font-family:Arial;">c.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Setup.com /PrepareAD</span></p>
+<p><span style="font-family:Arial;">d.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Setup.com /PrepareDomain</span></p>
+</blockquote>
+<p><strong><span style="font-family:Arial;">Note: DOS commands can be skipped if you want GUI setup to launch these commands in a chronological order except of the first switch (i.e. /PrepareLegacyExchangePermissions).</span></strong></p>
+<p><strong><span style="font-family:Arial;">Install Roles of MS Exchange 2010 Server in a Chronological order, one by one and test its co-existence with MS Exchange 2003.<br />
+</span></strong></p>
+<p style="margin-left:0.5in;"><strong><span style="font-family:Arial;">a.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CAS</span></strong></p>
+<p style="margin-left:0.5in;"><strong><span style="font-family:Arial;">b.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HUB</span></strong></p>
+<p style="margin-left:0.5in;"><strong><span style="font-family:Arial;">c.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Mailbox</span></strong></p>
+<p><span style="font-family:Arial;">The following table lists the scenarios in which coexistence between Exchange 2010 and earlier versions of Exchange is supported.</span></p>
+<p style="margin:10pt 0in 0.0001pt 0.5in;text-indent:-0.25in;line-height:115%;">
+<a name="_Toc352603815"></a><strong><span style="font-size:12pt;line-height:115%;">1.</span></strong><strong>
+</strong></p>
+<h2><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><a name="Coexistence_of_Exchange_2010_and_earlier_versions_of_Exchange_Server"></a><span style="font-family:Arial;font-size:16px;"><a name="_Toc352603816"><span style="font-size:12pt;line-height:115%;color:windowtext;">Coexistence
+ of Exchange 2010 and earlier versions of Exchange Server</span></a> </span></h2>
+<p><span style="font-size:1pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border-style:solid none solid solid;border-top:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Exchange version
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:solid solid solid none;border-top:1pt solid #84b3df;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Exchange organization coexistence
+</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Exchange 2000 Server</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">Not supported</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Exchange Server 2003</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">Supported</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Exchange 2007</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">Supported</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Mixed Exchange 2007 and Exchange Server 2003 organization
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">Supported</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span style="font-family:Arial;font-size:16px;"><strong>&nbsp;<a name="_Toc352603817" style="font-size:20px;line-height:25px;"><span style="font-size:12pt;line-height:115%;color:windowtext;">Hardware Requirements for MS Exchange 2010 Standard Server</span></a></strong></span></p>
+<p><span style="font-size:1pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border-style:solid none solid solid;border-top:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Component
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:solid solid solid none;border-top:1pt solid #84b3df;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Requirement
+</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Processor</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">x64 architecture-based computer with Intel processor that supports Intel 64 architecture (formerly known as Intel EM64T)</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">AMD processor that supports the AMD64 platform</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Intel Itanium IA64 processors not supported</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Memory</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Varies depending on Exchange features that are installed</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Disk space</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">At least 1.2&nbsp;GB on the drive on wht:150%;font-family:Arial;">Memory</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Varies depending on Exchange features that are installed</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Disk space</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;fohich you install Exchange</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">An additional 500&nbsp;MB of available disk space for each Unified Messaging (UM) language pack that you plan to install</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">200&nbsp;MB of available disk space on the system drive</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">A hard disk that stores the message queue database on an Edge Transport server or Hub Transport server with at least 500&nbsp;MB of free space</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><a name="_Toc352603818" style="font-size:20px;line-height:25px;"><span style="line-height:115%;font-size:16px;color:windowtext;">Operating System Support for MS Exchange 2010 Standard server</span></a></p>
+<p><span style="font-size:1pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border-style:solid none solid solid;border-top:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Component
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:solid solid solid none;border-top:1pt solid #84b3df;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Requirement
+</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Operating system on a computer that has a 64-bit processor</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">One of the following:</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">64-bit edition of Windows Server 2008 Standard with Service Pack&nbsp;2 (SP2)</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">64-bit edition of Windows Server 2008 Enterprise with SP2</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">64-bit edition of Windows Server 2008 R2 Standard with SP1</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">64-bit edition of Windows Server 2008 R2 Enterprise with SP1</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Windows Server 2008 Datacenter RTM or later</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Windows Server 2008 R2 Datacenter RTM or later</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Windows Server 2012 (Requires Exchange 2010 SP3 or later)</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong style="font-size:12.1px;"><span style="font-family:Arial;">When Deploying CAS take care of below mentioned points</span></strong></p>
+<p><span style="font-family:Arial;">a.&nbsp; &nbsp;DNS settings for URLs and their IPs as explained in below figure.</span></p>
+<p><span style="font-family:Arial;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3443.DNS_5F00_RRs.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3443.DNS_5F00_RRs.png" style="border-width:0px;border-style:solid;" /></a><br />
+</span></p>
+<p><span style="font-family:Arial;">b.&nbsp; &nbsp;Certificates Installation, import / export in between MS Exchange 2010 CAS and MS Exchange 2003 Front / back end servers.</span></p>
+<p><span style="font-family:Arial;">c.&nbsp; &nbsp;&nbsp;For single sign-on you need to keep both of the servers owa security settings same.</span></p>
+<p><span style="font-family:Arial;">d.&nbsp; &nbsp;&nbsp;Initiate a redirection of owa request to MS Exchange 2003 if users are available on MS Exchange 2003 backend server.</span></p>
+<ol>
+<li><span style="font-size:12.1px;font-family:Arial;">Open MS Exchange 2010 PowerShell</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Get-OwaVirtualDirectory</span>
+</li><li><span style="font-family:Arial;"><span style="font-size:12.1px;">Set-OwaVirtualDirectory –Identity “owa (Default Web Site)” –Exchange2003URL&nbsp;</span><a href="https://legacy.ex2003server.com/" style="font-size:12.1px;">https://legacy.ex2003server.com</a><span style="font-size:12.1px;">&nbsp;–internalURL</span><a href="https://ex2010.domain.com/" style="font-size:12.1px;">https://ex2010.domain.com</a><span style="font-size:12.1px;">&nbsp;–externalUrl&nbsp;</span><a href="https://mail.domain.com/" style="font-size:12.1px;">https://mail.domain.com</a></span>
+</li></ol>
+<p><span style="font-family:Arial;"><span style="font-size:12.1px;">To verify that security settings are identical and there is no problem in configurations simply</span>type below command in the MS Exchange 2010 PowerShell &quot;<strong>Get-OwaVirtualDirectory |fl</strong>&quot;<br />
+<br />
+For single sing-on turn on form based authentication on MS Exchange 2003 Server&nbsp;<br />
+using its HTTP properties.&nbsp;Now, check and confirm the redirection.&nbsp;After successful,<br />
+deployment of CAS now install HUB on the same or on a separate but with in&nbsp;the same&nbsp;<br />
+domain.&nbsp;For both of the server to communicate or exchange email with each other below&nbsp;<br />
+workout is&nbsp;important only if you got any problem in email send or receive.&nbsp;<br />
+<br />
+<strong>Workout for initiating emails in between two email servers.</strong></span></p>
+<ol>
+<li><span style="font-size:12.1px;font-family:Arial;">Start Exchange Management Console.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Expand Server Configuration and then click Hub Transport.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Click the Receive Connectors tab.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Locate the remote Exchange server receive connector that the e-mail message is trying to be sent to.&nbsp;</span>
+</li></ol>
+<span style="font-family:Arial;"><strong style="font-size:12.1px;">Note To determine this, you can review the&nbsp;</strong><a href="http://technet.microsoft.com/en-us/library/aa997624.aspx" style="font-size:12.1px;"the server to communicate or exchange email with each other below&nbsp;<br />
+workout is&nbsp;important only if you got any problem in email send or receive.&nbsp;<br />
+<br />
+<strong>Workout for initiating emails in between two email servers.</strong></span></p>
+<ol>
+<li><span style="font-size:12.1px;font-family:Arial;">Start Exchange Management Console.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Expand Server Configuration and then click Hub Transport.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Click the Receive Connectors tab.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Locate the remote Exchange server receive connector that the e-mail message is trying to be sent to.&nbsp;</span>
+</li></o><strong>send protocol logs</strong></a><strong style="font-size:12.1px;">&nbsp;from
+ the server that the e-mail message is stuck in.<br />
+</strong><span style="font-size:12.1px;"><br />
+</span></span>
+<blockquote style="margin:0px 0px 0px 40px;border:medium none;padding:0px;"><span style="font-size:12.1px;font-family:Arial;">5. Right-click the receive connector and then click Properties.&nbsp;</span></blockquote>
+<span style="font-family:Arial;"><strong style="font-size:12.1px;">Note: This is typically the Default server_name receive connector for the remote Exchange server, unless modifications were made. If you are not sure which connector is used,&nbsp;</strong><a href="http://technet.microsoft.com/en-us/library/aa997624.aspx" style="font-size:12.1px;"><strong>receive
+ protocol logs</strong></a><span style="font-size:12.1px;"><strong> </strong></span><strong style="font-size:12.1px;">shows the receive connector that is used.<br />
+</strong><span style="font-size:12.1px;"><br />
+</span></span>
+<blockquote style="margin:0px 0px 0px 40px;border:medium none;padding:0px;"><span style="font-size:12.1px;font-family:Arial;">6. On the Authentication tab, make sure that the Exchange Server authentication check box is selected.&nbsp;</span></blockquote>
+<span style="font-size:12.1px;font-family:Arial;"><br />
+<strong><span style="font-size:16px;">For Microsoft Exchange Server 2003 remotes servers:</span></strong></span>
+<ol>
+<li><span style="font-size:12.1px;font-family:Arial;">Start Exchange System Management.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Expand the Servers container.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Under the problematic remote Exchange server, locate to the Protocols container.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Expand the Protocols container, right-click SMTP.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Right-click Default SMTP Virtual Server and then click Properties.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Click the Access tab and then click Authentication.</span>
+</li><li><span style="font-size:12.1px;font-family:Arial;">Make sure that the Integrated Windows Authentication check box is selected.</span>
+</li></ol>
+<p><span style="font-family:Arial;"><br />
+<strong><span style="font-size:16px;">De-Commissioning of MS Exchange 2003.</span></strong></span></p>
+<ol style="margin-top:0in;list-style-type:decimal;">
+<li><span style="font-family:Arial;">Move All Mailboxes from MS Exchange 2003 to MS Exchange 2010&nbsp;</span>
+</li><li><span style="font-family:Arial;">Move All Replications of Public Folders to MS Exchange 2010&nbsp;</span>
+</li><li><span style="font-family:Arial;">Move All OAB to MS Exchange 2010 using its EMC&nbsp;</span>
+</li><li><span style="font-family:Arial;">Move RUS (Recipient Update Service) to MS Exchange 2010 using MS Exchange 2003 Management Console&nbsp;</span>
+</li><li><span style="font-family:Arial;">Delete / Remove MS Exchange 2003 Public Folders&nbsp;</span>
+</li><li><span style="font-family:Arial;">Uninstall MS Exchange 2003 Server&nbsp;</span> </li><li><span style="font-family:Arial;">Check functionality of MS Exchange 2010 Server.&nbsp;</span>
+</li><li><span style="font-family:Arial;">Uninstall MS Windows 2003 Domain after proper DNS settings transfer etc.&nbsp;</span>
+</li><li><span style="font-family:Arial;">Recheck MS Exchange 2010 Server Functionality.<a name="_Toc352603819"></a></span>
+</li></ol>
+<p><span style="font-size:1pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<p><span style="font-family:Arial;"><strong><span style="font-size:12pt;line-height:107%;">Co-existence of MS Exchange 2010 with MS Exchange 2013 CU-1</span></strong><strong></strong></span></p>
+<p style="margin-left:20.25pt;"><span style="font-size:2pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<p style="line-height:150%;text-align:justify;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Once MS Exchange 2003 has been demoted successfully, we shall move on to inject MS Exchange 2013 server by updating AD Schema and Installing MS
+ Exchange 2013 CU1. The same procedure for email routing would be adopted. Later on mailboxes must be moved from legacy exchange version to MS Exchange 2013 using Management Console of MS Exchange 2013 as shown in the figure below:</span></p>
+<p style="line-height:150%;text-align:justify;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5824.ex2010_2600_2013.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5824.ex2010_2600_2013.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="line-height:150%;text-align:justify;"><span style="font-family:Arial;"><strong><span style="font-size:12pt;line-height:150%;">Coexistence of Exchange 2013 and earlier versions of Exchange Server</span></strong><strong>
+</strong></span></p>
+<p style="margin-left:20.25pt;"><span style="font-size:1pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border-style:solid none solid solid;border-top:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Exchange version
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:solid solid solid none;border-top:1pt solid #84b3df;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Exchange organization coexistence
+</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange Server 2003 and earlier versions</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Not supported</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2007</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Supported with the following versions of Exchange:</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Update Rollup 10 for Exchange 2007 Service Pack 3 (SP3) on all Exchange 2007 servers in the organization, including Edge Transport servers.</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2013 Cumulative Update 1 (CU1) on all Exchange 2013 servers in the organization.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2010</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Supported with the following versions of Exchange:</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2010 SP3 on all Exchange 2010 servers in the organization, including Edge Transport servers.</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2013 CU1 on all Exchange 2013 servers in the organization.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10pt;line-height:150%;font-family:Arial;">Mixed Exchange 2010 and Exchange 2007 organization
+</span></strong></p>
+</td>
+<td valign="top" style="border-sb3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Supported with the following versions of Exchange:</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2010 SP3 on all Exchange 2010 servers in the organization, including Edge Transport servers.</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2013 CU1 on all Exchange 2013 servers in the organization.</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><strong><span style="font-size:10ptyle:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Supported with the following versions of Exchange:</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Update Rollup 10 for Exchange 2007 SP3 on all Exchange 2007 servers in the organization, including Edge Transport servers.</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2010 SP3 on all Exchange 2010 servers in the organization, including Edge Transport servers.</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Exchange 2013 CU1 on all Exchange 2013 servers in the organization.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<h2><a name="Hardware_requirements_for_Exchange_2013"></a><a name="Hardware_requirements_for_Exchange_2013"></a><a name="Hardware_requirements_for_Exchange_2013"></a><a name="Hardware_requirements_for_Exchange_2013"></a><a name="Hardware_requirements_for_Exchange_2013"></a><a name="Hardware_requirements_for_Exchange_2013"></a><a name="Hardware_requirements_for_Exchange_2013"></a><span style="font-family:Arial;"><a name="_Toc352603821"><span style="font-size:12pt;line-height:115%;color:windowtext;"><strong>Hardware
+ requirements for Exchange 2013</strong></span></a> </span></h2>
+<p style="margin-left:20.25pt;"><span style="font-size:1pt;line-height:107%;font-family:Arial;">&nbsp;</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border-style:solid none solid solid;border-top:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">&nbsp;Component
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:solid solid solid none;border-top:1pt solid #84b3df;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Requirement
+</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Processor</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">x64 architecture-based computer with Intel processor that supports Intel 64 architecture (formerly known as Intel EM64T)</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">AMD processor that supports the AMD64 platform</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Intel Itanium IA64 processors not supported</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Memory</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">Varies depending on Exchange roles that are installed:</span></p>
+<p style="line-height:150%;"><span style="font-family:Arial;"><strong><span style="font-size:10pt;line-height:150%;">Mailbox</span></strong><span style="font-size:10pt;line-height:150%;">&nbsp;&nbsp;&nbsp;8GB minimum</span></span></p>
+<p style="line-height:150%;"><span style="font-family:Arial;"><strong><span style="font-size:10pt;line-height:150%;">Client Access</span></strong><span style="font-size:10pt;line-height:150%;">&nbsp;&nbsp;&nbsp;4GB minimum</span></span></p>
+<p style="line-height:150%;"><span style="font-family:Arial;"><strong><span style="font-size:10pt;line-height:150%;">Mailbox and Client Access combined</span></strong><span style="font-size:10pt;line-height:150%;">&nbsp;&nbsp;&nbsp;8GB minimum</span></span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Disk space</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">At least 30&nbsp;GB on the drive on which you install Exchange</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">An additional 500&nbsp;MB of available disk space for each Unified Messaging (UM) language pack that you plan to install</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">200&nbsp;MB of available disk space on the system drive</span></p>
+<p style="line-height:150%;"><span style="font-size:10pt;line-height:150%;font-family:Arial;">A hard disk that stores the message queue database on with at least 500&nbsp;MB of free space.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span style="font-family:Arial;">&nbsp;</span><span style="font-size:10pt;line-height:150%;text-align:justify;font-family:Arial;">The recommended hardware requirements for Exchange 2013 servers vary depending on a number of factors including the server roles
+ that are installed and the anticipated load that will be placed on the servers.</span></p>
+<p style="line-height:150%;text-align:justify;"><span style="font-family:Arial;"><strong><span style="font-size:12pt;line-height:150%;">Operating System Requirements</span></strong><strong><span style="font-size:12pt;line-height:150%;">&nbsp;</span></strong><strong>
+</strong></span></p>
+<p><span style="font-size:10pt;line-height:107%;font-family:Arial;">The following table lists the supported operating systems for Exchange 2013.</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><span style="font-family:Arial;"><strong><span style="font-size:12pt;color:white;"><img alt="important" height="1" width="1" style="border-width:0px;border-style:solid;" /></span></strong><strong><span style="font-size:12ptthe server roles
+ that are installed and the anticipated load that will be placed on the servers.</span></p>
+<p style="line-height:150%;text-align:justify;"><span style="font-family:Arial;"><strong><span style="font-size:12pt;line-height:150%;">Operating System Requirements</span></strong><strong><span style="font-size:12pt;line-height:150%;">&nbsp;</span></strong><strong>
+</strong></span></p>
+<p><span style="font-size:10pt;line-height:107%;font-family:Arial;">The following table lists the supported operating systems for Exchange 2013.</span></p>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><span style="font-family:Arial;"><strong><span style="font-size:12pt;color:white;"><img;color:white;">Important:
+</span></strong><strong></strong></span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none solid solid;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Microsoft doesn’t support the installation of Exchange 2013 on a computer that’s running in Windows Server Core mode. The computer must be running the full installation of Windows Server. If you want to install
+ Exchange 2013 on a computer that’s running in Windows Server Core mode, you must convert the server to a full installation of Windows Server by doing one of the following:
+</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">&nbsp;</span></p>
+<ul>
+<li><span style="font-family:Arial;">Windows Server 2008 R2&nbsp;&nbsp;&nbsp;Reinstall Windows Server and select the Full Installation option.</span>
+</li><li><span style="font-family:Arial;">Windows Server 2012&nbsp;&nbsp;&nbsp;Convert your Windows Server Core mode server to a full installation by running the following command.<strong></strong></span>
+</li></ul>
+</td>
+</tr>
+</tbody>
+</table>
+<h2><a name="Supported_operating_systems_for_Exchange_2013"></a><a name="Supported_operating_systems_for_Exchange_2013"></a><a name="Supported_operating_systems_for_Exchange_2013"></a><a name="Supported_operating_systems_for_Exchange_2013"></a><a name="Supported_operating_systems_for_Exchange_2013"></a><a name="Supported_operating_systems_for_Exchange_2013"></a><a name="Supported_operating_systems_for_Exchange_2013"></a><span style="font-family:Arial;font-size:16px;"><a name="_Toc352603823"><span style="font-size:12pt;line-height:115%;color:windowtext;"><strong>Supported
+ operating systems for Exchange 2013</strong></span></a> </span></h2>
+<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:medium none;">
+<tbody>
+<tr>
+<td valign="top" style="border-style:solid none solid solid;border-top:1pt solid #84b3df;border-bottom:1pt solid #84b3df;border-left:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">&nbsp;Component
+</span></strong></p>
+</td>
+<td valign="top" style="border-style:solid solid solid none;border-top:1pt solid #84b3df;border-right:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#5b9bd5;padding:0in 5.4pt;">
+<p><strong><span style="font-size:12pt;font-family:Arial;color:white;">Requirement
+</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Mailbox and Client Access server roles</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;background-color:#d6e6f4;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">One of the following:</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2012 Standard or Datacenter</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2008 R2 Standard with SP1</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2008 R2 Enterprise with SP1</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2008 R2 Datacenter RTM or later</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-style:none none solid solid;border-left:1pt solid #84b3df;border-bottom:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><strong><span style="font-size:10pt;font-family:Arial;">Management tools</span></strong></p>
+</td>
+<td valign="top" style="border-style:none solid solid none;border-bottom:1pt solid #84b3df;border-right:1pt solid #84b3df;padding:0in 5.4pt;">
+<p><span style="font-size:10pt;font-family:Arial;">One of the following:</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2012 Standard or Datacenter</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2008 R2 Standard with SP1</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2008 R2 Enterprise with SP1</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">Windows Server 2008 R2 Datacenter RTM or later</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">64-bit edition of Windows 8</span></p>
+<p><span style="font-size:10pt;font-family:Arial;">64-bit edition of Windows 7 with SP1</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<h1><a name="Summarized_Overview_of_the_whole_transition_activity"></a><span style="font-family:Arial;"><a name="_Toc352603824"><strong><span style="font-size:12pt;line-height:107%;color:windowtext;"><br />
+Summarized Overview of the whole transition activity.</span></strong></a><strong></strong></span></h1>
+<p><span style="font-size:2pt;line-height:107%;font-family:Arial;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></p>
+<p><span style="font-size:10pt;line-height:107%;font-family:Arial;">High level technical deployment steps those have been explained above is given below in steps</span></p>
+<ol>
+<li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Take backup of AD and MS Exchange 2003 Server message store using MS Windows server or 3</span><sup style="line-height:150%;font-family:Arial;text-indent:-0.25in;">rd</sup><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">
+ party backup tools.</span> </li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Update AD Schema for MS Windows 2008 or MS Windows 2012 Server using Media of MS Windows 2008 or 2012.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Update AD Schema for MS Exchange 2010 Server using MS Exchange 2010 Media (Latest one).</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Install / Deploy MS Exchange 2010 Standard Server co-existed with MS Exchange 2003 standard Server.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Manage routing of emails in a co-existed environment</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Move mailboxes to MS Exchange 2010 standard server using EMC (Exchange Management Console) or EPS (Exchange PowerShell).</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Take backup of MS Exchange 2010 Mailbox DB using MS Windows backup / 3</span><sup style="line-height:150%;font-family:Arial;text-indent:-0.25in;">rd</sup><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">
+ party backup tools and verify.</span> </li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Demote MS Exchange 2003 Server.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Verify MS Exchange 2010 Routing and email management.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Update AD Schema using MS Exchange 2013 CU1 / CU2.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Prepare Pre-Requisites for MS Exchange 2013 CU2 on a Server that will be first MS Exchange 2013 Server in the organization.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Install / Deploy MS Exchange 2013 Standard Server co-existed with MS Exchange 2010 Standard Server</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Manage Routing of emails in a co-existed Environment.</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Move mailboxes to MS Exchange 2013 standard server (using Management Console of MS Exchange 2013 Server)</span>
+</li><li><span style="font-size:10pt;line-height:150%;text-indent:-0.25in;font-family:Arial;">Demote / Uninstall MS Exchange 2010 Standard Server.</span>
+</li></ol>
+<p><strong><span style="font-size:10pt;line-height:107%;font-family:Arial;color:red;">Note: There must be a backup strategy for Mailbox DB on Daily / Weekly / monthly basis to manage mailbox data.</span></strong></p>
+
+</div>
+    
+    

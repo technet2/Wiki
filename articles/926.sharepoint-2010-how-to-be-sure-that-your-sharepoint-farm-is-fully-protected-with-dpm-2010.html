@@ -1,0 +1,55 @@
+---
+layout: default
+title: SharePoint 2010&#58; How to Be Sure that Your SharePoint Farm Is Fully Protected with DPM 2010 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Certainly, you can use DPM 2010 to protect the content databases within the farm, and there is goodness in DPM 2010 such as auto-protection of new content databases within the farm and the one-click setup for farm content protection. But there are a few
+ other aspects of the SharePoint farm that you need to consider when planning comprehensive protection and full-farm recovery. So, what will you need to do above DPM 2010? The real answer lies in how you have your farm configured and what kind of applications
+ and collections you are using. This focuses on SharePoint 2010 protection in DPM 2010 but the ideas can easily go backwards to earlier versions (although some of the features like au<a name="_GoBack"></a>to-add are specific to DPM 2010).</p>
+<p>So, let’s look at this first in a simple light. I will touch very lightly on the basic configuration steps here as those are pretty well documented on the
+<a href="http://technet.microsoft.com/en-us/library/ff399572.aspx">DPM TechNet Site</a>. You are running a basic SharePoint farm with just the default web application(s). When you go to protect this in DPM, you simply need to push an agent to any servers that
+ have data for this farm. At the very least, you will need an agent on the WFE (web front end) server as well as the SQL Server where the SharePoint databases are being housed. Now we run
+<em>configuresharepoint.exe –enablesharepointprotection</em> on the web front end and we are all set.</p>
+<p>From DPM, we can go to create a protection group. When we expand our SharePoint farm WFE server in the DPM protection group creation wizard, we will see the SharePoint farm listed and that is what we need to select. This will pick up any content databases
+ and the SharePoint_Config and SharePoint_AdminContent* databases. So, if you are using just the basic configuration, you are set. As a bonus, if you create any new content databases, they will be automatically added to the SharePoint protection without needing
+ any user intervention provided they are located on a server that already has a DPM agent installed.</p>
+<p style="text-align:center;"><img title="clip_image002" alt="clip_image002" src="http://blogs.technet.com/blogfiles/dpm/WindowsLiveWriter/HowtobesurethatyourSharePointfarmistruly_7DE0/clip_image002_3.gif" width="504" height="227" style="border:0px solid;display:block;margin-left:auto;margin-right:auto;" /></p>
+<p>This also assumes that you have not used any custom or third party templates. But, if you keep things simple, then full protection is simple as will be the recovery.</p>
+<p>But, let’s be real. How many of us really keep things simple? By nature, the “computer nerd” in all of us screams to see what these things can really do. That is where we will need more consideration to protect our SharePoint farms. We will look at two different
+ levels of “complexity” here. The first level is a farm that is using the other types of applications and databases (specifically search indexes and service applications). The second level is for those who are using third party or custom templates.</p>
+<p>Focusing on the first scenario, we will look at how we need to ensure DPM is fully protecting SharePoint when you have some search indexes or service applications. These will both create databases, but when you just check the SharePoint box for protection
+ it will not pick these databases up. As you can see in my screen shot, I have protected SharePoint and the content and config databases are protected. This was done automatically by DPM and these databases are no longer selectable. However, when I look at
+ the database instance it is using, the additional databases I have created for some service applications (BDC_Service_DB_*) are not protected with SharePoint.</p>
+<p style="text-align:center;"><img title="clip_image004" alt="clip_image004" src="http://blogs.technet.com/blogfiles/dpm/WindowsLiveWriter/HowtobesurethatyourSharePointfarmistruly_7DE0/clip_image004_3.gif" width="304" height="409" style="border:0px solid;display:block;margin-left:auto;margin-right:auto;" /></p>
+<p>This is our cue that we need to protect them separately. The good news? We can just add them to the same protection group with the SharePoint farm. The bad news? We have an extra step in order to protect them and have auto protection enabled for them. The
+ bottom line is this. If you create the SharePoint protection and at the same time try to add the rest of the instance by adding its SQL instance, it will fail to add the entire instance because some of it is being added with SharePoint. So, you can add individual
+ databases, but this does not accomplish the addition of new databases that are not contentDBs because we can only use auto protect at the instance level.</p>
+<p>Because of this, we have to create the protection group that includes SharePoint, and then go and modify the protection group to add the instance name. This will essentially allow auto protection for all new databases in this instance. If they are content
+ databases created through SharePoint, then they will be automatically added each night to the SharePoint part of the protection group. If they are search indexes or application service databases added through SharePoint, then they will be automatically added
+ each night to the SQL Server instance part of the protection group. Either way, you will be covered!</p>
+<p style="text-align:center;"><img title="clip_image006" alt="clip_image006" src="http://blogs.technet.com/blogfiles/dpm/WindowsLiveWriter/HowtobesurethatyourSharePointfarmistruly_7DE0/clip_image006_3.gif" width="304" height="406" style="border:0px solid;display:block;margin-left:auto;margin-right:auto;" /></p>
+<p>Above, the SharePoint datasource is already protected, so we have modified protection and are adding the remaining databases. Note that “Auto” is enabled for this instance which means that any databases that are added but not part of the SharePoint protection
+ (any on content databases), they will be added to this group.</p>
+<p>Finally we have our users who want to customize templates and use third party templates to help build their SharePoint farm. The database situation will not change here and the above rules apply. The additional caveats this adds deal with physical files.
+ Quite often, these features will add physical files needed by SharePoint in order to accomplish the goal of creating the sites. Even if all of your database files are protected, if you have to do a disaster recovery restore, the site will be useless without
+ these files. So, we will need to also grab those files.</p>
+<p>Because these can be placed anywhere, it’s hard to say definitively where they will be, so I will write this based on the generally accepted location for them. Most often, the features and customization files will be installed and kept in the Program Files\Common
+ Files\Microsoft Shared\Web Server Extensions\12 (for SharePoint 2007) (or \14 for SharePoint 2010), so we will need to capture that location as part of our protection group. Finally, we will need to know the location of the web site files and back up that
+ directory. The notable file we really need is the web.config that contains any custom policies and permissions that may have been created for the site. The default location for these files will be the C:\inetpub directory (SharePoint admins will know if they
+ changed it).</p>
+<p style="text-align:center;"><img title="clip_image008" alt="clip_image008" src="http://blogs.technet.com/blogfiles/dpm/WindowsLiveWriter/HowtobesurethatyourSharePointfarmistruly_7DE0/clip_image008_3.gif" width="404" height="151" style="border:0px solid;display:block;margin-left:auto;margin-right:auto;" /></p>
+<p>The important note here is that the DPM admin and SharePoint admin need to talk. As long as they are communicating what is being protected, there shouldn’t be any need for panic if that sudden panic moment arrives.</p>
+<p>Alternately, you can put all of your SharePoint farm into VM’s running on Hyper-V and protect the VM’s using DPM 2010 and also put an agent on the farm and protect it both ways. That way you can restore individual files from the backed up VHD using the new
+ item level recovery in DPM 2010, and not worry if you missed some of the files or folders needed. But that’s a topic for another day!</p>
+<p>Now, we can sleep better at night knowing that our complex SharePoint setup is better able to handle a catastrophic failure because DPM is protecting the full thing and a restore will be much more painless. Your SharePoint admins will be much happier knowing
+ what they need is only a restore away.</p>
+<em>
+<h2><a name="Reference"></a>Reference</h2>
+&nbsp;</em><a href="http://blogs.technet.com/dpm/archive/2010/05/10/how-to-be-sure-that-your-sharepoint-farm-is-fully-protected.aspx"><em>http://blogs.technet.com/dpm/archive/2010/05/10/how-to-be-sure-that-your-sharepoint-farm-is-fully-protected.aspx</em></a>
+
+</div>
+    
+    

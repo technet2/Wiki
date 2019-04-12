@@ -1,0 +1,155 @@
+---
+layout: default
+title: Bảo mật SharePoint 2013 bằng Secure Socket Layer (SSL) (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong style="font-size:12.1px;">I- GIỚI THIỆU</strong></p>
+<p>Trong môi trường SharePoint, để bảo mật các thông tin trên SharePoint Site, người quản trị cần sử dụng Secure Socket Layer (SSL) để SharePoint Site có div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Bảo mật SharePoint 2013 bằng Secure Socket Layer (SSL) (vi-VN)</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p><strong style="font-size:12.1px;">I- GIỚI THIỆU</strong></p>
+<p>Trong môi trường SharePoint, để bảo mật các thông tin trên SharePoint Sthể truy cập thông qua giao thức Web bảo mật HTTPS. Trong bài viết này, tôi sẽ trình bày thao tác bảo mật
+ SharePoint Site bằng Certificate sử dụng phương pháp mã hóa SSL</p>
+<p><strong>II- TRIỂN KHAI CHI TIẾT</strong></p>
+<p>Bài LAB sử dụng 3 server:</p>
+<p><strong><em>- DC2012:</em></strong> Domain Controller (domain <strong><em>mcthub.local</em></strong>) chạy Windows Serrer 2012</p>
+<p><strong><em>- SQLSERVER: </em></strong>Domain member chạy Windows Server 2012 đóng vai trò SQL Server</p>
+<p><strong><em>- SPSERVER:</em></strong> Domain member chạy Windows Server 2012 đóng vai trò SharePoint Server</p>
+<p><em>(Bạn có thể tích hợp 3 máy này trên một server vật lý)</em></p>
+<p>Trước khi thực hiện bài LAB này, trên máy SPSERVER, thực hiện phần 2 của <a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/230-t%C3%ADch-h%E1%BB%A3p-office-web-apps-server-2013-v%E1%BB%9Bi-sharepoint-2013.html">
+bài LAB này</a></p>
+<p>Bài LAB gồm các bước chính sau đây</p>
+<p>1- Cài đặt và cấu hình CA Server</p>
+<p>2- Xin và cấu hình Certificate cho SharePoint Site</p>
+<p>3- Cấu hình Alternate Access Mapping cho SharePoint Site</p>
+<p>4- Kiểm tra</p>
+<p><strong>1- Cài đặt và cấu hình CA Server</strong></p>
+<p>Trên máy <strong><em>DC2012</em></strong>, mở <strong><em>Server Manager</em></strong> - Chọn
+<strong><em>Manage - Add Roles and Features</em></strong></p>
+<p><img alt=" " width="720" height="444" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image001.jpg" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image002.jpg" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image003.jpg" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image004.jpg" /></p>
+<p>Đánh dấu chọn <strong><em>Active Directory Certificate Services</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image005.jpg" /></p>
+<p>Nhấn <strong><em>Add Features</em></strong> để cài đặt thêm các thành phần cần thiết</p>
+<p><img alt=" " width="420" height="438" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image006.jpg" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image007.jpg" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image008.jpg" /></p>
+<p>Bảo đảm mục <strong><em>Certification Authority</em></strong> đã được chọn - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image009.jpg" /></p>
+<p>Nhấn <strong><em>Install</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image010.jpg" /></p>
+<p>Sau khi quá trình cài đặt thành công - Nhấn <strong><em>Configure Active Directory Certificate Services on the destination server</em></strong> để cấu hình CA Server</p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image011.jpg" /></p>
+<p>Kiểm tra thông số <strong><em>Credential</em></strong> là <strong><em>MCTHUB\Administrator</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image012.jpg" /></p>
+<p>Đánh dấu check <strong><em>Certification Authority</em></strong> - Nhấn <strong>
+<em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image013.jpg" /></p>
+<p>Chọn <strong><em>Enterprise CA</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image014.jpg" /></p>
+<p>Chọn <strong><em>Root CA</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image015.jpg" /></p>
+<p>Chọn <strong><em>Create a new private key</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image016.jpg" /></p>
+<p>Chấp nhật thuật toán mã hóa mặc định là RSA 2048 bit - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image017.jpg" /></p>
+<p>Chấp nhận tên mặc định cho CA Server - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image018.jpg" /></p>
+<p>Chấp nhận thời gian hoạt động mặc định cho CA Server là 5 năm - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image019.jpg" /></p>
+<p>Chấp nhận nơi lưu trữ dữ liệu cho CA Server - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image020.jpg" /></p>
+<p>Nhấn <strong><em>Configure</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image021.jpg" /></p>
+<p>Sau khi quá trình cấu hình hoàn tất - Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image022.jpg" /></p>
+<p>Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image023.jpg" /></p>
+<p><strong>2- Xin và cấu hình Certificate cho SharePoint Site</strong></p>
+<p>Sang máy <strong><em>SPSERVER</em></strong>, restart để tự động trust CA Server vừa cài đặt</p>
+<p><img alt=" " width="621" height="276" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image024.jpg" /></p>
+<p>Mở <strong><em>Internet Information Service (IIS) Manager</em></strong> bằng lệnh
+<strong><em>CERTMGR</em></strong></p>
+<p><img alt=" " width="427" height="236" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image025.jpg" /></p>
+<p>Chọn server <strong><em>SPSERVER</em></strong> - Double click vào <strong><em>Server Certificates</em></strong></p>
+<p><img altm>Close</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image022.jpg" /></p>
+<p>Nhấn <strong><em>Close</em></stron=" " width="720" height="429" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image026.jpg" /></p>
+<p>Xin Certificate bằng cách chọn <strong><em>Create Domain Certificate</em></strong></p>
+<p><img alt=" " width="720" height="422" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image027.jpg" /></p>
+<p>Khai báo <strong><em>Common Name</em></strong> là tên truy cập vào SharePoint site (<strong><em>sharepoint.mcthub.local</em></strong>) và các thông số như hình dưới - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="677" height="511" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image028.jpg" /></p>
+<p>Nhấn <strong><em>Select</em></strong> để chọn CA Server cấp Certificate</p>
+<p><img alt=" " width="677" height="511" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image029.jpg" /></p>
+<p>Chọn CA Server <strong><em>mcthub-DC2012-CA</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="677" height="511" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image030.jpg" /></p>
+<p>Trong khung <strong><em>Friendly name</em></strong>: Nhập tên tùy ý cho Certificate (ví dụ tôi nhập
+<strong><em>Sharepoint Site Certificate</em></strong>)</p>
+<p><img alt=" " width="677" height="511" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image031.jpg" /></p>
+<p>Kiểm tra Certificate mới đã xuất hiện</p>
+<p><img alt=" " width="720" height="422" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image032.jpg" /></p>
+<p>Tiếp theo bạn cần gán Certificate cho Website. Bấm phải chuột lên <strong><em>Website SharePoint - sharepoint.mcthub.local</em></strong> - Chọn
+<strong><em>Edit Bindings</em></strong></p>
+<p><img alt=" " width="719" height="411" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image033.jpg" /></p>
+<p>Nhấn nút <strong><em>Add</em></strong></p>
+<p><img alt=" " width="658" height="385" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image034.jpg" /></p>
+<p>Trong khung <strong><em>Type</em></strong>: Chọn <strong><em>https</em></strong></p>
+<p>Trong khung <strong><em>SSL certificate</em></strong>: Chọn <strong><em>Sharepoint Site Certificate</em></strong></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="531" height="312" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image035.jpg" /></p>
+<p>Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="658" height="385" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image036.jpg" /></p>
+<p><strong>3- Cấu hình Alternate Access Mapping cho SharePoint Site</strong></p>
+<p>Trên máy <strong><em>SPSERVER</em></strong>. Mở <strong><em>SharePoint 2013 Central Administration</em></strong></p>
+<p><img alt=" " width="720" height="240" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image037.jpg" /></p>
+<p>Chọn <strong><em>Application Management - Configure alternate access mapping</em></strong></p>
+<p><img alt=" " width="720" height="386" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image038.jpg" /></p>
+<p>Nhấn <strong><em>Edit Public URLs</em></strong></p>
+<p><img alt=" " width="720" height="386" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image039.jpg" /></p>
+<p>Mục <strong><em>Alternate Access Mapping Collection</em></strong>: Kiểm tra site
+<strong><em>SharePoint - sharepoint.mcthub.local80</em></strong> đã được chọn (nếu chưa chọn thì bạn bấm vào mũi tên bên phải, chọn
+<strong><em>Change Alternate Access Mapping Collection</em></strong>, sau đó chọn
+<strong><em>SharePoint - sharepoint.mcthub.local80</em></strong>)</p>
+<p>Trong khung Intranet - Nhập <strong><em>https://sharepoint.mcthub.local</em></strong> - Nhấn
+<strong><em>Save</em></strong></p>
+<p><img alt=" " width="720" height="527" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image040.jpg" /></p>
+<p><strong>4- Kiểm tra</strong></p>
+<p>Trên máy <strong><em>SPSERVER</em></strong>, kiểm tra bằng cách truy cập URL <strong>
+<em>https://sharepoint.mcthub.local</em></strong> - Nhập UserName và Password của
+<strong><em>Administrator</em></strong> - Kiểm tra bạn đã truy cập được vào SharePoint site bằng
+<strong><em>HTTPS</em></strong></p>
+<p><img alt=" " width="720" height="394" src="http://mcthub.com/images/ContentLab/sharepointSSL_files/image041.jpg" /></p>
+<p>Bài viết liên quan</p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/229-c%C3%A0i-%C4%91%E1%BA%B7t-sharepoint-2013.html">Cài đặt SharePoint 2013</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/230-t%C3%ADch-h%E1%BB%A3p-office-web-apps-server-2013-v%E1%BB%9Bi-sharepoint-2013.html">Tích hợp Office Web Apps Server 2103 với SharePoint 2013</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/233-qu%E1%BA%A3n-l%C3%BD-user,-group-v%C3%A0-ph%C3%A2n-quy%E1%BB%81n-tr%C3%AAn-sharepoint-2013-ph%E1%BA%A7n-1.html">Quản lý User, Group và phân quyền trên SharePoint 2013 - Phần 1</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/234-qu%E1%BA%A3n-l%C3%BD-user,-group-v%C3%A0-ph%C3%A2n-quy%E1%BB%81n-tr%C3%AAn-sharepoint-2013-ph%E1%BA%A7n-2.html">Quản lý User, Group và phân quyền trên SharePoint 2013 - Phần 2</a></p>
+<p style="text-align:right;">&nbsp;</p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a><br />
+<a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/235-b%E1%BA%A3o-m%E1%BA%ADt-sharepoint-2013-b%E1%BA%B1ng-secure-socket-layer-ssl.html">mcthub.com</a>
+
+</div>
+    
+    

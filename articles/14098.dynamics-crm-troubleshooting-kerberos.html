@@ -1,0 +1,515 @@
+---
+layout: default
+title: Dynamics CRM Troubleshooting Kerberos - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">This is Part 2 of my article on improving CRM performance with Kerberos<br />
+</span><span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;color:#6699cc;"></span><a href="http://quantusdynamics.blogspot.com/2011/12/extreme-performance-with-dynamics-crm.html" target="_blank" style="color:#6699cc;font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;"></a><a href="http://social.technet.microsoft.com/wiki/contents/articles/6450.aspx">http://social.technet.microsoft.com/wiki/contents/articles/6450.aspx</a>&nbsp;<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;color:#6699cc;"></span><a href="http://quantusdynamics.blogspot.com/2011/12/extreme-performance-with-dynamics-crm.html"></a><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">Kerberos is not the easiest protocol to troubleshoot due to its complex architecture, I would like to share with you a few tips
+ on how to tackle kerberos issues.</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">To troubleshoot kerberos I&#39;m going to use the following tools:</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:20px;list-style-position:initial;font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;background-color:#ffffff;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;"><span style="color:#0b5394;">Wireshark (we could use Microsoft network monitor but for Kerberos I think Wireshark is simpler to use and illustrate)</span>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;"><span style="color:#0b5394;">Fiddler (capture HTTP packets)</span>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;"><span style="color:#0b5394;">ADSI Edit or Command prompt setspn</span>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;"><span style="color:#0b5394;">Microsoft Kerbtray to list/purge tickets or command prompt klist.</span>
+</li></ul>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+If you read the first article on how to improve performance with kerberos, you understand that when you use &nbsp;custom service accounts you will need unique SPN&#39;s configured to allow authentication to succeed. However you could use built-in accounts, the best
+ practice and recommendations from Microsoft is to always use custom service accounts, and it&#39;s here where things get a bit more complicated. I&#39;m assuming you have attempted to configure Kerberos based on my first article and you run Fiddler for the first time
+ and let&#39;s assume you see this on the first attempt:</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-Ni0Yu-_3ncE/UH1tDBR_O6I/AAAAAAAAANI/rMQfbRfMf8U/s1600/FiddlerNTLM.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://1.bp.blogspot.com/-Ni0Yu-_3ncE/UH1tDBR_O6I/AAAAAAAAANI/rMQfbRfMf8U/s1600/FiddlerNTLM.png" style="border:0px none;position:relative;" /></a></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+<br />
+This ticket is an NTLM ticket, Kerberos failed somewhere and we will try to find out using wireshark.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+Open Wireshark start capturing network traffic and on the search field type: Kerberos</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-JBEfd7q0OdQ/UH1vyC29srI/AAAAAAAAANg/Ptb1ah3JF6g/s1600/kerberospLookup.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-JBEfd7q0OdQ/UH1vyC29srI/AAAAAAAAANg/Ptb1ah3JF6g/s1600/kerberospLookup.png" style="border:0px none;position:relative;" /></a></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://3.bp.blogspot.com/-RdGQpTFootU/UH1vlv0NW-I/AAAAAAAAANY/NAqCl0rZ_ZI/s1600/kerberosp4Error.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="381" src="http://3.bp.blogspot.com/-RdGQpTFootU/UH1vlv0NW-I/AAAAAAAAANY/NAqCl0rZ_ZI/s640/kerberosp4Error.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+Wireshark shows a packet with error:&nbsp;<strong><span style="color:#990000;">KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN</span></strong>&nbsp;highlight this packet and on the below screen expand the Kerberos packet details and you find that the missing DNS is&nbsp;<strong><span style="color:#990000;">HTTP/crm.ha</span>&nbsp;</strong>Kerberos
+ is looking for this and can&#39;t find it. The next step is to register an SPN under the service account CRM website is running on.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<span style="font-size:large;text-decoration:underline;color:#0b5394;">Configuring SPN</span></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+a quick way to create visualize SPN&#39;s &nbsp;is using the Microsoft command tool&nbsp;<strong>Setspn</strong>, open the command prompt and type:</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<strong><span style="color:#990000;">setspn -L DOMAIN\SERVICE_ACCOUNT&nbsp;</span></strong></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+Replace DOMAIN and SERVICE_ACCOUNT with your own domain and service account. This will list any SPN&#39;s configured under that account.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+If you can&#39;t find the SPN listed under that account create the SPN:</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<strong><span style="color:#990000;">setspn -a HTTP/crm.ha SERVICE_ACCOUNT</span></strong></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<strong><br />
+</strong></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#fffflace DOMAIN and SERVICE_ACCOUNT with your own domain and service account. This will list any SPN&#39;s configured under that account.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+If you can&#39;t find the SPN listed under that account create the SPN:</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<strong><sff;">
+Run again the first command and check if the SPN has been created.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+Another way to create SPN&#39;s is using the ADSI Edit GUID, it&#39;s easier to manage multiple SPN&#39;s for multiple accounts etc..</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+To install ADSI Edit follow the following instructions:</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+On the Server manager under Features add new features and navigate to the following options:</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-8kya1khLA7k/UH18zTxpWeI/AAAAAAAAAN4/iwBw9vhHnmg/s1600/KerberosADSI.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="472" src="http://2.bp.blogspot.com/-8kya1khLA7k/UH18zTxpWeI/AAAAAAAAAN4/iwBw9vhHnmg/s640/KerberosADSI.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">When installed &nbsp;go to: Start menu &gt; Administrative Tools &gt; ADSI Edit</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-5XtJK79NO_0/UH180BncChI/AAAAAAAAAN8/yKWpdJ4p1jQ/s1600/KerberosADSIp2.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="286" src="http://1.bp.blogspot.com/-5XtJK79NO_0/UH180BncChI/AAAAAAAAAN8/yKWpdJ4p1jQ/s640/KerberosADSIp2.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">Open ADSI Edit and right click and choose connect to...</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-5XtJK79NO_0/UH180BncChI/AAAAAAAAAN8/yKWpdJ4p1jQ/s1600/KerberosADSIp2.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="286" src="http://1.bp.blogspot.com/-5XtJK79NO_0/UH180BncChI/AAAAAAAAAN8/yKWpdJ4p1jQ/s640/KerberosADSIp2.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">On the below screen type the name of the object you want to use, and leave default naming context and type the SERVER_NAME click
+ ok. replace SERVER_NAME with the name of Domain controller in your network.</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://4.bp.blogspot.com/-LuY4pGK7_dM/UH180xO28_I/AAAAAAAAAOE/FuE2nLsrT3I/s1600/KerberosADSIp3.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://4.bp.blogspot.com/-LuY4pGK7_dM/UH180xO28_I/AAAAAAAAAOE/FuE2nLsrT3I/s1600/KerberosADSIp3.png" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://3.bp.blogspot.com/-Su-QWG3Opao/UH182D7RNtI/AAAAAAAAAOM/K6XCX7IzSx0/s1600/KerberosADSIp4.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><br />
+</a><a href="http://3.bp.blogspot.com/-Su-QWG3Opao/UH182D7RNtI/AAAAAAAAAOM/K6XCX7IzSx0/s1600/KerberosADSIp4.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://3.bp.blogspot.com/-Su-QWG3Opao/UH182D7RNtI/AAAAAAAAAOM/K6XCX7IzSx0/s1600/KerberosADSIp4.png" style="border:0px none;position:relative;" /></a></div>
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">Below Expand the folders until you see the service account you want to configure the SPN&#39;s</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-dRZ2xpCxxts/UH183DmfcCI/AAAAAAAAAOU/ASUPa5LPxHE/s1600/KerberosADSIp5.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><br />
+</a><a href="http://2.bp.blogspot.com/-dRZ2xpCxxts/UH183DmfcCI/AAAAAAAAAOU/ASUPa5LPxHE/s1600/KerberosADSIp5.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><br />
+</a><a href="http://2.bp.blogspot.com/-dRZ2xpCxxts/UH183DmfcCI/AAAAAAAAAOU/ASUPa5LPxHE/s1600/KerberosADSIp5.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-dRZ2xpCxxts/UH183DmfcCI/AAAAAAAAAOU/ASUPa5LPxHE/s1600/KerberosADSIp5.png" style="border:0px none;position:relative;" /></a></div>
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">&nbsp;When you find the account, right-click and properties. The below screen appears. Scroll down to servicePrincipalName and click
+ Edit.</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-gbU8Jzs0GjA/UH184I6YX8I/AAAAAAAAAOc/APkxLllwFx8/s1600/KerberosADSIp6.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><br />
+</a><a href="http://2.bp.blogspot.com/-gbU8Jzs0GjA/UH184I6YX8I/AAAAAAAAAOc/APkxLllwFx8/s1600/KerberosADSIp6.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><br />
+</a><a href="http://2.bp.blogspot.com/-gbU8Jzs0GjA/UH184I6YX8I/AAAAAAAAAOc/APkxLllwFx8/s1600/KerberosADSIp6.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-gbU8Jzs0GjA/UH184I6YX8I/AAAAAAAAAOc/APkxLllwFx8/s1600/KerberosADSIp6.png" style="border:0px none;position:relative;" /></a></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+On the below screen you can manage the SPN&#39;s and add the needed SPN, you can type HTTP/crm.ha and click OK and Apply and it&#39;s done.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<span style="font-size:large;color:#0b5394;">Looking for Kerberos tickets</span></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+We have configured the missing SPN, the next step is to run wireshark and look for the kerberos ticket.</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+Highlighting the first packet show us what request&#39;s are going through in the process.</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-fN8qAJr5ZhI/UH1_jgQ5CEI/AAAAAAAAAOo/_zjURj1n_mA/s1600/kerberosp1.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="524" src="http://1.bp.blogspot.com/-fN8qAJr5ZhI/UH1_jgQ5CEI/AAAAAAAAAOo/_zjURj1n_mA/s640/kerberosp1.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">I highlight the first HTTP packet and I already see the first negotiation using Kerberos tickets look for Authorization: Negotiate&nbsp;</span><strong style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">YIIUM</strong><span style="font-size:15px;line-hor:#ffffff;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-fN8qAJr5ZhI/UH1_jgQ5CEI/AAAAAAAAAOo/_zjURj1n_mA/s1600/kerberosp1.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="524" src="http://1.bp.blogspot.com/-fN8qAJr5ZhI/UH1_jgQ5CEI/AAAAAAAAAOo/_zjURj1n_mA/s640/kerberosp1.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">I highlight the first HTTP packet and I already see the first negotiation using Kerberos tickets look for Authorization: Negotiate&nbsp;</spaneight:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">&nbsp;this
+ is a Kerberos ticket.</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-NxaoWsxStQg/UH6JbXUlUaI/AAAAAAAAAQw/QHLnU5eZRZg/s1600/kerberosp2.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="631" src="http://2.bp.blogspot.com/-NxaoWsxStQg/UH6JbXUlUaI/AAAAAAAAAQw/QHLnU5eZRZg/s640/kerberosp2.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<span style="font-size:15px;line-height:20px;background-color:#ffffff;font-family:arial,tahoma,helvetica,freesans,sans-serif;">Below I highlight the next in line HTTP packet HTTP/1.1 found and you see a reply with a kerberos ticket again.</span><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://3.bp.blogspot.com/-WuuqVXOV9lg/UH1_lUBmolI/AAAAAAAAAO4/Cx4wCVN4bw4/s1600/kerberosp3.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " height="592" src="http://3.bp.blogspot.com/-WuuqVXOV9lg/UH1_lUBmolI/AAAAAAAAAO4/Cx4wCVN4bw4/s640/kerberosp3.png" width="640" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+It looks like we are now using Kerberos. if we look back at Fiddler now, we should see the following:</div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-LiSa10vudnY/UH56cOX7pOI/AAAAAAAAAQA/cJ-yPExqjVk/s1600/kerberosFiddlerp1.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-LiSa10vudnY/UH56cOX7pOI/AAAAAAAAAQA/cJ-yPExqjVk/s1600/kerberosFiddlerp1.png" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://3.bp.blogspot.com/-ILg1H3aofNY/UH56dOh7v3I/AAAAAAAAAQE/FLw11e3stQs/s1600/kerberosFiddlerp2.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://3.bp.blogspot.com/-ILg1H3aofNY/UH56dOh7v3I/AAAAAAAAAQE/FLw11e3stQs/s1600/kerberosFiddlerp2.png" style="border:0px none;position:relative;" /></a></div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+Also another way to check your kerberos tickets it&#39;s using Microsoft Kerbtray or the command line prompt klist.</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<strong><span style="color:#990000;">Usage: Klist.exe [-lh&nbsp;] [-li&nbsp;] tickets | tgt&nbsp;| purge</span></strong></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+On the command line run:</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+x;line-height:20px;background-color:#ffffff;clear:both;">
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<strong><span style="color:#990000;">Usage: Klist.exe [-lh&nbsp;] [-li&nbsp;] tickets | tgt&nbsp;| purge</span></strong></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+On the command line run:</div>
+<div class="separator" style="font-family:arial<strong><span style="color:#990000;">klist</span></strong>&nbsp;[ENTER] This should show you all kerberos tickets issued to your machine and user account, you may see a number of them.</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+To purge the tickets do:</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<strong><span style="color:#990000;">klist purge</span></strong></div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+You can also use a GUID tool called kerbtray you can download kerbtray from here:</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+</div>
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:20px;list-style-position:initial;font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;background-color:#ffffff;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;"><a href="http://www.microsoft.com/en-us/download/details.aspx?id=17657" style="color:#6699cc;">http://www.microsoft.com/en-us/download/details.aspx?id=17657</a>
+</li><li style="padding:0px;margin:0px 0px 0.25em;border:none;"><a href="http://www.microsoft.com/en-us/download/details.aspx?id=7887" style="color:#6699cc;">http://www.microsoft.com/en-us/download/details.aspx?id=7887</a>
+</li></ul>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+Kerbtray will appear as a green icon on your tray area, right-click this icon and you can purge tickets or list the current tickets. This is the same functionality as the klist command.</div>
+<a href="http://3.bp.blogspot.com/-dhzNNdt4rrQ/UH57K5bE9SI/AAAAAAAAAQU/8ATomgFpO50/s1600/kerbtrayPurgeTickets.png" style="color:#6699cc;font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;margin-left:1em;margin-right:1em;"><img alt=" " src="http://3.bp.blogspot.com/-dhzNNdt4rrQ/UH57K5bE9SI/AAAAAAAAAQU/8ATomgFpO50/s1600/kerbtrayPurgeTickets.png" style="border:0px none;position:relative;" /></a><br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-1aNyi0apB00/UH57KAZlarI/AAAAAAAAAQQ/aXhZ1tqzucA/s1600/kerbtray.png" style="color:#6699cc;clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://1.bp.blogspot.com/-1aNyi0apB00/UH57KAZlarI/AAAAAAAAAQQ/aXhZ1tqzucA/s1600/kerbtray.png" style="border:0px none;position:relative;" /></a></div>
+<br style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;" />
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<span style="font-size:large;color:#0b5394;">Event Logs</span></div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+You could also look for kerberos authentication issues by enabling Kerberos debug logging on the server, this would generate a number of detailed event logs on your server which can be quite handy:</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<a href="http://support.microsoft.com/kb/262177" style="color:#6699cc;">http://support.microsoft.com/kb/262177</a></div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<br />
+</div>
+<div class="separator" style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;clear:both;">
+<span style="font-size:large;color:#0b5394;">Summary</span></div>
+<div style="font-family:arial,tahoma,helvetica,freesans,sans-serif;font-size:15px;line-height:20px;background-color:#ffffff;">
+I hope this was helpful, the article is designed to give an overview of the tools available for troubleshooting kerberos authentication issues and how to use this tools to look for the right information.<br />
+<br />
+<span style="font-size:large;color:#0b5394;">References</span><br />
+If you interested in learning more about Kerberos and its architecture, I would recommend you read this article which gives a great overview on this. You may also find loads of high-level articles on this.<br />
+<ul style="padding:0px 2.5em;margin:0.5em 0px;line-height:1.4;list-style-position:initial;">
+<li style="padding:0px;margin:0px 0px 0.25em;border:none;"><a href="http://cs.unc.edu/~fabian/course_papers/steiner_neuman.pdf" style="color:#6699cc;">http://cs.unc.edu/~fabian/course_papers/steiner_neuman.pdf</a>
+</li></ul>
+</div>
+
+</div>
+    
+    

@@ -1,0 +1,65 @@
+---
+layout: default
+title: Create System Center Configuration Manager 2007 Software Metering Rules with PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+If you want to create many software Metering rules then you can use this code. This function uses CSV file to import data.<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/5305.csv_5F00_file.JPG" width="580" height="174" style="border:0px solid currentColor;" /><br />
+<br />
+<pre class="PowerShellColorizedScript"><span style="color:darkblue;">Function</span> <span style="color:blueviolet;">Create-Rule</span><span style="color:black;">{</span>            
+    <span style="color:darkblue;">Param</span><span style="color:black;">(</span>            
+         <span style="color:orangered;">$strRuleFileLocation</span><span style="color:darkgray;">,</span>            
+         <span style="color:orangered;">$strComputer</span><span style="color:darkgray;">,</span>            
+         <span style="color:orangered;">$strSiteCode</span>            
+    <span style="color:black;">)</span>            
+                
+    <span style="color:darkblue;">Try</span><span style="color:black;">{</span>            
+        <span style="color:darkgreen;">#Check if file exists</span>            
+        <span style="color:darkblue;">If</span><span style="color:black;">(</span><span style="color:blue;">Test-Path</span> <span style="color:orangered;">$strRuleFileLocation</span><span style="color:black;">)</span><span style="color:black;">{</span>            
+    <span style="color:black;">}</span>            
+    <span style="color:darkgreen;">#Import CSV file</span>            
+    <span style="color:orangered;">$strRuleFileImport</span> <span style="color:darkgray;">=</span> <span style="color:blue;">Import-Csv</span> <span style="color:orangered;">$strRuleFileLocation<br /><br /><br /><br /></span>            
+                
+        <span style="color:darkblue;">foreach</span> <span style="color:black;">(</span><span style="color:orangered;">$item</span> <span style="color:darkblue;">in</span> <span style="color:orangered;">$strRuleFileImport</span><span style="color:black;">)</span><span style="color:black;">{</span>            
+                    
+            <span style="color:orangered;">$strMeteredProductRuleClass</span> <span style="color:darkgray;">=</span> <span style="color:darkred;">&quot;SMS_MeteredProductRule&quot;</span>                 <span style="color:darkgreen;"># WMI Class</span>            
+            <span style="color:orangered;">$strColon</span> <span style="color:darkgray;">=</span> <span style="color:darkred;">&quot;:&quot;</span>            
+                        
+            <span style="color:darkgreen;">#Create Connection</span>            
+            <span style="color:orangered;">$strWMIConnection</span> <span style="color:darkgray;">=</span> <span style="color:teal;">[WmiClass]</span><span style="color:darkred;">&quot;\\$strComputer\ROOT\SMS\$strSiteCode$strColon$strMeteredProductRuleClass&quot;</span>            
+            <span style="color:darkgreen;">#Create Instance</span>            
+            <span style="color:orangered;">$strCreateRule</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$strWMIConnection</span><span style="color:darkgray;">.</span><span style="color:black;">psbase</span><span style="color:darkgray;">.</span><span style="color:black;">CreateInstance</span><span style="color:black;">(</span><span style="color:black;">)</span>            
+            <span style="color:darkgreen;">#Set Values</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">ProductName</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">ProductName</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">FileName</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">FileName</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">OriginalFileName</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">OriginalFileName</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">FileVersion</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">FileVersion</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">LanguageID</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">LanguageID</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">SiteCode</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">SiteCode</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">ApplyToChildSites</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">ApplyToChildSites</span>            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">Enabled</span> <span style="color:darkgray;">=</span> <span style="color:orangered;">$item</span><span style="color:darkgray;">.</span><span style="color:black;">Enabled</span>            
+            
+            <span style="color:orangered;">$strCreateRule</span><span style="color:darkgray;">.</span><span style="color:black;">Put</span><span style="color:black;">(</span><span style="color:black;">)</span>            
+        <span style="color:black;">}</span>            
+                
+    <span style="color:black;">}</span>            
+                
+    <span style="color:darkblue;">Catch</span><span style="color:black;">{</span>             
+        <span style="color:blue;">Write-Host</span> <span style="color:darkred;">&quot;Please Specify correct file location&quot;</span>            
+    <span style="color:black;">}</span>            
+               
+            
+<span style="color:black;">}</span> <span style="color:darkgreen;"># End Function Create-Rule</span>            
+</pre>
+<br />
+Author: Kaido Jarvemets <br />
+Configuration Manager MVP, MCITP, MCTS <br />
+Blog: Depsharee.blogspot.com
+
+</div>
+    
+    

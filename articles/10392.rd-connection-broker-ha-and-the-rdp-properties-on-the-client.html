@@ -1,0 +1,48 @@
+---
+layout: default
+title: RD Connection Broker HA and the RDP Properties on the Client - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>In an <a href="http://social.technet.microsoft.com/wiki/contents/articles/10390.deploying-rd-connection-broker-high-availibilty-in-windows-server-2012.aspx">
+earlier Wiki</a>, we walked through the new High Availability (HA) feature of the RD Connection Broker (RDCB) in Windows Server 2012.<br />
+<br />
+If,v><div class="r2 fiji-r2"></div><div c after completing the steps in that wiki,&nbsp;we would launch MSTSC and enter the DNS farm name as the destination host (as shown below):</p>
+<p><a href="http://lh3.ggpht.com/-m3o3SpFuo8k/T4-_3y94IbI/AAAAAAAAAuI/bjWLk54KDrU/s1600-h/image3.png"><img width="336" height="221" title="image" alt="image" src="http://lh4.ggpht.com/-k9aDWyyozXA/T4-_4wXlwfI/AAAAAAAAAuQ/bf-5wAVxRew/image_thumb1%25255B1%25255D.png?imgmax=800" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;margin-right:auto;margin-left:auto;float:none;display:block;" /></a></p>
+<p>That would result in the error below. Why? Because we’re actually launching an RDP session
+<em>to </em>one of the RDCB servers, and of course that’s denied for our end user.</p>
+<p><a href="http://lh3.ggpht.com/-i1vwVTVSiYo/T4-_5yBcP_I/AAAAAAAAAuU/jUdwmCNySeo/s1600-h/image7.png"><img width="446" height="126" title="image" alt="image" src="http://lh4.ggpht.com/-cb8pVxNCnZo/T4-_6qUGpPI/AAAAAAAAAuc/vsRlNQ5maQo/image_thumb3.png?imgmax=800" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;margin-right:auto;margin-left:auto;float:none;display:block;" /></a></p>
+<p>What we need to do is configure some properties in an .RDP file so that it has knowledge of the fact that we’re trying to connect through a HA Connection Broker.</p>
+<p>These are the properties that need to be added:</p>
+<p><em><strong>full address:s:</strong>FARM.LAB.LOCAL</em><strong><br />
+<em>workspace id:s:</em></strong><em>FARM.LAB.LOCAL<br />
+<strong>use redirection server name:i:</strong>1<br />
+<strong>loadbalanceinfo:s</strong>:tsv://MS Terminal Services Plugin.1.Wortell_sLab_Ses<br />
+<strong>alternate full address:s:</strong>FARM.LAB.LOCAL</em></p>
+<p>If we try that as our end user, the connection bar would still show the RDCB DNS farm name, but we’re now logged in on the RDSH server.</p>
+<p><a href="http://lh3.ggpht.com/-deZOvg9ub88/T4-_7btyWCI/AAAAAAAAAuk/9lnA33rHm_0/s1600-h/image11.png"><img width="492" height="124" title="image" alt="image" src="http://lh3.ggpht.com/-8RMHYKHZwKs/T4-_8MnbpMI/AAAAAAAAAus/DXg2IR1tpPQ/image_thumb5.png?imgmax=800" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>This also gets automatically configured for your RemoteApps. RemoteApps integrated on the client are stored inside RDP files in the following location:</p>
+<p><em>C:\Users\&lt;username&gt;\AppData\Roaming\Microsoft\Workspaces\&lt;Workspace-ID&gt;\Resource</em></p>
+<p>Editing such a .RDP file in notepad would (amongst some other properties that&nbsp;we left out here) results in:</p>
+<p><em><strong>full address:s:</strong>FARM.LAB.LOCAL<br />
+<strong>alternate shell:s</strong>:||calc<br />
+<strong>remoteapplicationprogram:s</strong>:||calc<br />
+<strong>gatewayhostname:s</strong>:rdgw.lab.local<br />
+<strong>remoteapplicationname:s:</strong>Calculator<br />
+<strong>remoteapplicationcmdline:s:</strong><br />
+<strong>workspace id:s:</strong>FARM.LAB.LOCAL<br />
+<strong>use redirection server name:i:</strong>1<br />
+<strong>loadbalanceinfo:s</strong>:tsv://MS Terminal Services Plugin.1.Wortell_sLab_Ses<br />
+<strong>alternate full address:s:</strong>FARM.LAB.LOCAL</em></p>
+<p>RD WebAccess also automatically points to the RD Connection Broker farm</p>
+<p><a href="http://lh3.ggpht.com/-vvgFUclecmM/T4-_87BoVSI/AAAAAAAAAu0/aUPwBDEoQlw/s1600-h/image4.png"><img width="497" height="277" title="image" alt="image" src="http://lh3.ggpht.com/-YaOCCOsUz7A/T4-_9oupNUI/AAAAAAAAAu8/XI4__8Zmzcc/image_thumb1.png?imgmax=800" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;margin-right:auto;margin-left:auto;float:none;display:block;" /></a></p>
+<p>So that’s how to configure your .RDP files if you want to connect through a HA RD Connection Broker.<br />
+<br />
+Original source: <a href="http://microsoftplatform.blogspot.com/2012/04/rd-connection-broker-ha-and-rdp.html">
+http://microsoftplatform.blogspot.com/2012/04/rd-connection-broker-ha-and-rdp.html</a></p>
+
+</div>
+    
+    

@@ -1,0 +1,149 @@
+---
+layout: default
+title: Clonando uma Máquina Virtual com o Hyper-V Manager do Windows 8 Consumer Preview (pt-BR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p style="margin:0cm 0cm 10pt;"><b>Introdu&ccedil;&atilde;a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-o</b></p>
+<p style="margin:0cm 0cm 10pt;">Pra quem trabalha com virtualiza&ccedil;&atilde;o, sempre desejou um bom virtualizador no Windows Client e para satisfa&ccedil;&atilde;o de todos, o Hyper-V 3.0 agora vem com o Windows 8 para desktops.</p>
+<p style="margin:0cm 0cm 10pt;">Primeiramente vamos listar os novos recursos que a vers&atilde;o cliente do Hyper-V oferece (por se tratar de uma vers&atilde;o beta, podem ocorrer mudan&ccedil;as at&eacute; a vers&atilde;o final):</p>
+<ul>
+    <li>Executa sistemas operacionais em 32 e 64 bits </li>
+    <li>Mem&oacute;ria Din&acirc;mica ou Dynamic Memory (Funcionalidade que existe no Hyper-V 2008 R2 SP1 e que distribui a mem&oacute;ria entre as VMs automaticamente de acordo com o seu uso) </li>
+    <li>32 Processadores por VM </li>
+    <li>512 GB de mem&oacute;ria por VM </li>
+    <li>Novo formato e limite de disco virtual: VHDX (Suporta at&eacute; 16 TB de dados) </li>
+    <li>Op&ccedil;&atilde;o de cria&ccedil;&atilde;o de discos pela rede </li>
+    <li>Discos Pass Through </li>
+    <li>Snapshots de VMs </li>
+    <li>Redes virtuais usando placas Wireless </li>
+</ul>
+<p style="margin:0cm 0cm 10pt;">Inclusive voc&ecirc; pode saber mais no artigo criado pelo colega MVP Leandro Carvalho no link: <a class="ExistingPageLink" href="/wiki/contents/articles/8016.novidades-e-diferencas-entre-o-windows-server-8-com-hyper-v-hyper-v-server-e-client-hyper-v-pt-br.aspx" title="Click to view the page titled: Novidades e Diferenças entre o Windows Server 8 com Hyper-V, Hyper-V Server e Client Hyper-V (pt-BR)">Novidades e Diferen&ccedil;as entre o Windows Server 8 com Hyper-V, Hyper-V Server e Client Hyper-V (pt-BR)</a></p>
+<p style="margin:0cm 0cm 10pt;">Agora, vamos conhecer um recurso que pode ajudar a ganhar tempo na cria&ccedil;&atilde;o de novas VMs. Vamos saber como criar VMs &ldquo;clonando&rdquo; o VHD de um servidor j&aacute; existente.</p>
+<b>Etapa 1: Escolhendo a VM a ser Clonada</b><span style="font-family:verdana;"><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;"><br />
+<br />
+Para este artigo, eu vou usar como modelo uma VM do Windows Server 8 &ldquo;Beta&rdquo; que tem nome SRV1-WS8, que possui o role do IIS e o Microsoft Project 2010 instalados, conforme Figuras 1, 2 e 3, abaixo:</span><br />
+</span><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0272.Figura1.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0272.Figura1.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura1: VM SRV1-WS8 (Origem)</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4188.Figura2.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4188.Figura2.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 2: Role IIS8</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6521.Figura2_2D00_1.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6521.Figura2_2D00_1.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 3: Microsoft Project 2010</span><br />
+<br />
+<p style="margin:0cm 0cm 10pt;"><b><span style="font-family:calibri;">Etapa 2: Criando a nova VM SRV1-Clone</span></b></p>
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Agora vamos criar a nova VM que receber&aacute; o VHD clonado. No Hyper-V Manager, crie a VM com o nome e local aonde ser&aacute; armazenado, conforme Figura 4:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/03166.Figura3.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/03166.Figura3.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 4: Nome e local da VM SRV1-Clone</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Na op&ccedil;&atilde;o de conectar o novo VHD, escolha a op&ccedil;&atilde;o para anexar o disco virtual depois e finalize a cria&ccedil;&atilde;o da VM, igual &agrave;s Figuras 5 e 6, abaixo:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1667.Figura4.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1667.Figura4.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 5: Anexar o disco virtual depois</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7282.Figura5.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7282.Figura5.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 6: Finalizando a cria&ccedil;&atilde;o da nova VM</span><br />
+<br />
+<p style="margin:0cm 0cm 10pt;"><b><span style="font-family:calibri;">Etapa 3: Criando o VHD do Novo Servidor SRV1-Clone e Clonando o VHD do Servidor SRV1-WS8</span></b></p>
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">No Hyper-V Manager, clique com o bot&atilde;o direito do mouse sobre a nova VM e selecione &ldquo;Settings&rdquo;. Veja na figura 7 abaixo:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3681.Figura6.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3681.Figura6.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 7: Op&ccedil;&atilde;o &nt-family:calibri,sans-serif;font-size:11pt;">Figura 6: Finalizando a cria&ccedil;&atilde;o da nova VM</span><br />
+<br />
+<p style="margin:0cm 0cm 10pt;"><b><span ldquo;Settings&rdquo;</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Nas configura&ccedil;&otilde;es da VM, v&aacute; em IDE Controller 0 e clique em &ldquo;Add&rdquo; para Hard Drive:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3225.Figura7.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3225.Figura7.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 8: Adicionando um disco r&iacute;gido</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Em &quot;Hard Drive&quot;, clique em &ldquo;New&rdquo; e em &ldquo;New Virtual Hard Disk Wizard&rdquo;, clique em &ldquo;Next&rdquo;, conforme Figuras 9 e 10 abaixo:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0574.Figura8.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0574.Figura8.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 9: Novo disco</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Na tela para escolher o formato do disco, a op&ccedil;&atilde;o VHDX vem selecionada por padr&atilde;o, mas para nosso exemplo, escolheremos a op&ccedil;&atilde;o VHD e clique em &ldquo;Next&rdquo;:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8182.Figura10.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8182.Figura10.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 10: Selecionando o formato do disco</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Na tela para escolher o tipo do disco, selecione a op&ccedil;&atilde;o para expandir dinamicamente e clique em &ldquo;Next&rdquo;, conforme Figura 11:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2210.Figura11.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2210.Figura11.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 11: Selecionando a op&ccedil;&atilde;o para o disco expandir dinamicamente<br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Na pr&oacute;xima tela digite o nome do novo VHD e o local de onde ser&aacute; armazenado e clique em &ldquo;Next&rdquo;. Figura 12:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.Figura12.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.Figura12.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 12: Nome e localiza&ccedil;&atilde;o do novo VHD</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Agora &eacute; a tela em que iremos selecionar o VHD que ser&aacute; clonado. Escolha a op&ccedil;&atilde;o &ldquo;Copy the contents of the specified virtual hard disk&rdquo; e coloque o local do VHD que iremos clonar e clique em &ldquo;Next&rdquo;, conforme as Figuras 13, 14 e 15 abaixo:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1803.Figura13.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1803.Figura13.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 13: Op&ccedil;&atilde;o para escolher o VHD a ser clonado</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7026.Figura14.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7026.Figura14.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 14: Selecionando o VHD</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2555.Figura15.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2555.Figura15.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 15: VHD selecionado</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Por &uacute;ltimo, vemos a tela do sum&aacute;rio de nossa configura&ccedil;&atilde;o e clique em &ldquo;Finish&rdquo;. Figura 16:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5808.Figura16.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5808.Figura16.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 16: Sum&aacute;rio</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">As Figuras 17 e 18 mostram o processo de cria&ccedil;&atilde;o do VHD SRV1-Clone.VHD e clonagem do VHD SRV1-WS8.VHD. Dependendo do tamanho do VHD, o processo pode demorar v&aacute;rios minutos:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8473.Figura17.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8473.Figura17.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 17: In&iacute;cio do processo de cria&ccedil;&atilde;o/clonagem</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6403.Figura19.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6403.Figura19.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 18: Processo de cria&ccedil;&atilde;o/clonagem</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Ao finalizar o processo, aplique a adi&ccedil;&atilde;o do novo disco na VM e inicie a nova VM SRV1-Clone:</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4380.Figura20.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4380.Figura20.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 19: VHD criado/clonado</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4705.Figura22.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4705.Figura22.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 20: Iniciando a VM SRV1-Clone</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Na Figura 21 abaixo, podemos ver que o nome do servidor continua como SRV1-WS8, sendo que o role do IIS, o Microsoft Project 2010 e demais configura&ccedil;&otilde;es n&atilde;o foram clonados. Na Figura 22 e 23, podemos comprovar que o SID dos dois servidores s&atilde;o id&ecirc;nticos.</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6763.Figura23.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__ke<img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4705.Figura22.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 20: Iniciando a VM SRV1-Clone</span><br />
+<br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Na Figura 21 abaixo, podemy/communityserver-wikis-components-files/00-00-00-00-05/6763.Figura23.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 21: A propriedade nome do computador permanece do SRV1-WS8</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8686.Figura24.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8686.Figura24.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 22: SID da VM SRV1-WS8</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3716.Figura25.jpg"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3716.Figura25.jpg" /></a><br />
+<span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Figura 23: SID da VM SRV1-Clone</span><br />
+<br />
+<p style="margin:0cm 0cm 10pt;"><b><span style="font-family:calibri;">Conclus&atilde;o</span></b></p>
+<p style="margin:0cm 0cm 10pt;"><span style="font-family:calibri;">Neste artigo, conhecemos o novo recurso do Windows 8 Consumer Preview, que nos permite criar VMs com disco virtual clonado de outros discos j&aacute; existentes.</span></p>
+<p style="margin:0cm 0cm 10pt;"><span style="font-family:calibri;">Na minha opini&atilde;o, o tempo investido entre clonar o VHD e instalar o sistema operacional e significante, principalmente se for executado o Sysprep na m&aacute;quina clonada, renovando o SID e outras caracter&iacute;sticas do servidor clonado.</span></p>
+<p style="margin:0cm 0cm 10pt;"><span style="font-family:calibri;">Este artigo foi originalmente escrito por: </span></p>
+<p style="margin:0cm 0cm 10pt;"><b><span style="font-family:calibri;">Jorge Barata<br />
+</span></b><span style="font-family:calibri;">MVP Windows Expert-IT Pro<br />
+</span><span style="font-family:calibri;">MCT, MCSA, MCTS, Security+<br />
+</span><span style="font-family:calibri;">STEP Charter Member<br />
+</span><span style="font-family:calibri;">Jorge&#39;s site: <a href="http://www.jorgebarata.eti.br/" target="_blank">http://www.jorgebarata.eti.br/</a><br />
+</span><span style="line-height:115%;font-family:calibri,sans-serif;font-size:11pt;">Twitter: <a href="http://twitter.com/jbarata" target="_blank">http://twitter.com/jbarata</a></span></p>
+</span></div>
+    
+    

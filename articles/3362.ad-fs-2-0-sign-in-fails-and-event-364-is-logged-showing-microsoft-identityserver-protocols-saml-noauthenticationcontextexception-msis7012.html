@@ -1,0 +1,125 @@
+---
+layout: default
+title: AD FS 2.0&#58; Sign-In Fails and Event 364 is Logged Showing Microsoft.IdentityServer.Protocols.Saml.NoAuthenticationContextException&#58; MSIS7012 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Symptoms">Symptoms</a></li><li class="hierarchy-item"><a href="#Cause">Cause</a></li><li class="hierarchy-item"><a href="#Resolution">Resolution</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+</p>
+<h2><a name="Symptoms"></a>Symptoms</h2>
+<ul>
+<li>Sign-in to AD FS 2.0 fails </li><li>The AD FS 2.0/Admin event log shows the following: </li></ul>
+<p>Log Name: <strong>AD FS 2.0/Admin<br />
+</strong>Source: AD FS 2.0<br />
+Date: 6/5/2011 1:32:58 PM<br />
+Event ID: <strong>364<br />
+</strong>Task Category: None<br />
+Level: Error<br />
+Keywords: AD FS<br />
+User: NETWORK SERVICE<br />
+Computer: adfs.contoso.com<br />
+Description:<br />
+Encountered error during federation passive request. </p>
+<p>Additional Data </p>
+<p>Exception details: <br />
+<strong>Microsoft.IdentityServer.Protocols.Saml.NoAuthenticationContextException: MSIS7012</strong>: An error occurred while processing the request. Contact your administrator for details.<br />
+at Microsoft.IdentityServer.Web.FederationPassiveAuthentication.BuildSignInResponseForProtocolResponse(FederationPassiveContext federationPassiveContext)<br />
+at Microsoft.IdentityServer.Web.FederationPassiveAuthentication.BuildSignInResponse(SecurityToken securityToken)</p>
+<h2><a name="Cause"></a>Cause</h2>
+<br />
+<br />
+The NoAuthenticationContextException means AD FS 2.0 received a SAMLResponse from a Claims Provider (CP), and the SAML Status stated that the requested authentication method was not&nbsp;supported by the CP.<br />
+<br />
+<h2><a name="Resolution"></a>Resolution</h2>
+<br />
+Examine the SAMLRequest that AD FS 2.0 sent to the CP. There is an AuthnRequest section that will show the authentication method requested. This is called RequestedAuthnContext.
+<strong>AD FS 2.0 must be able to either omit RequestedAuthnContext, or send a RequestedAuthnContext value that the CP supports.</strong><br />
+<br />
+<span style="text-decoration:underline;">Example of a decoded SAMLRequest containing&nbsp;RequestedAuthNContext:<br />
+</span><br />
+<em>&lt;samlp:AuthnRequest ID=&quot;id-9f63a122-781f-40e0-9bd9-a6f2227ab117&quot; Version=&quot;2.0&quot; IssueInstant=&quot;2011-06-05T17:32:46.000Z&quot; Destination=https://adatum.com/idp/saml2.0 Consent=&quot;urn:oasis:names:tc:SAML:2.0:consent:unspecified&quot; xmlns:samlp=&quot;urn:oasis:names:tc:SAML:2.0:protocol&quot;&gt;<br />
+&nbsp; &lt;Issuer xmlns=&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;&gt;http://adfs.contoso.com/adfs/services/trust&lt;/Issuer&gt;<br />
+&nbsp; &lt;samlp:NameIDPolicy Format=&quot;urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified&quot; AllowCreate=&quot;true&quot; /&gt;<br />
+</em><em><strong>&nbsp; &lt;samlp:RequestedAuthnContext&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;samlp:AuthnContextClassRef xmlns:samlp=&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;&gt;<span style="color:#00b050;">urn:federation:authentication:windows</span>&lt;/samlp:AuthnContextClassRef&gt;<br />
+&nbsp; &lt;/samlp:RequestedAuthnContext&gt;<br />
+</strong>&lt;/samlp:AuthnRequest&gt;<br />
+</em><br />
+The CP, in this example, does not support Windows authentication, and the CP set the SAML Status accordingly.<br />
+<br />
+<span style="text-decoration:underline;">Example of a decoded SAMLResponse containing the NoAuthnContext&nbsp;status code:<br />
+</span><br />
+<em>&nbsp; &lt;samlp:Status&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;samlp:StatusCode Value=&quot;urn:oasis:names:tc:SAML:2.0:status:Responder&quot;&gt;<br />
+</em><em><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;samlp:StatusCode Value=&quot;<span style="color:#ff0000;">urn:oasis:names:tc:SAML:2.0:status:NoAuthnContext</span>&quot; /&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;/samlp:StatusCode&gt;<br />
+</strong>&nbsp; &lt;/samlp:Status&gt;<br />
+&lt;/samlp:Response&gt;<br />
+</em><br />
+AD FS 2.0 will fail the sign-in request in the case of the NoAuthnContext exception because we are required to honor the authentication method specified. If you are not sure why AD FS 2.0 is specifying RequestedAuthnContext in the request to the CP, the most
+ likely cause is that you are performing Relying Party (RP)-initiated sign-on, and the RP is specifying a requested authentication method. In this case, AD FS 2.0 is simply passing along the request from the RP. The way the RP specifies the authentication method
+ request will vary based on protocol: <br />
+<br />
+<table>
+<tbody>
+<tr>
+<td>
+<p style="text-align:left;"><span style="text-decoration:underline;"><strong>Protocol</strong></span></p>
+</td>
+<td>
+<p style="text-align:left;"><span style="text-decoration:underline;"><strong>Parameter</strong></span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p stysp;&nbsp; &lt;/samlp:StatusCode&gt;<br />
+</strong>&nbsp; &lt;/samlp:Status&gt;<br />
+&lt;/samlp:Response&gt;<br />
+</em><br />
+AD FS 2.0 will fail the sign-in request in the case of the NoAuthnContext exception because we are required to honor the authentication method specified. If you are not sure why AD FS 2.0 is specifying RequestedAuthnContext in the request to the CP, the most
+ likely cause is that you are performing Relying Party (RP)-initiated sign-on, and the RP is specifying a requested authentication method. In this case, AD FS 2.0 is simply passing along the request from the RP. The way the RP specifies the authentication method
+ request will vary based on protocol: <br />
+<br />
+<table>
+<tbody>
+<tr>
+<td>
+<p style="text-align:left;"><span style="text-decoration:underline;"><strong>Protocol</strong></span></p>
+</td>
+<td>
+<p style="text-align:left;"><span style="text-decoration:underline;"><strong>Parameter</strong></span></p>
+</td>
+</tr>
+<tr>
+<td>
+le="text-align:left;">&nbsp;SAML 2.0</p>
+</td>
+<td>
+<p style="text-align:left;">RequestedAuthnContext</p>
+</td>
+</tr>
+<tr>
+<td>
+<p style="text-align:left;">&nbsp;WS-Federation</p>
+</td>
+<td>
+<p style="text-align:left;">WAuth</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<h2><a name="See_Also"></a>See Also</h2>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/2735.aspx" title="AD FS 2.0 Content Map" target="_blank">AD FS 2.0 Content Map<br />
+</a></p>
+</blockquote>
+
+</div>
+    
+    

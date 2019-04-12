@@ -1,0 +1,69 @@
+---
+layout: default
+title: PropVariant - VT_BLOB - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="PropVariant_Documentation"></a>PropVariant Documentation</h1>
+​This is just a short comment about the documentation for the PropVariant. It may, however, save you some hours of debugging. (At least it would have saved me some if someone had posted this!)<br />
+If you ever try to marshal a PropVariant that contains a serialized structure/object with &nbsp;&quot;vt&quot; set to &quot;VT_BLOB&quot; (65), then take note of this:<br />
+&nbsp; &nbsp; &nbsp;The documentation tells you that the PropVariant structure contains a 32 bits integer that is the count of the byte array, followed by that many bytes of data.<br />
+This is not right, the PropVariant contains a 32 bits integer that is the count of the byte array followed by a 32 bits pointer to the array of byte.<br />
+<br />
+Just keep this in mind: The PropVariant will always be 16 bytes long, The embedded anonymous Union always be 8 bytes long even if the data it contains is smaller than 8 bytes. The data will always be found at offset 8 in the structure and will be little endian.<br />
+<br />
+<h2><a name="Context"></a>Context</h2>
+<br />
+<br />
+Since some are interested to know what I am talking about, I will add a little bit of context here.<br />
+<br />
+First let start with the strait answer. A PropVariant is an unmanaged data type that is used to access the properties from the devices property store.<br />
+<br />
+Devices are of course any pieces of hardware .. chips on the mother board, mouse, storage device, sound card, graphic card, ... etc. Basically any thing that works with a device driver !<br />
+------------<br />
+Now, let&#39;s talk a bit about this PropVariant.<br />
+<br />
+A propVariant, as a Variant, is a container that can hold any type of data. You can assign an integer, a string, an object an interface, ...etc &nbsp;and the propvariant will be able to contain it.&nbsp;<br />
+<br />
+You can think of it as an unmanaged equivalent of the managed type &quot;Object&quot; that can be assigned any object.<br />
+<br />
+However, there is a big difference between a Propvariant and an object. The data contain in a propVariant is un-typed. This is causing a big problem when comes time to use it in managed code. C# and VB are strongly typed languages and cannot deal with any un-typed
+ data.&nbsp;<br />
+<br />
+Therefore, when marshaling a PropVariant to managed language, the first thing to do is to discover what kind of data the PropVariant contains ( Since like I said, it can contain any kind of data ) an then we need to create an managed object with an equivalent
+ data type and and assign to this object an equivalent value. ( And this is not always easy since managed data types and unmanaged data types are really two different beasts )<br />
+<br />
+One question can be raised here; Why implementing a PropVariant since the namespace &quot;Microsoft.VisualStudio.OLE.Interop&quot; expose an implementation of the PropVariant?<br />
+<br />
+There are two good reasons for that:<br />
+&nbsp;1) Memory leaks: The PropVariant is used to access the devices properties, and this is done through COM interfaces that require that the property value be be passed using variables passed by Ref. Therefore, your application creates the variable and the data
+ in it is filled by the device. The rule under Windows, is that the party that creates the variable is responsive to perform the resources clean up. So, your application is responsive to perform the clean up of the ummanaged resources allocated to return the
+ value.&nbsp;<br />
+&nbsp; &nbsp;The implementation of the PropVariant in the namespace &quot;Microsoft.VisualStudio.OLE.Interop&quot; is not a IDisposable class therefore, unless you have a good knowledge of what need to be disposed, how and when, memory leaks<br />
+<br />
+&nbsp;2) The second reason is that the implementation in the namespace &quot;Microsoft.VisualStudio.OLE.Interop&quot; always return the data types as an IntPtr, regardless of what it is, byte, string, pointer, integer, structure, ...etc. And this is not really friendly !<br />
+<br />
+-------------<br />
+Finally, a word about what I am implementing.<br />
+<br />
+I am implementing a class that, when access from unmanaged code, will expose itself as a Propvariant Structure, and when access from managed code, will expose itself as a strongly typed object (And typed in respect with the kind of data type contain in the
+ Propvariant)<br />
+<br />
+Therefore the class must be able at runtime to auto discover its data type and change its own type to the appropriate equivalent type.<br />
+The Type change must also be done such way that even using reflection, it will reflect on the right type.<br />
+The type change should also not affect that if the variable is send back to unmanaged code, it keeps the ability to expose itself as a PropVariant<br />
+(And of course without using late binding or narrowing cast)<br />
+<br />
+The class will also provide some tools to properly insure that the unmanaged resources gets cleaned up.<br />
+<br />
+We will see how it goes, I might post the code for this class somewhere. If I do I&#39;ll add a link to it here.<br />
+<br />
+<br />
+<h2><a name="References"></a>References</h2>
+<p><a href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa380072(v=vs.85).aspx">http://msdn.microsoft.com/en-us/library/windows/desktop/aa380072(v=vs.85).aspx</a></p>
+
+</div>
+    
+    

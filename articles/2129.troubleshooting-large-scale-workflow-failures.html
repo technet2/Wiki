@@ -1,0 +1,96 @@
+---
+layout: default
+title: Troubleshooting Large Scale Workflow Failures - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Fabrikam has a policy that ensures all groups have unique aliases.<br />
+A database in an external system keeps track of all the aliases that have been assigned to groups in Fabrikam.<br />
+Whenever a new group is created, or has its alias modified, the group’s alias is verified against the external system for uniqueness.<br />
+After the group is created, the new alias for the group is added to the external system.</p>
+<p>In the middle of one typical weekday, the FIM Services servicing group management requests lose connectivity to the external system tracking the group aliases.<br />
+This connectivity issue results in several outcomes:</p>
+<ol>
+<li>All authorization workflows attempting to validate a group alias encounter an unhandled exception and terminate as a result.
+<br />
+This results in all group creation, and alias modification, requests currently in the authorizing state being marked as “denied”.
+</li><li>All action workflows attempting to reserve a new alias in the external system encounter an unhandled exception and terminate.
+<br />
+This results in all group creation, and alias modification requests currently in the “Post Processing” state being marked as “PostProcessingError”.
+</li></ol>
+<p>Ichiro, the administrator for the FIM Service, does not immediately become aware of the connectivity issue.
+<br />
+By the time the connectivity issue is resolved, Ichiro realizes there may be a large number of requests affected by the issue.
+<br />
+Ichiro first identifies the requests that were denied because of the connectivity issue.</p>
+<ol>
+<li>He submits a query, in the FIM Portal, to identify all users whose requests that were denied because of a termination in the alias validation authorization workflow.
+</li><li>&nbsp;Ichiro’s query looks as follows: /Request[CreatedTime &gt;= ‘X’ and AuthorizationWorkflowInstance = /WorkflowInstance[WorkflowDefinition = ‘Y’ and WorkflowStatus = ‘Terminated’]]/Creator
+<ol>
+<li>&nbsp;‘X’ is the approximate DateTime when the connectivity issue first appeared. </li><li>&nbsp;‘Y’ is the ObjectID of the workflow definition corresponding to the alias validation authorization workflow.
+</li></ol>
+</li></ol>
+<p>From his previous step, Ichiro discovers that a large number of users were affected by the connectivity issue.
+<br />
+Since there is no way for Ichiro to restart these failed authorization workflows, these users need to resubmit their requests.
+<br />
+Ichiro decides that he wants to notify the users that they may need to resubmit their requests, due to the temporary connectivity issue.
+<br />
+In order to notify the users, Ichiro needs the ability to either extract the list of users from the FIM Portal and paste them as the recipients of an email message in Outlook, or he needs to create a new set with the users as members so that he can create a
+ new retroactive policy to send an email notification to these users.</p>
+<ol>
+<li>There is no way for Ichiro to create a dynamic set with the target users as members, because the xpath query needed to identify the users is not supported by sets in FIM.
+</li><li>Ichiro must get a list of the ObjectIDs of the target users and add them in bulk as explicit members to a set.
+<br />
+The FIM Portal does not support this ability, so Ichiro must rely on the PowerShell cmdlets for FIM to accomplish this.
+<br />
+Once Ichiro has created the set containing all the affected users he wants to notify, he creates the email notification workflow he wants to apply to them, and a new MPR that run the workflow.
+</li></ol>
+<p>Ichiro’s next step is to identify the requests whose alias reservation action workflow failed because of the connectivity issue.</p>
+<ol>
+<li>He submits a query, in the FIM Portal, to identify groups whose aliases were not reserved because of a termination in the alias reservation action workflow.
+</li><li>Ichiro’s query looks as follows: /Request[CreatedTime &gt;= ‘X’ and ActionWorkflowInstance = /WorkflowInstance[WorkflowDefinition = ‘Y’ and WorkflowStatus = ‘Terminated’]]/Target
+<ul>
+<li>&nbsp;‘X’ is the approximate DateTime when the connectivity issue first appeared. </li><li>&nbsp;‘Y’ is the ObjectID of the workflow definition corresponding to the alias reservation action workflow.
+</li></ul>
+</li></ol>
+<p>From his previous step, Ichiro discovers that a large number of groups have not had their alias reserved.
+<br />
+The alias reservation workflow does not need any information from the Request that triggered it, since it reads the alias to reserve from the group itself.
+<br />
+Ichiro uses the “<a href="http://social.technet.microsoft.com/Forums/en-US/ilm2/thread/02a12877-4280-47ab-91b6-871141a77d4d" target="_blank">run on policy update</a>” feature to retroactively apply a policy that reserves the alias for all the groups identified
+ in his previous step.</p>
+<ol>
+<li>&nbsp;Ichiro creates a new static set with all the affected groups as members.
+<ul>
+<li>&nbsp;There is no way for Ichiro to create a dynamic set with the target users as members, because the xpath query needed to identify the users is not supported by sets in FIM.
+</li><li>&nbsp;Ichiro must get a list of the ObjectIDs of the target groups and add them in bulk as explicit members to a set. The FIM Portal does not support this ability, so Ichiro must rely on the PowerShell cmdlets for FIM to accomplish this.
+</li></ul>
+</li><li>&nbsp;Ichiro creates a new MPR that applies the alias reservation action workflow to all members of the set he created.
+</li></ol>
+<p>To re-run the failed action workflows, Ichiro has developed <a href="http://social.technet.microsoft.com/Forums/en-US/ilm2/thread/a0bd4059-45e4-4adb-9a84-67543a69e3f0" target="_blank">
+the following script</a>.</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="See_Also"></a><span style="color:#262626;">Community Resources</span></h2>
+<ul>
+<li><a href="http://go.microsoft.com/fwlink/?LinkId=211780" target="_blank">Troubleshooting FIM 2010 Roadmap
+</a></li></ul>
+<p>&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-bottom:5px;background-color:#c0c0c0;padding-left:5px;padding-top:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;padding-left:5px;">To provide feedback about this article, create a post on the
+<a href="http://go.microsoft.com/fwlink/?LinkID=163230" target="_blank">FIM TechNet Forum</a>.</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+    
+    

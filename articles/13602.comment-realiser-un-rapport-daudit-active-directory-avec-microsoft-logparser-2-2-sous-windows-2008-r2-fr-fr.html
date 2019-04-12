@@ -1,0 +1,365 @@
+---
+layout: default
+title: Comment réaliser un rapport d’audit ACTIVE DIRECTORY avec Microsoft LogParser 2.2 sous Windows 2008 R2 (FR-FR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>Cet article &agrave; pour objectif de vous pr&eacute;senter simplement l&rsquo;outil Microsoft LogParser afin de r&eacute;aliser des rapports d&rsquo;audits sous un format HTML. </p>
+<p>Dans le cadre de mes missions chez divers clients ne disposants pas d&rsquo;outils d&rsquo;audits centraliser souvent payant, il est reste essentiel de r&eacute;aliser divers audits sur les serveurs Microsoft afin de r&eacute;pondre aux besoins initiaux. </p>
+<p>Dans les petites et moyennes entreprises aujourd&rsquo;*** plusieurs personnes disposent de droits de cr&eacute;ation, modification et suppressions d&rsquo;objets dans l&rsquo;Active Directory. Il est donc int&eacute;ressant de pouvoir disposer rapidement d&rsquo;informations sur les actions r&eacute;alis&eacute;es. </p>
+<p>Dans cet article nous allons effectuer un Audit de &laquo; Qui fait quoi sur l&rsquo;Active Directory &raquo; et le sortir un rapport en format HTML. </p>
+<p>Comment Auditer les actions de l&rsquo;Active Directory : </p>
+<ul>
+    <li>- Disposer d&rsquo;un Active Directory.</li>
+    <li>- Activer l&rsquo;audit de l&rsquo;Active Directory par GPO.</li>
+    <li>- R&eacute;cup&eacute;rer les informations d&rsquo;audit dans les journaux d&rsquo;&eacute;v&eacute;nements.</li>
+    <li>- Utiliser Microsoft LogParser pour g&eacute;n&eacute;rer le rapport.</li>
+    <li>- Un Fichier Excel fourni par Microsoft : Security Audit Events for Windows 2008R2</li>
+</ul>
+<p>Avant de nous lancer dans la r&eacute;alisation technique, voici un petit aper&ccedil;u du r&eacute;sultat final : </p>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image002.jpg"><img width="244" height="131" title="clip_image002" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image002" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image002_thumb.jpg" /></a> </p>
+<p>Dans cet extrait de rapport, un objet de type &laquo; contact &raquo; &agrave; &eacute;t&eacute; cr&eacute;e par l&rsquo;utilisateur &laquo; Admin1 &raquo; sur le contr&ocirc;leur de domaine &laquo; AD01.domaine.local &raquo; le &laquo; 20/07/2012 &agrave; 17h26 &raquo; portant le nom de &laquo; TOTO &raquo;. </p>
+<p>Cet extrait de rapport pr&eacute;sente les 3 actions majeurs que nous allons auditer. </p>
+<p>- Cr&eacute;ation d&rsquo;objets Active Directory. </p>
+<p>- Modification d&rsquo;objets Active Directory. </p>
+<p>- Suppression d&rsquo;objets Active Directory. </p>
+<p>Pr&eacute;sentation des colonnes du rapport d&rsquo;audit :</p>
+<table border="1" cellspacing="0" cellpadding="0">
+    <tbody>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Colonne</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Description</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Serveur</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Repr&eacute;sente le contr&ocirc;leur de domaine qui &agrave; traiter l&rsquo;action. </span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Date et Heure</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Repr&eacute;sente la date d&rsquo;ex&eacute;cution de l&rsquo;action</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Utilisateur Domaine</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Repr&eacute;sente l&rsquo;utilisateur qui &agrave; ex&eacute;cuter l&rsquo;action </span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Action</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Repr&eacute;sente l&rsquo;action (cr&eacute;ation, modification, suppression) </span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">AD-Objet</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Path de l&rsquo;objet Active Directoy</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Type-Objet</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Type d&rsquo;objet Active Directory</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Propri&eacute;t&eacute;</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Propri&eacute;t&eacute; de l&rsquo;objet modifi&eacute;</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Valeur</span></p>
+            </td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Valeur Enregistr&eacute;e</span></p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p><span style="text-decoration:underline;">Activation de l&rsquo;Audit par GPO</span> : </p>
+<p>Pour r&eacute;aliser cette GPO et comprendre le fonctionnement de l&rsquo;Audit d&rsquo;un domaine Active Directory, je vous conseil l&rsquo;excellent article Microsoft Technet ci-dessous : </p>
+<p><a href="http://technet.microsoft.com/fr-fr/library/cc731607(v=ws.10)">http://technet.microsoft.com/fr-fr/library/cc731607(v=ws.10)</a> </p>
+<p><em>Etape :<td>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Propri&eacute;t&eacute; de l&rsquo;objet modifi&eacute;</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="width:307px;">
+            <p><span style="font-size:10px;">Valeur</span></p>
+            </td>
+            <td valign="top/em> </p>
+<p>- Loguer vous en temps que Administrateur sur un de vos contr&ocirc;leur de domaine </p>
+<p>- Lancer la console de gestion des GPO. </p>
+<ul>
+    <ul>
+        <ul>
+            <ul>
+                <ul>
+                    <li>Cliquer sur &laquo; <strong>Start </strong>&raquo; ou &laquo; <strong>D&eacute;marrer</strong> &raquo;</li>
+                    <li>Cliquer sur &laquo; <strong>Run</strong> &raquo; ou &laquo; <strong>Start</strong> &raquo;</li>
+                    <li>Ex&eacute;cuter la commande &laquo; gpmc.msc &raquo;</li>
+                </ul>
+            </ul>
+        </ul>
+    </ul>
+</ul>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image004.jpg"><img width="244" height="132" title="clip_image004" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image004" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image004_thumb.jpg" /></a></p>
+<p>- Configurer votre GPO afin d&rsquo;activer &laquo; <strong>Audit Directory Change</strong> &raquo; </p>
+<ul>
+    <ul>
+        <ul>
+            <ul>
+                <li>Windows Settings / S&eacute;curity Settings / Local Policies / Audit Policiy / DS Acces</li>
+            </ul>
+        </ul>
+    </ul>
+</ul>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image006.jpg"><img width="244" height="224" title="clip_image006" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image006" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image006_thumb.jpg" /></a></p>
+<p>- Enregistrer votre GPO et lier celle-ci &agrave; Unit&eacute; d&rsquo;Organisation (OU) O&ugrave; sont stock&eacute; vos contr&ocirc;leurs de domaine. </p>
+<ul>
+    <ul>
+        <ul>
+            <li><strong>Domaine.local / Domains Controleurs</strong></li>
+        </ul>
+    </ul>
+</ul>
+<p><strong></strong>&nbsp;</p>
+<p><b><span style="font-size:18px;">Configurer l&rsquo;audit sur votre Domaine:</span></b> </p>
+<p>La GPO cr&eacute;&eacute; ne fait qu&rsquo;activer l&rsquo;audit sur vos contr&ocirc;leurs de domaine, nous allons donc maintenant demander au service d&rsquo;audit de nous envoyer toutes les informations sur les actions effectu&eacute;es dans notre Active Directory. </p>
+<p>Nous allons donc ajouter le compte &laquo; Tout le monde &raquo; ou &laquo; Everyone &raquo; (selon version de votre OS) dans les param&egrave;tres d&rsquo;audit de l&rsquo;Active Directory et configurer tout les types d&rsquo;actions &agrave; auditer. </p>
+<p>- Lancer la console &laquo; Active Directory Users and Computers &raquo; </p>
+<ul>
+    <ul>
+        <ul>
+            <li>Cliquer sur &laquo; <strong>Start</strong> &raquo; ou &laquo; <strong>D&eacute;marrer</strong> &raquo;</li>
+            <li>Cliquer sur &laquo; <strong>Run</strong> &raquo; ou &laquo; <strong>Start</strong> &raquo;</li>
+            <li>Ex&eacute;cuter la commande &laquo; <strong>dsa.msc</strong> &raquo;</li>
+        </ul>
+    </ul>
+</ul>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image008.jpg"><img width="244" height="133" title="clip_image008" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image008" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image008_thumb.jpg" /></a></p>
+<p>- Dans la console &laquo; <b>Active Directory Users and Computers</b> &raquo;, entrer dans les propri&eacute;t&eacute;s de votre domaine (cf : image ci-dessous) </p>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image010.jpg"><img width="224" height="244" title="clip_image010" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image010" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image010_thumb.jpg" /></a> </p>
+<p>- Dans les Propri&eacute;t&eacute;s du domaine, s&eacute;lectionner l&rsquo;onglet &laquo; <b>S&eacute;curit&eacute;</b> &raquo; puis cliquer sur &laquo; <b>Avancer</b> &raquo;. </p>
+<p>- Dans la fen&ecirc;tre des propri&eacute;t&eacute;s Avancer, s&eacute;lectionner l&rsquo;onglet &laquo; <b>Audit </b>&raquo; et cliquer sur &laquo; <b>Add</b> &raquo;. </p>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image012.jpg"><img width="244" height="184" title="clip_image012" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image012" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image012_thumb.jpg" /></a> </p>
+<p>- Dans la fen&ecirc;tre d&rsquo;ajout de compte, ajouter le compte &laquo; <b>Tout le monde </b>&raquo; ou &laquo; <b>Everyone</b> &raquo; (selon version de votre OS) puis cliquer sur &laquo; <b>OK</b> &raquo; </p>
+<p>- Dans la configuration de l&rsquo;audit s&eacute;lectionner toutes les actions &agrave; Auditer et cliquer sur &laquo; OK &raquo; autant de fois que n&eacute;cessaires pour valider la configuration. (cf : image ci-dessous) </p>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image014.jpg"><img width="191" height="244" title="clip_image014" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image014" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image014_thumb.jpg" /></a> </p>
+<p>Nous venons de configurer par GPO l&rsquo;activation de l&rsquo;audit sur l&rsquo;ensemble de votre domaine et configurer les comptes qui doivent &ecirc;tre audit&eacute;s. Dans notre cas, nous auditons tous les comptes qui effectuent des tentatives d&rsquo;actions sur l&rsquo;Active Directory. </p>
+<p><b></b></p>
+<p><b><span style="font-size:18px;"></span></b>&nbsp; </p>
+<p><b><span style="font-size:18px;">L&rsquo;Audit :</span></b> </p>
+<p>Bon c&rsquo;est pas mal tout cela mais les informations d&rsquo;Audit cela ce trouvent o&ugrave; ? </p>
+<p>- Microsoft enregistre toutes les informations d&rsquo;audit dans les journaux d&rsquo;&eacute;v&eacute;nements sous des ID sp&eacute;cifiques. </p>
+<p>Ok, Mais comment savoir quel ID correspond &agrave; l&rsquo;audit de notre AD ? </p>
+<p>- Microsoft propose de t&eacute;l&eacute;charger un fichier sous un format Excel qui r&eacute;f&eacute;rence les ID des journaux d&rsquo;&eacute;v&eacute;nement.</p>
+<blockquote>
+<p>Le lien&nbsp; <a href="http://www.microsoft.com/en-us/download/details.aspx?id=21561">http://www.microsoft.com/en-us/download/details.aspx?id=21561</a></p>
+</blockquote>
+<p>Voici un petit extrait qui nous sera bien utile :</p>
+<p>&nbsp;</p>
+<table border="0" cellspacing="0" cellpadding="0">
+    <tbody>
+        <tr>
+            <td valign="bottom" style="width:113px;">
+            <p>DS Access</p>
+            </td>
+            <td valign="bottom" style="width:195px;">
+            <p>Directory Service Changes</p>
+            </td>
+            <td valign="bottom" style="width:51px;">
+            <p>5136</p>
+            </td>
+            <td valign="bottom" style="width:227px;">
+            <p>A directory service object was modified.</p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="bottom" style="width:113px;">
+            <p>DS Access</p>
+            </td>
+            <td valign="bottom" style="width:195px;">
+            <p>Directory Service Changes</p>
+            </td>
+            <td valign="bottom" style="width:51px;">
+            <p>5137</p>
+            </td>
+            <td valign="bottom" style="width:227px;">
+            <p>A directory service object was created.</p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="bottom" style="width:113px;">
+            <p>DS Access</p>
+            </td>
+            <td valign="bottom" style="width:195px;">
+            <p>Directory Service Changes</p>
+            </td>
+            <td valign="bottom" style="width:51px;">
+            <p>5138</p>
+            </td>
+            <td valign="bottom" style="width:227px;">
+            <p>A directory service object was undeleted.</p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="bottom" style="width:113px;">
+            <p>DS Access</p>
+            </td>
+            <td valign="bottom" style="width:195px;">
+            <p>Directory Service Changes</p>
+            </td>
+            <td valign="bottom" style="width:51px;">
+            <p>5139</p>
+            </td>
+            <td valign="bottom" style="width:227px;">
+            <p>A directory service object was moved.</p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="bottom" style="width:113px;">
+            <p>DS Access</p>
+            </td>
+            <td valign="bottom" style="width:195px;">
+            <p>Directory Service Changes</p>
+            </td>
+            <td valign="bottom" style="width:51px;">
+            <p>5141</p>
+            </td>
+            <td valign="bottom" style="width:227px;">
+            <p>A directory service object was deleted.</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p>Vous l&rsquo;aurez donc compris, les &eacute;v&eacute;nements enregistr&eacute;s avec les ID 5136, 5137, 5139, 5139, 5141 nous permettrons de pouvoir conna&icirc;tre les actions r&eacute;alis&eacute;es. </p>
+<p>Seulement voila les journaux d&rsquo;&eacute;v&eacute;nement enregistrent seulement les &eacute;v&eacute;nements d&rsquo;audit que le serveur &agrave; trait&eacute;, et dans une infrastructure Active Directory il y plusieurs domaines contr&ocirc;leurs. Il serait long de devoir d&eacute;tailler tous les logs d&rsquo;audit de tous nos contr&ocirc;leurs de domaines afin de trouver l&rsquo;information recherch&eacute;e. </p>
+<p><b><span style="font-size:18px;"></span></b>&nbsp; </p>
+<p><b><span style="font-size:18px;">Microsoft LogParser :</span></b> </p>
+<p><b></b></p>
+<p>Microsoft propose l&rsquo;outil LogParser qui permet de pouvoir lire et traiter des logs. </p>
+<p>Il serait bien long de d&eacute;crire toutes les possibilit&eacute;s de cet outil mais en voici quelques unes que nous allons utiliser. </p>
+<p>- Lecture des journaux d&rsquo;&eacute;v&eacute;nement. </p>
+<p>- Ecriture des requ&ecirc;tes de filtrage des logs en format SQL. </p>
+<p>- Sortie de traitement dans un fichier HTML. </p>
+<p>Voir : <a href="http://technet.microsoft.com/fr-fr/scriptcenter/dd919274.aspx">http://technet.microsoft.com/fr-fr/scriptcenter/dd919274.aspx</a> </p>
+<p><span style="text-decoration:underline;">Installation de LogParser 2.2 :</span> </p>
+<p>L&rsquo;installation de l&rsquo;outil ne vous posera aucuns probl&egrave;mes particuliers sauf que je vous recommande personnellement d&rsquo;installer l&rsquo;outil dans un r&eacute;pertoire de type C:\Log-Parser-2.2. </p>
+<p>Cela vous permettra d&rsquo;acc&eacute;der plus simplement &agrave; l&rsquo;outil dans vos scripts de d&eacute;veloppement. </p>
+<p><span style="text-decoration:underline;">Comment acc&eacute;der aux journaux d&rsquo;&eacute;v&eacute;nement avec LogParser :</span> </p>
+<p>Pour effectuer cela nous allons cr&eacute;er 2 fichiers dans C:\AUDIT. </p>
+<p><span style="text-decoration:underline;">Fichier Audit-AD.sql :</span></p>
+<pre class="csharpcode"><span class="kwrd">Select</span> 
+    COMPUTERNAME <span class="kwrd">AS</span> [SERVEUR], 
+    TimeGenerated <span class="kwrd">As</span> [<span class="kwrd">Date</span>-Heure],
+    EXTRACT_TOKEN(Strings,3,<span class="str">&#39;|&#39;</span>) <span class="kwrd">As</span> Utilisateur,
+     EXTRACT_TOKEN(Strings,6,<span class="str">&#39;|&#39;</span>) <span class="kwrd">As</span> Domaine,
+    <span class="kwrd">CASE</span> Eventid
+              <span class="kwrd">WHEN</span> 5136 <span class="kwrd">THEN</span> <span class="str">&#39;Modification&#39;</span>
+              <span class="kwrd">WHEN</span> 5137 <span class="kwrd">THEN</span> <span class="str">&#39;Creation&#39;</span>
+              <span class="kwrd">WHEN</span> 5138 <span class="kwrd">THEN</span> <span class="str">&#39;Recuperation&#39;</span>
+              <span class="kwrd">WHEN</span> 5139 <span class="kwrd">THEN</span> <span class="str">&#39;Deplacement&#39;</span>
+              <span class="kwrd">WHEN</span> 5141 <span class="kwrd">THEN</span> <span class="str">&#39;Suppression&#39;</span>            
+
+    <span class="kwrd">END</span> <span class="kwrd">AS</span> <span class="kwrd">Action</span>,
+     EXTRACT_TOKEN(Strings,8,<span class="str">&#39;|&#39;</span>) <span class="kwrd">As</span> AD-Objet, 
+     EXTRACT_TOKEN(Strings,10,<span class="str">&#39;|&#39;</span>) <span class="kwrd">As</span> Type-Objet,
+     EXTRACT_TOKEN(Strings,11,<span class="str">&#39;|&#39;</span>) <span class="kwrd">As</span> Propri&eacute;te,
+    SUBSTR(EXTRACT_TOKEN(Strings,13,<span class="str">&#39;|&#39;</span>),0,30) <span class="kwrd">As</span> Valeur
+    
+<span class="kwrd">FROM</span> 
+\\AD01\security,\\AD02\security,\\AD03\security
+<span class="kwrd">Where</span> Eventid=5136 <span class="kwrd">OR</span> Eventid=5137 <span class="kwrd">OR</span> Eventid=5138 <span class="kwrd">OR</span> Eventid=5139 <span class="kwrd">OR</span> Eventid=5141 
+<span class="kwrd">ORDER</span> <span class="kwrd">BY</span> [<span class="kwrd">Date</span>-Heure] <span class="kwrd">DESC</span>
+</pre>
+<p>Ce fichier est la requ&ecirc;te SQL que nous allons appliquer aux journaux d&rsquo;&eacute;v&eacute;nements de s&eacute;curit&eacute;.</p>
+<p>Dans cet exemple je dispose de 3 contr&ocirc;leurs Active Directory, AD01, AD02, AD03, l&rsquo;acc&egrave;s de la requ&ecirc;te aux contr&ocirc;leurs de domaines s&rsquo;effectue via la ligne :</p>
+<p><b>FROM </b></p>
+<p><b>\\AD01\security,\\AD02\security,\\AD03\security</b></p>
+<p>Nous souhaitons r&eacute;cup&eacute;rer les ID 5136, 5137, 5139, 5139, 5141, cela s&rsquo;effectue via la ligne :</p>
+<p><b>Where Eventid=5136 OR Eventid=5137 OR Eventid=5138 OR Eventid=5139 OR Eventid=5141 </b></p>
+<p>Les informations &agrave; r&eacute;cup&eacute;rer dans les logs s&eacute;lectionn&eacute;es sont dans la balise SELECT.</p>
+<p><span style="text-decoration:underline;">Fichier Audit-AD.TPL :</span></p>
+<pre class="csharpcode">&lt;lpheader&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Audit Active Directory&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;&lt;h1&gt;Audit ActiveDirectory&lt;/h1&gt;
+&lt;<span class="kwrd">TABLE</span> BORDER=&quot;1&quot; style=&quot;font-family: Tahoma; font-<span class="kwrd">size</span>: 8pt&quot; WIDTH=95% &gt;   
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_1%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_2%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_3% %fieldname_4%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_5%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_6%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_7%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_8%&lt;/th&gt;
+&lt;th VALIGN=&quot;<span class="kwrd">left</span>&quot;&gt;%fieldname_9%&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/lpheader&gt;
+&lt;lpbody&gt;
+  &lt;tr&gt;
+     &lt;td&gt;&lt;tt&gt;%field_1%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_2%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_3% %field_4%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_5%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_6%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_7%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_8%&lt;/tt&gt;&lt;/td&gt;
+     &lt;td&gt;&lt;tt&gt;%field_9%&lt;/tt&gt;&lt;/td&gt;
+   &lt;/tr&gt;
+&lt;/lpbody&gt;
+&lt;lpfooter&gt;
+&lt;/<span class="kwrd">table</span>&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+&lt;/lpfooter&gt;
+</pre>
+
+<p>Ce fichier est le &laquo; Template &raquo; de sortie, il permet de structurer les r&eacute;ponses de LogParser dans un fichier au format HTML.</p>
+<p><span style="text-decoration:underline;">Lancement de la commande</span></p>
+<p>C:\Log-Parser-2.2\LogParser -i:EVT file:C:\Audit\audit-ad.sql -o:TPL -tpl:C:\Audit\EVT\audit-ad.tpl -stats:off &gt; C:\Audit\Audit-AD.HTML</p>
+<p>R&eacute;sultat de la commande est un fichier HTML nomm&eacute; Audit-AD.HTML dans C:\Audit</p>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image015.jpg"><img width="244" height="131" title="clip_image015" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image015" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image015_thumb.jpg" /></a></p>
+<p>Grace &agrave; cette commande, nous disposons d&rsquo;un rapport d&rsquo;Audit simple et rapide &agrave; &eacute;tudier. </p>
+<p>Le logiciel LogParser vous permet de r&eacute;aliser bien d&rsquo;autres rapports d&rsquo;audits sous plein d&rsquo;autres formats. Cet outil n&rsquo;est pas simple a prendre en main au d&eacute;but mais avec un peux d&rsquo;utilisation celui-ci deviendra rapidement un allier dans vos audit.</p>
+<p><span style="text-decoration:underline;">Voici quelques exemples r&eacute;alis&eacute;s avec l&rsquo;outil LogParser 2.2 :</span></p>
+<p>Depuis un serveur Exchange 2007, rapport graphique des mails re&ccedil;u / heure :</p>
+<p><a href="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image017.jpg"><img width="244" height="191" title="clip_image017" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image017" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image017_thumb.jpg" /></a></p>
+<p>Nombre des Hits sur un IIS :</p>
+<p><a href="http://blogs.iis.net/blogs/rakkimk/image_75F366AD.png"><img width="244" height="190" title="clip_image019" style="display:block;float:none;margin-left:auto;margin-right:auto;border:0px;" alt="clip_image019" src="http://www.adminsysteme.fr/wp-content/uploads/2012/07/clip_image019.gif" /></a></p>
+<p>Lien : <a href="http://blogs.iis.net/rakkimk/archive/2008/11/18/logparser-useful-logparser-scripts.aspx">http://blogs.iis.net/rakkimk/archive/2008/11/18/logparser-useful-logparser-scripts.aspx</a></p>
+<p><span style="font-size:18px;"></span>&nbsp; </p>
+<p><span style="font-size:18px;">Conclusion :</span></p>
+<p>En conclusion la r&eacute;alisation d&rsquo;un rapport d&rsquo;audit au format html demande un peux d&rsquo;utilisation de l&rsquo;outil LogParser mais vous permettra &agrave; de disposer d&rsquo;informations simple &agrave; &eacute;tudier afin de capitaliser et am&eacute;liorer vos environnements. </p>
+<p>J&rsquo;esp&egrave;re que cet article vous aura plu. Je reste a votre &eacute;coute si vous avez des questions sur celui-ci ainsi que sur sa mise en &oelig;uvre.</p>
+<p>A bient&ocirc;t sur le TechNet Microsoft.</p>
+<p>&nbsp; </p>
+<p>Liens de l&rsquo;article:</p>
+<p>Activation de l&rsquo;Audit sur Active Directory : <a href="http://technet.microsoft.com/fr-fr/library/cc731607(v=ws.10)">http://technet.microsoft.com/fr-fr/library/cc731607(v=ws.10)</a></p>
+<p>Microsoft Logparser 2.2 : <a href="http://www.microsoft.com/en-us/download/details.aspx?id=24659">http://www.microsoft.com/en-us/download/details.aspx?id=24659</a></p>
+<p>Security Audit Events for Windows 2008R2 : <a href="http://www.microsoft.com/en-us/download/details.aspx?id=21561">http://www.microsoft.com/en-us/download/details.aspx?id=21561</a></p></div>
+    
+    

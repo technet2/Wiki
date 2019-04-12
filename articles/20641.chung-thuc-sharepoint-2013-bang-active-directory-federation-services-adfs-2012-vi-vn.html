@@ -1,0 +1,295 @@
+---
+layout: default
+title: Chứng thực SharePoint 2013 bằng Active Directory Federation Services (ADFS) 2012 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong style="font-size:12.1px;">I- GIỚI THIỆU</strong></p>
+<p>Active Directory Federation Service (ADFS) là dịch vụ cung cấp khả năng chứng thực claims-based đối với các ứng dụng Web từ tổ chức nội bộ hoặc bên ngoài. Khi triển khai hệ thống SharePoint, nếu muốn cho phép người dùng từ các tổ chức đối tác truy cập vào
+ Web Application trong môi trường SharePoint nội bộ, người quản trị cần cấu hình một phương pháp chứng thực phù hợp, trong bài viết này, tôi sẽ trình bày thao tác sử dụng Active Directory Federation Service (ADFS) để chứng thực nhằm mục đích cho phép người
+ dùng bên ngoài tổ chức truy cập vào các Web Application trong hệ thống SharePoint.</p>
+<p><strong>II- TRIỂN KHAI CHI TIẾT</strong></p>
+<p>Bài LAB sử dụng 4 server:</p>
+<p><strong><em>- DC2012 (IP Address 172.16.1.10):</em></strong> Domain Controller (domain
+<strong><em>mcthub.local</em></strong>) chạy Windows Serrer 2012</p>
+<p><strong><em>- SQLSERVER (IP Address 172.16.1.20):: </em></strong>Domain member chạy Windows Server 2012 đóng vai trò SQL Server</p>
+<p><strong><em>- SPSERVER (IP Address 172.16.1.21)::</em></strong> Domain member chạy Windows Server 2012 đóng vai trò SharePoint Server</p>
+<p><em>(Bạn có thể tích hợp 3 máy này trên một server vật lý)</em></p>
+<p><strong><em>- ITAHUBDC (IP Address 172.16.1.30)</em></strong>: Domain Controller (domain
+<strong><em>itahub.local</em></strong>) chạy Windows Serrer 2012</p>
+<p>Bài LAB gồm các bước chính sau đây</p>
+<p>1- Chuẩn bị</p>
+<p>2- Cài đặt ADFS</p>
+<p>3- Cấu hình Relying Party Trust và Claim Rule trên ADFS</p>
+<p>4- Export Token Certificate</p>
+<p>5- Cấu hình SharePoint Trust ADFS</p>
+<p>6- Cấu hình Web Application sử dụng ADFS</p>
+<p>Mục đích của bài LAB này là cấu hình ADFS và SharePoint 2013 sao cho người dùng thuộc domain
+<strong><em>itahub.local</em></strong> có thể truy cập vào Web Application <strong>
+<em>sharepoint.mcthub.local</em></strong> thuộc <strong><em>domain mcthub.local</em></strong></p>
+<p><strong>1- Chuẩn bị</strong></p>
+<p>Trước khi thực hiện bài LAB này, bạn cần phải đã triển khai các bội dung sau đây</p>
+<p>- Cài đặt SharePoint 2013 - <a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/229-c%C3%A0i-%C4%91%E1%BA%B7t-sharepoint-2013.html">
+Xem bài viết này</a></p>
+<p>- Tạo Web Application và Site Collection sharepoint.mcthub.local - <a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/230-t%C3%ADch-h%E1%BB%A3p-office-web-apps-server-2013-v%E1%BB%9Bi-sharepoint-2013.html">
+Xem phần 2 của bài viết này</a></p>
+<p>- Bảo mật Web Application với SSL (SSL là yêu cầu bắt buộc đối với ADFS) - <a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/235-b%E1%BA%A3o-m%E1%BA%ADt-sharepoint-2013-b%E1%BA%B1ng-secure-socket-layer-ssl.html">
+Xem bài viết này</a></p>
+<p>Sau đó bạn tiếp tục thực hiện các thao tác chuẩn bị sau đây</p>
+<p>Trên máy SPSERVER, tạo thư mục <strong><em>C:\Share</em></strong> (thư mục này sẽ được sử dụng trong bước 4)</p>
+<p><img alt=" " width="694" height="431" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image001.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau đó bạn share thư mục này và cấp quyền cho Everyone Full Control</p>
+<p><img alt=" " width="609" height="489" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image002.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp theo bạn cần cấu hình DNS Conditional Forwarder sao cho 2 domain có thể phân giải tên lẫn nhau. Trên máy
+<strong><em>DC2012</em></strong>, mở DNS Console. Bấm phải chuột <strong><em>Conditional Forwarder</em></strong> - chọn
+<strong><em>New Conditional Forwarder</em></strong></p>
+<p><img alt=" " width="719" height="359" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image003.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>DNS Domain</em></strong>: Nhập <strong><em>itahub.local</em></strong></p>
+<p>Trong khung <strong><em>IP address of the master servers</em></strong>: Nhập <strong>
+<em>172.16.0.30</em></strong> (IP của máy <strong><em>ITAHUBDC</em></strong>)</p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="544" height="452" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image004.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trên máy <strong><em>ITAHUBDC</em></strong>, mở DNS Console. Bấm phải chuột <strong>
+<em>Conditional Forwarder</em></strong> - chọn <strong><em>New Conditional Forwarder</em></strong></p>
+<p><img alt=" " width="720" height="313" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image005.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>DNS Domain</em></strong>: Nhập <strong><em>mcthub.local</em></strong></p>
+<p>Trong khung <strong><em>IP address of the master servers</em></strong>: Nhập <strong>
+<em>172.16.0.10</em></strong> (IP của máy <strong><em>DC2012</em></strong>)</p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="544" height="452" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image006.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>2- Cài đặt ADFS</strong></p>
+<p>Tiếp theo bạn cần cài đặt ADFS để chứng thực cho người dùng thuộc Domain <strong>
+<em>itahub.local</em></strong> truy cập Web Application của domain <strong><em>mcthub.local</em></strong>. Trên máy
+<strong><em>ITAHUBDC</em></strong>, Mở <strong><em>Server Manager</em></strong> - Chọn<strong><em>Manage - Add Roles and Features</em></strong></p>
+<p><strong><img alt=" " width="720" height="485" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image007.jpg" style="border-width:0px;border-style:solid;" /></strong></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><strong><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image008.jpg" style="border-width:0px;border-style:solid;" /></strong></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><strong><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image009.jpg" style="border-width:0px;border-style:solid;" /></strong></p>
+<p>Chọn server cần đặt đặt là <strong><em>ITAHUBDC.itahub.local</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><strong><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image010.jpg" style="border-width:0px;border-style:solid;" /></strong></p>
+<p>Đánh dấu chọn <strong><em>Active Directory Federation Services</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><strong><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image011.jpg" style="border-width:0px;border-style:solid;" /></strong></p>
+<p>Nhấn<strong> <em>Add Features</em> </strong>để chấp nhận cài đặt thêm các dịch vụ cần thiết</p>
+<p><strong><img alt=" " width="420" height="438" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image012.jpg" style="border-width:0px;border-style:solid;" /></strong></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image013.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image014.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu chọn role services <strong><em>AD FS 1.1 Web Agent</em></strong> và <strong>
+<em>AD FS 1.1 Claims-aware Agent - </em></strong>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image015.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image016.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chấp nhận cài đặt các thành phần cần thiết cho ADFS - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image017.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Install</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image018.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi quá trình cài đặt hoàn tất, bạn cần cấu hình các thông số chung lần đầu cho ADFS - Nhấn
+<strong><em>Run the AD FS Management snap-in</em></strong></p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image019.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>AD FS Federation Server Configuration Wizards</em></strong> để cấu hình các thông số chung lần đầu cho ADFS</p>
+<p><img alt=" " width="720" height="390" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image020.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Do đây là ADFS Server đầu tiên, bạn chọn <strong><em>Create a new Federation Service</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image021.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Do mục địch của tôi chỉ cài đặt một ADFS Server, chọn <strong><em>Stand-alone federation server</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image022.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bạn quan sát hộp thoại này yêu cầu <strong><em>SSL Certificate </em></strong>dùng cho ADFS, nhưng do máy này chưa có Certificate nên bạn không thể chọn Certificate và không thể nhấn Next để thực hiện bước tiếp theo. Nhấn
+<strong><em>Cancel</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image023.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp theo tôi sẽ tạo một Self-Signed Certificate để sử dụng cho ADFS. <strong>
+<em>Mở Internet Information Service (IIS) Manager</em></strong> bằng lệnh <strong>
+<em>INETMGR</em></strong></p>
+<p><img alt=" " width="427" height="236" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image024.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn server <strong><em>ITAHUBDC</em></strong> - Double click vào mục <strong>
+<em>Server Certificates</em></strong></p>
+<p><img alt=" " width="720" height="465" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image025.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Create Self-Signed Certificate</em></strong></p>
+<p><img alt=" " width="720" height="465" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image026.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhập tên cho Certificate là <strong><em>itahubdc.itahub.local</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="677" height="511" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image027.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra Certificate đã được tạo - Nhấn <strong><em>View</em></strong></p>
+<p><img alt=" " width="720" height="465" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image028.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra thông tin Certificate và nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="409" height="512" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image029.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi có Certificate cần thiết, tôi sẽ cấu hình lại ADFS. Mở ADFS - Chọn <strong>
+<em>AD FS Federation Server Configuration Wizards</em></strong></p>
+<p><img alt=" " width="720" height="366" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image030.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Create a new Federation Service - </em></strong>Nhấn <strong>
+<em>Next</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image021.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Stand-alone federation server</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image022.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bạn quan sát đã có Certificate cần thiết cho ADFS - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image031.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image032.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi quá trình cấu hình hoàn tất - Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="720" height="579" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image033.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đến đây bạn đã có thể sử dụng ADFS</p>
+<p><img alt=" " width="720" height="366" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image034.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>3- Cấu hình Relying Party Trust và Claim Rule trên ADFS</strong></p>
+<p>Trên máy ITAHUBDC, mở ADFS, bấm phải chuột <strong><em>Relying Party Trust</em></strong> - Chọn
+<strong><em>Add Relying Party Trust</em></strong></p>
+<p><img alt=" " width="719" height="393" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image035.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Start</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image036.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Enter data about the relying party manually</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image037.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Khung <strong><em>Display Name</em></strong>: Nhấn <strong><em>MCTHUB SharePoint</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image038.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>AD FS profile</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image039.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src"border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Enter data about the relying party m="http://mcthub.com/images/ContentLab/sharepointADFS_files/image040.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu chọn <strong><em>Enable support for the WS-Federation Passive protocol</em></strong>. Nhập URL của SharePoint Web Application cần chứng thực để truy cập là
+<strong><em>https://sharepoint.mcthub.local/_trust/</em></strong> - Nhấn <strong>
+<em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image041.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Relying party trust identifier</em></strong>: Nhập một định danh tùy ý cho Web Application, tôi nhập là
+<strong><em>urn:mcthub:sharepoint.mcthub.local</em></strong> - Nhấn <strong><em>Add</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image042.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image043.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Permit all users to access this relying party</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image044.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image045.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image046.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp theo bạn cần tạo Claim Rule cho phép người dùng chứng thực bằng các thuộc tính trong Active Directory. Nhấn nút
+<strong><em>Add Rule</em></strong></p>
+<p><img alt=" " width="510" height="557" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image047.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Claim rule template</em></strong>: Chọn <strong><em>Send LDAP Attributes as Claims -
+</em></strong>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image048.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Claim rule name:</em></strong> Nhập tên tùy ý cho rule, tôi nhập là
+<strong><em>MCTHUB SharePoint Claim Rule</em></strong></p>
+<p>Trong khung <strong><em>Attribute store</em></strong>: Chọn <strong><em>Active Directory</em></strong></p>
+<p>Trong khung <strong><em>Mapping of LDAP attributes to outgoing claim type</em></strong> lần lượt quy định các thuộc tính như hình dưới - Nhấn
+<strong><em>Finish</em></strong></p>
+<p><img alt=" " width="720" height="581" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image049.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="510" height="557" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image050.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra Reying Party Trust đã được tạo</p>
+<p><img alt=" " width="720" height="368" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image051.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong><em>4- Export Token Certificate</em></strong></p>
+<p>Trên máy <strong><em>ITAHUBDC</em></strong> - Chọn <strong><em>AD FS - Service - Certificate</em></strong> - bấm phải chuột lên certificate bên dưới mục
+<strong><em>Token Certificate</em></strong> - Chọn <strong><em>View Certificate</em></strong></p>
+<p><img alt=" " width="720" height="368" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image052.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Details</em></strong> - Nhấn <strong><em>Copy to File</em></strong></p>
+<p><img alt=" " width="419" height="522" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image053.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="549" height="528" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image054.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn định dạng mặc định cho file là <strong><em>DER encode binary X.509 (.CER)</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="549" height="528" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image055.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Lưu File này vào gốc C:\ với tên là <strong><em>ITAHUB-Token-Signing.CER</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="549" height="528" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image056.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Finish</em></strong></p>
+<p><img alt=" " width="549" height="528" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image057.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="226" height="155" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image058.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="419" height="522" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image059.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau đó bạn copy file này sang máy <strong><em>SPSERVER</em></strong></p>
+<p><img alt=" " width="719" height="454" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image060.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Truy cập sang thư mục <strong><em>Share</em></strong> trên máy <strong><em>SPSERVER</em></strong></p>
+<p><img alt=" " width="427" height="236" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image061.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Paste file này vào thư mục <strong><em>Share </em></strong>trên máy<strong><em> SPSERVER</em></strong></p>
+<p><img alt=" " width="719" height="454" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image062.jpg" style="border-widthe:solid;" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="419" height="522" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image059.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau đó bạn copy file này sang máy <strong><em>SPSERVER</em></strong></p>
+<p><img alt=" " width="719" height="454" src="http://mcthub.co:0px;border-style:solid;" /></p>
+<p>Kiểm tra</p>
+<p><img alt=" " width="719" height="454" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image063.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>5- Cấu hình SharePoint Trust ADFS</strong></p>
+<p>Trên máy SPSERVER tạo trust Certificate bằng cách lần lượt nhập 2 lệnh sau:</p>
+<p><strong><em>$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(&quot;C:\Share\ITAHUB-Token-Signing.cer&quot;)</em></strong></p>
+<p><strong><em>New-SPTrustedRootAuthority -Name &quot;ITAHUB ADFS Token Signing&quot; -Certificate $cert</em></strong></p>
+<p><img alt=" " width="677" height="499" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image064.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra bằng cách mở <strong><em>SharePoint 2013 Central Administration</em></strong> - Chọn
+<strong><em>Security - Manage trust</em></strong></p>
+<p><img alt=" " width="719" height="490" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image065.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra kết quả</p>
+<p><img alt=" " width="719" height="490" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image066.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp theo bạn cần map các thuộc tính của ADFS vào SharePoint bằng cách lần lượt nhập các lệnh sau</p>
+<p><strong><em>$emailClaimMapping = New-SPClaimTypeMapping -IncomingClaimType</em></strong></p>
+<p><strong><em>&quot;http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress&quot; -</em></strong></p>
+<p><strong><em>IncomingClaimTypeDisplayName &quot;EmailAddress&quot; -SameAsIncoming</em></strong></p>
+<p><strong><em>$upnClaimMapping = New-SPClaimTypeMapping -IncomingClaimType</em></strong></p>
+<p><strong><em>&quot;http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn&quot; -</em></strong></p>
+<p><strong><em>IncomingClaimTypeDisplayName &quot;UPN&quot; -SameAsIncoming</em></strong></p>
+<p><img alt=" " width="677" height="247" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image067.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau đó bạn cần đăng ký ADFS server với SharePoint server bằng cách lần lượt thực hiện các lệnh sau:</p>
+<p><strong><em>$realm = &quot;urn:mcthub:sharepoint.mcthub.local&quot;</em></strong></p>
+<p><strong><em>$signInURL = &quot;https://itahubdc.itahub.local/adfs/ls&quot;</em></strong></p>
+<p><strong><em>New-SPTrustedIdentityTokenIssuer -Name &quot;ITAHUB AD FS&quot; -Description &quot;AD FS</em></strong></p>
+<p><strong><em>at ITAHUB&quot; -realm $realm -ImportTrustCertificate $cert -</em></strong></p>
+<p><strong><em>ClaimsMappings $emailClaimMapping,$upnClaimMapping -SignInUrl $signInURL -</em></strong></p>
+<p><strong><em>IdentifierClaim $emailClaimMapping.InputClaimType</em></strong></p>
+<p><img alt=" " width="677" height="595" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image068.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>6- Cấu hình Web Application sử dụng ADFS</strong></p>
+<p>Trên máy <strong><em>SPSERVER</em></strong>, mở <strong><em>SharePoint 2013 Central Administration</em></strong> - Chọn&nbsp;
+<strong><em>Application Management - Manage web applications</em></strong></p>
+<p><img alt=" " width="719" height="490" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image069.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn Web Application <strong><em>sharepoint.mcthub.local80</em></strong> - Nhấn
+<strong><em>Authentication Providers</em></strong></p>
+<p><img alt=" " width="719" height="295" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image070.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Default</em></strong></p>
+<p><img alt=" " width="719" height="490" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image071.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu chọn <strong><em>Trusted Identity provider</em></strong> - Chọn <strong>
+<em>ITAHUB AD FS</em></strong> - Nhấn nút <strong><em>Save</em></strong>, sau đó đóng hộp thoại
+<strong><em>Edit Authentication</em></strong></p>
+<p><img alt=" " width="719" height="490" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image072.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp tục phân quyền cho người dùng truy cập bằng cách nhấn <strong><em>User Policy</em></strong></p>
+<p><img alt=" " width="719" height="378" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image073.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Add Users</em></strong></p>
+<p><img alt=" " width="719" height="378" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image074.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>All zones - </em></strong>Nhấn<strong><em> Next</em></strong></p>
+<p><img alt=" " width="720" height="468" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image075.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Users</em></strong> - Nhấn nút <strong><em>Browse</em></strong></p>
+<p><img alt=" " width="719" height="504" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image076.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>All Users - All Users (ITAHUB AD FS)</em></strong> - Nhấn nút
+<strong><em>Add</em></strong></p>
+<p><img alt=" " width="719" height="504" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image077.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="719" height="504" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image078.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Permission</em></strong>, phân quyền <strong><em>Full Read</em></strong> - Nhấn<strong><em> Finish</em></strong></p>
+<p><img alt=" " width="719" height="504" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image079.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="719" height="504" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image080.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra: Truy cập <strong><em>https://sharepoint.mcthub.local</em></strong> - Ở mục
+<strong><em>Sign In</em></strong> - Chọn <strong><em>ITAHUB AD FS</em></strong></p>
+<p><img alt=" " width="719" height="307" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image081.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhập <strong><em>ITAHUB\Administrator</em></strong> và password - <strong><em>OK</em></strong></p>
+<p><img alt=" " width="439" height="316" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image082.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra user của domain <strong><em>ITAHUB.local</em></strong> đã có thể truy cập Web Application trong hệ thống SharePoint của domain
+<strong><em>MCTHUB.local</em></strong></p>
+<p><img alt=" " width="720" height="468" src="http://mcthub.com/images/ContentLab/sharepointADFS_files/image083.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bài viết liên quan</p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/229-c%C3%A0i-%C4%91%E1%BA%B7t-sharepoint-2013.html">Cài đặt SharePoint 2013</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/230-t%C3%ADch-h%E1%BB%A3p-office-web-apps-server-2013-v%E1%BB%9Bi-sharepoint-2013.html">Tích hợp Office Web Apps Server 2103 với SharePoint 2013</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/233-qu%E1%BA%A3n-l%C3%BD-user,-group-v%C3%A0-ph%C3%A2n-quy%E1%BB%81n-tr%C3%AAn-sharepoint-2013-ph%E1%BA%A7n-1.html">Quản lý User, Group và phân quyền trên SharePoint 2013 - Phần 1</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/234-qu%E1%BA%A3n-l%C3%BD-user,-group-v%C3%A0-ph%C3%A2n-quy%E1%BB%81n-tr%C3%AAn-sharepoint-2013-ph%E1%BA%A7n-2.html">Quản lý User, Group và phân quyền trên SharePoint 2013 - Phần 2</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/235-b%E1%BA%A3o-m%E1%BA%ADt-sharepoint-2013-b%E1%BA%B1ng-secure-socket-layer-ssl.html">Bảo mật SharePoint 2013 bằng Secure Sockey Layer (SSL)</a></p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a>
+<br />
+<a href="http://www.mcthub.com/technologies/microsoft/sharepoint-server/236-ch%E1%BB%A9ng-th%E1%BB%B1c-sharepoint-2013-b%E1%BA%B1ng-active-directory-federation-service-adfs-2012.html">mcthub.com</a><br />
+
+</div>
+    
+    

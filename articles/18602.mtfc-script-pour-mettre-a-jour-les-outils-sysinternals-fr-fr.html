@@ -1,0 +1,171 @@
+---
+layout: default
+title: MTFC&#58; Script pour mettre à jour les outils sysinternals (fr-FR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="Introduction"></a>Introduction</h2>
+<strong>MTFC:&nbsp;</strong>Microsoft Technical French Contributor est un Award conçu et réalisé par l&#39;équipe des Wiki Ninjas dirigé par Ed Price. Cet Award à comme but de remercier toute personne qui à contribué dans les Forum TechNet France. Pour plus d&#39;informations
+ vous pouvez lire ceci:&nbsp;<a href="http://blogs.technet.com/b/wikininjas/archive/2013/03/17/week-end-surprise-four-fantastic-presents-the-microsoft-technical-french-contributor.aspx">http://blogs.technet.com/b/wikininjas/archive/2013/03/17/week-end-surprise-four-fantastic-presents-the-microsoft-technical-french-contributor.aspx</a><br />
+<br />
+Pour d&#39;autres questions ou remarques vous pouvez envoyer un mail vers: <span style="line-height:16px;font-family:&#39;Segoe UI&#39;,&#39;Segoe UI Web Regular&#39;,&#39;Segoe UI Symbol&#39;,&#39;Helvetica Neue&#39;,&#39;BBAlpha Sans&#39;,&#39;S60 Sans&#39;,Arial,sans-serif;">
+tnwikifrenchdayga@outlook.com</span><br />
+<br />
+<h2><a name="Références"></a><a name="Références"></a><a name="Références"></a><a name="Références"></a>Références</h2>
+Cet artcile à été écrit par:&nbsp;<a href="http://social.technet.microsoft.com/profile/celegorm/?ws=usercard-mini" target="_blank" style="margin:0px;padding:0px;border:currentColor;line-height:14px;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;font-size:13px;list-style-type:none;">celegorm</a>&nbsp;dans
+ le contexte: Appel à la Contribution 17/04/2013 - 17/06/2013. L&#39;article est l&#39;heureux gagnant dans la catégorie Windows 7.<br />
+<br />
+<br />
+<h2><a name="L_article"></a>L&#39;article</h2>
+<span style="font-family:monospace;">
+<div class="reCodeBlock" style="overflow-y:auto;">
+<div><code><br />
+&#39;-----------------------------------------------------------------</code></div>
+<div><span><code>&#39;ce programme est destiné à maintenir à jour des fichiers présents en local et sur le net</code></span></div>
+<div><span><code>&#39;attention, utilise des fichiers .zip (local et web)</code></span></div>
+<div><span><code>&#39;demande la présence des fichiers .zip dans la racine local avant de démarrer</code></span></div>
+<div><span><code>&#39;fichier fciv source officielle: http:</code><code>//www.microsoft.com/en-us/download/details.aspx?id=11533</code></span></div>
+<div><span><code>&#39;fichier unzip source officielle: http:</code><code>//stahlworks.com/dev/unzip.exe</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>dim identique</code></span></div>
+<div><span><code>dim commandline</code></span></div>
+<div><span><code>dim checksum_fichierold</code></span></div>
+<div><span><code>dim checksum_fichiernew</code></span></div>
+<div><span><code>dim sha</code></span></div>
+<div><span><code>dim racine</code></span></div>
+<div><span><code>dim source_web</code></span></div>
+<div><span><code>dim fciv</code></span></div>
+<div><span><code>dim unzip</code></span></div>
+<div><span><code>dim source_fciv</code></span></div>
+<div><span><code>dim source_unzip</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>Set fso = CreateObject(</code><code style="color:blue;">&quot;Scripting.FileSystemObject&quot;</code>&nbsp;<code>)</code></span></div>
+<div><span><code>Set OWS = CreateObject(</code><code style="color:blue;">&quot;Wscript.Shell&quot;</code><code>)</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&#39;------------ variables personnalisables------------------</code></span></div>
+<div><span><code>dim nom_des_fichiers(1) &#39;à augmenter suivant le nombre de fichier suivi (n-1)</code></span></div>
+<div><span><code>nom_des_fichiers(0)=(</code><code style="color:blue;">&quot;Autoruns.zip&quot;</code><code>)</code></span></div>
+<div><span><code>nom_des_fichiers(1)=(</code><code style="color:blue;">&quot;ProcessExplorer.zip&quot;</code><code>)</code></span></div>
+<div><span><code>racine=</code><code style="color:blue;">&quot;le répertoire où sont stockés process explorer.zip et autoruns.zip&quot;</code></span></div>
+<div><span><code>source_web=</code><code style="color:blue;">&quot;<a href="http://download.sysinternals.com/files/">http://download.sysinternals.com/files/</a>&quot;</code></span></div>
+<div><span><code>rep_programme=</code><code style="color:blue;">&quot;répertoire où sont stockés les programmes de sysinternals&quot;</code></span></div>
+<div><span><code>fciv=</code><code style="color:blue;">&quot;répertoire où est stocké fciv\fciv.exe&quot;</code></span></div>
+<div><span><code>source_fciv=</code><code style="color:blue;">&quot;<a href="http://www.softpratik.fr/fciv.exe">http://www.softpratik.fr/fciv.exe</a>&quot;</code></span></div>
+<div><span><code>unzip=</code><code style="color:blue;">&quot;répertoire où est stocké unzip \unzip.exe&quot;</code></span></div>
+<div><span><code>source_unzip=</code><code style="color:blue;">&quot;<a href="http://www.softpratik.fr/unzip.exe">http://www.softpratik.fr/unzip.exe</a>&quot;</code></span></div>
+<div><span><code>&#39;---------------------------------------------------------</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&#39;----prog principal----</code></span></div>
+<div><span><code>initialisation</code></span></div>
+<div><span><code style="font-weight:bold;">for</code>&nbsp;<code>x=0 to&nbsp; ubound(nom_des_fichiers)</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>check_fichier racine &amp; nom_des_fichiers(x)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Importer_Fichier_Du_Web source_web &amp; nom_des_fichiers(x),racine &amp; nom_des_fichiers(x)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>comparer_checksum racine &amp; nom_des_fichiers(x), racine &amp; nom_des_fichiers(x) &amp;&nbsp;</code><code style="color:blue;">&quot;.old&quot;</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">if</code>&nbsp;<code>identique=1 then &#39;si le fichier téléchargé est identique
+ au précédent, on le supprime et on renomme le .old en .zip</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.deletefile racine &amp; nom_des_fichiers(x)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.MoveFile racine &amp; nom_des_fichiers(x) &amp;&nbsp;</code><code style="color:blue;">&quot;.old&quot;</code><code>,racine
+ &amp; nom_des_fichiers(x)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">else</code><code>&#39; si le fichier téléchargé est différent, on dézippe
+ le fichier dans le répertoire sysinternals et on supprime le fichier .old</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>unzipper_fichier racine &amp; nom_des_fichiers(x),rep_programme</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.deletefile racine &amp; nom_des_fichiers(x) &amp;&nbsp;</code><code style="color:blue;">&quot;.old&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>msgbox (</code><code style="color:blue;">&quot;le programme &quot;</code><code>&amp; nom_des_fichiers(x)
+ &amp;&nbsp;</code><code style="color:blue;">&quot; a été mis à jour&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>end&nbsp;</code><code style="font-weight:bold;">if</code></span></span></div>
+<div><span><code>next</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&#39;----les sous-programmes----</code></span></div>
+<div><span><code>sub initialisation&nbsp;</code><code style="color:blue;">&#39;va télécharger fciv et unzip s&#39;</code><code>ils ne sont pas présents</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>If Not fso.FileExists(fciv) then</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Importer_Fichier_Du_Web source_fciv,fciv</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End If</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>If Not fso.FileExists(unzip) then</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Importer_Fichier_Du_Web source_unzip,unzip</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End If</code></span></span></div>
+<div><span><code>End Sub</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>Sub check_fichier(fichier)&#39;va renommer les fichiers présent en .old</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>If fso.FileExists(fichier) then</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>If fso.FileExists(fichier &amp;&nbsp;</code><code style="color:blue;">&quot;.old&quot;</code><code>) then</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.deletefile fichier &amp;&nbsp;</code><code style="color:blue;">&quot;.old&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End If</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.MoveFile fichier,fichier &amp;&nbsp;</code><code style="color:blue;">&quot;.old&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End If</code></span></span></div>
+<div><span><code>End Sub</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>Sub Importer_Fichier_Du_Web(source,destination)&#39;récupère les fichiers sur le site</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Set HTTP=Objet_XMLHTTP</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>With HTTP</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>.Open&nbsp;</code><code style="color:blue;">&quot;GET&quot;</code><code>,source,False</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>.Send</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End With</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>With CreateObject(</code><code style="color:blue;">&quot;ADODB.Stream&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>.Type=1</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>.Open</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>.Write HTTP.ResponseBody</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>.SaveToFile destination,2</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End With</code></span></span></div>
+<div><span><code>&nbsp;</code><span><code>End Sub</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;</code><span><code>Function Objet_XMLHTTP &#39;crée un objet xmlhttp</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>On Error Resume Next</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Set Objet_XMLHTTP=CreateObject(</code><code style="color:blue;">&quot;Microsoft.XMLHTTP&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Set Objet_XMLHTTP=CreateObject(</code><code style="color:blue;">&quot;MSXML2.XMLHTTP&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>On Error GoTo 0</code></span></span></div>
+<div><span><code>&nbsp;</code><span><code>End Function</code></span></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>Sub comparer_checksum (fichierold,fichiernew)&nbsp;</code><code style="color:blue;">&#39;compare le checksum de 2 fichiers avec l&#39;</code><code>outil
+ fciv</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Set fso = CreateObject(</code><code style="color:blue;">&quot;Scripting.FileSystemObject&quot;</code>&nbsp;<code>)&nbsp;</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>checksum (fichierold)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>checksum_fichierold=sha</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.deletefile racine &amp;&nbsp;</code><code style="color:blue;">&quot;checksum.xml&quot;</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>checksum (fichiernew)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>checksum_fichiernew=sha</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fso.deletefile racine &amp;&nbsp;</code><code style="color:blue;">&quot;checksum.xml&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>If checksum_fichierold=checksum_fichiernew then</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>identique=1</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Else</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>identique=0</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>End If</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>End Sub</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>Function checksum (fichier)</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Set xmldoc = CreateObject(</code><code style="color:blue;">&quot;Microsoft.XMLDOM&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>xmldoc.async=</code><code style="font-weight:bold;">false</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>commandline=&nbsp;</code><code style="color:blue;">&quot;cmd /c &quot;</code>&nbsp;<code>&amp; fciv &amp;&nbsp;</code><code style="color:blue;">&quot;
+ -add &quot;</code>&nbsp;<code>&amp; fichier &amp;&nbsp;</code><code style="color:blue;">&quot; -sha1 -wp -xml &quot;</code>&nbsp;<code>&amp;racine &amp;</code><code style="color:blue;">&quot;checksum.xml&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>OWS.Run (commandline),0</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>WScript.Sleep 2000</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>xmldoc.load(racine &amp;&nbsp;</code><code style="color:blue;">&quot;checksum.xml&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>For each fichier&nbsp;</code><code style="font-weight:bold;">in</code>&nbsp;<code>xmlDoc.selectNodes(</code><code style="color:blue;">&quot;/FCIV/FILE_ENTRY&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>sha=fichier.selectSingleNode(</code><code style="color:blue;">&quot;SHA1&quot;</code><code>).text< -sha1 -wp -x/code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Next</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>End Function</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>Function unzipper_fichier(strZipFile, strFolder) &#39; décompresse le fichier zip</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>commandline=&nbsp;</code><code style="color:blue;">&quot;cmd /c &quot;</code>&nbsp;<code>&amp; unzip &amp;&nbsp;</code><code style="color:blue;">&quot;
+ -o &quot;</code>&nbsp;<code>&amp; strZipFile &amp;&nbsp;</code><code style="color:blue;">&quot; -d &quot;</code>&nbsp;<code>&amp;&nbsp;</code><code style="color:blue;">&quot;&quot;</code><code style="color:blue;">&quot;&quot;</code><code>&amp; strFolder &amp;</code><code style="color:blue;">&quot;&quot;</code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>OWS.Run (commandline),0</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>WScript.Sleep 2000</code></span></span></div>
+<div><span><code>End Function</code></span></div>
+</div>
+<br />
+<br />
+</span>
+
+</div>
+    
+    

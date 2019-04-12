@@ -1,0 +1,962 @@
+---
+layout: default
+title: System Center 2012 R2 Virtual Machine Role Authoring Guide - Parameters - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>This topic is part of the <a href="http://social.technet.microsoft.com/wiki/contents/    </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></darticles/18272.system-center-2012-r2-virtual-machine-role-authoring-guide.aspx">
+System Center 2012 R2 Virtual Machine Role Authoring Guide</a>.</p>
+<p>The Microsoft System Center team has validated this content as of <strong>Revision #3</strong>.&nbsp; We will continue to review any changes and periodically provide validations on later revisions as they are made.&nbsp; Please feel free to make any corrections or
+ additions to this content that you think would assist other users.</p>
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Resource_Parameters">Resource Parameters</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Declaring_Parameters">Declaring Parameters</a></li><li class="hierarchy-item"><a href="#Using_Parameters">Using Parameters</a></li><li class="hierarchy-item"><a href="#Data_Types">Data Types</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Parameter_Names">Parameter Names</a></li><li class="hierarchy-item"><a href="#View_Definition_Parameters">View Definition Parameters</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<h1><a name="Introduction"></a>Introduction</h1>
+Resource Definition and Resource Extensions can parameterize almost every property. You define parameters in the Resource Definition to allow the user to select different options when they provision a new resource. Values for the parameters are collected from
+ the user through the View Definition, which is a file included in the Resource Definition package, and then used to populate the parameters in the Resource Definition. Parameters allow Resource Extensions to be reused for a variety of scenarios and for different
+ tenants to customize their deployment.
+<p>The following diagram illustrates how parameter values are collected from the user using information in the View Definition and then used to passed to equivalent parameters in the Resource Definition. These values can then either be used for settings in
+ the Resource Definition or be passed on to parameters required by the Resource Extension. The Resource Definition can also provide explicit values for the Resource Extension parameters.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6215.VMRoleAuthGuide01.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6215.VMRoleAuthGuide01.png" style="border-width:0px;border-style:solid;width:550px;height:386px;" /></a></p>
+<h1><a name="Resource_Parameters"></a>Resource Parameters</h1>
+<h2><a name="Declaring_Parameters"></a>Declaring Parameters</h2>
+<p>Parameters used in the Resource Definition File and Resource Extension File must be declared before use and specify a Name, Data Type, and Description. For Resource Definitions, parameters are declared in the ResourceParameters section. For Resource Extensions,
+ parameters are declared in the ResourceExtensionParameters section. </p>
+<p>To associate a parameter from the Resource Definition to the View Definition, you give it the same name. When a value is collected from the tenant, it is stored in a separate document called a Resource Definition Configuration. When the Virtual Machine Role
+ is provisioned, this file is submitted with the Resource Definition. The value for each parameter in the Resource Definition Configuration is matched with the parameter with the same name in the Resource Definition. More information is provided below in the&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/18273.system-center-2012-r2-virtual-machine-role-authoring-guide-resource-definition-package.aspx">Resource
+ Definition</a> section of this guide.</p>
+<p>The Resource Definition file includes a section for Resource Extension References. This section defines the Resource Extensions that are used by the Resource Definition and provides values for the Resource Extension’s parameters. The value from a parameter
+ in the Resource Definition can be used to populate this Resource Extension parameter. This method allows you to collect information from the tenant and use it in both the Resource Definition and Resource Extension.</p>
+<h2><a name="Using_Parameters"></a>Using Parameters</h2>
+<p>You use the value of a parameter in a Resource Definition or Resource Extension with the following syntax.</p>
+<div class="reCodeBlock">
+<div><span><code>[Param.ParameterName]</code></span></div>
+</div>
+<p style="text-align:center;">&nbsp;</p>
+<h2><a name="Data_Types"></a>Data Types</h2>
+<p>Resource Parameters have fewer parameter types than View Parameters. Those types that use drop down controls in the View Definition are passed converted to strings. The following table lists the different Resource Parameter data types.</p>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="1">
+<tbody>
+<tr>
+<td>
+<p><b>Data Type</b></p>
+</td>
+<td>
+<p><b>Allowed Values</b></p>
+</td>
+<td>
+<p><b>Examples</b></p>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>String</b></p>
+</td>
+<td valign="top">
+<p>Any string </p>
+</td>
+<td>
+<p>Declaration:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ResourceParameters&quot; : [</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Name&quot; : &quot;ComputerNamePattern&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Type&quot; : &quot;String&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Description&quot; : &quot;Computer Name Pattern&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>},</code></span></span></div>
+<div><span><code>],</code></span></div>
+</div>
+<p>Value:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ParameterValues&quot; : &quot;{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>\&quot;ComputerNamePattern\&quot; : \&quot;web-###\&quot;,</code></span></span></div>
+<div><span><code>}&quot;,</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Int</b></p>
+</td>
+<td valign="top">
+<p>Any integer</p>
+</td>
+<td>
+<p>Declaration:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ResourceParameters&quot; : [</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Name&quot; : &quot;DefaultInstanceCount&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Type&quot; : &quot;Int&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Description&quot; : &quot;Default # instances&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>},</codetern\&quot; : \&quot;web-###\&quot;,</code></span></span></div>
+<div><span><code>}&quot;,</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Int</b></p>
+</td>
+<td valign="top">
+<p>Any integer</p>
+</td>
+<td>
+<p>Declaration:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ResourceParameters&quot; : [</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><spa></span></span></div>
+<div><span><code>],</code></span></div>
+</div>
+<p>Value:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ParameterValues&quot; : &quot;{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>\&quot;DefaultInstanceCount\&quot; : 5</code></span></span></div>
+<div><span><code>}&quot;,</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Bool</b></p>
+</td>
+<td valign="top">
+<p>True</p>
+<p>False</p>
+</td>
+<td>
+<p>Declaration:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ResourceParameters&quot; : [</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Name&quot; : &quot;EnableTCP&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Type&quot; : &quot;boolean&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Description&quot; : &quot;Enables TCP&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>},</code></span></span></div>
+<div><span><code>],</code></span></div>
+</div>
+<p>Value:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ParameterValues&quot; : &quot;{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>\&quot;EnableTCP\&quot; : false,</code></span></span></div>
+<div><span><code>}&quot;,</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Credential</b></p>
+</td>
+<td valign="top">
+<p>&lt;UserName&gt;:&lt;Password&gt;</p>
+</td>
+<td>
+<p>Declaration:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ResourceParameters&quot; : [</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Name&quot; : &quot;JoinDomainCrede&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Type&quot; : &quot;Credential&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;Description&quot; : &quot;Join Domain Creds&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>},</code></span></span></div>
+<div><span><code>],</code></span></div>
+</div>
+<p>Value:</p>
+<div class="reCodeBlock">
+<div><span><code>&quot;ParameterValues&quot; : &quot;{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>\&quot;JoinDomainCred\&quot; : \&quot;user:password\&quot;,
+</code></span></span></div>
+<div><span><code>}&quot;,</code></span></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h1><a name="Parameter_Names"></a>Parameter Names</h1>
+<p>Parameter names have the following restrictions:</p>
+<ul>
+<li>Parameter names must begin with a letter followed by any number of alphanumeric characters.
+</li><li>Parameter names are case sensitive. </li><li>Literal [ characters must be escaped using [[. </li><li>If the parameter type is a string, then you can use multiple parameters together to build a single string value.
+</li></ul>
+<p>You should leverage standard names when defining parameters so that you can reuse snippets from existing Resource Definitions, Resource Extensions, and View Definitions when creating a new Virtual Machine Role.</p>
+<p>The following table provides the standard set of parameter names for Resource Definitions. These are organized according to the section of the Resource Definition File that are described below.
+</p>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="2">
+<tbody>
+<tr>
+<td>
+<p><b>Property</b></p>
+</td>
+<td>
+<p><b>Parameter</b></p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Hardware Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>VMSize</p>
+</td>
+<td>
+<p>[Param.VMRoleVMSize]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Scaleout Settings</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>InitialInstanceCount</p>
+</td>
+<td>
+<p>[Param.VMRoleInitialInstanceCount]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>MinimumInstanceCount</p>
+</td>
+<td>
+<p>[Param.VMRoleMinimumInstanceCount]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>MaximumInstanceCount</p>
+</td>
+<td>
+<p>[Param.VMRoleMaximumInstanceCount]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>UpgradeDomainCount</p>
+</td>
+<td valign="top" style="width:398px;">
+<p>[Param.VMRoleUpgradeDomainCount] </p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>OS Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>ComputerNamePattern</p>
+</td>
+<td>
+<p>If single instance, parameterize the name:</p>
+<p>[Param.VMRoleComputerName]</p>
+<p>If scale out, parameterize the prefix, followed by ###:</p>
+<p>[Param.VMRoleComputerNamePrefix]</p>
+<p>If allowing entire pattern to be entered, parameterize the whole name:</p>
+<p>[Param.VMRoleComputerNamePattern]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>AdminCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleAdminCredential]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Timezone</p>
+</td>
+<td>
+<p>[Param.VMRoleTimezone]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Windows Operating System Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>WorkgroupName</p>
+</td>
+<td>
+<p>[Param.VMRoleWindowsWorkgroupName]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Domain</p>
+</td>
+<td>
+<p>[Param.VMRoleWindowsDomainToJoin]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Domain join creds</p>
+</td>
+<td>
+<p>[Param.VMRoleWindowsDomainJoinCredentials]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Linux Operating System Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>LinuxOperatingSystemProfileDNSDomainName</p>
+</td>
+<td>
+<p>[Param,VMRoleLinuxDNSDomainName]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SSHPublicKey</p>
+</td>
+<td>
+<p>[Param,VMRoleLinuxSSHPublicKey]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Network Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>NetworkAdapters.NetworkRef</p>
+</td>
+<td>
+<p>[Param.VMRoleNetworkRef]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Storage Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>OSImageNameVersion</p>
+</td>
+<td>
+<p>[Param.VMRoleOSVHDImageNameVersion]</p>
+<p>(need validator to format input as “Name:Version”)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Data Virtual Hard Disks</p>
+</td>
+<td>
+<p>[Param.VMRoleDataVHDNameVersion01]</p>
+<p>[Param.VMRoleDataVHDLUN01]</p>
+<p>(repeat for 2, 3, …)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>The following table provides the standard set of parameter names for Resource Extensions. These are organized according to the section of the Resource Extension File that are described below.</p>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="2">
+<tbody>
+<tr>
+<td>
+<p><b>Property</b></p>
+</td>
+<td>
+<p><b>Parameter</b></p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p>Linux Application Profile</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>None</p>
+</td>
+<td>
+<p>None</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Windows Application Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>None</p>
+</td>
+<td>
+<p>None</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>SQL Profile</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.DeploymentName</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDeploymentName</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.InstanceName</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLInstanceName</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.InstanceID</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLInstanceID</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLAuthenticationType</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLAuthenticationType</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLSysAdminMemberList</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLSysAdminMemberList</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SAPassword</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLSAPassword</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLDeploymentCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDeploymentCredential</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLAgentServiceCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLAgentServiceCredential</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLServiceCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLServiceCredential</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLReportingServiceCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLReportingServiceCredential</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Provisioning Scripts</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>None</p>
+</td>
+<td>
+<p>None</p>
+</td>
+</tr>
+<tr>
+<td colype</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLAuthenticationType</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeployments.SQLSysAdminMemberList</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLSysAdminMemberList</p>
+</td>
+</tr>
+<tr>
+<tspan="2">
+<p><b>Web Deploy Applications</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>ScriptCommands.ScriptCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleWebScriptCredential]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>WebDeployParameters.ConnectionString</p>
+</td>
+<td>
+<p>[Param.VMRoleWebConnectionString]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>SQL Dac Applications</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>ScriptCommands.ScriptCredential.UserName</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacScriptCredentialUserName]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>ScriptCommands.ScriptCredential.Password</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacScriptCredentialPassword]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLScriptCommands.DatabaseName</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacDatabaseName]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLScriptCommands.SQLAuthenticationType</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacSQLScriptCommands.SQLAuthenticationType]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLScriptCommands.ScriptCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacSQLScriptCommands.ScriptCredential]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>DacInstance</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacInstance]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLAuthenticationType</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacSQLAuthenticationType]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLDeploymentCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacSQLDeploymentCredential]</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SQLInstance</p>
+</td>
+<td>
+<p>[Param.VMRoleSQLDacSQLInstance]</p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><b>Script Applications</b></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>ScriptCommands.ScriptCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSAScriptCommandsScriptCredential</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>ScriptCredential</p>
+</td>
+<td>
+<p>[Param.VMRoleSAScriptCredential]</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h1><a name="View_Definition_Parameters"></a>View Definition Parameters</h1>
+<p>The View Definition describes a set of parameters that are collected from the tenant when they provision a new Virtual Machine Role. The parameter type determines the following:</p>
+<ul>
+<li>The value that can be assigned to the parameter. </li><li>The validations that may be performed against the parameter’s value. </li><li>The control that is presented in the dialog box to collect the value for the parameter.
+</li></ul>
+<p>The following table lists the parameter types that can be used in the View Definition Template:</p>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="2">
+<tbody>
+<tr>
+<td valign="top">
+<p><b>Type</b></p>
+</td>
+<td valign="top">
+<p><b>Validation</b></p>
+</td>
+<td valign="top">
+<p><b>Control</b></p>
+</td>
+<td valign="top">
+<p><b>Example</b></p>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>ComputerNamePattern</b></p>
+</td>
+<td valign="top">
+<p>Required<br />
+Length (Min/Max)<br />
+RegEx</p>
+</td>
+<td valign="top">
+<p>Text box</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type : &quot;ComputerNamePattern&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Default: &quot;MyMachine###&quot;</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>String</b></p>
+</td>
+<td valign="top">
+<p>Required<br />
+Length<br />
+RegEx</p>
+</td>
+<td valign="top">
+<p>Text box</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type : &quot;String&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Validation: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: true,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MinLength: 10,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MaxLength: 100,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>RegEx: &quot;expression&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Messages: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: &quot;message&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Length: &quot;message&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>RegEx: &quot;message&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Number</b></p>
+</td>
+<td valign="top">
+<p>Required<br />
+Range</p>
+</td>
+<td valign="top">
+<p>Text box</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type: &quot;Number&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Default: &quot;0.0&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Validation: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: true,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MinRange: 10,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MaxRange: 100,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Messages: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: &quot;message&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Range: &quot;message&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Boolean</b></p>
+</td>
+<td valign="top">
+<p>Required</p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type : “Boolean”,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Default: true</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Validation: {</code></span></span></div>
+<div><span><code>&nbsp;&ndiv>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Range: &quot;message&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Boolean</b></p>
+</td>
+<td valign="top">bsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: true</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Messages: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: &quot;message&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Option</b></p>
+</td>
+<td valign="top">
+<p>Required</p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type : &quot;Option&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Default: &quot;val1&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Options: [</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{ &quot;val1&quot;: &quot;Value 1&quot; },</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{ &quot;val2&quot;: &quot;Value 2&quot; }</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>],</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Validation: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: true</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Messages: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: &quot;message&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Credential</b></p>
+</td>
+<td valign="top">
+<p>Required<br />
+IsPasswordRequired <br />
+Portal password validation applies.</p>
+</td>
+<td valign="top">
+<p>Text boxes</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type : &quot;Credential&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Validation: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: true</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Messages: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Required: &quot;message&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>VMSize</b></p>
+</td>
+<td valign="top">
+<p>Required</p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type: &quot;VMSize&quot;</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>OSVirtualHardDisk</b></p>
+</td>
+<td valign="top">
+<p>Required </p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type: &quot;OSVirtualHardDisk&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>ImageTags: {</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;WindowsServer2012&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;R2&quot;,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&quot;SQLServer&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>DataVirtualHardDisk</b></p>
+</td>
+<td valign="top">
+<p>Required</p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type: &quot;DataVirtualHardDisk&quot;</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>Network</b></p>
+</td>
+<td valign="top">
+<p>Required</p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type: &quot;Network&quot;</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<p><b>OSTimeZone</b></p>
+</td>
+<td valign="top">
+<p>Required</p>
+</td>
+<td valign="top">
+<p>Drop down</p>
+</td>
+<td valign="top">
+<div class="reCodeBlock">
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Type: &quot;OSTimeZone&quot;</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h1><a name="See_Also"></a>See Also</h1>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/18273.system-center-2012-r2-virtual-machine-role-authoring-guide-resource-definition-package.aspx">Resource Definition Package</a><br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/18274.system-center-2012-r2-virtual-machine-role-authoring-guide-resource-extension-package.aspx">Resource Extension Package</a><br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/18276.system-center-2012-r2-virtual-machine-role-authoring-guide-vhd-tags.aspx">VHD Tags</a><br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/18278.system-center-2012-r2-virtual-machine-role-authoring-guide-installing-a-virtual-machine-role.aspx#Create_and_Configure_the_VHD">Installing a Virtual Machine Role</a><br />
+<a href="http://download.microsoft.com/download/0/9/C/09C183EB-053F-40BF-AF8D-4E59A4EE0CA4/WS2012WebServer-VMRole-Pkg.zip"><span>Sample Virtual Machine Role Packages</span></a><br />
+<a href="http://msdnstage.redmond.corp.microsoft.com/en-us/library/dn249758.aspx"><span>Virtual Machine Role Resource JSON Reference</span></a></p>
+
+</div>
+    
+    

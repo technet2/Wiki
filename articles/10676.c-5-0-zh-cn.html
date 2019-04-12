@@ -1,0 +1,231 @@
+---
+layout: default
+title: C# 5.0新特性介绍 (zh-CN) - TechNet文章 - 中国（简体中文） - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h3><a name="相关说明"></a><a name="相关说明"></a><a name="相关说明"></a><a name="相关说明"></a>相关说明</h3>
+<p>这篇文章来自发布在MVP 项目组博客上的文章: <a href="http://blogs.msdn.com/b/mvpawardprogram/archive/2012/03/26/c.aspx">
+http://blogs.msdn.com/b/mvpawardprogram/archive/2012/03/26/c.aspx</a>。<br />
+英文版: <a href="http://blogs.msdn.com/b/mvpawardprogram/archive/2012/03/26/introduction-of-new-features-in-c-5-0.aspx">
+<span style="font-family:calibri;color:#0000ff;">http://blogs.msdn.com/b/mvpawardprogram/archive/2012/03/26/introduction-of-new-features-in-c-5-0.aspx</span></a>。</p>
+<h3><a name="正文"></a><a name="正文"></a><a name="正文"></a><a name="正文"></a>正文</h3>
+<p>C#如今已经发展到5.0版本，CLR版本为4.5，伴随Visual Studio 2011发布。我总结了一个进化图，以供大家参考。</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-15-70/7446.1.png"><img alt=" " src="http://blogs.msdn.com/resized-image.ashx/__size/550x0/__key/communityserver-blogs-components-weblogfiles/00-00-01-15-70/7446.1.png" style="border-width:0px;border-style:solid;" /></a><a href="http://kosmisch.net/images/kosmisch_net/Windows-Live-Writer/C-5.0_43/image_4.png"><br />
+</a></p>
+<p>在C# 5.0中主要增加了Async Programming 以及Caller Information两个特性，以下分别作介绍。</p>
+<div><strong>
+<h3><a name="Async_Feature"></a>Async Feature</h3>
+</strong></div>
+<p>在C# 5.0新增了<a href="http://msdn.microsoft.com/en-us/library/hh156513(v=vs.110).aspx">async</a>修饰符以及<a href="http://msdn.microsoft.com/en-us/library/hh156528(v=vs.110).aspx">await</a>操作符；标记有async的方法被称为异步方法。<br />
+异步编程可以给我们带来很大的便利。比如在WinForm编程中，当我们使用HttpWebRequest请求网络资源的时候，<br />
+如果使用同步请求，那么如果请求响应时间过长，会导致我们的UI线程堵塞，<br />
+从直观上的感受是窗体无响应或者无法进行UI交互操作。</p>
+<p>private void btnTest_Click(object sender, EventArgs e) <br />
+<br />
+{ <br />
+<br />
+var request = WebRequest.Create(txtUrl.Text.Trim()); <br />
+<br />
+var content=new MemoryStream(); <br />
+<br />
+using (var response = request.GetResponse()) <br />
+<br />
+{ <br />
+<br />
+using (var responseStream = response.GetResponseStream()) <br />
+<br />
+{ <br />
+<br />
+responseStream.CopyTo(content); <br />
+<br />
+} <br />
+<br />
+} <br />
+<br />
+txtResult.Text = content.Length.ToString(); <br />
+<br />
+}</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-15-70/3276.2.png"><img alt=" " width="363" height="196" src="http://blogs.msdn.com/resized-image.ashx/__size/550x0/__key/communityserver-blogs-components-weblogfiles/00-00-01-15-70/3276.2.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</p>
+<p>当点击Test按钮后，在txtResult显示结果之前，我们将不能对窗体进行任何操作。</p>
+<p>在没有async之前，我们一般也可以使用BeginGetResponse方法进行异步操作，如MSDN文档上的示例所示，<br />
+我们需要编写大量的代码去实现异步的效果:<br />
+<a href="http://msdn.microsoft.com/zh-cn/library/system.net.httpwebrequest.begingetresponse(v=vs.80).aspx">http://msdn.microsoft.com/zh-cn/library/system.net.httpwebrequest.begingetresponse(v=vs.80).aspx</a>。</p>
+<p>下面我们将对以上的窗体进行改造，使用新增的异步编程特性，代码如下:</p>
+<p>private async void btnTest_Click(object sender, EventArgs e)<br />
+<br />
+<br />
+{ <br />
+<br />
+var request = WebRequest.Create(txtUrl.Text.Trim()); <br />
+<br />
+var content = new MemoryStream(); <br />
+<br />
+Task&lt;WebResponse&gt; responseTask = request.GetResponseAsync(); <br />
+<br />
+using (var response = await responseTask) <br />
+<br />
+{</p>
+<p>using (var responseStream = response.GetResponseStream()) <br />
+<br />
+{ <br />
+<br />
+Task copyTask = responseStream.CopyToAsync(content); <br />
+<br />
+//await operator to supends the excution of the method until the task is<br />
+completed. In the meantime, the control is returned the UI thread. <br />
+<br />
+await copyTask; <br />
+<br />
+} <br />
+<br />
+} <br />
+<br />
+txtResult.Text = content.Length.ToString(); <br />
+<br />
+}</p>
+<p>通过await，可以使我们在语义上让我们理解为reponse为异步执行后的结果，而编译器会负责所有的代码生成，<br />
+我们无需再去操作复杂的Callback。这样为我们异步编程节省很多的时间。从直观上，当我们使用以上代码后，<br />
+窗体在点击Test按钮后，我们还可以进行交互操作。</p>
+<div><strong>
+<h3><a name="Caller_Information"></a>Caller Information</h3>
+</strong></div>
+<p>从字面上，我们可以理解为在被调用者方法中可以获得调用者的信息，这对我们开发跟踪、<br />
+调试以及诊断工具的时候特别有用。而在之前，我们可能需要在调用者方法中自己进行相关操作，<br />
+比如插入日志信息记录哪个方法执行了等。我印象很深的是，我参与的一个项目根据要求使用微软的企业库，<br />
+在调用每个Data Access的方法前都要插入调用者的信息到日志中，以便跟踪调查等；<br />
+这样导致每个调用者方法都会有相同的调用记录日志的方法的代码。有了Caller Information，<br />
+我们可以在被调用者方法中获得以下几个信息:</p>
+<p><a href="http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.callerfilepathattribute(v=vs.110).aspx">CallerFilePathAttribute</a> 调用者方法所在的源文件地址</p>
+<p><a href="http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.callerlinenumberattribute(v=vs.110).aspx">CallerLineNumberAttribute</a> 方法被调用的行号</p>
+<p><a href="http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.callermembernameattribute(v=vs.110).aspx">CallerMemberNameAttribute</a> 调用方法的名称</p>
+<p>下面我将举例说明。</p>
+<p>在以前我们可能会用到如下的方法:</p>
+<p>using System; <br />
+<br />
+using System.Collections.Generic; <br />
+<br />
+using System.Linq; <br />
+<br />
+using System.Text; <br />
+<br />
+using System.Threading.Tasks;</p>
+<p>namespace ConsoleApplicationTest <br />
+<br />
+{ <br />
+<br />
+class Program <br />
+<br />
+{ <br />
+<br />
+static void Main(string[] args) <br />
+<br />
+{ <br />
+<br />
+InsertLog(&quot;Main&quot;); <br />
+<br />
+MethodB(); <br />
+<br />
+Console.ReadLine(); <br />
+<br />
+}</p>
+<p>static void MethodA() <br />
+<br />
+{ <br />
+<br />
+InsertLog(&quot;MethodA&quot;); <br />
+<br />
+MethodB(); <br />
+<br />
+}</p>
+<p>static void MethodB() <br />
+<br />
+{ }</p>
+<p>static void InsertLog(string methodName) <br />
+<br />
+{ <br />
+<br />
+Console.WriteLine(&quot;{0} called method B at {1}&quot;, methodName,<br />
+DateTime.Now); <br />
+<br />
+} <br />
+<br />
+} <br />
+<br />
+}</p>
+<p>在Main和MethodA中都调用了InsertLog方法。有了新特性的支持，我们可以修改代码为:</p>
+<p>using System; <br />
+<br />
+using System.Collections.Generic; <br />
+<br />
+using System.Linq; <br />
+<br />
+using System.Runtime.CompilerServices; <br />
+<br />
+using System.Text; <br />
+<br />
+using System.Threading.Tasks;</p>
+<p>namespace ConsoleApplicationTest <br />
+<br />
+{ <br />
+<br />
+class Program <br />
+<br />
+{ <br />
+<br />
+static void Main(string[] args) <br />
+<br />
+{ <br />
+<br />
+//InsertLog(&quot;Main&quot;); <br />
+<br />
+MethodB(); <br />
+<br />
+Console.ReadLine(); <br />
+<br />
+}</p>
+<p>static void MethodA() <br />
+<br />
+{ <br />
+<br />
+//InsertLog(&quot;MethodA&quot;); <br />
+<br />
+MethodB(); <br />
+<br />
+}</p>
+<p>static void MethodB( <br />
+<br />
+[CallerMemberName] string memberName = &quot;&quot;, <br />
+<br />
+[CallerFilePath] string sourceFilePath = &quot;&quot;, <br />
+<br />
+[CallerLineNumber] int sourceLineNumber = 0) <br />
+<br />
+{ <br />
+<br />
+InsertLog(memberName); <br />
+<br />
+}</p>
+<p>static void InsertLog(string methodName) <br />
+<br />
+{ <br />
+<br />
+Console.WriteLine(&quot;{0} called method B at {1}&quot;, methodName,<br />
+DateTime.Now); <br />
+<br />
+} <br />
+<br />
+} <br />
+<br />
+}</p>
+<h3><a name="总结"></a><a name="总结"></a><a name="总结"></a><a name="总结"></a>总结</h3>
+<p>C# 5.0新增的特性可以提高我们编程的效率同时减少代码量，VS11 IDE方面也新增加了很多新的功能，<br />
+大家可以慢慢去体会。</p>
+
+</div>
+    
+    

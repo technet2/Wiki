@@ -1,0 +1,167 @@
+---
+layout: default
+title: BizTalk&#58; Simplify BizTalk Dev by Using the Empty Namespace - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<hr />
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Benefits_of_Using_the_Empty_Namespace">Benefits of Using the Empty Namespace</a></li><li class="hierarchy-item"><a href="#Creating_Schemas">Creating Schemas</a></li><li class="hierarchy-item">ss="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></di<a href="#Modifying_External_Schemas">Modifying External Schemas</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Simple_Schemas">Simple Schemas</a></li><li class="hierarchy-item"><a href="#Complex_Schemas">Complex Schemas</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Removing_Namespaces">Removing Namespaces</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Mapping_To_Namespace_Free_Messages">Mapping To Namespace Free Messages</a></li><li class="hierarchy-item"><a href="#Namespace_Remover_Pipeline_Component">Namespace Remover Pipeline Component</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Using_Xml_in_the_Empty_Namespace">Using XML in the Empty Namespace</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#XPath">XPath</a></li><li class="hierarchy-item"><a href="#Orchestration_xpath">Orchestration xpath()</a></li><li class="hierarchy-item"><a href="#Xslt">Xslt</a></li><li class="hierarchy-item"><a href="#Xml_Disassembler_amp_Assembler">XML Disassembler &amp; Assembler</a></li><li class="hierarchy-item"><a href="#Flat_File_Disassembler_amp_Assembler">Flat File Disassembler &amp; Assembler</a></li><li class="hierarchy-item"><a href="#JSON_Decoder_amp_Encoder">JSON Decoder &amp; Encoder</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Adding_Namespaces_to_Outbound_Xml_Messages">Adding Namespaces to Outbound XML Messages</a></li><li class="hierarchy-item"><a href="#A_Note_on_Performance">A Note on Performance</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+I won’t be shy, XML namespaces are fine concept, but a frustrating implementation.&nbsp; I can say without the slight bit of doubt, the XML Namespace implementation has caused many, many more problems for me than it solved, which is exactly 0.&nbsp; This is because after
+ doing this for 17 years, I have never, ever experienced a name collision, which is the only reason Namespaces exist.&nbsp; As of today, other formats have grown in legitimate popularity that offer much more direct approach to formatting data, namely JSON, that
+ don’t support the concept of namespaces at all**.</p>
+<p>Even though XML will be the foundation of BizTalk Dev for, well, forever and there’s nothing wrong with that, we can adopt the huge benefit of the JSON scheme while giving up absolutely no functionality.&nbsp; The best part, XML itself provides a completely legitimate
+ way to avoid all of the complication that namespaces bring by just using the Empty Namespace (or no namespace, depending on where you look).</p>
+<p>**Yes, I am aware that a namespace is implicitly part of JSON since it follows Java rules, but we can do the same thing in Xml.&nbsp; “Contoso.PlantName” : “Bellvue” and &lt;Fabrikan.PlantName&gt;Tacoma&lt;/Fabrikan.PlantName&gt; are conceptually the same.</p>
+<p>The sample Solution for this Article can be found in the MSDN Code Gallery at:&nbsp;<a href="https://code.msdn.microsoft.com/BizTalk-Simplify-BizTalk-90f4e1cf">https://code.msdn.microsoft.com/BizTalk-Simplify-BizTalk-90f4e1cf</a></p>
+<a name="Creating_Schemas"></a>
+<h1><a name="Benefits_of_Using_the_Empty_Namespace"></a>Benefits of Using the Empty Namespace</h1>
+<p>Before we get started, I want to lay out some key benefits and important points.</p>
+<ol>
+<li><span style="font-size:12.1px;">The Empty Namespace is part of XML. &nbsp;There is no hack or trick involved. &nbsp;An Empty Namespace is just as valid as any Namespace Uri.</span>
+</li><li><span style="font-size:12.1px;">The Empty Namespace is fully supported in .NET and BizTalk Sever because of point #1.</span>
+</li><li><span style="font-size:12.1px;">The Empty Namespace means much simpler and readable XPath and Xslt. &nbsp;See the original MSDN XPath Examples:&nbsp;</span><span style="font-size:12.1px;">&nbsp;</span><a href="https://msdn.microsoft.com/en-us/library/ms256086%28v=vs.110%29.aspx?f=255&amp;MSPPError=-2147217396" style="font-size:12.1px;color:#ff6600;">XPath
+ Examples</a> </li><li><span style="font-size:12.1px;">The Empty Namespace means much smaller and readable XML documents.</span>
+</li><li><span style="font-size:12.1px;">Points #3 and #4 will save you a lot of frustration and dev time.</span>
+</li></ol>
+<h1><a name="Creating_Schemas"></a>Creating Schemas</h1>
+<p>Creating a Schema with the Empty Namespace is very easy.&nbsp; There are just two extra steps:</p>
+<ol>
+<li>Remove any value in the TargetNamespace property leaving it blank. </li><li>Set Element FormDefault to Qualified to Qualified. </li></ol>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0083.SchemaPropertyValues.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0083.SchemaPropertyValues.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Step 2 is very important.&nbsp; I often find developers are still confused by this definition, believing that Qualified vs Unqualified refers to the use of a namespace prefix, such as ns0.&nbsp; This is not the case.&nbsp; It means that all Elements in the Schema,
+<em>at any level</em>, are qualified with the Target Namespace, whatever it is.&nbsp; What trips people up is that the the Target Namespace will always apply to elements defined at the Root, but not elements defined lower in the hierarchy unless Element FormDefault
+ is Qualified.&nbsp;</p>
+<p>A-ha, if you’re the inquisitive type, you will notice that when using an empty Target Namespace, the value of Element FormDefault has no effect, and you would be correct.&nbsp; I still recommend setting it to Qualified so that all elements are unambiguously defined
+ in the Empty Namespace, as opposed to the ‘default’ Empty Namespace.&nbsp; Splitting hairs, yes, but you should be using Qualified even when using a namespace so this is also an issue of consistency.</p>
+<h1><a name="Modifying_External_Schemas"></a>
+<p>Modifying External Schemas</p>
+</h1>
+<p>If full Canonical Schemas don’t make sense for a particular app, we can still benefit from using the Empty Namespace by modifying the external schema for use
+<em>within</em> our app.</p>
+<h2><a name="Simple_Schemas"></a>Simple Schemas</h2>
+<p>The EDI Schemas are a great candidate for this.&nbsp; You will still need versions of the EDI Schemas for the edge, meaning for use by the EDI Disassembler and Assembler, but within your app, Maps, Orchestrations, Rules, etc., all use Schemas with the Empty Namespace.</p>
+<p>Modifying the EDI schemas for this purpose is very easy.</p>
+<ol>
+<li>Copy the EDI Schema in your Solution. </li><li>Set Target Namespace to blank. </li><li>Set Element FormDefault to Qualified. </li><li>Remove the EDI Schema Editor Extension. </li></ol>
+<p>Now, you have a much simplified Schema to use within the app.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2620.EDISchemaPropertyValues.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2620.EDISchemaPropertyValues.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>In these Properties, note the Schema Editor Extensions field is blank.</p>
+<p>To sSchemas for the edge, meaning for use by the EDI Disassembler and Assembler, but within your app, Maps, Orchestrations, Rules, etc., all use Schemas with the Empty Namespace.</p>
+<p>Modifying the EDI schemas for this purpose is very easy.</p>
+<ol>
+<li>Copy the EDI Schema in your Solution. </li><li>ee how this XML looks, right-click the Schema in Solution Explorer and choose Generate Instance.&nbsp; The structure is fully preserved but there is no namespace noise.</p>
+<h2><a name="Complex_Schemas"></a>Complex Schemas</h2>
+<p>The EDI Schemas are easy to make namespace free since they are all self contained with no external references.&nbsp; This is not always the case and there are many interface schemas that use a complicated import/include scheme when defining types and structures
+ (I’m looking at you CRM! <img class="wlEmoticon wlEmoticon-winkingsmile" alt="Winking smile" src="http://social.technet.microsoft.com/wiki/contents/articles/$wlEmoticon-winkingsmile2.png" style="border-style:none;" />).</p>
+<p>Using the CRM Schema as an example, we can’t simple remove the namespaces since that will break all the references.&nbsp; But, this is not a showstopper, we just have to take a quick round trip through a Generated Instance and the Schema Generator Wizard.</p>
+<p>1. Set Root Reference to the operation you want a Schema for.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7242.CreateRootRef.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7242.CreateRootRef.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>2. Right-click and choose Generate Instance.</p>
+<p>3. Open the generated instance in the Visual Studio XML Editor.</p>
+<p>4. Replace “ns0:”, “ns1:” and “ns2:” all with nothing.&nbsp; You don’t need to do anything about the xmlns declarations since the Schema Generator will ignore them.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0250.ReplaceNSPrefix.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0250.ReplaceNSPrefix.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>5. Use the Well-formed XML Schema Wizard to generate a Schema from the modified instance.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8664.SchemaWizard.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8664.SchemaWizard.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>The wizard will generate a single .xsd representing the Create operation for CRM.&nbsp; Verify the Element FormDefault is set to Qualified and the TargetNamespace option is empty.</p>
+<p>You now have a very much simplified Schema to use within your app.</p>
+<p>**Note, having done this several times, it’s worth pointing out that while the Schema Wizard usually does a really great job, it’s not always perfect.&nbsp; So, during development, I recommend you run the either the XmlAssembler with Validation on or use the
+ XmlValidator component to catch any differences between the inferred Schema and the actual messages.</p>
+<h1><a name="Removing_Namespaces"></a>Removing Namespaces</h1>
+<p>Now that we have simple, easy to use Schemas using the Empty Namespace, we have to get our incoming message to conform.&nbsp; There are two ways to accomplish this, a Pipeline Component that strips namespaces and references or a Map.&nbsp; The choice depends on weather
+ or not you are using an dedicated Canonical Schema or a Schema copy with the Empty Namespace.</p>
+<h2><a name="Mapping_To_Namespace_Free_Messages"></a>Mapping To Namespace Free Messages</h2>
+<p>A Map is the best option if you meet these two criteria:</p>
+<ol>
+<li>You are using a dedicated Canonical Schema or have modified the incoming schema<br />
+-and- </li><li>Have a simple transform from the endpoint format to the Canonical or modified schema
+</li></ol>
+<p>In these two cases, using a Map allows you to remove the namespaces and modify the structure at the same time.&nbsp; Also, since a Map would be used to create the outgoing message, which likely would require namespaces, this keeps the two operations consistent.&nbsp;
+ Creating the Map from the incoming to Canonical is the exact same Mapping process we would do in any app, including converting data, changing structure and anything else that needs to be done.&nbsp; The fact that the the destination Schema is namespace free is
+ irrelevant.</p>
+<h2><a name="Namespace_Remover_Pipeline_Component"></a>Namespace Remover Pipeline Component</h2>
+<p>However, if one of these apply:</p>
+<ol>
+<li>Using a copy of the endpoint Schema just with no namespace<br />
+-or- </li><li>Have a complex transform from the endpoint to the Canonical </li></ol>
+<p>Then a Pipeline Component is the best option.&nbsp; The reason this applies for case 2 is that using the Empty Namespace
+<em>significantly reduces mapping complexity</em>, especially if custom Xslt is required.&nbsp; For this scenario, the pattern would be:</p>
+<ol>
+<li>Create an Empty Namespace Schema as described above. </li><li>Use the RemoveNamespace Pipeline Component in the Decode Stage, then use the XmlDisassembler normally in the Disassemble Stage.
+</li><li>Apply the Map either at the Receive Port or in an Orchestration. </li></ol>
+<p>The compiled Assembly is included with the sample Solution linked above.</p>
+<h1><a name="Using_Xml_in_the_Empty_Namespace"></a>Using XML in the Empty Namespace</h1>
+<p>Because the Empty Namespace is part of XML, all of BizTalk Server and .Net fully support the use of XML documents with an Empty Namespace.&nbsp; This applies to the Schema Designer, Map Designer, XML Disassembler and Assembler, the Flat File Disassembler and
+ Assembler, Orchestration Designer and Engine (including the xpath() function), Xslt.&nbsp; Simply, there is no technical requirement for anything other then the Empty Namespace.</p>
+<p>Here are some examples of why using the Empty Namespace is better:</p>
+<h3><a name="XPath"></a>XPath</h3>
+<p><strong>CRM Value With Namespaces:</strong> /*[local-name()=&#39;Create&#39; and namespace-uri()=&#39;<a href="http://schemas.microsoft.com/xrm/2011/Contracts/Services&#39;]/*[local-name()=&#39;entity&#39;">http://schemas.microsoft.com/xrm/2011/Contracts/Services&#39;]/*[local-name()=&#39;entity&#39;</a>
+ and namespace-uri()=&#39;<a href="http://schemas.microsoft.com/xrm/2011/Contracts/Services&#39;]/*[local-name()=&#39;Attributes&#39;">http://schemas.microsoft.com/xrm/2011/Contracts/Services&#39;]/*[local-name()=&#39;Attributes&#39;</a> and namespace-uri()=&#39;<a href="http://schemas.microsoft.com/xrm/2011/Contracts&#39;]/*[local-name()=&#39;KeyValuePairOfstringanyType&#39;">http://schemas.microsoft.com/xrm/2011/Contracts&#39;]/*[local-name()=&#39;KeyValuePairOfstringanyType&#39;</a>
+ and namespace-uri()=&#39;<a href="http://schemas.microsoft.com/xrm/2011/Contracts&#39;]/*[local-name()=&#39;value&#39;">http://schemas.microsoft.com/xrm/2011/Contracts&#39;]/*[local-name()=&#39;value&#39;</a> and namespace-uri()=&#39;http://schemas.datacontract.org/2004/07/System.Collections.Generic&#39;]</p>
+<p><strong>CRM Value with the Empty Namespace:</strong> /Create/entity/Attributes/KeyValuePairOfstringanyType/value</p>
+<p><strong>CRM XPath with conditions:</strong> /Create/entity/Attributes/KeyValuePairOfstringanyType[key = ‘customerName’]/value</p>
+<p>Of interesting note, on the MSDN page titled XPath Examples, every sample uses the Empty Namespace.&nbsp; See here:
+<a href="https://msdn.microsoft.com/en-us/library/ms256086%28v=vs.110%29.aspx?f=255&amp;MSPPError=-2147217396">
+XPath Examples</a></p>
+<h3><a name="Orchestration_xpath"></a>Orchestration xpath()</h3>
+The Orchestration xpath() function uses the Empty Namespace without issue. &nbsp;The sample Solution includes XPathSample.odx with the following code:<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">EmptyNamespaceFlatFileSent = EmptyNamespaceFlatFileReceived;<br />
+xpath(EmptyNamespaceFlatFileSent, </code><code style="color:blue;">&quot;/EmptyNamespaceFlatFile/EmptyNamespaceFlatFile_Child1[2]/EmptyNamespaceFlatFile_Child1_Child2&quot;</code><code style="color:#000000;">) =
+</code><code style="color:blue;">&quot;SET IN ORCHESTRATION&quot;</code><code style="color:#000000;">;</code></span></div>
+</div>
+<h3><a name="Xslt"></a>Xslt</h3>
+<p>Xslt gety Namespace.&nbsp; See here:
+<a href="https://msdn.microsoft.com/en-us/library/ms256086%28v=vs.110%29.aspx?f=255&amp;MSPPError=-2147217396">
+XPath Examples</a></p>
+<h3><a name="Orchestration_xpath"></a>Orchestration xpath()</h3>
+The Orchestration xpath() function uses the Empty Namespace without issue. &nbsp;The sample Solution includes XPathSample.odx wit the same XPath benefits on the source document, shorter queries and readable condition.&nbsp; For the output document, we can also emit elements and attributes directly, avoiding xsl:element declarations.</p>
+<p>With Namespaces:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsl:element</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyOutputElementName&quot;</code>
+<code style="color:#808080;">namespace</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;</code><code style="color:#000000;"><a href="http://mynamespace/">http://MyNamespace</a>&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsl:text</code><code style="color:#000000;">&gt;MyOutputValue&lt;/</code><code style="color:#006699;font-weight:bold;">xsl:text</code><code style="color:#000000;">&gt;&lt;</code><code style="color:#006699;font-weight:bold;">br</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">xsl:element</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>With the Empty Namespace:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MyOutputElementName</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsl:text</code><code style="color:#000000;">&gt;MyOutputValue&lt;/</code><code style="color:#006699;font-weight:bold;">xsl:text</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MyOutputElementName</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<h3><a name="Xml_Disassembler_amp_Assembler"></a>XML Disassembler &amp; Assembler</h3>
+<p>Because the Empty Namespace is completely valid XML, the XmlDisassembler and XmlAssembler work without issue.</p>
+<h3><a name="Flat_File_Disassembler_amp_Assembler"></a>Flat File Disassembler &amp; Assembler</h3>
+<p>Similar to the XML components, the Flat File Assembler and Disassembler work with Empty Namespace Schemas without issue.&nbsp; There is one exception in the Flat File Experience.&nbsp; The Flat File Schema Wizard requires a Target Namespace be entered with running
+ the Wizard.&nbsp; But, this Target Namespace can be immediately deleted from the generated Schema</p>
+<h3><a name="JSON_Decoder_amp_Encoder"></a>JSON Decoder &amp; Encoder</h3>
+<p>Oddly, there is a bug in the JSON Decoder component in that it requires a value for the RootNodeNamespace property, otherwise, a runtime error is thrown.&nbsp; This problem is compounded by the lack of a way to set the scope of the namespace.&nbsp; Fortunately, this
+ is very easy to work around this by using the above referenced Empty Namespace Pipeline Component.</p>
+<p>The JSON Encoder works with Empty Namespace message without issue.</p>
+<h1><a name="Adding_Namespaces_to_Outbound_Xml_Messages"></a>Adding Namespaces to Outbound XML Messages</h1>
+<p>For the long foreseeable future, we will have to XML with namespace to apps that still require them.&nbsp; This is actually requires the least effort and should happen normally in most apps.</p>
+<p>Adding any required namespaces to outbound documents should happen naturally and without any additional effort in the final map to the outbound format, meaning, it’s just another mapping operation.&nbsp; Because the source document uses the Empty Namespace, we
+ still get most of the benefits and most of the problems are well hidden by the Mapper.</p>
+<p>For cases, such as EDI, where we are using a copy of a schema with an Empty Namespace, the Mapping operation is just the opposite of the Map to remove the namespace.</p>
+<h1><a name="A_Note_on_Performance"></a>A Note on Performance</h1>
+<p>In many cases, there is no extra effort to use the Empty Namespace in out app, especially if we can do this in an existing Mapping operation.&nbsp; Also, the Empty Namespace Pipeline Component uses a Stream implementation for minimal impact.&nbsp; So, in most cases,
+ any ‘performance’ impact would be barely detectable.</p>
+<p>Also worth considering is that XML Documents using only the Empty Namespace are much smaller, often by more than half.&nbsp; Moving around fewer bits is always better so the ‘cost’ of removing namespaces can be made up by saving the cost of handling them.&nbsp; This
+ applies to memory, network and storage.</p>
+<p>Finally, while a lot of unnecessary effort is put on runtime performance, I see too often where dev-time performance issues are ignored.&nbsp; Eliminating the burden of namespaces in our app development is well worth the expense of CPU time probably measured
+ in minutes over a year.&nbsp; I compare that to the hours spent in XPath/Xslt/Schema dev cycles just to deal with namespace issues.&nbsp; That is hours plus hours we can use to make better apps in every other way.</p>
+<p>Happy BizTalking!</p>
+
+</div>
+    
+    

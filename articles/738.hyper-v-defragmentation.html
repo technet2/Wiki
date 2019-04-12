@@ -1,0 +1,48 @@
+---
+layout: default
+title: Hyper-V&#58; Defragmentation - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="text-align:justify;">A random Hyper-V forum issue is that of defragmentation - an often used practice to improve performance of disk IO on a physical system.</p>
+<p style="text-align:justify;">The intent of this article is to discuss the issues around fragmentation in a virtualized situation as well as provide some community best practices.</p>
+<p style="text-align:justify;">The content of this article has been gleaned from a forum post and requires edit for clarity.</p>
+<p style="texi-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Hyper-V: Defragmentation</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615__648663c5_ctl00_ctl01" title="Rated Excellent [5 out of 5]."></span><input type="hidden" value="t-align:justify;"><span style="font-size:14px;"><strong>Q:</strong></span> Is there any reason to run a defrag within a virtual machine that resides on a SAN? I create fixed disk VMs, but with the vhd&#39;s being spread across a shared RAID-5 LUN&nbsp;it
+ seems as though the&nbsp;defrag job would only create additional I/O load on the SAN without offering the I/O performance improvement one would expect in&nbsp;a single disk environment.</p>
+<p style="text-align:justify;"><span style="font-size:14px;"><strong>A:</strong></span> If the virtual disk is fixed, then there is little chance of the virtual disk binary file becoming fragmented on the SAN - however, within the virtual disk file the operating
+ system behaves the same way and will create fragmentation within the virtual disk itself.</p>
+<p style="text-align:justify;">The fragmentation within the virtual disk is caused by the OS running in the VM.&nbsp;The fragmentation at the storage level is generally caused by having many dynamic disks on the same physical volume.</p>
+<p style="text-align:justify;">In my mind, we can look at storage level fragmentation the same as we look at the performance degradation from snapshots.&nbsp;A snapshot chain of many little snapshot files is fundamentally no different than binary fragmentation of
+ a single, dynamic, VHD.</p>
+<p style="text-align:justify;">Is a rule of thumb we generally do not see that much fragmentation within the virtual disk of a VM, because the life of a VM is relatively short. Thus the system is more frequently rebuilt instead of patched during its three year
+ life than was the general practice with physical machines.</p>
+<p style="text-align:justify;">The cases where high fragmentation can be seen is when a P2V process performs a block by block copy of a physical drive to a virtual disk - instead of a file by file copy (thus defragmenting by nature) - and where there is a large
+ amount of read and write activity within the VM - or the VM has a very long life (this is the same case or physical machines).</p>
+<p style="text-align:justify;"><span style="font-size:14px;"><strong>Q:</strong></span> Rather than how fragmentation occurs, I am trying to determine whether there is any benefit from running a defrag from within a VM if the guest OS perceives the virtual disk
+ to be fragmented. Basically, is there any reason to care about fragmentation in this scenario?</p>
+<p style="text-align:justify;">As soon as I create a fixed VHD and place the file in a SAN volume the file will be spread across multiple disks. Given this physical fragmentation of the VHD, running a defrag within a virtual machine would really just shuffle
+ around logical blocks on multiple physical disks without necessarily improving I/O performance.&nbsp;Frequently accessed blocks could be moved to slower sectors.</p>
+<p style="text-align:justify;">So taking this line of thought, a VM with a fixed disk on a SAN that shows little to no fragmentation should have the same I/O performance as a VM with a fixed disk on a SAN with a high level of fragmentation. Am I off base with
+ this assumption?</p>
+<p style="text-align:justify;"><span style="font-size:14px;"><strong>A:</strong></span> This very issue so far has been a debate of personal preference - this is why I took the time to describe it. Personally, I think it worth anyone understanding and making
+ a personal decision.</p>
+<p style="text-align:justify;">The striping of the binary VHD file across the various disks of a SAN, yes, technically is fragmentation, however that is not fragmentation that we generally concern ourselves with. As it is managed by hardware and it is the responsibility
+ of the hardware to optimize the reads and writes.</p>
+<p style="text-align:justify;">Since were are talking fixed VHD in your example, we actually have very little to no chance of fragmentation of the VHD binary at the file system level (the NTFS storage volume where the VHD resides - not the underlying distribution
+ of the binary across the spindles). Most folks defragement here - especially if they use dynamic virtual disks.</p>
+<p style="text-align:justify;">Within the VHD - that is where most of the debate is.&nbsp;Is there value defragmenting here.</p>
+<p style="text-align:justify;">Personally, I see value in defragmenting within the VHD, but at the same time I only see at as an action that needs to be performed occasionally to rarely. It does help to optimize the OS in the VM.</p>
+<p style="text-align:justify;">My thinking is that if you have fragmentation inside fo the VHD, then you have a third tier of fragmentation - inside (VM OS), outside (LUN file system), and physical (SAN RAID configuration). And it would seem to me that as you
+ add more fragmentation you increase spindle seeks. However, as the sheer speed of spindles and heads increases - the actual performance gain from defragmentation is diminished. So there is the technical way of looking at this as well - do you gain performance?</p>
+<p style="text-align:justify;">Most storage folks would say that there is really no gain in performance and thus it is a waste of time. Most old time admins say to do it. My personal preference is middle between the two.</p>
+
+</div>
+    
+    

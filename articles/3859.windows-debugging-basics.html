@@ -1,0 +1,142 @@
+---
+layout: default
+title: Windows Debugging - Basics - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Basic_Postmortem_Of_Windows_Process"></a>Basic Postmortem Of Windows&nbsp;Process</h1>
+<div class="entry clear">
+<p><span style="color:#0000ff;"><em><strong>PART</strong><strong> I.</strong><strong> ( Understanding Tools To Be Used )
+</strong></em></span></p>
+<p><strong>&nbsp;</strong>Every application&nbsp; / driver comprises of processes and threads. Every process has the following&nbsp;</p>
+<ul>
+<li>Virtual Address space </li><li>Executable code </li><li>One executable thread ( MUST ) /div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Windows Debugging - Basics</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615__3263f305_ctl00_ctl01" title="Rated Good [4 out of 5]."></span><input type="hidden" value="4" id="ctl00_ctl00_content_content_ctl00_w_6615__3263f305_ctl00_ctl0</li><li>Open handles to objects </li><li>PID&nbsp; (process ID ) </li><li>Working sets </li><li>Security Context </li></ul>
+<p>&nbsp;How do we view this and what are the tools required to view this data will be covered below.</p>
+<h4><strong>&nbsp;</strong>&nbsp;</h4>
+<h5><a name="Utilities_Used_To_Debug_Applications_And_Drivers"></a><strong>Utilities Used To Debug Applications And Drivers:&nbsp;</strong><strong>&nbsp;</strong></h5>
+<p>My article is specific to debug Microsoft applications and drivers written for Windows operating systems. Following are some of the utilities that every developer should know and use.</p>
+<ul>
+<li><strong>Visual Studio ( All versions ) </strong></li><li><strong>ADPlus </strong></li><li><strong>Windbg </strong></li><li><strong>DebugDiag </strong></li><li><strong>BoundsChecker ( compuware ) </strong></li><li><strong>Purify ( IBM ) </strong></li></ul>
+<p><strong>&nbsp;</strong><strong>&nbsp;</strong></p>
+<h5><a name="Points_To_Be_Noted"></a><strong>Points To Be Noted:</strong><strong>&nbsp;</strong></h5>
+<p>a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Applications developed using .NET can take advantage of DebugDiag utility and then use Windbg side-by .&nbsp;</p>
+<p>b)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Driver developers can rely on Windbg. There was another classic tool “softice” which is no longer supported&nbsp;</p>
+<p>c)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Applications developed in MFC / ATL / C&#43;&#43; / C# can take advantage of Visual studio inbuilt debug functionality&nbsp; and can use windbg side-by.</p>
+<p><strong>&nbsp;</strong></p>
+<p><strong>&nbsp;</strong></p>
+<p><span style="color:#0000ff;"><em><strong>PART II. ( Preparing Debugging Environment )
+</strong></em></span></p>
+<h5><strong>&nbsp;</strong></h5>
+<h5><a name="Configuring_Windbg_Utility"></a><strong>Configuring Windbg Utility:</strong>&nbsp;</h5>
+<p>One of the best utility used by Microsoft / debuggers to debug applications / drivers is
+<strong>Windbg. </strong>You can download windbg from the following website&nbsp; <a href="http://www.microsoft.com/whdc/devtools/debugging/default.mspx">
+<strong><span style="color:#4265a7;">http://www.microsoft.com/whdc/devtools/debugging/default.mspx</span></strong></a> . You can either download 32bit / 64bit installable. After downloading the utility, we have to configure it accordingly. Microsoft always assists
+ newbie’s to use “help file” which exposes all the relevant documentation required to understand their product. Following are the immediate steps required once you have installed windbg utility.</p>
+<h5><a name="Configuring_Symbol_File_Path"></a><strong>Configuring Symbol File Path:&nbsp;</strong><strong>&nbsp;</strong></h5>
+<p>This is the next immediate step after you download and install the Windbg utility. Symbol files contains the following information</p>
+<ul>
+<li>Function names and addresses </li><li>Global variables </li><li>Local variables </li><li>Frame pointers </li></ul>
+<p>All of the above are bundled into a file called <strong>.pdb </strong>.These <strong>
+.pdb </strong>files are generated when you execute the program ( specifically the linker creates these .<strong>pdb
+</strong>files ). The location of these <strong>.pdb </strong>files are located in application’s project directory&nbsp;</p>
+<h5><a name="Eg_c_DocumentsandSettings_Administrator_MyDocuments_VisualStudio2005_Projects_debugcrash_debug_debugcrash_pdb"></a><a name="Eg_c_DocumentsandSettings_Administrator_MyDocuments_VisualStudio2005_Projects_debugcrash_debug_debugcrash_pdb"></a><a name="Eg_c_DocumentsandSettings_Administrator_MyDocuments_VisualStudio2005_Projects_debugcrash_debug_debugcrash_pdb"></a><a name="Eg_c_DocumentsandSettings_Administrator_MyDocuments_VisualStudio2005_Projects_debugcrash_debug_debugcrash_pdb"></a><a name="Eg_c_DocumentsandSettings_Administrator_MyDocuments_VisualStudio2005_Projects_debugcrash_debug_debugcrash_pdb"></a><strong>Eg:&nbsp;
+ c:\DocumentsandSettings\Administrator\MyDocuments\VisualStudio2005\Projects\debugcrash\debug\debugcrash.pdb</strong></h5>
+<p>The above example belongs to the applications you develop in-house, but in-order to download the symbol files belongs to Microsoft , you need to provide the symbol file path which is provided by Microsoft&nbsp;&nbsp;</p>
+<p>Eg: SRV*<var>your local symbol folder</var>*http://msdl.microsoft.com/download/symbols&nbsp;&nbsp;</p>
+<p>Symbol file path should be configured under <strong>Windbg </strong>using following procedure</p>
+<p>a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Open windbg</p>
+<p>b)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Navigate to <strong>File </strong><strong>à</strong><strong> Symbol File Path
+</strong><strong>à</strong> provide the location accordingly</p>
+<p><a href="http://windowsarchitecture.files.wordpress.com/2010/12/windbg1.jpg"><img alt=" " width="300" height="220" title="windbg1" class="alignnone size-medium wp-image-150" src="http://windowsarchitecture.files.wordpress.com/2010/12/windbg1.jpg?w=300&amp;h=220" /></a></p>
+<pre><strong>IMPORTANT NOTE: </strong>When debugging applications related to third party / applications for which you do not have the source code , you need to request the vendor for the <strong>.pdb files. </strong></pre>
+<p><strong>&nbsp;</strong>&nbsp;</p>
+<h5><a name="Configure_Source_File_Path"></a><strong>Configure Source File Path:</strong><strong>&nbsp;</strong></h5>
+<p>Once you have configured the symbol file path, you should configure the path for your source ( provided you are debugging application / driver which you have developed ). You can do this by navigating to
+<strong>File </strong><strong>à</strong><strong> Source File Path </strong>and provide the location of your executable. (follow image below )</p>
+<p><a href="http://windowsarchitecture.files.wordpress.com/2010/12/windbg2.jpg"><img alt=" " width="300" height="239" title="windbg2" class="alignnone size-medium wp-image-151" src="http://windowsarchitecture.files.wordpress.com/2010/12/windbg2.jpg?w=300&amp;h=239" /></a></p>
+<p><strong>&nbsp;</strong>&nbsp;</p>
+<p><strong>&nbsp;</strong>&nbsp;</p>
+<h3><a name="PART_III_Analyzing_The_Application"></a><span style="color:#0000ff;"><em><strong>PART III ( Analyzing The Application )
+</strong></em></span></h3>
+<p>&nbsp;Once you have configured the above settings, its time for us to analyze our application. The final step required is to hook the
+<strong>exe</strong> to <strong>Windbg </strong>which needs to be debugged. You have to open executable using
+<strong>Windbg </strong>through <strong>windbg </strong><strong>à</strong><strong> OpenExecutable
+</strong><strong>à</strong><strong> provide the path accordingly </strong>( follow the image below )</p>
+<p><a href="http://windowsarchitecture.files.wordpress.com/2010/12/windbg3.jpg"><img alt=" " width="300" height="186" title="windbg3" class="alignnone size-medium wp-image-152" src="http://windowsarchitecture.files.wordpress.com/2010/12/windbg3.jpg?w=300&amp;h=186" /></a></p>
+<p>*Please save the workspace when prompted.</p>
+<p>Next step is to reload the symbol using <strong>.reload /f </strong>command, observe for any errors and resolve them accordingly. There is another way to reload the symbol files , by navigating
+<strong>File </strong><strong>à</strong><strong> Symbol File Path </strong><strong>à</strong><strong> reload
+</strong>. After you reload the symbol files, you have to confirm if the symbol files are loaded, this can be done using
+<strong>lm </strong>command , which gives you the .<strong>pdb </strong>files which are loaded by debugger ( follow the screen below )</p>
+<p><a href="http:trong><strong> provide the path accordingly </strong>( follow the image below )</p>
+<p><a href="http://windowsarchitecture.files.wordpress.com/2010/12/windbg3.jpg"><img alt=" " width="300" height="186" title="windbg3" class="alignnone size-medium wp-image-152" src="http://windowsarchitecture.files.wordpress.com/2010//windowsarchitecture.files.wordpress.com/2010/12/windbg5.jpg"><img alt=" " width="300" height="67" title="windbg5" class="alignnone size-medium wp-image-154" src="http://windowsarchitecture.files.wordpress.com/2010/12/windbg5.jpg?w=300&amp;h=67" /></a></p>
+<p>When you hit <strong>lm </strong>command , you might see <strong>deferred </strong>
+status for modules . Debugger loads the symbols when required so you would see deferred status, in which you can force the symbol to load using
+<strong>.reload /f</strong> .</p>
+<p>Till now , we have prepared the debugger , configured the symbol files, attached our exe to the debugger.&nbsp; If you are debugging
+<strong>Your </strong>application , you can always put the relevant breakpoints to the functions you require, this depends on scenario / behavior of the problem. For this article, I would like to restrict my lab to view
+<strong>process information. </strong>For my lab purpose , I have written an MFC application called
+<strong>“Threadtest”</strong> with single <strong>parent process </strong>and single
+<strong>thread.&nbsp;</strong>&nbsp;</p>
+<p>To view the number of processes in your application, you should use pipe command
+<strong>|* </strong>which displays the below information.</p>
+<p><a href="http://windowsarchitecture.files.wordpress.com/2010/12/windbg6.jpg"><img alt=" " width="300" height="20" title="windbg6" class="alignnone size-medium wp-image-155" src="http://windowsarchitecture.files.wordpress.com/2010/12/windbg6.jpg?w=300&amp;h=20" /></a></p>
+<p>My application is using one process and observe the ( dot ) beside ‘0’ which means this process is the current process.</p>
+<p>Once we identify the number of processes for an application you are debugging / for driver &nbsp;, you should know more about how the process is built , which includes the different data structures involved , Memory information, Heap, Environment etc.. One of
+ the limitation of <strong>Windbg </strong>is that it doesn’t provide a way to “<strong>step-in”
+</strong>between user mode and kernel mode. There are multiple ways to tackle this behavior</p>
+<ul>
+<li>Launch two debuggers , one in user mode and other in kernel mode and analyze the process or thread activity accordingly.&nbsp;
+</li><li>Setup Target and Host and debug the process accordingly ( You can look into the help file in windbg how to setup Target and Host scenario )
+</li></ul>
+<p>&nbsp;</p>
+<p><strong>Why do we need to perform step in to kernel mode ?, cant we analyze the data under user mode context ?
+</strong></p>
+<p>Answer to the above question is NO. In order to analyze the data structures responsible for constructing a process can only be analyzed in kernel mode.</p>
+<p>&nbsp;<strong>So what are the options available for any user under User Mode ?</strong></p>
+<p>Specific to process ( excluding the stack ) , the options provided by windbg is lean. It provides you to analyze</p>
+<ul>
+<li>Number of processes of your application — | , | * </li><li>Active process — | . </li><li>Process which caused exception — | # </li></ul>
+<p>&nbsp;&nbsp;</p>
+<p>In order to analyze the Eprocess / PEB of the process / virtual memory of the process , you can perform the same in KD session. But I tried using
+<strong>!peb &lt;PEB address of a process&gt; </strong>under the user mode session and I was able to get the information which was similar running
+<strong>!peb &lt;PEB address of a process&gt; </strong>under LKD / KD.</p>
+<p>&nbsp;<strong>Eg: </strong>under <strong>user mode</strong> running &nbsp;!peb 7ffdc000 will give you below information</p>
+<p><strong>&nbsp;</strong><strong>&nbsp;&nbsp;&nbsp;&nbsp;</strong>!peb 7ffdc000</p>
+<p>&nbsp;&nbsp;&nbsp; PEB at 7ffdc000</p>
+<p>&nbsp;&nbsp;&nbsp; InheritedAddressSpace:&nbsp;&nbsp;&nbsp; No</p>
+<p>&nbsp;&nbsp;&nbsp; ReadImageFileExecOptions: No</p>
+<p>&nbsp;&nbsp;&nbsp; BeingDebugged:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Yes</p>
+<p>&nbsp;&nbsp;&nbsp; ImageBaseAddress:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00400000</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 002524b0</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.Initialized:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Yes</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.InInitializationOrderModuleList: 00252568 . 00253048</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.InLoadOrderModuleList:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 002524f0 . 002530f8</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.InMemoryOrderModuleList:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 002524f8 . 00253100</p>
+<p>&nbsp;&nbsp;&nbsp; Base TimeStamp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Module</p>
+<p>&nbsp;&nbsp;&nbsp; Under <strong>kernel mode</strong> !peb 7ffdc000</p>
+<p>&nbsp;&nbsp;&nbsp; !peb 7ffdc000</p>
+<p>&nbsp;&nbsp;&nbsp; PEB at 7ffdc000</p>
+<p>&nbsp;&nbsp;&nbsp; InheritedAddressSpace:&nbsp;&nbsp;&nbsp; No</p>
+<p>&nbsp;&nbsp;&nbsp; ReadImageFileExecOptions: No</p>
+<p>&nbsp;&nbsp;&nbsp; BeingDebugged:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Yes</p>
+<p>&nbsp;&nbsp;&nbsp; ImageBaseAddress:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 00400000</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 002524b0</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.Initialized:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Yes</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.InInitializationOrderModuleList: &nbsp;00252568 . 00253048</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.InLoadOrderModuleList:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;002524f0 . 002530f8</p>
+<p>&nbsp;&nbsp;&nbsp; Ldr.InMemoryOrderModuleList:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 002524f8 . 00253100</p>
+<p>This article explains, how to setup the debugger appropriately and hook the application to debug.
+</p>
+</div>
+
+</div>
+    
+    

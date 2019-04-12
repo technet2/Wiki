@@ -1,0 +1,80 @@
+---
+layout: default
+title: FOPE Troubleshooting why a forced TLS recipient is not receiving messages - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Messages where Forced TLS policy rules are in place can fail for any number of reasons.&nbsp; The most typical reason has to do with certificoter"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-ates that are issued from Certificate Authorities that are not trusted by the FOPE service.&nbsp; In order to test connections
+ to SMTP TLS MTA&#39;s you can make use of Win32 OpenSSL s_client functionality.</p>
+<p>Downloads for&nbsp;Win32 OpenSSL can be found at <a href="http://www.slproweb.com/products/Win32OpenSSL.html">
+http://www.slproweb.com/products/Win32OpenSSL.html</a><br />
+The man page for s_client for openssl can be found at <a href="http://www.openssl.org/docs/apps/s_client.html">
+http://www.openssl.org/docs/apps/s_client.html</a></p>
+<p>To test connectivity to a TLS enabled SMTP server run the following command</p>
+<p><span style="color:#ff0000;">openssl s_client -connect mail.messaging.microsoft.com:25 -showcerts&nbsp;-starttls smtp</span></p>
+<p>&nbsp;In the example shown we are establishing a connection to the FOPE inbound hostname on port 25 and establishing a TLS connection and showing the certificates back to the client that the server provides.</p>
+<p>The return text will be in the following format:</p>
+<ul>
+<li>error regarding local issuer certificate (ignore we aren&#39;t using a local ca bundle in the example and doesn&#39;t matter)
+</li><li>Certificate Chain
+<ul>
+<li>First Certificate in chain i.e. the certificate issued to/installed on the server we are connecting to
+<ul>
+<li>Number indicating&nbsp;location in&nbsp;chain for first one will be 0 </li><li>s: subject name that this cert is issued to </li><li>i: issuer that issued this certificate </li><li>The actual certificate, this lies between the ----BEGIN CERTIFICATE---- and ----END CERTIFICATE-----
+</li></ul>
+</li><li>Second Certificate in chain i.e. the CA that issued the first certificate this could either be a root CA or possibly an intermediary
+<ul>
+<li>Number indicating location in chain for the second will be 1 </li><li>s: subject name that this cert is issued to </li><li>i: issuer that issued this certificate </li><li>The actual certificate, this&nbsp;lies between the ----BEGIN CERTIFICATE---- and ----END CERTIFICATE-----
+</li></ul>
+</li></ul>
+</li><li>Summary with Server certificate subject and issuer subject </li><li>Line regarding whether client certificates were used (we are not in this example)
+</li><li>Line regarding SSL handshake data </li><li>Cipher Suite chosen for the connection </li></ul>
+<p>&nbsp;From this you have most of the data you need to troubleshoot connections some common scenarios for failure are:</p>
+<ul>
+<li>Self-issued certificates. Check the &quot;issuer&quot; certificate if this is issued by the same server or something that looks like it is local to the recipient ie ca.contoso.com just issued this to mail.contoso.com and the chain does not go any higher than ca.contoso.com
+ then that is a problem.&nbsp; You have to have a certificate issued that chains up to a <a class="ExistingPageLink" href="/wiki/contents/articles/1250.fope-trusted-root-ca-s.aspx" title="Click to view the page titled: FOPE Trusted Root CA's">FOPE trusted root CA</a> in order for the TLS connection to occur.
+</li><li>Expired certificates. To find the certificate lifetime you will need to copy all the data for the certificate between --BEGIN CERTIFICATE--- and ---END CERTIFICATE-- and save this as a .crt file.&nbsp; Once you have this .crt file you can open this in windows
+ and look at the Valid from and to dates to see if this is possibly an issue with the certificate being expired.
+</li><li>Certificates issued from untrusted root CA&#39;s.&nbsp; This is pretty much the same as the Self-issued certificates issue you need to examine the root CA issuing the certificate and make sure it is on the list of&nbsp; <a class="ExistingPageLink" href="/wiki/contents/articles/1250.fope-trusted-root-ca-s.aspx" title="Click to view the page titled: FOPE Trusted Root CA's">FOPE trusted root CA&#39;s</a>.
+</li><li>Complete certificate chain not offered from the SMTP TLS server. Example would be:
+<ul>
+<li>Certificate chain<br />
+&nbsp;0 s:/C=US/ST=Statename/L=County/O=ORGNAME./OU=INTERNALORGNAME/OU=Terms of use at
+<a href="http://www.ver/">www.ver</a><br />
+isign.com/rpa (c)05/CN=mail.contoso.com<br />
+&nbsp;&nbsp; i:/C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=Terms of use at <a href="https://www.verisign.com/rpa">
+https://www.verisign.com/rpa</a> (c)09/CN=VeriSign Class 3 Secure Server CA - G2 </li><li>Since VeriSign Class 3 Secure Server CA - G2 is not an explicitly trusted root Certificate by the FOPE service this will fail.&nbsp; The TLS spec RFC 5246 basically states the following in 7.4.2
+<ul>
+<li>&quot;Each following certificate MUST directly certify the one preceding it.&nbsp; Because&nbsp;certificate validation requires that root keys be distributed<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; independently, the self-signed certificate that specifies the root&nbsp;certificate authority MAY be omitted from the chain, under the<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; assumption that the remote end must already possess it in order to&nbsp;validate it in any case.
+</li></ul>
+</li><li>So it&#39;s a little vague but basically the certificate chain needs to be shown all the way up to the self-signed certificate or Root.&nbsp; Typically non-root or intermediary CA&#39;s are not part of the trusted roots.
+</li><li>A good certificate chain would look like the followingCertificate chain note the&nbsp;2nd cert in the chain that indicates the&nbsp;intermediary does chain up to what is normally a&nbsp;trusted root by most&nbsp;crypto systems.<br />
+&nbsp;0 s:/C=US/ST=Statename/L=County/O=ORGNAME./OU=INTERNALORGNAME/OU=Terms of use at
+<a href="http://www.ver/">www.ver</a><br />
+isign.com/rpa (c)05/CN=mail.contoso.com<br />
+&nbsp;&nbsp; i:/C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=Terms of use at <a href="https://www.verisign.com/rpa">
+https://www.verisign.com/rpa</a> (c)09/CN=VeriSign Class 3 Secure Server CA - G2<br />
+<span style="color:#339966;">1 s:/C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=Terms of use at
+</span><a target="_blank" rel="nofollow" href="https://www.verisign.com/rpa"><span style="color:#339966;">https://www.verisign.com/rpa</span></a><span style="color:#339966;"> (c)09/CN=VeriSign Class 3 Secure Server CA - G2<br />
+i:/C=US/O=VeriSign, Inc./OU=Class 3 Public Primary Certification Authority - G2/OU=(c) 1998 VeriSign, Inc. - For authorized use on cert in the chain that indicates the&nbsp;intermediary does chain up to what is normally a&nbsp;trusted root by most&nbsp;crypto systems.<br />
+&nbsp;0 s:/C=US/ST=Statename/L=County/O=ORGNAME./OU=INTERNALORGNAME/OU=Terms of use at
+<a href="http://www.ver/">www.ver</a><br />
+isign.com/rpa (c)05/CN=mail.contoso.com<br />
+&nbsp;&nbsp; i:/C=US/O=VeriSign, Inc./OU=VeriSign Trust Network/OU=Terms of use at <a href="https://www.verisign.com/rpa">
+https://www.verisign.com/rpa</a> (c)09/CN=VeriSign Class 3 Secure Server CA - G2<br />
+<span style="color:#339966;">1 s:/C=US/O=VeriSign, Inly/OU=VeriSign Trust Network</span>
+</li></ul>
+</li></ul>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

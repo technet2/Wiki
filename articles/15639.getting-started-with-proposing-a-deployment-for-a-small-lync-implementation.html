@@ -1,0 +1,166 @@
+---
+layout: default
+title: Getting Started with Proposing a Deployment for a Small Lync Implementation - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-family:Georgia;">During the past week, I was required to prepare a proposal for a Lync deployment in a medium-sized enterprise.</span>
+</p>
+<p><span style="font-family:Georgia;">The final document is substantially different from this draft, but I want to share the logic I use during the first steps of a similar work and to hear what other people do and think in a similar scenario. Thus, this post
+ is titled “Getting started with proposing a deployment for a small Lync implementation.”<br />
+</span></p>
+<h1><a name="Scenario"></a><span style="font-family:Georgia;color:#0000ff;">Scenario</span></h1>
+<h2><a name="Required_services"></a><span style="font-family:Georgia;color:#ffc000;">Required services</span></h2>
+<p><span style="font-family:Georgia;">IM, Video call and conference call</span></p>
+<p><span style="font-family:Georgia;">There is a legacy telephone exchange but enterprise voice is not required at the moment.</span></p>
+<h2><a name="Users"></a><span style="background-color:#ffc000;font-family:Georgia;"></span><span style="font-family:Georgia;color:#ffc000;">Users<br />
+</span></h2>
+<p><span style="font-family:Georgia;">Around 50 users in the central site and a series of branch offices with less than 20 users<br />
+</span></p>
+<h2><a name="Available_connection"></a><span style="font-family:Georgia;color:#ffc000;"><br />
+Available connection</span></h2>
+<p><span style="font-family:Georgia;">There is no direct connection between the central site and the branch office.</span>
+</p>
+<p><span style="font-family:Georgia;">Central site has a really good Internet connection (fixed public IPs are available).</span>
+</p>
+<p><span style="font-family:Georgia;">Branch offices have an Internet connection too<br />
+<br />
+</span></p>
+<h2><a name="Existing_domain_infrastructure"></a><span style="font-family:Georgia;color:#ffc000;">Existing domain infrastructure</span></h2>
+<p><span style="font-family:Georgia;">Linux with LDAP authentication for the clients<br />
+<br />
+</span></p>
+<h2><a name="Existing_hardware_and_network_infrastructure"></a><span style="font-family:Georgia;color:#ffc000;">Existing hardware and network infrastructure</span></h2>
+<p><span style="font-family:Georgia;">The deployment includes the purchase of new hardware (to install one or more hosts to work as hypervisors)</span>
+</p>
+<p><span style="font-family:Georgia;">Lync and the related services will be installed on a brand new VLAN isolated with a firewall from the existing one</span>
+</p>
+<p><span style="font-family:Georgia;"></span>&nbsp; </p>
+<h1><a name="Design_Logic"></a><span style="font-family:Georgia;color:#0000ff;">Design Logic</span></h1>
+<p><span style="font-family:Georgia;">1. The costs have to be as low as possible</span>
+</p>
+<p><span style="font-family:Georgia;">2. All the servers in the deployment will be virtual machines. There is no good reason to use physical server for this design.
+</span></p>
+<p><span style="font-family:Georgia;">3. An Active Directory infrastructure is required for Lync. Starting from scratch it could be a good idea to use Windows 2012 as AD DS.</span>
+</p>
+<p><span style="font-family:Georgia;">4. Usually a domain with a single D.C. is too risky, however given the scenario, a second D.C. would be welcomed but is not mandatory</span>
+</p>
+<p><span style="font-family:Georgia;">5. DNS service for the domain will be collocated on the D.C. servers. An external maintainer will be required for the public records of Lync</span>
+</p>
+<p><span style="font-family:Georgia;">6. The public name server must be able to manage A, CN and SRV records</span>
+</p>
+<p><span style="font-family:Georgia;">7. The deployment will be based on split brain DNS, so that the internal DNS will resolve public names on internal IPs</span>
+</p>
+<p><span style="font-family:Georgia;">8. No high availability solution is required for Lync (especially because there is no enterprise voice deployment)</span>
+</p>
+<p><span style="font-family:Georgia;">9. The Lync deployment will be made with Lync 2013</span>
+</p>
+<p><span style="font-family:Georgia;">10. A single Standard Edition will be enough for the Front End deployment</span>
+</p>
+<p><span style="font-family:Georgia;">11. Lync will be used only from “external users” because there is no client in the Active directory domain where Lync will be hosted</span>
+</p>
+<p><span style="font-family:Georgia;">12. An edge server is required (see point 11)</span>
+</p>
+<p><span style="font-family:Georgia;">13. A reverse proxy solution will be used for the “web services” of the Front End server</span>
+</p>
+<p><span style="font-family:Georgia;">14. The reverse proxy will be an IIS or Apache solution, no need for a something complex like TMG or UAG here</span>
+<br />
+<br />
+<span style="font-family:Georgia;">15. A server dedicated to Office Web Apps is required for PowerPoint presentations in Lync Online Meetings<br />
+<br />
+16. </span><span style="font-family:Georgia;">Lync mobility is not in the list of the required features. This is something to verify, my design will include access from mobile devices given the scenario<br />
+<br />
+17. </span><span style="font-family:Georgia;">A solution with at least two virtualization hosts and high availability, fault tollerance and VMotion (or Live Migration) features would grant protection from hardware failures. Again it is a matter of costs if this
+ kind of continuity will be available or not<br />
+<br />
+18. </span><span style="font-family:Georgia;">A backup and snapshot mechanism is required to recover from system failure and human error. The selected method depends on the hypervisor that will be used</span></p>
+<p><span style="font-family:Georgia;"></span>&nbsp;</p>
+<span style="font-family:Georgia;"></span>
+<h1><a name="High_Level_Overview_Of_The_Proposal"></a><span style="font-family:Georgia;color:#0000ff;">High Level Overview Of The Proposal</span></h1>
+<p><span style="font-family:Georgia;"></span>&nbsp;<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0257.Drawing4.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/549x380/__key/communityserver-wikis-components-files/00-00-00-00-05/0257.Drawing4.jpg" style="border:0px solid currentcolor;" /></a><br />
+<br />
+<br />
+</p>
+<h1><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><a name="Sizing_the_hardware_for_Lync_2013"></a><span style="font-family:Georgia;color:#0000ff;">Sizing
+ the hardware for Lync 2013</span></h1>
+<p><span style="font-family:Georgia;">At the moment there is no “Lync planning tool” for Lync 2013.</span>
+</p>
+<p><span style="font-family:Georgia;">We can start from a couple of TechNet articles “Running Lync Server on Virtual Servers”
+</span><a href="http://technet.microsoft.com/en-us/library/gg399035.aspx"><span style="font-family:Georgia;">http://technet.microsoft.com/en-us/library/gg399035.aspx</span></a><span style="font-family:Georgia;"> and “Server Hardware Platforms”
+</span><a href="http://technet.microsoft.com/en-us/library/gg398835.aspx"><span style="font-family:Georgia;">http://technet.microsoft.com/en-us/library/gg398835.aspx</span></a>
+</p>
+<p><strong><em><span style="font-family:Georgia;color:#ffc000;">Lync Server Standard Edition (Front End)</span></em>
+</strong></p>
+<p><span style="font-family:Georgia;">- 64-bit dual processor, hex-core, 2.26 gigahertz (GHz) or higher</span>
+</p>
+<p><span style="font-family:Georgia;">- 32 gigabytes (GB)</span> </p>
+<p><span style="font-family:Georgia;">- Disk: a 100 Gb vdisk for the operating system, a 300 Gb vdisk for Lync deployment 1 Gbps network adapter</span>
+</p>
+<p><span style="font-family:Georgia;">- 1 Gbps network adapter</span> </p>
+<p><span style="color:#ffc000;"><strong><em><span style="font-family:Georgia;">Lync Server Standard Edition (Edge)</span></em>
+</strong></span></p>
+<p><span style="font-family:Georgia;">- 64-bit dual processor, hex-core, 2.26 gigahertz (GHz) or higher</span>
+</p>
+<p><span style="font-family:Georgia;">- 32 gigabytes (GB)</span> </p>
+<p><span style="font-family:Georgia;">- Disk: a 100 Gb vdisk for the operating system, a 300 Gb vdisk for Lync deployment 1 Gbps network adapter</span>
+</p>
+<p><span style="font-family:Georgia;">- 2 x 1 Gbps network adapter</span> </p>
+<p><span style="color:#ffc000;"><strong><em><span style="font-family:Georgia;">Domain controller</span></em>
+</strong></span></p>
+<p><span style="font-family:Georgia;">- 64-bit single processor, hex-core, 2.26 gigahertz (GHz) or higher</span>
+</p>
+<p><span style="font-family:Georgia;">- 8 gigabytes (GB)</span> </p>
+<p><span style="font-family:Georgia;">- Disk: a 100 Gb vdisk for the operating system</span>
+</p>
+<p><span style="font-family:Georgia;">- 1 Gbps network adapter</span> </p>
+<p><span style="color:#ffc000;"><strong><em><span style="font-family:Georgia;">Reverse Proxy</span></em>
+</strong></span></p>
+<p><span style="font-family:Georgia;">- 64-bit single processor, hex-core, 2.26 gigahertz (GHz) or higher</span>
+</p>
+<p><span style="font-family:Georgia;">- 8 gigabytes (GB)</span> </p>
+<p><span style="font-family:Georgia;">- Disk: a 100 Gb vdisk for the operating system</span>
+</p>
+<p><span style="font-family:Georgia;">- 1 Gbps network adapter<br />
+<br />
+</span></p>
+<p><span style="font-family:Georgia;"><em><span style="font-family:Georgia;color:#ffc000;"><strong>Office Web Apps</strong></span></em></span></p>
+<p><span style="font-family:Georgia;">- 64-bit single processor, quad-core, 2.26 gigahertz (GHz) or higher</span></p>
+<p><span style="font-family:Georgia;">- 12 gigabytes (GB)</span></p>
+<p><span style="font-family:Georgia;">- Disk: a 100 Gb vdisk for the operating system</span></p>
+<p><span style="font-family:Georgia;">- 1 Gbps network adapter<br />
+</span><span style="font-family:Georgia;"><br />
+</span></p>
+<h1><a name="SSL_TLS_certificates_requirements"></a><span style="font-family:Georgia;color:#0000ff;">SSL / TLS certificates requirements</span></h1>
+<p><span style="font-family:Georgia;">A SAN certificate is required (wildcards are a good choice only for web / reverse proxy services).</span>
+</p>
+<p><span style="font-family:Georgia;">For the deployment eight alternative names (in addition to the base name of the certificate) will be requires, in a certificate released from a public Certification Authority</span>
+</p>
+<p><span style="font-family:Georgia;">- 1 for web services (see option 2 “Understanding Simple URLs In Lync “
+</span><a href="http://social.technet.microsoft.com/wiki/contents/articles/15396.understanding-simple-urls-in-lync.aspx"><span style="font-family:Georgia;">http://social.technet.microsoft.com/wiki/contents/articles/15396.understanding-simple-urls-in-lync.aspx</span></a>
+</p>
+<p><span style="font-family:Georgia;">- 3 for edge services</span> </p>
+<p><span style="font-family:Georgia;">- 1 for the Front End server</span> </p>
+<p><span style="font-family:Georgia;">- 1 for the edge server</span> </p>
+<p><span style="font-family:Georgia;">- 1 for the reverse proxy</span> </p>
+- 1 for Lync mobility<br />
+<br />
+<span style="font-family:Georgia;">- 1 for Office Web Apps server</span>
+<p>Note : third party certificates including internal domains that are not published to the Internet, are no longer available (see the blog post on Inside Lync&nbsp;<a title="http://blog.insidelync.com/2012/12/upcoming-restrictions-on-public-certificates/" href="http://blog.insidelync.com/2012/12/upcoming-restrictions-on-public-certificates/">http://blog.insidelync.com/2012/12/upcoming-restrictions-on-public-certificates/</a>&nbsp;).
+</p>
+<p>Available options are : </p>
+<ol>
+<li>deploy and internal C.A. (stand-alone or enterprise) and have two different kind certificates on our deployment (the certificate released from the internal C.A.&nbsp;and the&nbsp;other one released&nbsp;from the public C.A.)&nbsp;assigned to the appropriate interfaces
+</li><li>deploy only the certificate released from the public C.A.&nbsp;&nbsp;and use a split brain configuration on our internal DNS so that the FQDNs of the public domain are resolved to the internal IPs
+</li></ol>
+<p><a name="Public_IPs"></a><span style="font-size:22px;font-family:Georgia;color:#0000ff;">Public IPs</span></p>
+<p><span style="font-family:Georgia;">Four public ip addresses (static) will be required for the deployment, three for the edge services and one for the web services.</span>
+</p>
+<p><span style="font-family:Georgia;">Although it is possible to deploy edge services with a single public address, an high number of external users behind a firewall will have a lot of complications because the aforementioned solution requires to open “non
+ standard” ports from the client</span></p>
+
+</div>
+    
+    

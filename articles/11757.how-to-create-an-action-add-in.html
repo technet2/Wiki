@@ -1,0 +1,172 @@
+---
+layout: default
+title: How to Create an Action Add-in - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj860311.aspx">http://msdn.microsoft.com/library/jj860311.aspx</a>
+</div>
+<div id="mainBody">
+<p><em>The information in this topic applies only to System Center 2012 SP1.</em></p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#To_create_a_new_action_add-in">To create a new action add-in</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li><li class="hierarchy-item"><a href="#Compiling_the_Code">Compiling the Code</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Namespaces">Namespaces</a></li><li class="hierarchy-item"><a href="#Assemblies">Assemblies</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<p>An action add-in is created by creating a class that inherits from the <span style="text-decoration:underline;">
+Microsoft.SystemCenter.VirtualMachineManager.UIAddIns.ActionAddInBase </span>base class. Your class should then declare the
+<span style="text-decoration:underline;">System.Addin.AddinAttribute</span> attribute, assigning it a unique name between all your other add-ins.
+</p>
+<p>The ribbon button created by the console for your add-in uses the manifest to define the caption of the button. However, if you want to change the caption when your add-in is loaded, you can override the
+<strong>GetButtonLabelString</strong> method. This may be useful if you are trying to translate the caption into another language. If you want to change which objects, within the context identified by the manifest definition, will enable or disable your button,
+ you can override the <strong>CheckIfEnabledFor</strong> method. </p>
+<p>By overriding the <strong>PerformAction</strong> method, you can provide code that is invoked when the ribbon button is clicked.</p>
+<div>
+<h2 class="heading"><a name="To_create_a_new_action_add-in"></a><strong>To create a new action add-in</strong></h2>
+<div class="section" id="procedureSection0">
+<ol class="ordered">
+<li>
+<p>Create a new class that inherits from <span style="text-decoration:underline;">
+Microsoft.SystemCenter.VirtualMachineManager.UIAddIns.ActionAddInBase </span>. </p>
+</li><li>
+<p>Declare the <span style="text-decoration:underline;">System.Addin.AddinAttribute</span> attribute on the class and give it a unique name.</p>
+</li><li>
+<p>Mark the scope of the class as <strong>public</strong>.</p>
+</li><li>
+<p>Override the <strong>PerformAction</strong> method to define what your action will do when the ribbon button is clicked.</p>
+</li><li>
+<p>Optionally override the <strong>CheckIfEnabledFor</strong> method to control which selected objects the add-in can operate with.</p>
+</li><li>
+<p>Optionally override the <strong>GetButtonLabelString</strong> method to supply an alternative caption for the ribbon button.</p>
+</li></ol>
+</div>
+</div>
+<h2 class="heading"><a name="Example"></a>Example</h2>
+<div class="section" id="codeExampleSection">
+<p>The following code example provides a skeleton that can be used when you are creating a new add-in:</p>
+<div class="csharpcode">Code:
+<pre>[AddIn(&quot;Action Add-in 1&quot;)]
+public class MyActionAddIn : ActionAddInBase
+{
+    public override bool CheckIfEnabledFor(IList&lt;ContextObject&gt; contextObjects)
+    {
+        if (contextObjects != null &amp;&amp; contextObjects.Count &gt; 0)
+            return true;
+        return false;
+    }
+    public override void PerformAction(IList&lt;ContextObject&gt; contextObjects)
+    {
+    }
+}
+</pre>
+</div>
+<p>The following code example demonstrates an add-in that enables or disables the ribbon button based on the state of the
+<span style="text-decoration:underline;">HostContext</span> object selected in the console. It also calls out to PowerShell when the user clicks on the ribbon button:
+</p>
+<div class="csharpcode">Code:
+<pre>[AddIn(&quot;Host Action Button&quot;)]
+public class HostActionAddIn : ActionAddInBase
+{
+    public override bool CheckIfEnabledFor(IList&lt;ContextObject&gt; contextObjects)
+    {
+        if (contextObjects != null &amp;&amp; contextObjects.Count &gt; 0)
+        {
+            foreach (var host in contextObjects.OfType&lt;HostContext&gt;())
+            {
+                // Action only applies for running hosts
+                if (host.ComputerState != ComputerState.Responding)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    public override void PerformAction(IList&lt;ContextObject&gt; contextObjects)
+    {
+        if (contextObjects != null)
+        {
+            // Get a list of VMs owned by the first host in the object list
+            HostContext host = contextObjects.OfType&lt;HostContext&gt;().FirstOrDefault();
+            if (host != null)
+            {
+                string getScript =
+                    string.Format(
+                        &quot;$h = Get-SCVMHost -ID {0}; Get-SCVirtualMachine -VMHost $h&quot;,
+                        host.ID);
+                this.PowerShellContext.ExecuteScript&lt;VM&gt;(
+                    getScript,
+                    (vms, error) =&gt;
+                    {
+                        if (error == null)
+                        {
+                            System.Windows.MessageBox.Show(
+                                string.Format(
+                                    &quot;There are {0} VMs on host {1}.&quot;,
+                                    vms.Count(),
+                                    host.Name));
+                        }
+                        else
+                        {
+                            System.Windows.MessageBox.Show(
+                                &quot;An error occured: &quot; &#43; error.Problem);
+                        }
+                    });
+            }
+        }
+    }
+}
+</pre>
+</div>
+</div>
+<h2 class="heading"><a name="Compiling_the_Code"></a>Compiling the Code</h2>
+<div class="section" id="buildInstructionsSection">
+<div>
+<h3 class="subHeading"><a name="Namespaces"></a>Namespaces</h3>
+<div style="margin-left:10px;">System.Linq<br />
+<br />
+System.AddIn<br />
+<br />
+System.Collections.Generic<br />
+<br />
+Microsoft.SystemCenter.VirtualMachineManager.UIAddIns<br />
+<br />
+Microsoft.SystemCenter.VirtualMachineManager.UIAddIns.ContextTypes<br />
+<br />
+Microsoft.VirtualManager.Remoting<br />
+<br />
+Microsoft.SystemCenter.VirtualMachineManager </div>
+</div>
+<div>
+<h3 class="subHeading"><a name="Assemblies"></a>Assemblies</h3>
+<div style="margin-left:10px;">System.AddIn<br />
+<br />
+PresentationFramework<br />
+<br />
+mscorlib<br />
+<br />
+System.Core<br />
+<br />
+Microsoft.SystemCenter.VirtualMachineManager<br />
+<br />
+Microsoft.SystemCenter.VirtualMachineManager.UIAddIns<br />
+<br />
+Microsoft.SystemCenter.VirtualMachineManager.UIAddins.ContextTypes<br />
+<br />
+Errors<br />
+<br />
+Remoting </div>
+</div>
+</div>
+<hr />
+<h2 class="heading"><a name="See_Also"></a>See Also</h2>
+<div class="section" id="seeAlsoSection">
+<ul>
+<li><span style="font-size:12.1px;"><a class="ExistingPageLink" href="/wiki/contents/articles/11754.simple-add-ins-overview.aspx" title="Click to view the page titled: Simple Add-ins Overview">Simple Add-ins Overview</a></span> </li><li><span style="font-size:12.1px;"><a class="ExistingPageLink" href="/wiki/contents/articles/11755.how-to-define-a-manifest.aspx" title="Click to view the page titled: How to Define a Manifest">How to Define a Manifest</a></span> </li><li><span style="font-size:12.1px;"><a class="ExistingPageLink" href="/wiki/contents/articles/11756.how-to-define-a-custom-action-add-in-in-the-manifest.aspx" title="Click to view the page titled: How to Define a Custom Action Add-in in the Manifest">How to Define a Custom Action Add-in in the Manifest</a></span>
+</li></ul>
+</div>
+</div>
+
+</div>
+    
+    

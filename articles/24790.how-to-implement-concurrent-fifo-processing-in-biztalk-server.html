@@ -1,0 +1,88 @@
+---
+layout: default
+title: How to implement Concurrent FIFO Processing in BizTalk Server - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<hr />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item">m fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"><<a href="#Problem">Problem</a></li><li class="hierarchy-item"><a href="#The_Scenario">The Scenario</a></li><li class="hierarchy-item"><a href="#Solution">Solution</a></li><li class="hierarchy-item"><a href="#Add-on_Features">Add-on Features</a></li><li class="hierarchy-item"><a href="#Benefits">Benefits</a></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>Sequential first-in-first-out (FIFO) message processing is a familiar requirement in major industries such as finance, insurance and healthcare. Also in most instances, there is some business process which requires an orchestration to confine such process.
+ However, sequential processing imposes BizTalk Server to process the messages in a single-threaded mode thus limiting its multi-threading processing potential. In this article, we will comprehend an approach to practically overcome this limitation and realize
+ a highly efficient solution.</p>
+<h1><a name="Problem"></a>Problem</h1>
+<p>BizTalk Server integration solution is often at the &quot;heart&quot; of an organization’s automation strategy and thus the need to be processing the messages reasonably without any performance bottlenecks is vital. But it is evident that implementing sequential message
+ processing constrains BizTalk Server’s standard capabilities and as a result downgrades the normal performance. This warrants the need for an improved solution and keeps us thinking about options. What alternative opportunities exist? Is concurrent processing
+ possible while preserving the message sequencing? Will it be feasible?</p>
+<p>Definitely, it is feasible to implement a pragmatic solution in certain scenario(s). In this article, we will explore the solution that is apt for a scenario, where the transactions in the batch can be logically grouped into sub-batches and each sub-batch
+ can be processed in parallel.</p>
+<h1><a name="The_Scenario"></a>The Scenario</h1>
+<p>Let us consider the typical banking transactions as the scenario for demonstration and assume that the financial transactions (in Table 1) are received by the bank in a single batch as XML (Figure 1) at the end of each day. The transactions are ordered by
+<em>Date</em> and <span class="SpellE"><em>TransID</em></span> of the transaction occurrence.</p>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4812.image001.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4812.image001.png" style="border:0px solid;" /></a></span></p>
+<p style="text-align:center;"><span><strong>Table 1</strong> - Sample banking transactions</span></p>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1067.image002.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1067.image002.png" width="297" height="321" style="border:0px solid;width:249px;height:160px;" /></a></span></p>
+<p style="text-align:center;"><span lang="EN-US"><strong>Figure 1</strong> - Batch Xml Structure</span></p>
+<p>The batch contains six transactions in total (but in real world it could be in 1000) pertaining to three unique account holders. We certainly know that all the above transactions are to be processed in chronological order of transaction date to ensure the
+ correctness of accounts.</p>
+<p>Here, rather than processing the entire batch in sequence, we have the opportunity to logically treat each individual account holder’s transactions as a sub-batch and process them in parallel while still preserving the sequence of each account holder transaction.</p>
+<p>So how the solution will look like?</p>
+<h1><a name="Solution"></a>Solution</h1>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8713.image003.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8713.image003.jpg" style="border:0px solid;" /></a></span></p>
+<p style="text-align:center;"><span lang="EN-US"><strong>Figure 2</strong> - Concurrent FIFO Processing Solution</span></p>
+<p>&nbsp;A custom pipeline component is utilized at the receive port to split the batch into individual transactions. It identifies unique account holder transactions, groups them together (logical sub-batch) and assigns a sequence number for each transaction within
+ that group in chronological order it was received. Then it inserts the records into a custom-built database. The first transaction of each group (here the account holder) is inserted with Status=“Ready” and other transactions with Status=“Waiting” (as in Table
+ 2).</p>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5826.image004.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5826.image004.png" style="border:0px solid;" /></a></span></p>
+<p class="MsoCaption" style="margin-bottom:0pt;text-align:center;"><span lang="EN-US"><strong>Table 2</strong> - Sample transactions stored in custom-built database</span></p>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2352.image005.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2352.image005.jpg" style="border:0px solid;" /></a></span></p>
+<p style="text-align:center;"><span lang="EN-US"><strong>Figure 3</strong> - Pipeline Component Code Snippet</span></p>
+<p>The orchestration that processes the financial transaction is bound to a <span class="SpellE">
+Wcf-Sql</span> receive port which polls custom-built database by invoking the stored procedure
+<span class="SpellE"><em>sp_GetReadyTransactions</em></span>, at regular intervals, for records with Status=“Ready”. For each message published by the
+<span class="SpellE">Wcf-Sql</span> receive port, an orchestration instance is a spin-off, thus resulting in the concurrent processing of multiple account holder ter;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2352.image005.jpg"><img alt=" " src=ransactions.</p>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3073.image006.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3073.image006.png" style="border:0px solid;" /></a></span></p>
+<p style="text-align:center;"><span lang="EN-US"><strong>Figure 4</strong> - Stored Procedure to get &#39;Ready&#39; transactions</span></p>
+<p>Each orchestration instance on completing the processing by calling the stored procedure
+<span class="SpellE"><em>sp_UpdateStatusAndQueueNext</em></span>, update their associated record’s Status to “Processed” and also update the next “Waiting” transaction’s Status=“Ready”, if any, for that account holder. Records recently updated with Status=“Ready”
+ are subsequently picked up for processing by <span class="SpellE">Wcf-Sql</span> receive port during the next database poll.<br />
+<br />
+</p>
+<p style="text-align:center;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4118.image007.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4118.image007.jpg" style="border:0px solid;" /></a></span></p>
+<p style="text-align:center;"><span lang="EN-US"><strong>Figure 5</strong> - Stored Procedure to Update Status and Queue Next Transaction</span></p>
+<h1><a name="Add-on_Features"></a>Add-on Features</h1>
+<ul>
+<li><span>Control the number of concurrent orchestration instances that can be activated by limiting the number of records in “Ready” state at any given time.</span>
+</li><li><span>Enhance the SQL </span><span>artifacts</span><span> of the solution to introduce Auto Retry mechanism</span>
+</li><li><span>The</span><span> received financial transactions are stored in custom-built database and so the custom pipeline component could suppress the message getting published into BizTalk Server’s
+</span><span>MessageBoxDB</span><span>.</span> </li></ul>
+<h1><a name="Benefits"></a>Benefits</h1>
+<p>The concurrent-sequential solution delivers:</p>
+<ul>
+<li><span>Higher</span><span> performance with efficient utilization of BizTalk Server infrastructure</span>
+</li><li><span>Exceptionally</span><span> significant reduction in time to process the entire batch</span>
+</li><li><span>Localized failures at the sub-batch level and progress batch processing</span>
+</li><li><span>Capabilities to reprocess failed transactions</span> </li></ul>
+<h1><a name="Conclusion"></a>Conclusion</h1>
+<p>We recognized that how implementing classic sequential processing can limit the performance of the BizTalk Server and the significance of a viable substitute option to build a better performing solution.</p>
+<p>We deemed the answer is to implement the solution that <span class="SpellE">fulfills</span> both concurrent and sequential functionalities. We justified our principle with a simple scenario and so realizing concurrent-sequential solution delivers better
+ efficiency and performance.</p>
+<p>Of course, there are other scenarios and possibilities and it is recommended that you keep your requirements in mind and tailor the solution for your scenario.<br />
+<br />
+<strong><em>Disclaimer: The views and opinions expressed here are my own and not my company&#39;s.</em></strong></p>
+<h1><a name="See_Also"></a>See Also</h1>
+<p>Another important place to find a huge amount of BizTalk-related articles is the TechNet Wiki. The best entry point is&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/2240.biztalk-server-resources-on-the-technet-wiki.aspx" style="color:#00749e;">BizTalk
+ Server Resources on the TechNet Wiki</a>.</p>
+
+</div>
+    
+    

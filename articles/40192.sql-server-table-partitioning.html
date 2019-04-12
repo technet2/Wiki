@@ -1,0 +1,72 @@
+---
+layout: default
+title: SQL Server Table Partitioning - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+<p>SQL Server supports table partitioning, whereby a table can be carved into as many as 15,000 pieces, with each residing on its own fi legroup. Each fi legroup can be independently backed up. Different fi legroups can also be located on different storage.
+ For example, current data can be held on fast disks, possibly even on solid-state disks. Older/archive data can then be moved to larger, slower disks and more easily deleted when the data is no longer needed. The deletion of a partition can be achieved extremely
+ quickly, and with virtually no impact to queries against the current data. Look at the following partitioning example in which each partition contains one month’s data. With table partitioning, a new empty partition is created when the next monthly data becomes
+ avaicontent">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SQL Server Table Partitioning</h1>
+    
+
+    lable. Then the oldest partition can be switched out into a table and moved to an archive table monthly. The basic steps to create a table partition are as follows:</p>
+<ul>
+<li>Create a partition function that describes how you want the data partitioned.
+</li><li>Create a partition schema that maps the pieces to the fi legroups. </li><li>Create one or more tables using the partition scheme. </li></ul>
+<p>Following is an example of creating a partition table using a monthly sliding window:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">--Create partition function</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#000000;">PARTITION </code><code style="color:#006699;font-weight:bold;">FUNCTION</code>
+<code style="color:#000000;">[OrderDateRangePFN](datetime)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code>
+<code style="color:#000000;">RANGE </code><code style="color:#ff1493;">RIGHT</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">FOR</code>
+<code style="color:#006699;font-weight:bold;">VALUES</code> <code style="color:#000000;">
+(N</code><code style="color:blue;">&#39;2014-01-01 00:00:00&#39;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">, N</code><code style="color:blue;">&#39;2017-02-01 00:00:00&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">, N</code><code style="color:blue;">&#39;2017-03-01 00:00:00&#39;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">,N</code><code style="color:blue;">&#39;2017-04-01 00:00:00&#39;</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">--Create partition scheme</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#000000;">PARTITION SCHEME [OrderDatePScheme]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code>
+<code style="color:#000000;">PARTITION [OrderDateRangePFN]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">TO</code>
+<code style="color:#000000;">([filegroup1], [filegroup2], [filegroup3], [filegroup4], [filegroup5]);</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">--Create partitioned table SalesOrderHeader</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">TABLE</code> <code style="color:#000000;">
+[dbo].[SalesOrderHeader](</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[SalesOrderID] [</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">]
+</code><code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[RevisionNumber] [tinyint]
+</code><code style="color:#808080;">NOT</code> <code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[OrderDate] [datetime]
+</code><code style="color:#808080;">NOT</code> <code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[DueDate] [datetime]
+</code><code style="color:#808080;">NOT</code> <code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[ShipDate] [datetime]
+</code><code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[Status] [tinyint]
+</code><code style="color:#808080;">NOT</code> <code style="color:#808080;">NULL</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">)
+</code><code style="color:#006699;font-weight:bold;">ON</code> <code style="color:#000000;">
+[OrderDatePScheme]([OrderDate]);</code></span></div>
+</div>
+<p>This example places each partition on a different fi legroup. Splitting and merging partitions requires data movement. You can achieve high-speed splits and merges without table locking or reducing concurrency if you place the partitions on the same fi legroup.
+ When partitions are on the same fi legroup, switching out a partition or merging is only a schema change and occurs quickly. Several other smaller restrictions.</p>
+
+</div>
+    
+    

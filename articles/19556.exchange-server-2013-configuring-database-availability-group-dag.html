@@ -1,0 +1,285 @@
+---
+layout: default
+title: Exchange Server 2013 - Configuring Database Availability Group (DAG) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:10pt;font-family:Verdana;">EXCHANGE 2013 - CONFIGURING DATABASE AVAILABIL/div>
+<div class="content-fragment-bottom fiji-content-fragment-boITY GROUP (DAG)</span></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">A database availability group (DAG) is a collection of servers that provides the infrastructure for replicating and activating database copies. The DAG uses continuous replication to each of the passive database
+ copies within the DAG.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">In this article I will show how to configure DAG and fault tolerance testing by DAG.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></em></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">In my LAB, I use five computers:</span></em></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- DC2012</span></em></strong><span style="font-size:10pt;font-family:Verdana;">: Domain Controller (domain mcthub.local) running Windows Server 2012</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- EXCHANGE1 and EXCHANGE2:</span></em></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;Domain Member running Windows Server 2012 and Exchange Server 2013 (Mailbox Role and Client Access
+ Role)</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- FILESERVER:</span></em></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;Domain Member running Windows Server 2012 (File Share Witness Server). I &nbsp;recommend that you configure the witness
+ server on a Client Access server in the Exchange Server organization. The additional load on the server is minimal, and it is already under the control of the Exchange Server management group. The witness server does not need to run the same version of Windows
+ Server as the members of the DAG. The file share witness also requires the File Server feature installed</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- CLIENT1:</span></em></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;Domain Member running Windows 8 and Outlook 2013</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<h3 style="margin:7.5pt 0in 11.25pt;color:#000000;line-height:13.5pt;font-family:&#39;Times New Roman&#39;;font-size:13.5pt;font-weight:bold;background-color:white;">
+<a name="Configuring_Permissions_on_the_File_Share_Witness"></a><span style="font-size:10pt;font-family:Verdana;">Configuring Permissions on the File Share Witness</span></h3>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">Because the file share witness server is not an Exchange server, some additional permissions are required. The&nbsp;<strong><em>Exchange Trusted Subsystem</em></strong>&nbsp;group in Active Directory must be added to
+ the local Administrators group on the file share server.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="665" height="432" src="http://mcthub.com/images/ContentLab/DAG-En_files/image001.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">And you should verify that File and Printer Sharing is allowed through the firewall. Open Windows Firewall (<strong><em>FIREWALL.CPL</em></strong>) - Select &quot;<strong><em>Allow an app or feature through Windows
+ Firewall</em></strong>&quot;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="679" height="427" src="http://mcthub.com/images/ContentLab/DAG-En_files/image002.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Verify&nbsp;<strong><em>File and Printers Sharing</em></strong>&nbsp;is selected-&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="679" height="427" src="http://mcthub.com/images/ContentLab/DAG-En_files/image003.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:11pt;font-family:Segoe-Semibold;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Pre-stage the cluster network object for a DAG</span></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- On&nbsp;<strong><em>DC2012</em></strong>, in Server Manager, click Tools, and then click&nbsp;<strong><em>Active Directory Users and Computers</em></strong>. O</span><span style="font-size:10pt;font-family:Verdana;">n
+ the menu bes New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="679" height="427" src="http://mcthub.com/images/ContentLab/DAG-En_files/image003.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:11pt;font-family:Segoe-Semibold;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Pre-stage the cluster network object for a DAG</span></strong></p>
+<p style="margin:0in 0in 0pt;car, click&nbsp;</span><strong><span style="font-size:10pt;font-family:Verdana;">View</span></strong><span style="font-size:10pt;font-family:Verdana;">, and then click&nbsp;</span><strong><span style="font-size:10pt;font-family:Verdana;">Advanced Features</span></strong><span style="font-size:10pt;font-family:Verdana;">.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="653" height="372" src="http://mcthub.com/images/ContentLab/DAG-En_files/image004.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Create a&nbsp;</span><strong><span style="font-size:10pt;font-family:Verdana;">Computers</span></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;<strong>Account</strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="652" height="371" src="http://mcthub.com/images/ContentLab/DAG-En_files/image005.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Type an arbitrary name (DAG1) - OK</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="429" height="367" src="http://mcthub.com/images/ContentLab/DAG-En_files/image006.jpg" /></span></p>
+<h3 style="margin:7.5pt 0in 11.25pt;color:#000000;line-height:13.5pt;font-family:&#39;Times New Roman&#39;;font-size:13.5pt;font-weight:bold;background-color:white;">
+<a name="Configuring_Permissions_on_the_File_Share_Witness"></a><span style="font-size:10pt;font-weight:normal;font-family:Verdana;">- Configuring Permissions on the File Share Witness</span></h3>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="653" height="372" src="http://mcthub.com/images/ContentLab/DAG-En_files/image007.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- On Security tab, grant the computer account for the first DAG member (<strong><em>EXCHANGE1</em></strong>) and the&nbsp;<strong><em>Exchange Trusted Subsystem</em></strong>&nbsp;group&nbsp;<strong><em>Full Control&nbsp;</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="453" height="508" src="http://mcthub.com/images/ContentLab/DAG-En_files/image008.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="453" height="508" src="http://mcthub.com/images/ContentLab/DAG-En_files/image009.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Then disable the computer account.&nbsp;<img alt=" " width="653" height="372" src="http://mcthub.com/images/ContentLab/DAG-En_files/image010.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:11pt;font-family:Segoe-Semibold;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Create a DAG and add mailbox servers to the DAG</span></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Switch to&nbsp;</span><strong><span style="font-size:10pt;font-family:Verdana;">EXCHANGE1</span></strong><span style="font-size:10pt;font-family:Verdana;">. Open&nbsp;</span><strong><span style="font-size:10pt;font-family:Verdana;">Internet
+ Explorer</span></strong><span style="font-size:10pt;font-family:Verdana;">, and type&nbsp;</span><strong><span style="font-size:10pt;font-family:Verdana;">https://exchange1.mcthub.local/ecp</span></strong><span style="font-size:10pt;font-family:Verdana;">, and
+ then press Enter</span><span style="font-size:10pt;font-family:Verdana;">. Navigate to&nbsp;<strong><em>servers - databases</em></strong>,&nbsp;</span><span class="hps">You</span><span class="shorttext">&nbsp;</span><span class="hps">observe the</span><span class="shorttext">&nbsp;</span><span class="hps">system</span><span class="shorttext">,&nbsp;</span><span class="hps">I</span><span class="shorttext">&nbsp;</span><span class="hps">have</span><span class="shorttext">&nbsp;two
+ m</span><span class="hps">ailbox servers included</span><strong><em><span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></em></strong><strong><em><span style="font-size:10pt;font-family:Verdana;">EXCHANGE1</span></em></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;and&nbsp;<strong><em>EXCHANGE2</em></strong>.&nbsp;<strong><em>EXCHANGE1</em></strong>&nbsp;hosting
+ Mailbox Database named&nbsp;<strong><em>Mailbox Database 1</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image011.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Now I will create a DAG. Navigate to&nbsp;<strong>servers -</strong>&nbsp;<strong><em>database availability groups</em></strong>, Click the&nbsp;<strong><em>New (&#43;)</em></strong>&nbsp;icon</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image012.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">-Enter the following details for the new DAG and Click&nbsp;<strong><em>Save</em></strong>&nbsp;when you have entered all of the required details</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<strong><span style="font-size:10pt;font-family:Verdana;">DAG name</span></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;– this should match the comnputer account name you pre-staged earlier</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Witness server</span></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;– this is required for all DAGs</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Witness directory</span></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;– this is optional. If you do not specify a directory Exchange will choose one for you.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<strong><span style="font-size:10pt;font-family:Verdana;">IP address</span></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;– the DAG requires an IP address on each IP subnet that is part of the MAPI network. If you do not specify IP addresses the
+ DAG will use DHCP instead.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;<img alt=" " width="530" height="630" src="http://mcthub.com/images/ContentLab/DAG-En_files/image013.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">- After the DAG has been created it still does not contain any members. These need to be added next.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">click the icon to&nbsp;<strong><em>manage DAG membership</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;<img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image014.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Add (&#43;)&nbsp;</em></strong>icon</span></p>
+<p style="margin:0in 0in 0pt;colackground-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">- After the DAG has been created it still does not contain any members. These need to be added next.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:15pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">click the icon to&nbsp;<strong><em>manage DAG membership</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;<img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image014.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Add (&#43;)&nbsp;</em></strong>icon</span></p>
+<p style="or:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="530" height="630" src="http://mcthub.com/images/ContentLab/DAG-En_files/image015.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Select both servers, then click&nbsp;<strong><em>Add&nbsp;</em></strong>button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="470" height="573" src="http://mcthub.com/images/ContentLab/DAG-En_files/image016.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>OK&nbsp;</em></strong>button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="470" height="573" src="http://mcthub.com/images/ContentLab/DAG-En_files/image017.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Verify membership of the DAG and click&nbsp;<strong><em>Save&nbsp;</em></strong>button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="530" height="630" src="http://mcthub.com/images/ContentLab/DAG-En_files/image018.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Note that this might take some time, so please wait.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;<img alt=" " width="530" height="630" src="http://mcthub.com/images/ContentLab/DAG-En_files/image019.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Close</em></strong>&nbsp;button when finished.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="530" height="630" src="http://mcthub.com/images/ContentLab/DAG-En_files/image020.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Done, DAG has been created successfully&nbsp;<img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image021.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Create a mailbox database copy</span></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Navigate to&nbsp;<strong><em>servers</em></strong>&nbsp;-&nbsp;<strong><em>databases</em></strong>. Refresh the view- Click&nbsp;<strong><em>Mailbox Database 1</em></strong>, Click&nbsp;<strong><em>More (…)</em></strong>&nbsp;- click&nbsp;<strong><em>Add
+ database copy</em></strong>.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image022.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Browse&nbsp;</em></strong>button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="597" src="http://mcthub.com/images/ContentLab/DAG-En_files/image023.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Select server&nbsp;<strong><em>EXCHANGE2</em></strong>&nbsp;- Click&nbsp;<strong><em>OK</em></strong>&nbsp;button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="470" height="573" src="http://mcthub.com/images/ContentLab/DAG-En_files/image024.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Save&nbsp;</em></strong>button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="597" src="http://mcthub.com/images/ContentLab/DAG-En_files/image025.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Wait until the saving completes successfully</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="597" src="http://mcthub.com/images/ContentLab/DAG-En_files/image026.jpg" /></span></p>
+<p style="margin:0in>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Save&nbsp;</em></strong>button</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="597" src="http://mcthub.com/images/ContentLab/DAG-En_files/image025.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Wait until the saving completes successfully</span></p>
+<p style="margin:0in 0in 0pt;color:#0 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Then click&nbsp;<strong><em>close</em></strong>&nbsp;when finished</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="597" src="http://mcthub.com/images/ContentLab/DAG-En_files/image027.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Verify successful completion of copying a database. In&nbsp;<strong><em>databases</em></strong>&nbsp;tabs, click&nbsp;<strong><em>Refresh</em></strong>, and wait until the details pane shows Mailbox Database 1\EXCHANGE2
+ as Passive Healthy. This might take several minutes and up to several hours depending on the size of the database.</span><span style="font-size:9.5pt;font-family:Segoe;">&nbsp;</span><span style="font-size:10pt;font-family:Verdana;">Make sure that the Status displays
+ Healthy and the Content index state also displays Healthy. Then click cancel. Note that this might take some time, so please wait.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image028.jpg" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Or you can also use&nbsp;<strong><em><a href="http://technet.microsoft.com/en-us/library/dd298044.aspx" style="color:purple;text-decoration:underline;"><span style="color:windowtext;">Get-MailboxDatabaseCopyStatus</span></a></em></strong>&nbsp;to
+ check the database copy health</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="170" src="http://mcthub.com/images/ContentLab/DAG-En_files/image029.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span class="hps">- You</span><span>&nbsp;<span class="hps">can also use the</span>&nbsp;<span class="hps">below</span>&nbsp;<span class="hps">command</span>&nbsp;<span class="hps">to check</span>&nbsp;<span class="hps">the synchronization process</span></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="222" src="http://mcthub.com/images/ContentLab/DAG-En_files/image030.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:11pt;font-family:Segoe-Semibold;">Verify successful completion of passive database</span></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:18.7pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">- To move Mailbox Database 1 to EXCHANGE2 I can simply highlight it and then review the status of the database copies. Note that in this case the passive copy on EXCHANGE2 is healthy, with no copy queue length
+ issues and a healthy content index state as well.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;line-height:18.7pt;font-family:&#39;Times New Roman&#39;;font-size:medium;background-color:white;">
+<span style="font-size:10pt;font-family:Verdana;">Under those conditions we can proceed with the switchover by clicking the link to&nbsp;<strong><em>Activate</em></strong>&nbsp;the database copy</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image031.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Yes</em></strong>&nbsp;to confirm the action</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image032.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Then a progress bar let’s you know when the operation is complete, so please wait</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image033.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Click&nbsp;<strong><em>Close</em></strong>&nbsp;when finished</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image034.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">-&nbsp;</span><span style="font-size:11pt;background-color:white;font-family:Arial;">I can see that&nbsp;<strong><em>Mailbox Database 1</em></strong>&nbsp;is now active on server&nbsp;<strong><em>EXCHANGE2</em></strong>.</span><span style="font-size:10pt;font-family:Verdana;">.</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image035.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Or you can also use&nbsp;<strong><em><a href="http://technet.microsoft.com/en-us/library/dd298044.aspx" style="color:purple;text-decoration:underline;"><span style="color:windowtext;">Get-MailboxDatabaseCopyStatus</span></a></em></strong>&nbsp;to
+ check the result</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="161" src="http://mcthub.com/images/ContentLab/DAG-En_files/image036.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Switch to&nbsp;<strong><em>CLIENT1</em></strong>, logon any user, open Outlook and check the user can still access the mailbox</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="447" src="http://mcthub.com/images/ContentLab/DAG-En_files/image037.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><span style="font-size:10pt;font-family:Verdana;">Check the fault tolerance of the DAG</span></strong></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Switch to&nbsp;<strong><em>EXCHANGE2</em></strong>, disable Network Adapter</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="621" height="296" src="http://mcthub.com/images/ContentLab/DAG-En_files/image038.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Switch to&nbsp;<strong><em>EXCHANGE1</em></strong>,&nbsp;</span><span style="font-size:11pt;background-color:white;font-family:Arial;">I can see that&nbsp;<strong><em>Mailbox Database 1</em></strong>&nbsp;is now active on server&nbsp;<strong><em>EXCHANGE1</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image039.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:" width="621" height="296" src="http://mcthub.com/images/ContentLab/DAG-En_files/image038.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Switch to&nbsp;<strong><em>EXCHANGE1</em></strong>,&nbsp;</span><span style="font-size:11pt;background-color:white;font-family:Arial;">I can see that&nbsp;<strong><em>Mailbox Database 1</em></strong>&nbsp;is now active on server&nbsp;<strong><em>EXCHANGE1</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="465" src="http://mcthub.com/images/ContentLab/DAG-En_files/image039.jpg" style="border-width:0px;bormedium;">
+<span style="font-size:10pt;font-family:Verdana;">- Or you can also use&nbsp;<strong><em>&nbsp;Get-MailboxDatabaseCopyStatus</em></strong></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="187" src="http://mcthub.com/images/ContentLab/DAG-En_files/image040.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">- Switch to&nbsp;<strong><em>CLIENT1</em></strong>, logon any user, open Outlook and check the user can still access the mailbox</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="447" src="http://mcthub.com/images/ContentLab/DAG-En_files/image041.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0pt;color:#000000;font-size:medium;"><span style="font-size:10pt;font-family:Verdana;"><span style="font-size:13px;">Thank you for reading my article</span><br />
+</span></p>
+<p style="font-family:Verdana;"><span style="font-family:Verdana;font-size:13px;color:black;">To view my article in Vietnamese, click the link below<br />
+<a href="http://www.mcthub.com/technologies/microsoft/messaging-system/213-exchange-2013-c%E1%BA%A5u-h%C3%ACnh-database-availability-group-dag.html">mcthub.com</a><br />
+</span></p>
+<span style="font-size:10pt;font-family:Verdana;"><br />
+<br />
+</span>
+<p style="margin:0in 0in 0pt;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a>
+
+</div>
+    
+    

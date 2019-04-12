@@ -1,0 +1,460 @@
+---
+layout: default
+title: Create a Virtual Machine from a VM Template (SPF) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/contents/articles/19162.service-provider-foundation-programmers-guide-spf.aspx" title="Click to view the page titled: Service Provider Foundation Programmers Guide (SPF)">Service Provider Foundation Pronner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Create a Virtual Machine from a VM Template (SPF)</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/cogrammers Guide (SPF)</a>.</p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#To_create_a_new_virtual_machine_with_NET">To create a new virtual machine with .NET</a></li><li class="hierarchy-item"><a href="#To_create_a_new_virtual_machine_with_HTTP">To create a new virtual machine with HTTP</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<div id="mainBody">
+<p>Virtual machine (VM) templates are powerful because they allow you to create a new VM from a preconfigured VM, known as a template. The template provides settings like the hardware configuration and the virtual hard disks used. To create a VM in Service
+ Provider Foundation you must know which stamp and cloud the virtual machine will be assigned to, as well as the identifier of the VM template that will be used to generate the VM.</p>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/6648.Warning.gif" />Warning
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+The virtual hard disk (VHD) that is attached to the template must be bootable. If it is not bootable, Virtual Machine Manager (VMM) locks the newly created VM and you must reconfigure the VM by using VM host management software such as Microsoft Hyper-V.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The key properties you must set on the virtual machine object used with the Service Provider Foundation service are:</p>
+<ul>
+<li class="unordered">CloudId </li><li class="unordered">StampId </li><li class="unordered">VMTemplateId </li><li class="unordered">Name </li></ul>
+<p>Depending on the operating system used, you most likely will need to set the <strong>
+ProductKey</strong>, <strong>LocalAdminUserName</strong>, and <strong>LocalAdminPassword</strong> properties. The values used for these properties will depend on the specific operating system image that is installed on the VHD.</p>
+<div>
+<h2 class="heading"><a name="To_create_a_new_virtual_machine_with_NET"></a><strong>To create a new virtual machine with .NET</strong></h2>
+<div class="section" id="procedureSection0">
+<ol class="ordered">
+<li>
+<p>Connect to the Service Provider Foundation <strong>VMM</strong> service.</p>
+</li><li>
+<p>Create a new instance of the <strong>SpfVMM.VirtualMachine</strong> class.</p>
+</li><li>
+<p>Set the <strong>CloudId</strong> property of the virtual machine.</p>
+</li><li>
+<p>Set the <strong>StampId</strong> property of the virtual machine.</p>
+</li><li>
+<p>Set the <strong>VMTemplateId</strong> property to the <span style="text-decoration:underline;">
+System.Guid</span> of the&nbsp;template.</p>
+</li><li>
+<p>Set the <strong>Name</strong> property of the virtual machine.</p>
+</li><li>
+<p>Provide the provisioning settings used by the template. Generally, these are set by the
+<strong>Organization</strong>, <strong>ProductKey</strong>, <strong>LocalAdminUserName</strong>, and
+<strong>LocalAdminPassword</strong> properties.</p>
+</li><li>
+<p>Call the <strong>AddToVirtualMachines</strong> method on the <strong>VMM</strong> service object reference, and pass in the virtual machine reference.</p>
+</li><li>
+<p>Call the <strong>SaveChanges</strong> method on the <strong>VMM</strong> service object reference.</p>
+</li></ol>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="To_create_a_new_virtual_machine_with_HTTP"></a><strong>To create a new virtual machine with HTTP</strong></h2>
+<div class="section" id="procedureSection1">
+<ol class="ordered">
+<li>
+<p>Create a new <strong>HTTP</strong> Post operation.</p>
+</li><li>
+<p>Set the URL to the appropriate URI: https:// <em>server</em>:30006/<em>subscription-id</em>/services/systemcenter/vmm/VirtualMachines
+</p>
+</li><li>
+<p>Add the HTTP headers.</p>
+<p>Specifically, add the <strong>x-ms-principal-id</strong> header, which can be set to any value.</p>
+</li><li>
+<p>Create the HTTP payload containing the virtual machine entity.</p>
+</li><li>
+<p>Submit the HTTP request.</p>
+</li></ol>
+</div>
+</div>
+<h2 class="heading"><a name="Example"></a>Example</h2>
+<div class="section" id="codeExampleSection">
+<p>The following example shows how to create a virtual machine using .NET. For more information, see
+<a href="http://aka.ms/figpnj">Programming in Visual Studio with Service Provider Foundation Services</a>.
+</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre><div class="reCodeBlock"><div><span><code>SpfVMM.VMM vmmService = </code><code style="font-weight:bold;">new</code> <code>SpfVMM.VMM(</code><code style="font-weight:bold;">new</code> <code>Uri(</code><code style="color:blue;">&quot;<a href="https://wapserver/">https://wapserver</a>:30006/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/&quot;</code><code>));</code></span></div><div><span><code>vmmService.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;</code></span></div><div><span>&nbsp;</span></div><div><span><code>var template = vmmService.VMTemplates.Where(te =&gt; te.ID == </code><code style="font-weight:bold;">new</code> <code>Guid(</code><code style="color:blue;">&quot;ed94037b-baab-4ce3-b57c-f4e3a00e585b&quot;</code><code>));</code></span></div><div><span><code>var cloud = vmmService.Clouds.Where(cl =&gt; cl.ID == </code><code style="font-weight:bold;">new</code> <code>Guid(</code><code style="color:blue;">&quot;a5397df8-517c-4939-ba07-0a9a2c2c2d56&quot;</code><code>));</code></span></div><div><span><code>var stamp = template.First().StampId;</code></span></divode>SpfVMM.VMM(</code><code style="font-weight:bold;">new</code> <code>Uri(</code><code style="color:blue;">&quot;<a href="https://wapserver/">https://wapserver</a>:30006/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/&quot;</code><code>));</code></span></div><div><span><code>vmmService.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;</code></span></div><div><span>&nbsp;</span></div><div><span><code>var template = vmmService.VMTemplates.Where(te =&gt; te.ID == </code><code style="font-weight:bold;">new</code> <code>Guid(</code><code style="color:blue;">&quot;ed94037b-baab-4ce3-b57c-f4e3a00e585b&quot;</code><code>));</code></span></div><div><span><code>var cloud = vmmService.Clouds.Where(cl =&gt; cl.ID == </code><code style="font-weight:bold;">new</code> <code>Guid(</code><code style="color:blue;">&quot;a5397df8-517c-4939-ba07-0a9a2c2c2d56&quot;</code><code>));</cod><div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div><div><span><code>var vm = </code><code style="font-weight:bold;">new</code> <code>SpfVMM.VirtualMachine();</code></span></div><div><span><code>vm.VMTemplateId = </code><code style="font-weight:bold;">new</code> <code>Guid(</code><code style="color:blue;">&quot;ed94037b-baab-4ce3-b57c-f4e3a00e585b&quot;</code><code>);</code></span></div><div><span><code>vm.CloudId&nbsp; = </code><code style="font-weight:bold;">new</code> <code>Guid(</code><code style="color:blue;">&quot;a5397df8-517c-4939-ba07-0a9a2c2c2d56&quot;</code><code>);</code></span></div><div><span><code>vm.StampId = stamp;</code></span></div><div><span>&nbsp;</span></div><div><span><code>vm.LocalAdminPassword = </code><code style="color:blue;">&quot;abcdefg123!&quot;</code><code>;</code></span></div><div><span><code>vm.LocalAdminUserName = </code><code style="color:blue;">&quot;Administrator&quot;</code><code>;</code></span></div><div><span><code>vm.Name = </code><code style="color:blue;">&quot;Temp Machine Name&quot;</code><code>;</code></span></div><div><span><code>vm.ComputerName = </code><code style="color:blue;">&quot;Contoso1&quot;</code><code>;</code></span></div><div><span><code>vm.StartVM = </code><code style="font-weight:bold;">true</code><code>;</code></span></div><div><span>&nbsp;</span></div><div><span><code>vmmService.AddToVirtualMachines(vm);</code></span></div><div><span><code>vmmService.SaveChanges();</code></span></div></div></pre>
+</div>
+<p>The following is an example HTTP request sent to the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>POST https://wapserver:30006/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/VirtualMachines HTTP/1.1
+DataServiceVersion: 3.0;NetFx
+MaxDataServiceVersion: 3.0;NetFx
+Accept: application/json;odata=minimalmetadata
+Accept-Charset: UTF-8
+DataServiceUrlConventions: KeyAsSegment
+User-Agent: Microsoft ADO.NET Data Services
+x-ms-principal-id: user@contoso.com
+Content-Type: application/json;odata=minimalmetadata
+Host: wapserver:30006
+Content-Length: 3785
+Expect: 100-continue
+
+{
+    &quot;AddedTime&quot;: null,
+    &quot;Agent&quot;: null,
+    &quot;AllocatedGPU&quot;: null,
+    &quot;BackupEnabled&quot;: null,
+    &quot;BlockDynamicOptimization&quot;: null,
+    &quot;BlockLiveMigrationIfHostBusy&quot;: null,
+    &quot;CPUCount&quot;: null,
+    &quot;CPULimitForMigration&quot;: null,
+    &quot;CPULimitFunctionality&quot;: null,
+    &quot;CPUMax&quot;: null,
+    &quot;CPURelativeWeight&quot;: null,
+    &quot;CPUReserve&quot;: null,
+    &quot;CPUType&quot;: null,
+    &quot;CPUUtilization&quot;: null,
+    &quot;CanVMConnect&quot;: null,
+    &quot;CapabilityProfile&quot;: null,
+    &quot;CheckpointLocation&quot;: null,
+    &quot;CloudId&quot;: &quot;a5397df8-517c-4939-ba07-0a9a2c2c2d56&quot;,
+    &quot;CloudVMRoleName&quot;: null,
+    &quot;ComputerName&quot;: &quot;ContosoVM&quot;,
+    &quot;ComputerTierId&quot;: null,
+    &quot;CostCenter&quot;: null,
+    &quot;CreationSource&quot;: null,
+    &quot;CreationTime&quot;: null,
+    &quot;DataExchangeEnabled&quot;: null,
+    &quot;DelayStart&quot;: null,
+    &quot;DelayStartSeconds&quot;: null,
+    &quot;DeployPath&quot;: null,
+    &quot;DeploymentErrorInfo&quot;: {
+        &quot;CloudProblem&quot;: null,
+        &quot;Code&quot;: null,
+        &quot;DetailedCode&quot;: null,
+        &quot;DetailedErrorCode&quot;: null,
+        &quot;DetailedSource&quot;: null,
+        &quot;DisplayableErrorCode&quot;: null,
+        &quot;ErrorCodeString&quot;: null,
+        &quot;ErrorType&quot;: null,
+        &quot;ExceptionDetails&quot;: null,
+        &quot;IsConditionallyTerminating&quot;: null,
+        &quot;IsDeploymentBlocker&quot;: null,
+        &quot;IsMomAlert&quot;: null,
+        &quot;IsSuccess&quot;: null,
+        &quot;IsTerminating&quot;: null,
+        &quot;MessageParameters&quot;: null,
+        &quot;MomAlertSeverity&quot;: null,
+        &quot;Problem&quot;: null,
+        &quot;RecommendedAction&quot;: null,
+        &quot;RecommendedActionCLI&quot;: null,
+        &quot;ShowDetailedError&quot;: null,
+        &quot;odata.type&quot;: &quot;VMM.ErrorInfo&quot;
+    },
+    &quot;Description&quot;: null,
+    &quot;DiskIO&quot;: null,
+    &quot;Dismiss&quot;: null,
+    &quot;Domain&quot;: null,
+    &quot;DynamicMemoryBufferPercentage&quot;: null,
+    &quot;DynamicMemoryDemandMB&quot;: null,
+    &quot;DynamicMemoryEnabled&quot;: null,
+    &quot;DynamicMemoryMaximumMB&quot;: null,
+    &quot;Enabled&quot;: null,
+    &quot;ExcludeFromPRO&quot;: null,
+    &quot;ExpectedCPUUtilization&quot;: null,
+    &quot;FailedJobID&quot;: null,
+    &quot;FullName&quot;: null,
+    &quot;GrantedToList&quot;: [],
+    &quot;GrantedToList@odata.type&quot;: &quot;Collection(VMM.UserAndRole)&quot;,
+    &quot;HardwareProfileId&quot;: null,
+    &quot;HasPassthroughDisk&quot;: null,
+    &quot;HasSavedState&quot;: null,
+    &quot;HasVMAdditions&quot;: null,
+    &quot;HeartbeatEnabled&quot;: null,
+    &quot;HighlyAvailable&quot;: null,
+    &quot;ID&quot;: &quot;00000000-0000-0000-0000-000000000000&quot;,
+    &quot;IsFaultTolerant&quot;: null,
+    &quot;IsHighlyAvailable&quot;: null,
+    &quot;IsRecoveryVM&quot;: null,
+    &quot;IsUndergoingLiveMigration&quot;: null,
+    &quot;LastRestoredCheckpointId&quot;: null,
+    &quot;LibraryGroup&quot;: null,
+    &quot;LimitCPUForMigration&quot;: null,
+    &quot;LimitCPUFunctionality&quot;: null,
+    &quot;LinuxAdministratorSSHKey&quot;: null,
+    &quot;LinuxAdministratorSSHKeyString&quot;: null,
+    &quot;LinuxDomainName&quot;: null,
+    &quot;LocalAdminPassword&quot;: &quot;!!123abc&quot;,
+    &quot;LocalAdminRunAsAccountName&quot;: null,
+    &quot;LocalAdminUserName&quot;: &quot;Administrator&quot;,
+    &quot;Location&quot;: null,
+    &quot;MarkedAsTemplate&quot;: null,
+    &quot;Memory&quot;: null,
+    &quot;MemoryAssignedMB&quot;: null,
+    &quot;MemoryAvailablePercentage&quot;: null,
+    &quot;MemoryWeight&quot;: null,
+    &quot;ModifiedTime&quot;: null,
+    &quot;MostRecentTaskId&quot;: null,
+    &quot;Name&quot;: &quot;Temp Machine Name&quot;,
+    &quot;NetworkUtilization&quot;: null,
+    &quot;NewVirtualNetworkAdapterInput&quot;: [],
+    &quot;NewVirtualNetworkAdapterInput@odata.type&quot;: &quot;Collection(VMM.NewVMVirtualNetworkAdapterInput)&quot;,
+    &quot;NumLock&quot;: null,
+    &quot;OSType&quot;: null,
+    &quot;OperatingSystem&quot;: null,
+    &quot;OperatingSystemId&quot;: null,
+    &quot;OperatingSystemShutdownEnabled&quot;: null,
+    &quot;Operation&quot;: null,
+    &quot;OrganizationName&quot;: null,
+    &quot;Owner&quot;: {
+        &quot;RoleID&quot;: null,
+        &quot;RoleName&quot;: null,
+        &quot;UserName&quot;: null,
+        &quot;odata.type&quot;: &quot;VMM.UserAndRole&quot;
+    },
+    &quot;Password&quot;: null,
+    &quot;Path&quot;: null,
+    &quot;PerfCPUUtilization&quot;: null,
+    &quot;PerfDiskBytesRead&quot;: null,
+    &quot;PerfDiskBytesWrite&quot;: null,
+    &quot;PerfNetworkBytesRead&quot;: null,
+    &quot;PerfNetworkBytesWrite&quot;: null,
+    &quot;ProductKey&quot;: null,
+    &quot;Retry&quot;: null,
+    &quot;RunAsAccountUserName&quot;: null,
+    &quot;RunGuestAccount&quot;: null,
+    &quot;ServiceDeploymentErrorMessage&quot;: null,
+    &quot;ServiceId&quot;: null,
+    &quot;SharePath&quot;: null,
+    &quot;SourceObjectType&quot;: null,
+    &quot;StampId&quot;: &quot;ba4146fa-fb41-4f59-a193-ad00c52a138c&quot;,
+    &quot;StartAction&quot;: null,
+    &quot;StartVM&quot;: true,
+    &quot;Status&quot;: null,
+    &quot;StatusString&quot;: null,
+    &quot;StopAction&quot;: null,
+    &quot;Tag&quot;: null,
+    &quot;TimeSynchronizationEnabled&quot;: null,
+    &quot;TimeZone&quot;: null,
+    &quot;TotalSize&quot;: null,
+    &quot;Undo&quot;: null,
+    &quot;UndoDisksEnabled&quot;: null,
+    &quot;UpgradeDomain&quot;: null,
+    &quot;UseCluster&quot;: null,
+    &quot;UseLAN&quot;: null,
+    &quot;UserName&quot;: null,
+    &quot;VMBaseConfigurationId&quot;: null,
+    &quot;VMCPath&quot;: null,
+    &quot;VMConfigResource&quot;: null,
+    &quot;VMHostName&quot;: null,
+    &quot;VMId&quot;: null,
+    &quot;VMNetworkAssignments&quot;: [],
+    &quot;VMNetworkAssignments@odata.type&quot;: &quot;Collection(VMM.VMNetworkAssignment)&quot;,
+    &quot;VMResource&quot;: null,
+    &quot;VMResourceGroup&quot;: null,
+    &quot;VMTemplateId&quot;: &quot;ed94037b-baab-4ce3-b57c-f4e3a00e585b&quot;,
+    &quot;VirtualHardDiskId&quot;: null,
+    &quot;VirtualMachineState&quot;: null,
+    &quot;VirtualizationPlatform&quot;: null,
+    &quot;WorkGroup&quot;: null,
+    &quot;odata.type&quot;: &quot;VMM.VirtualMachine&quot;
+}
+</pre>
+</div>
+<p>The following is an example HTTP response from the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>HTTP/1.1 201 Created
+Cache-Control: no-cache
+Content-Length: 4066
+Content-Type: application/json;odata=minimalmetadata;streaming=true;charset=utf-8
+Location: https://wapserver:30006/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/VirtualMachines(ID=guid&#39;2fa28d03-8d6d-486b-ae61-9694a2db5d6f&#39;,StampId=guid&#39;ba4146fa-fb41-4f59-a193-ad00c52a138c&#39;)
+Server: Microsoft-IIS/8.5
+x-ms-request-id: 1f8a3a06-03d7-4b5d-ac04-a9a167068f0a
+X-Content-Type-Options: nosniff
+request-id: eda9bde6-834a-0000-e979-abed4a83ce01
+DataServiceVersion: 3.0;
+X-AspNet-Version: 4.0.30319
+Persistent-Auth: true
+X-Powered-By: ASP.NET
+Date: Fri, 02 Aug 2013 22:12:56 GMT
+
+{
+    &quot;AddedTime&quot;: &quot;2013-08-02T15:12:54.2694809-07:00&quot;,
+    &quot;Agent&quot;: null,
+    &quot;AllocatedGPU&quot;: null,
+    &quot;BackupEnabled&quot;: false,
+    &quot;BlockDynamicOptimization&quot;: null,
+    &quot;BlockLiveMigrationIfHostBusy&quot;: null,
+    &quot;CPUCount&quot;: 1,
+    &quot;CPULimitForMigration&quot;: null,
+    &quot;CPULimitFunctionality&quot;: null,
+    &quot;CPUMax&quot;: 100,
+    &quot;CPURelativeWeight&quot;: null,
+    &quot;CPUReserve&quot;: 0,
+    &quot;CPUType&quot;: &quot;3.60 GHz Xeon (2 MB L2 cache)&quot;,
+    &quot;CPUUtilization&quot;: 0,
+    &quot;CanVMConnect&quot;: null,
+    &quot;CapabilityProfile&quot;: &quot;Hyper-V&quot;,
+    &quot;CheckpointLocation&quot;: null,
+    &quot;CloudId&quot;: &quot;a5397df8-517c-4939-ba07-0a9a2c2c2d56&quot;,
+    &quot;CloudVMRoleName&quot;: null,
+    &quot;ComputerName&quot;: &quot;ContosoVM&quot;,
+    &quot;ComputerTierId&quot;: null,
+    &quot;CostCenter&quot;: null,
+    &quot;CreationSource&quot;: &quot;Temporary Template18a82ca1-df80-4c41-8b2c-e8400308c493&quot;,
+    &quot;CreationTime&quot;: &quot;2013-08-02T15:12:54.2694809-07:00&quot;,
+    &quot;DataExchangeEnabled&quot;: false,
+    &quot;DelayStart&quot;: 0,
+    &quot;DelayStartSeconds&quot;: null,
+    &quot;DeployPath&quot;: null,
+    &quot;DeploymentErrorInfo&quot;: {
+        &quot;CloudProblem&quot;: null,
+        &quot;Code&quot;: null,
+        &quot;DetailedCode&quot;: null,
+        &quot;DetailedErrorCode&quot;: null,
+        &quot;DetailedSource&quot;: null,
+        &quot;DisplayableErrorCode&quot;: null,
+        &quot;ErrorCodeString&quot;: null,
+        &quot;ErrorType&quot;: null,
+        &quot;ExceptionDetails&quot;: null,
+        &quot;IsConditionallyTerminating&quot;: null,
+        &quot;IsDeploymentBlocker&quot;: null,
+        &quot;IsMomAlert&quot;: null,
+        &quot;IsSuccess&quot;: null,
+        &quot;IsTerminating&quot;: null,
+        &quot;MessageParameters&quot;: null,
+        &quot;MomAlertSeverity&quot;: null,
+        &quot;Problem&quot;: null,
+        &quot;RecommendedAction&quot;: null,
+        &quot;RecommendedActionCLI&quot;: null,
+        &quot;ShowDetailedError&quot;: null
+    },
+    &quot;Description&quot;: &quot;&quot;,
+    &quot;DiskIO&quot;: 0,
+    &quot;Dismiss&quot;: null,
+    &quot;Domain&quot;: null,
+    &quot;DynamicMemoryBufferPercentage&quot;: null,
+    &quot;DynamicMemoryDemandMB&quot;: 0,
+    &quot;DynamicMemoryEnabled&quot;: false,
+    &quot;DynamicMemoryMaximumMB&quot;: null,
+    &quot;Enabled&quot;: true,
+    &quot;ExcludeFromPRO&quot;: false,
+    &quot;ExpectedCPUUtilization&quot;: 20,
+    &quot;FailedJobID&quot;: &quot;1f8a3a06-03d7-4b5d-ac04-a9a167068f0a&quot;,
+    &quot;FullName&quot;: null,
+    &quot;GrantedToList&quot;: [],
+    &quot;HardwareProfileId&quot;: null,
+    &quot;HasPassthroughDisk&quot;: false,
+    &quot;HasSavedState&quot;: false,
+    &quot;HasVMAdditions&quot;: false,
+    &quot;HeartbeatEnabled&quot;: false,
+    &quot;HighlyAvailable&quot;: null,
+    &quot;ID&quot;: &quot;2fa28d03-8d6d-486b-ae61-9694a2db5d6f&quot;,
+    &quot;IsFaultTolerant&quot;: false,
+    &quot;IsHighlyAvailable&quot;: false,
+    &quot;IsRecoveryVM&quot;: false,
+    &quot;IsUndergoingLiveMigration&quot;: false,
+    &quot;LastRestoredCheckpointId&quot;: null,
+    &quot;LibraryGroup&quot;: &quot;&quot;,
+    &quot;LimitCPUForMigration&quot;: false,
+    &quot;LimitCPUFunctionality&quot;: false,
+    &quot;LinuxAdministratorSSHKey&quot;: null,
+    &quot;LinuxAdministratorSSHKeyString&quot;: null,
+    &quot;LinuxDomainName&quot;: null,
+    &quot;LocalAdminPassword&quot;: null,
+    &quot;LocalAdminRunAsAccountName&quot;: null,
+    &quot;LocalAdminUserName&quot;: null,
+    &quot;Location&quot;: &quot;&quot;,
+    &quot;MarkedAsTemplate&quot;: false,
+    &quot;Memory&quot;: 512,
+    &quot;MemoryAssignedMB&quot;: 0,
+    &quot;MemoryAvailablePercentage&quot;: null,
+    &quot;MemoryWeight&quot;: 5000,
+    &quot;ModifiedTime&quot;: &quot;2013-08-02T15:12:55.4590593-07:00&quot;,
+    &quot;MostRecentTaskId&quot;: &quot;1f8a3a06-03d7-4b5d-ac04-a9a167068f0a&quot;,
+    &quot;Name&quot;: &quot;Temp Machine Name&quot;,
+    &quot;NetworkUtilization&quot;: 0,
+    &quot;NewVirtualNetworkAdapterInput&quot;: [],
+    &quot;NumLock&quot;: null,
+    &quot;OSType&quot;: null,
+    &quot;OperatingSystem&quot;: &quot;64-bit edition of Windows Server 2008 R2 Enterprise&quot;,
+    &quot;OperatingSystemId&quot;: null,
+    &quot;OperatingSystemShutdownEnabled&quot;: false,
+    &quot;Operation&quot;: null,
+    &quot;OrganizationName&quot;: null,
+    &quot;Owner&quot;: {
+        &quot;RoleID&quot;: &quot;97fd50f3-1dc0-41b6-a7c0-2b4ff4c3f7e3&quot;,
+        &quot;RoleName&quot;: &quot;fred@fred.com_97fd50f3-1dc0-41b6-a7c0-2b4ff4c3f7e3&quot;,
+        &quot;UserName&quot;: &quot;user@contoso.com&quot;
+    },
+    &quot;Password&quot;: null,
+    &quot;Path&quot;: null,
+    &quot;PerfCPUUtilization&quot;: -1,
+    &quot;PerfDiskBytesRead&quot;: &quot;-1&quot;,
+    &quot;PerfDiskBytesWrite&quot;: &quot;-1&quot;,
+    &quot;PerfNetworkBytesRead&quot;: &quot;-1&quot;,
+    &quot;PerfNetworkBytesWrite&quot;: &quot;-1&quot;,
+    &quot;ProductKey&quot;: null,
+    &quot;Retry&quot;: null,
+    &quot;RunAsAccountUserName&quot;: null,
+    &quot;RunGuestAccount&quot;: null,
+    &quot;ServiceDeploymentErrorMessage&quot;: null,
+    &quot;ServiceId&quot;: null,
+    &quot;SharePath&quot;: null,
+    &quot;SourceObjectType&quot;: &quot;VM Template&quot;,
+    &quot;StampId&quot;: &quot;ba4146fa-fb41-4f59-a193-ad00c52a138c&quot;,
+    &quot;StartAction&quot;: &quot;NeverAutoTurnOnVM&quot;,
+    &quot;StartVM&quot;: null,
+    &quot;Status&quot;: &quot;UnderCreation&quot;,
+    &quot;StatusString&quot;: &quot;Creating...&quot;,
+    &quot;StopAction&quot;: &quot;SaveVM&quot;,
+    &quot;Tag&quot;: &quot;(none)&quot;,
+    &quot;TimeSynchronizationEnabled&quot;: false,
+    &quot;TimeZone&quot;: null,
+    &quot;TotalSize&quot;: &quot;0&quot;,
+    &quot;Undo&quot;: null,
+    &quot;UndoDisksEnabled&quot;: false,
+    &quot;UpgradeDomain&quot;: null,
+    &quot;UseCluster&quot;: null,
+    &quot;UseLAN&quot;: null,
+    &quot;UserName&quot;: null,
+    &quot;VMBaseConfigurationId&quot;: null,
+    &quot;VMCPath&quot;: null,
+    &quot;VMConfigResource&quot;: null,
+    &quot;VMConnection@odata.mediaContentType&quot;: &quot;application/x-rdp&quot;,
+    &quot;VMHostName&quot;: null,
+    &quot;VMId&quot;: null,
+    &quot;VMNetworkAssignments&quot;: [],
+    &quot;VMResource&quot;: null,
+    &quot;VMResourceGroup&quot;: null,
+    &quot;VMTemplateId&quot;: null,
+    &quot;VirtualHardDiskId&quot;: null,
+    &quot;VirtualMachineState&quot;: &quot;PowerOff&quot;,
+    &quot;VirtualizationPlatform&quot;: &quot;HyperV&quot;,
+    &quot;WorkGroup&quot;: null,
+    &quot;odata.metadata&quot;: &quot;https://wapserver:30006/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/$metadata#VirtualMachines/@Element&quot;
+</pre>
+</div>
+</div>
+</div>
+
+</div>
+    
+    

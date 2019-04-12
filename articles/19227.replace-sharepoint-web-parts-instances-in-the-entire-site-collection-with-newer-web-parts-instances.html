@@ -1,0 +1,87 @@
+---
+layout: default
+title: Replace SharePoint web parts instances in the entire site collection with newer web parts instances - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+<em>&quot;I recently had the task of automating the replacement of all instances of one web part with another new web part throughout all site collections in SharePoint. There may have been thousands of instances of the web part in hundreds of thousands of site
+ collections spread over more than 100 content databases, and all needed to be replaced with the new web part in exactly the same places where the original web parts were placed.</em></p>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+<em>Here I will describe the approach used to replace the web part&quot;</em> [taken from Nick Hobbs -
+<a href="http://nickhobbs.wordpress.com/2010/08/">How to Replace all instances of a ShrePoint WebPart</a> published on August 2010]</p>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+&nbsp;</p>
+<ol style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.6em 3em;padding:0px;vertical-align:baseline;list-style-position:initial;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+<li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Download the Web Part ID Generator from&nbsp;<a href="http://easywebparttypeidgen.codeplex.com/" style="border:0px;font-family:inherit;font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;color:#52c0d4;">here</a>.
+</li><li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Go to the existing site collection and navigate to&nbsp;<a href="http://server/_layouts/newdwp.aspx" style="border:0px;font-family:inherit;font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;color:#52c0d4;">http://server/_layouts/newdwp.aspx</a>
+</li><li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Get the type name and the assembly name for the web part from that page. </li><li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Copy and paste the assembly name and the type name in the webpart id generator and click on calculate id&nbsp;<a href="http://www.sharepointlovers.com/wp-content/uploads/2013/08/ReplaceWebParts1-300x23.jpg"><img alt=" " src="http://www.sharepointlovers.com/wp-content/uploads/2013/08/ReplaceWebParts1-300x23.jpg" style="border-width:0px;border-style:solid;" /></a>
+</li><li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Copy the web part id.<a href="http://www.sharepointlovers.com/wp-content/uploads/2013/08/ReplaceWebParts2-300x91.jpg"><img alt=" " src="http://www.sharepointlovers.com/wp-content/uploads/2013/08/ReplaceWebParts2-300x91.jpg" style="border-width:0px;border-style:solid;" /></a>
+</li><li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Go to the sql server and expand the content database. </li><li style="border:0px;font-family:inherit;font-style:inherit;margin:0px 0px 0.6em;padding:0px;vertical-align:baseline;">
+Paste this query and execute </li></ol>
+<blockquote style="border-width:0px 0px 0px 5px;border-left-style:solid;border-left-color:#999999;font-family:Georgia,&#39;Bitstream Charter&#39;,serif;font-size:1.2em;font-style:italic;margin:0px 3em 1.25em;padding:0px 0px 0px 1em;vertical-align:baseline;line-height:1.6em;color:#555555;background-color:#ffffff;">
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+&nbsp;select distinct &nbsp;&nbsp;&nbsp; d.SiteId,D.WebId, W.FullURL as WebURL, D.Id As DocumentId, D.DirName, D.LeafName, tp_ID As WebPartSK,w.Title as SiteTitle</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+FROM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Docs D WITH (nolock)</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+INNER JOIN Webs W WITH (nolock) ON D.WebID = W.Id</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+INNER JOIN WebParts WP WITH (nolock) ON D.Id = WP.tp_PageUrlID</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+WHERE WP.tp_ListId Is Null AND WP.tp_Type Is Null AND WP.tp_Flags Is Null</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+AND WP.tp_BaseViewID Is Null AND WP.tp_DisplayName Is Null</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+AND WP.tp_WebPartTypeId=’b4bd2bdf-cf0c-ffce-ecb1-ae7c4882e17a’</p>
+</blockquote>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+8.The result window will show you the info about the pages which are used and the site title.<br />
+9.Once you make sure you are updating all the required pages.<br />
+10.Deploy the new web part on the system.<br />
+11.Navigate to&nbsp;<a href="http://server/_layouts/newdwp.aspx" style="border:0px;font-family:inherit;font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;color:#52c0d4;">http://server/_layouts/newdwp.aspx</a>&nbsp;and get the
+ new type name and assembly.<br />
+12.Generate the Web part id using the ID generator tool.</p>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+Go back to sql and execute the below code</p>
+<blockquote style="border-width:0px 0px 0px 5px;border-left-style:solid;border-left-color:#999999;font-family:Georgia,&#39;Bitstream Charter&#39;,serif;font-size:1.2em;font-style:italic;margin:0px 3em 1.25em;padding:0px 0px 0px 1em;vertical-align:baseline;line-height:1.6em;color:#55.<br />
+9.Once you make sure you are updating all the required pages.<br />
+10.Deploy the new web part on the system.<br />
+11.Navigate to&nbsp;<a href="http://server/_layouts/newdwp.aspx" style="border:0px;font-family:inherit;font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;color:#52c0d4;">http://server/_layouts/newdwp.aspx</a>&nbsp;and get the
+ new type name and assembly.<br />
+12.Generate the Web part id using the ID generator tool.</p>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+Go back to sql and execute the below code</p>
+<blockquote style="border-width:0px 0px 0px 5px;5555;background-color:#ffffff;">
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+DECLARE @OldWebPartTypeId uniqueidentifier</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+DECLARE @NewWebPartTypeId uniqueidentifier</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+SET @OldWebPartTypeId = ‘AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA’</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+SET @NewWebPartTypeId = ‘BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB’</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+UPDATE [WebParts]</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+SET [tp_WebPartTypeId] = @NewWebPartTypeId</p>
+<p style="border:0px;font-family:inherit;font-size:18px;font-style:inherit;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;">
+WHERE [tp_WebPartTypeId] = @OldWebPartTypeId</p>
+</blockquote>
+<p style="border:0px;font-family:&#39;Open Sans&#39;,sans-serif;font-size:15px;margin:0px 0px 1.625em;padding:0px;vertical-align:baseline;color:#555555;line-height:22.3125px;background-color:#ffffff;">
+13.Make sure you run the above steps 6 to 11 in all the content databases.</p>
+Original Content @ www.sharepointlovers.com
+
+</div>
+    
+    

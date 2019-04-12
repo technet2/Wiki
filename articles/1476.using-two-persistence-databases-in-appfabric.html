@@ -1,0 +1,65 @@
+---
+layout: default
+title: Using Two Persistence Databases in AppFabric - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Yesterday someone contacted me in regards to adding a secondary <a href="http://msdn.microsoft.com/en-us/library/ee677381.aspx">
+persistence store</a> to their AppFabric installation – they were trying to configure the environment so that workflow service A persists its instances to Store A, while workflow service B persists to Store B. Simple enough, right? Well, I realized that there
+ was no documentation on how exactly to achieve this configuration. So, here you go…
+</p>
+<h1><a name="Manual_registration_of_additional_persistence_stores"></a>Manual registration of additional persistence stores </h1>
+<ol>
+<li>The first step of course, is to physically create and initialize a persistence database. Start the Configure AppFabric wizard, and select next to go to the Hosting Services config page. Tick the
+<em>Set persistence configuration</em> checkbox, select <strong><em>sqlStoreProvider</em></strong> as the
+<em>Persistence provider</em>, and click the Configure button:<br />
+<br />
+<img alt=" " src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-38-83-metablogapi/1537.092310_5F00_2021_5F00_WindowsServ1.png" />
+</li><li>In the Persistence Store Configuration window, tick the <em>Initialize persistence store</em> checkbox, specify the
+<em>Server</em> and <em>Database</em> names for the new persistence database, and then click OK:<br />
+<br />
+<img alt=" " src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-38-83-metablogapi/8484.092310_5F00_2021_5F00_WindowsServ2.png" /><br />
+<br />
+<em><strong>Note:</strong> Do no tick the &quot;Register AppFabric persistence store in root web.config&quot; checkbox – we will add the required entries manually.</em>
+</li><li>Now, if you open your root web.config, towards the end of the file you will find a section that &quot;declares&quot; the instance stores that AppFabric knows about. Here&#39;s an extract with the default config from my machine:<br />
+<br />
+<img alt=" " src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-38-83-metablogapi/8484.092310_5F00_2021_5F00_WindowsServ3.png" />
+</li><li>To declare a new persistence store, you should create another <em>&lt;add&gt;</em> element under
+<em>&lt;instanceStores&gt;</em>. Note that you will also need to define a corresponding connection string under the
+<em>&lt;connectionStrings&gt;</em> element a bit further down in the file. Your modified web.config file should look similar to:<span style="font-size:9pt;font-family:Consolas;color:blue;"><br />
+<br />
+<img alt=" " src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-38-83-metablogapi/8880.092310_5F00_2021_5F00_WindowsServ4.png" /></span>
+</li><li>Save the file. You now have a second persistence store that you can use for your workflow services.
+</li></ol>
+<h1><a name="Scripted_Version"></a>Scripted Version </h1>
+<p>To perform the above tasks you can also use the AppFabric PowerShell cmdlets as follows:
+</p>
+<ol>
+<li>Start a PowerShell cmd window with elevated privileges and import the AppFabric management module:<br />
+<br />
+<em>import-module ApplicationServer</em> </li><li>Create and initialize a new persistence database using the <a href="http://msdn.microsoft.com/en-us/library/ff428204(WS.10).aspx">
+Initialize-ASPersistenceSqlDatabase</a> cmdlet:<br />
+<br />
+<em>Initialize-ASPersistenceSqlDatabase –Database &quot;NewDB&quot; –Server &quot;NewDBServer\SQLEXPRESS&quot; –Admins &quot;Domain\AppServerAdmins&quot; –Readers &quot;DOMAIN\AppServerReaders&quot; –Users &quot;DOMAIN\AppServerUsers&quot;</em><br />
+<br />
+<em><strong>Note:</strong> The user groups you specify for the –Admins, –Readers, and –Users parameters will be specific to your environment</em>
+</li><li>Use the <a href="http://msdn.microsoft.com/en-us/library/ff428198(WS.10).aspx">
+Add-ASAppSqlInstanceStore</a> cmdlet to register the persistence store in the root web.config file:<br />
+<br />
+<em>Add-ASAppSqlInstanceStore -Name secondarySqlPersistenceStore -ConnectionString &quot;Data Source=sqlServerName2\SQLEXPRESS;Initial Catalog=NewDB;Integrated Security=True&quot; –root</em>
+</li></ol>
+<p>Here is the copy/paste-ready script: </p>
+<p style="margin-left:36pt;"><em>import-module ApplicationServer<br />
+Initialize-ASPersistenceSqlDatabase –Database &quot;NewDB&quot; –Server &quot;NewDBServer\SQLEXPRESS&quot; –Admins &quot;Domain\AppServerAdmins&quot; –Readers &quot;DOMAIN\AppServerReaders&quot; –Users &quot;DOMAIN\AppServerUsers&quot;<br />
+add-ASAppSqlInstanceStore -Name secondarySqlPersistenceStore -ConnectionString &quot;Data Source=sqlServerName2\SQLEXPRESS;Initial Catalog=NewDB;Integrated Security=True&quot; –root
+</em></p>
+<h1><a name="Final_notes"></a>Final notes </h1>
+<p>The above steps register the new persistence store at the root level (through the root web.config file). This means that the new store will be available for use by all AppFabric applications running on machine. You may also choose to add a persistence store
+ at a specific scope in the IIS application hierarchy. For the scripted version, the only difference will be in the parameters passed to the cmdlet in step 3 – the full list of parameters for the cmdlet is available on
+<a href="http://msdn.microsoft.com/en-us/library/ff428198(WS.10).aspx">its documentation page</a>.</p>
+
+</div>
+    
+    

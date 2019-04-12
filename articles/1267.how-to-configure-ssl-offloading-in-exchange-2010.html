@@ -1,0 +1,428 @@
+---
+layout: default
+title: How to Configure SSL Offloading in Exchange 2010 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Componepper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">How to Configure SSL Offloading in Exchange 2010</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615__1d76b5ed_ctl00_ctl01" title="Rated Good [3.89 out of 5]."></span><input typnts-Files/00-00-00-00-05/7776.18_2D00_04_2D00_2010-15_2D00_39_2D00_47.png" style="border:0px solid currentColor;float:right;" /><span style="font-family:&#39;segoe ui&#39;;font-size:12px;">This
+ Exchange Wiki&nbsp;article explains how to configure SSL offloading for the Exchange 2010 protocols and client access services on an&nbsp;Exchange 2010&nbsp;Client Access server (CAS).
+</span></span></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:12px;">When using a hardware load balancer to load balance traffic to CAS servers belonging to a CAS array, it can depending on the Exchange 2010 topology be beneficial&nbsp;to enable SSL offloading for the
+ Exchange 2010 protocols and client access services on each CAS server in the CAS array.
+<br />
+<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_Outlook_Web_App_OWA">Configuring SSL Offloading for Outlook Web App (OWA)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_Exchange_Control_Panel_ECP">Configuring SSL Offloading for Exchange Control Panel (ECP)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_Outlook_Anywhere_OA">Configuring SSL Offloading for Outlook Anywhere (OA)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_the_Offline_Address_Book_OAB">Configuring SSL Offloading for the Offline Address Book (OAB)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_Exchange_ActiveSync_EAS">Configuring SSL Offloading for Exchange ActiveSync (EAS)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_Exchange_Web_Services_EWS">Configuring SSL Offloading for Exchange Web Services (EWS)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_the_Mailbox_Replication_Proxy_Service_MRSProxy">Configuring SSL Offloading for the Mailbox Replication Proxy Service (MRSProxy)</a></li><li class="hierarchy-item"><a href="#Configuring_SSL_Offloading_for_Autodiscover_Service_AS">Configuring SSL Offloading for Autodiscover Service (AS)</a></li><li class="hierarchy-item"><a href="#SSL_Offloading_in_an_Exchange_TwentyOhThree_TwentyTen_Coexistence_Scenario">SSL Offloading in an Exchange 2003/2010 Coexistence Scenario</a></li><li class="hierarchy-item"><a href="#Scripted_Method">Using a Script to Enable SSL Offloading</a></li><li class="hierarchy-item"><a href="#Notes_on_reverse_SSL">Notes on reverse SSL</a></li></ul><div class="hierarchy-list-footer"> </div></div></span></p>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;">By enabling SSL offloading, you terminate the incoming SSL connections on the hardware load balancer instead of on the CAS servers in the CAS array. Doing so moves the SSL workload
+ (encryption and decryption tasks) which&nbsp;is CPU intensive from the CAS servers to the HLB device(s). With CAS servers getting more and more responsibility (with the introduction of new features such as MailTips, Mailbox Replication Service (MRS)) and because
+ it now also is the endpoint for MAPI clients, it can in some scenarios make sense to let the LB device(s)&nbsp;take care of the SSL workload.
+<span lang="EN-US" style="line-height:115%;font-size:12px;">This could be true in an environment where the CAS servers are restricted to a limited number of CPUs (could be in virtual environments etc.).<br />
+<br />
+</span></span></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;">Another important reason is the fact that you only can take advantage of layer 7 (L7) processing such as cookie-based persistence if you offload SSL to the LB devices or configure
+ reverse SSL (see section later in this article). If you do not&nbsp;offload SSL or configure reverse SSL, you can&nbsp;only use source IP address based persistence, which isn’t ideal in large scale environments. This is especially true, if you have clients that appear
+ to come from the same source IP address (such as when clients are located behind a NAT device etc.).<br />
+&nbsp;<br />
+&nbsp;</span><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><br />
+</span></div>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">
+<p><span style="font-size:12px;">If you configure SSL offloading on an Exchange 2010 CAS server, all user passwords will be sent in clear between the HLB device(s) and the CAS servers, so it&#39;s important the traffic is sent over a secure network not accessible
+ by malicious users. If the security policy within the organization states that all passwords should be sent in an encrypted form (even when occurring over a secure network), it&#39;s recommended to enable reverse SSL on the HLB device(s). In addition, it&#39;s recommended
+ to enable reverse SSL, if the organization does not have a secure network in place between the HLB device(s) and the CAS servers or if there&#39;s no noticeable performance gain of offloading SSL to the HLB device(s) in the environment.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<strong><span style="line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;font-size:9pt;"></span></strong><br />
+<span lang="EN-US" style="line-height:115%;font-size:12px;">Most HLB devices support software SSL. When software SSL is used, the HLB device uses the general processor (CPU) to perform SSL enar between the HLB device(s) and the CAS servers, so it&#39;s important the traffic is sent over cryption and decryption tasks. Since the general CPU also handles
+ things such as load balancing, health checks and other administrative tasks, if you have thousands of users in your messaging environment, it’s recommended to use a HLB that has a separate CPU with the sole purpose of processing SSL workload.</span>
+<p><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><span style="font-family:&#39;segoe ui&#39;;font-size:12px;">When configuring SSL offloading in Exchange 2010, you must also enable SSL acceleration on the LB device(s). This
+ is however outside the scope of this&nbsp;article as the method differs from vendor to vendor.</span><br />
+<br />
+</span></p>
+<p><a name="Conceptual_diagrams_The_following_diagram_illustrates_client_connectivity_with_SSL_Offloading_SSL_acceleration_enabled"></a><span lang="EN-US" style="line-height:115%;font-family:&#39;segoe ui&#39;;font-size:13px;"><strong>Conceptual diagrams</strong></span><strong><br />
+<br />
+</strong></p>
+<p><span style="font-family:&#39;segoe ui&#39;;font-size:12px;">The following diagram illustrates client connectivity with SSL Offloading (SSL acceleration) enabled:</span></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:12px;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/0804.SSL_5F00_Offloading.jpg" style="border:0px solid currentColor;" /></span></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:12px;">The following diagram illustrates client connectivity with SSL bridging (Reverse SSL) enabled:</span></p>
+<p><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/6558.Reverse_5F00_SSL.jpg" style="border:0px solid currentColor;" /></span><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><strong><br />
+<br />
+</strong></span></p>
+<p>&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;"><span style="font-size:13px;">This Wiki page has been reviewed by the Exchange Product group and all included steps have been validated and approved. Also bear in mind that the steps for how to
+ configure SSL offloading for Autodiscover and Exchange Web services are less complex when using Exchange 2010 SP1/SP2 and not Exchange 2010 RTM as it won&#39;t be necessary to modify any web.config files when these service packs has been applied.</span><br />
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<h2><a name="Configuring_SSL_Offloading_for_Outlook_Web_App_OWA"></a><strong><span style="font-family:&#39;segoe ui&#39;;">Configuring SSL Offloading for Outlook Web App (OWA)</span></strong></h2>
+<p><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><span style="font-family:&#39;segoe ui&#39;;">To configure SSL offloading for Outlook Web App (OWA), you must perform two steps on each CAS server in the respective CAS array.
+ First,&nbsp;you must add a SSL offload REG_DWORD key. To do so, open the registry editor and navigate down to:</span>
+<br />
+<br />
+<br />
+<strong><em>HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\MSExchange OWA<br />
+</em></strong></span><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+<br />
+<span style="font-size:12px;">Under this registry key, create a new REG_DWORD key named “<strong>SSLOffloaded</strong>” and set the value for this key to “<strong>1</strong>”</span></span></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:8pt;"></span></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:11pt;"></span></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:8pt;"></span></p>
+<div><span lang="EN" style="line-height:115%;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3757.Figure_5F00_1.jpg" style="border:0px solid currentColor;" /></span></div>
+<div><span style="font-size:12px;"><span lang="EN" style="line-height:115%;font-size:12px;"><br />
+Next disable the requirement for SSL on the OWA virtual directory. To do so,&nbsp; open the IIS Manager and expand the
+<strong>Default Web Site</strong>. Under the Default Web Site, select the “<strong>owa</strong>” virtual directory.
+</span><span lang="EN-US" style="line-height:115%;font-size:12px;">Under features view, double-click on “<strong>SSL Settings</strong>”.</span></span><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><br />
+<br />
+</span></div>
+<div><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"></span></div>
+<div><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"></span></div>
+<h2 class="MsoNormal" style="margin:0cm 0cm 10pt;"><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"></span><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/7587.Figure_5F00_2.jpg" style="border:0px solid currentColor;" />&nbsp;</h2>
+<div><span lang="EN" style="line-height:115%;font-size:12px;"><br />
+<span style="font-size:12px;">Finally, open a command prompt window and run “<strong>iisreset /noforce</strong>”<strong>
+</strong>in order for the changes to be applied.</span><br />
+</span><span lang="EN" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><br />
+<br />
+</span></div>
+<div><span lang="EN" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"></span></div>
+<hr />
+<br />
+<br />
+<div><a name="Configuring_SSL_Offloading_for_Exchange_Control_Panel_ECP_Unlike_OWA_configuring_SSL_offloading_for_the_Exchange_Control_Panel_ECP_doesn_rsquo_t_require_a_registry_key_to_be_set_Well_to_be_more_specific_ECP_will_use_the_same_registry_key_as_the_one_we_set_for_OWA_So_in_order_to_enable_SSL_offloading_for_ECP_the_only_thing_we_need_to_do_is_to_disable_the_SSL_requirement_on_the_ECP_virtual_directory_To_do_so_let_rsquo_s_open_the_IIS_Manager_and_expand_the_Default_Web_Site_Under_the_Default_Web_Site_select_the_ldquo_ecp_rdquo_virtual_directory_Under_features_view_double-click_on_ldquo_SSL_Settings_rdquo"></a></div>
+<h2 class="MsoNormal" style="margin:0cm 0cm 10pt;"><a name="Configuring_SSL_Offloading_for_Exchange_Control_Panel_ECP"></a><strong>Configuring SSL Offloading for Exchange Control Panel (ECP)&nbsp;</strong></h2>
+<div><span style="font-size:12px;">Unlike OWA, configuring SSL offloading for the Exchange Control Panel (ECP) doesn’t require a registry key to be set. Well, to be more specific ECP will use the same registry key as the one we set for OWA.
+</span></div>
+<p><span style="font-size:12px;">So in order to enable SSL offloading for ECP, the only thing we need to do is to disable the SSL requirement on the ECP virtual directory. To do so, let’s open the IIS Manager and expand the Default Web Site. Under the Default
+ Web Site, select the “ecp” virtual directory. Under features view, double-click on “<strong>SSL Settings</strong>”.</span></p>
+<span style="font-size:12px;">So in order to enable SSL offloading for ECP, the only thing</span> we need to do is to disable the SSL requirement on the ECP virtual directory. To do so, let’s open the IIS Manager and expand the Default Web Site. Under the Default
+ Web Site, select the “ecp” virtual directory. Under features view, double-click on “”.<span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><br />
+<br />
+</span>
+<div><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/6811.Figure_5F00_16.jpg" style="border:0px solid currentColor;" /></span></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;"><br />
+Now uncheck ”<strong>Require SSL</strong>” and click “<strong>Apply</strong>” in the Actions pane.</span><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><br />
+<br />
+</span></div>
+<div><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3162.Figure_5F00_17.jpg" style="border:0px solid currentColor;" /></span></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;"><br />
+Finally, open a command prompt windows and run “<strong>iisreset /noforce</strong>” so that the changes are applied.</span><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+<br />
+</span></div>
+<div><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"></span></div>
+<hr />
+<br />
+<h2 class="MsoNormal" style="margin:0cm 0cm 10pt;"><a name="Configuring_SSL_Offloading_for_Outlook_Anywhere_OA"></a><strong>Configuring SSL Offloading for Outlook Anywhere (OA)</strong></h2>
+<div><span style="font-size:12px;"><br />
+To enable SSL offloading for Outlook Anywhere only requires one step which depending on whether Outlook Anywhere already is enabled or not can be done via the Exchange Management Console (EMC) or the Exchange Management Shell (EMS).</span></div>
+<div><span style="font-size:12px;"><br />
+If you haven’t yet enabled Outlook Anywhere yet, you can select to use SSL offloading when running the “<strong>Enable Outlook Anywhere</strong>” wizard. You can access this wizard by right-clicking on the respective CAS server in EMC and sele applied.</span><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+<br />
+</span></div>
+<div><span lang="EN-US" style="line-height:115%;font-family:verdana,sans-serif;font-size:8pt;"></span></div>
+<hr />
+<br />
+<h2 class="MsoNormal" style="margin:0cm 0cm 10pt;"><a name="Configuring_SSL_Offloading_for_Outlook_Anywhere_OA"></a><strong>Configuring SSL Offloading for Outlook Anywhere (OA)</strong></h2>
+<div><span style="font-size:12px;"><br />
+To enable SSL offloading for Outlook Anywhere only requires one step which depending on whether Outlook Anywhere alrct “<strong>Enable
+ Outlook Anywhere</strong>” in the context menu.<br />
+<br />
+</span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3835.Figure_5F00_3.jpg" style="border:0px solid currentColor;" /></div>
+<div>&nbsp;<br />
+<span lang="EN-US" style="line-height:115%;font-size:8pt;">This brings up the wizard where you enter the external host name to be used and check “<strong>Allow secure channel (SSL) offloading</strong>”.</span></div>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/2100.Figure_5F00_4.jpg" style="border:0px solid currentColor;" /></p>
+<p>If you already enabled Outlook Anywhere in your environment, you need to use the
+<em><strong>Set-OutlookAnywhere</strong></em> cmdlet to enable SSL offloading. If this is the case, open the Exchange Management Shell and type the following command:<br />
+<br />
+<strong><em>Set-OutlookAnywhere –Identity CAS_server\RPC* -SSLOffloading $true</em></strong></p>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/6837.Figure_5F00_5.jpg" style="border:0px solid currentColor;" /></p>
+<p>Running the above command will disable the requirement for SSL for the RPC virtual directory in IIS, which means we don’t need to do so manually like it’s the case with the other services/protocols.</p>
+<p><span style="line-height:115%;font-size:8pt;"></span></p>
+<hr />
+<h2><a name="Configuring_SSL_Offloading_for_the_Offline_Address_Book_OAB"></a><strong><span style="font-family:&#39;segoe ui&#39;;">Configuring SSL Offloading for the Offline Address Book (OAB)</span></strong></h2>
+<p><span lang="EN-US" style="line-height:115%;font-size:8pt;">To enable SSL offloading for the Offline Address Book (OAB) you just need to remove the SSL requirement on the OAB virtual directory.</span> To do so, let’s open the IIS Manager and expand the Default
+ Web Site. Under the Default Web Site select the “OAB” virtual directory. Under features view, double-click on “<strong>SSL Settings</strong>”.</p>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/0363.OAB.jpg" style="border:0px solid currentColor;" /></p>
+<p><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+Now uncheck ”<strong>Require SSL</strong>” and click “<strong>Apply</strong>” in the Actions pane.<br />
+&nbsp;<br />
+</span></p>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3731.Figure_5F00_7.jpg" style="border:0px solid currentColor;" /></p>
+<span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+Finally, open a command prompt windows and run “<strong>iisreset /noforce</strong>” so that the changes are applied.<br />
+<br />
+<br />
+</span>
+<hr />
+<br />
+<h2><a name="Configuring_SSL_Offloading_for_Exchange_ActiveSync_EAS"></a><strong><span style="font-family:&#39;segoe ui&#39;;">Configuring SSL Offloading for Exchange ActiveSync (EAS)</span></strong></h2>
+<p>Some of you may probably recall you have read on Microsoft TechNet and various other places, that it isn&#39;t supported . This used to be true but is now fully supported (although the Exchange documentation on Microsoft TechNet hasn’t been updated to reflect
+ this yet).</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">SSL offloading for Exchange ActiveSync is only supported at the Internet ingress point. It’s still not supported in CAS-CAS proxy scenarios between Active Directory sites.<br />
+</td>
+</tr>
+</tbody>
+</table>
+<p>Configuring Exchange ActiveSync to support SSL offload is very simple. You only need to remove the requirement for SSL in IIS. To do so, let’s open the IIS Manager and expand the Default Web Site. Under the Default Web Site select the “Microsoft-Server-ActiveSync”
+ virtual directory. Under features view, double-click on “<strong>SSL Settings</strong>”.</p>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/5074.Figure_5F00_6.jpg" style="border:0px solid currentColor;" /></p>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+Now uncheck ”<strong>Require SSL</strong>” and click “<strong>Apply</strong>” in the Actions pane.<br />
+<br />
+</span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3731.Figure_5F00_7.jpg" style="border:0px solid currentColor;" /></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;">&nbsp;<br />
+Finally, open a command prompt windows and run “<strong>iisreset /noforce</strong>” so that the changes are applied.<br />
+</span></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;"></span></div>
+<hr />
+<h2><a name="Configuring_SSL_Offloading_for_Exchange_Web_Services_EWS"></a>&nbsp;Configuring SSL Offloading for Exchange&nbsp;Web Sex0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/5074.Figure_5F00_6.jpg" style="border:0px solid currentColor;" /></p>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+Now uncheck ”<strong>Require SSL</strong>” and rvices&nbsp;(EWS)</h2>
+<p>&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">With Exchange 2010 SP1 and SP2, you will no longer need to modify the web.config file. Performing the process below with the new SP1 or SP2&nbsp;files will cause EWS to fail activation. To offload SSL
+ for EWS, you only need to remove the SSL requirement from the IIS virtual directory as described in the steps above.<br />
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong><br />
+</strong>To configure SSL offloading for Exchange Web services in Exchange 2010 RTM, you must perform two modifications. The first one is to remove the SSL requirement for the EWS virtual directory in IIS. To do so, let’s open the IIS Manager and expand the
+ Default Web Site. Under the Default Web Site select the “EWS” virtual directory. Under features view, double-click on “<strong>SSL Settings</strong>”.</p>
+<p>&nbsp;<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/4174.Figure_5F00_8.jpg" style="border:0px solid currentColor;" /></p>
+<div>Now uncheck ”<strong>Require SSL</strong>” and click “<strong>Apply”</strong> in the Actions pane.</div>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/0160.Figure_5F00_9.jpg" style="border:0px solid currentColor;" /></span></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+Next step is to make a change to the configuration file (web.config) for the EWS virtual directory. This file can be found under
+<strong>C:\Program Files\Microsoft\Exchange Server\V14\ClientAccess\exchweb\ews</strong> and be modified using a text editor such as Notepad.</span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/6012.Figure_5F00_10.jpg" style="border:0px solid currentColor;" /></div>
+<br />
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">It&#39;s recommended you take a backup of the web.config file before you perform the next step.<br />
+</td>
+</tr>
+</tbody>
+</table>
+<div>In the web.config file, replace all occurrences of “<strong>httpsTransport</strong>” with “<strong>httpTransport</strong>” and then save the file.</div>
+<div><em>The new SP1 web.config file contains binding entries for both
+<strong>httpTransport</strong> and <strong>httpsTransport </strong>that match the Binding name.&nbsp; For example, there is an
+<strong>EWSHttpBinding</strong> and an <strong>EWSHttpsBinding</strong> now.<br />
+<br />
+</em></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:8pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/0820.Figure_5F00_11.jpg" style="border:0px solid currentColor;" /></span></div>
+<div>Finally, open a command prompt windows and run “<strong>iisreset /noforce</strong>” so that the changes are applied.</div>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">With Exchange 2010 SP1, you will no longer need to modify the web.config file. To offload SSL for EWS, you only need to remove the SSL requirement from the IIS virtual directory.<br />
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<hr />
+<h2><a name="Configuring_SSL_Offloading_for_the_Mailbox_Replication_Proxy_Service_MRSProxy"></a>Configuring SSL Offloading for the Mailbox Replication Proxy Service (MRSProxy)</h2>
+<p>The Mailbox Replication Proxy (MRSProxy) service is installed on every Exchange 2010 Client Access server. MRSProxy helps to facilitate cross-forest move requests and mailbox move requests to Office 365. By default, MRSProxy is disabled. If enabled, it&#39;s
+ enabled in the remote Exchange forest (aka source Exchange forest). Although the MRSProxy service runs under Exchange Web Services (EWS) it&#39;s not supported to configure SSL offloading for this service.</p>
+<p>The reason for this is because the MRSProxy service code expects the traffic to be signed/encrypted. This means that you must configure SSL bridging for this to work.</p>
+<hr />
+<h2><a name="Configuring_SSL_Offloading_for_Autodiscover_Service_AS"></a>Configuring SSL Offloading for Autodiscover Service (AS)</h2>
+<p>&nbsp;</p>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;">To enable SSL offloading for the Autodiscover service, you must perform the same steps as those applied to the Exchange Web service virtual directory.</span></div>
+<br />
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">With Exchange 2010 SP1 and SP2, you will no longer need to modify the web.config file. Performing the process below with the new SP1 or SP2&nbsp;files will cause Autodiscover to fail activation. To
+ offload SSL for Autodiscover, you only need to remove the SSL requirement from the IIS virtual directory as described in the steps above.<br />
+</td>
+</tr>
+</tbody>
+</table>
+<p><span lang="EN-US" style="line-height:115%;font-size:8pt;"><span lang="EN-US" style="line-height:115%;font-size:8pt;"><br />
+<br />
+<span style="font-size:12px;">To configure SSL Offloading for Autodiscover on Exchange 2010 RTM, open the IIS Manager and expand the Default Web Site. Under the Default Web Site select the “Autodiscover” virtual directory. Under features view, double-click on
+ “<strong>SSL Setting</strong>s”.</span></span><br />
+<span style="font-size:12px;"><br />
+</span></span></p>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1348.Figure_5F00_12.jpg" style="border:0px solid currentColor;" /></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;"><br />
+Now uncheck ”<strong>Require SSL</strong>” and click “<strong>Apply</strong>” in the Actions pane.</span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/2086.Figure_5F00_13.jpg" style="border:0px solid currentColor;" /></div>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;"><br />
+Next you need to change the configuration file (web.config) for the Autodiscover service virtual directory. This file can be found under
+<strong>C:\Program Files\Microsoft\Exchange Server\V14\ClientAccess\Autodiscover</strong> and be modified using a text editor such as Notepad.</span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/8422.Figure_5F00_14.jpg" style="border:0px solid currentColor;" /></div>
+<br />
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Important</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;"><span style="font-size:13px;">It&#39;s recommended you take a backup of the web.config file before you perform the next step.</span><br />
+</td>
+</tr>
+</tbody>
+</table>
+<div><span style="font-size:12px;"></span>&nbsp;</div>
+<span style="font-size:12px;"></span><span style="font-size:12px;"></span>
+<div><span lang="EN-US" style="line-height:115%;font-size:12px;">In the web.config file, replace all occurrences of “<strong>httpsTransport</strong>” with “<strong>httpTransport</strong>” and then save the file.</span></div>
+<span style="font-size:12px;"></span><span style="font-size:12px;"></span>
+<p><span lang="EN-US" style="line-height:115%;font-size:8pt;"></span></p>
+<span style="font-size:12px;"></span>
+<div><span style="font-size:12px;"><em>The new SP1 web.config file contains binding entries for both
+<strong>httpTransport</strong> and <strong>httpsTransport </strong>that match the Binding name.&nbsp; For example, there is an&nbsp;<strong>AutodiscoverBasicHttpBinding</strong> and an
+<strong>AutodiscoverBasicHttpsBinding</strong> now.</em></span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/0572.Figure_5F00_15.jpg" style="border:0px solid currentColor;" /></div>
+<div>Finally open a command prompt windows and run “<strong>iisreset /noforce</strong>” so that the changes are applied.</div>
+<hr />
+<h2><a name="SSL_Offloading_in_an_Exchange_TwentyOhThree_TwentyTen_Coexistence_Scenario"></a>SSL Offloading in an Exchange 2003/2010 Coexistence Scenario</h2>
+<div>During a coexistence scenario where you havent-size:8pt;"></span></p>
+<span style="font-size:12px;"></span>
+<div><span style="font-size:12px;"><em>The new SP1 web.config file contains binding entries for both
+<strong>httpTransport</strong> and <strong>httpsTransport </strong>that match the Binding name.&nbsp; For example, there is an&nbsp;<strong>AutodiscoverBasicHttpBinding</strong> and an
+<strong>AutodiscoverBasicHttpsBinding</strong> now.</em></span></div>
+<div><img alt=" " src="http://social.technet.microsoft.com a mix of Exchange 2003 and Exchange 2010 servers in the organization, one of the first steps you need to perform after having deployed Exchange 2010 Client Access Servers is to change DNS, so
+ that Exchange 2003 users access their mailbox via a set of Exchange 2010 Client Access servers in a Client Access array (CAS array).<br />
+<br />
+In such a scenario it&#39;s fully supported to enable SSL offloading on the load balancer used to distribute client traffic across the CAS server in the CAS array.<br />
+<br />
+<strong>Outlook Web App (OWA)</strong><br />
+<br />
+When configuring coexistence between Exchange 2003 and Exchange 2010, one of the steps you must to is to configure an OWA 2003 redirect URL on the OWA 2010 virtual directory.&nbsp;When doing so, you introduce a legacy FQDN that will be associated with Exchange 2003.
+ This legacy FQDN is used when configuring the OWA 2003 redirection URL.&nbsp;The legacy URL is configured&nbsp;like the following:
+<br />
+<br />
+<strong><em>https://legacy.contoso.com/exchange<br />
+<br />
+</em></strong>Because&nbsp;the Exchange 2020 CAS server will do a redirect when sending the client to Exchange 2003, it will work fine with SSL offloading enabled on the load balancer&nbsp;used with Exchange 2010.<br />
+&nbsp;<br />
+<br />
+<strong>Exchange ActiveSync (EAS)<br />
+<br />
+</strong>TBD.</div>
+<div><strong>Outlook Anywhere (OA)</strong><br />
+<br />
+TBD.</div>
+<hr />
+<h2><a name="Scripted_Method"></a><strong><span style="font-family:&#39;segoe ui&#39;;">Using a Script to Enable SSL Offloading<br />
+</span></strong></h2>
+<p>If you&#39;re working with a large organization with many Exchange 2010 Client Access services , you may want to accelerate the steps we went through above. To configure SSL offloading using a scripted method, see this
+<a href="http://briankronberg.spaces.live.com/blog/cns%214E398A5B69D78F47%21268.entry?wa=wsignin1.0&amp;sa=710775160" target="_blank">
+blog post</a>.<br />
+<br />
+The following cmdlets are a summary of tasks required&nbsp;to configure SSL offloading for&nbsp;Exchange Server 2010 SP1 on each Client Access server:<br />
+<br />
+<br />
+<strong><em>Set-OutlookAnywhere –Identity &quot;$($env:COMPUTERNAME)\RPC (Default Web Site)&quot; -SSLOffloading $true<br />
+<br />
+New-ItemProperty -Path &#39;HKLM:\SYSTEM\CurrentControlSet\Services\MSExchange OWA&#39; -Name SSLOffloaded -Value 1 -PropertyType DWORD
+<br />
+<br />
+Import-Module webadministration<br />
+<br />
+Set-WebConfigurationProperty -Filter //security/access -name sslflags -Value &quot;None&quot; -PSPath IIS:\ -Location &quot;Default Web Site/OWA&quot;<br />
+<br />
+Set-WebConfigurationProperty -Filter //security/access -name sslflags -Value &quot;None&quot; -PSPath IIS:\ -Location &quot;Default Web Site/ECP&quot;<br />
+<br />
+Set-WebConfigurationProperty -Filter //security/access -name sslflags -Value &quot;None&quot; -PSPath IIS:\ -Location &quot;Default Web Site/OAB&quot;<br />
+<br />
+Set-WebConfigurationProperty -Filter //security/access -name sslflags -Value &quot;None&quot; -PSPath IIS:\ -Location &quot;Default Web Site/EWS&quot;<br />
+<br />
+Set-WebConfigurationProperty -Filter //security/access -name sslflags -Value &quot;None&quot; -PSPath IIS:\ -Location &quot;Default Web Site/Microsoft-Server-ActiveSync&quot;<br />
+<br />
+Set-WebConfigurationProperty -Filter //security/access -name sslflags -Value &quot;None&quot; -PSPath IIS:\ -Location &quot;Default Web Site/Autodiscover&quot;<br />
+<br />
+iisreset /noforce</em></strong></p>
+<br />
+<hr />
+<br />
+<h2><a name="Notes_on_reverse_SSL"></a><strong><span style="font-family:&#39;segoe ui&#39;;">Notes on reverse SSL</span></strong></h2>
+<p>If you enable reverse SSL (aka SSL bridging) on the HLB devices, you will not need to perform the above steps on each CAS server in the CAS array. However, bear in mind enabling reverse SSL on the HLB device(s) will mean the SSL workload (encryption and
+ decryption tasks) which are CPU intensive won&#39;t be moved away from the CAS servers. Instead, the SSL workload will occur on both the HLB device(s) and the CAS servers. With that said, if you do not enable reverse SSL, passwords will be sent in clear between
+ the HLB device(s) and the CAS servers, so it&#39;s important this traffic occurs over a secure network not accessible by malicious users.</p>
+<p>Whether you should use Exchange 2010 SSL offloading or the reverse SSL method is up to the respective organization to decide. If the CAS servers can handle all expected workload and if you do not have a secure network in place between the HLB device(s) and
+ the CAS servers, it&#39;s recommended to enable reverse SSL.</p>
+<br />
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-top:5px;padding-bottom:5px;padding-left:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Credits</strong> </th>
+</tr>
+<tr>
+<td style="padding-left:5px;">Thanks a lot to the MCM/MCA community for the great feedback and input (primarily on the performance and security implications of implementing SSL offloading).<br />
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+
+</div>
+    
+    

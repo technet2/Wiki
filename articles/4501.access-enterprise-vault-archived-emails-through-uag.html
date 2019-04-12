@@ -1,0 +1,53 @@
+---
+layout: default
+title: Access Enterprise Vault Archived Emails through UAG - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span class="posttitle1"><strong><span style="line-height:115%;font-size:16pt;">Accessing Enterprise vault archived emails through UAG</span></strong></span></p>
+<p><strong></strong></p>
+<p>Recently worked on a case where issue was that users could not access Enterprise vault archived emails through OWA Published through UAG. Ent"r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Access Enterprise Vault Archived Emails througherprise vault is email archiving software from Symantec and is used as add on with OWA to access archived emails.
+ Since it is used along with OWA which we publish through UAG we also need to allow access to Enterprisevault.</p>
+<p><strong>Scenario</strong>: Admin has configured UAG to publish OWA through it. He was also trying to publish enterprise vault through UAG to access archived emails along with OWA. But archived emails were not showing up properly, the image hyperlinks for
+ that were not working and archived emails were inaccessible.</p>
+<p><strong>Troubleshooting Approach and Resolution</strong></p>
+<ol>
+<li>In order to troubleshoot this issue we reproduced the issue on client machine then looked at the web monitor logs on the UAG server and found following
+</li></ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; “<span>A request from source IP address x.x.x.x, user test2 on trunk portal; Secure=1 for application Exchange 2010 OWA of type ExchangePub2010 failed. The URL &nbsp;&nbsp;&nbsp;&nbsp;</span></p>
+<p><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>/owa/EnterpriseVault/Exch2010/v9.0.1.1073/scripts/xyz.js</em> contains an illegal path. The rule applied is Default rule. The method is GET.”</span></p>
+<ol>
+<li>We checked the OWA application published on Portal Trunk and the paths and it was using was /enterprisevault/*, corrected it to /enterprisevault/
+</li><li>Then checked Advanced Trunk configuration and URL set and found following &nbsp;in the enterprisevault rule
+</li></ol>
+<p>&nbsp; <a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2642.1.png">
+<img width="711" height="191" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2642.1.png" style="border:0px solid currentColor;width:831px;height:194px;" /></a></p>
+<p>i.e. path /enterprisevault/.* was not correct , As the request in the web monitor log had path as “<span>
+<em>/owa/EnterpriseVault/Exch2010/v9.0.1.1073/scripts/xyz.js” .&nbsp;</em>&nbsp;</span>&nbsp;</p>
+<p>Therefore we needed to add /owa before /enterprisevault/.* </p>
+<p>Apart from that we also needed to change the name of the rule to for example <strong>
+ExchangePub2010</strong><strong>_Rule99</strong>,&nbsp;so that this rule gets executed when a request with path
+<em><span>/owa/EnterpriseVault/</span></em> &nbsp;is received by UAG.</p>
+<p>More about <strong>Rule name definition</strong></p>
+<p>It has two parts:</p>
+<ol>
+<li><strong>Application</strong>: This is to define the application for which this rule is configured.&nbsp; Here
+<strong>ExchangePub2010</strong>_Rule99 </li><li><strong>Rule(number)</strong>: Keyword <strong>Rule</strong> along with <strong>
+number</strong>. By default ExchangePub2010 has 42 rules, in order to make sure this rule is not overwritten with future updates of UAG in this case I used a large number&nbsp; i.e. 99 and the Rule name looks like ExchangePub2010_<strong>Rule99</strong>
+</li></ol>
+<p>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0028.2.png"><img width="805" height="169" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0028.2.png" style="border:0px solid currentColor;" /></a></p>
+<p>After following above steps, activated the configuration. Tested from the client machine, we were able to access the archived emails of enterprisevault.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

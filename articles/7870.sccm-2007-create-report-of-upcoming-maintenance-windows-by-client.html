@@ -1,0 +1,583 @@
+---
+layout: default
+title: SCCM 2007&#58; Create Report of Upcoming Maintenance Windows by Client - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="How_To"></a>How To</h2>
+<p>Calculating the next maintenance window in SCCM is a bit troublesome as you normally have to use WMI to get the data structure that makes up the schedule. What if you want to write a SCCM report?<br />
+<br />
+The following table-valued function will calculate the next date/time of a maintenance window for a given serializedv><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SCCM 2007: Create Report of Upcoming Maintenance Windows by Client</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<h2><a name="How_To"></a>How To</h2>
+<p>Calculating the next maintenance window in SCCM is a bit troublesome as you normally have to use WMI to get the data struc schedule data structure based on the current date/time.</p>
+<h2><a name="Actions_Required_Resolve_the_How-To"></a>Actions Required Resolve the &quot;How-To&quot;</h2>
+<p>Run the following T-SQL on your SCCM site database:</p>
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">CREATE</code>
+<code style="color:teal;font-weight:bold;">FUNCTION</code> <code style="color:black;">
+[dbo].[SCCM_GetNextServiceWindow](@ScheduleToken </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:teal;font-weight:bold;">CHAR</code><code style="color:black;">(16), @RecurrenceType
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+INT</code><code style="color:black;">) </code><code style="color:teal;font-weight:bold;">RETURNS</code>
+<code style="color:black;">@NextServiceWindow </code><code style="color:teal;font-weight:bold;">TABLE</code>
+<code style="color:black;">(ScheduleToken </code><code style="color:teal;font-weight:bold;">CHAR</code><code style="color:black;">(16), RecurrenceType
+</code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">, NextServiceWindow DATETIME, Duration
+</code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">, IsGMTTime
+</code><code style="color:teal;font-weight:bold;">BIT</code><code style="color:black;">)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--1 Occurs on 1/1/2012 12:00 AM 00011A8500080000</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--2 Occurs every 3 day(s) effective 1/1/2012 8:00 PM&nbsp;&nbsp;&nbsp; 02811A8040100018</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--3 Occurs every 3 week(s) on Saturday effective 1/1/2012 8:00 PM&nbsp;&nbsp; 02811A80401F6000</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--3 Occurs every 1 week(s) on Saturday effective 1/1/2012 8:00 PM&nbsp;&nbsp; 02811A80401F2000</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--5 Occurs day 2 of every 2 month(s) effective 1/1/2012 8:00 PM 02811A8040288800</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--5 Occurs day 31 of every 1 month(s) effective 1/1/2012 8:00 PM&nbsp;&nbsp;&nbsp; 02811A80402FC400</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--5 Occurs the last day of every 3 months effective 1/1/2012 8:00 PM&nbsp;&nbsp;&nbsp; 02811A8040280C00</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--5 Occurs the last day of every 1 months effective 1/1/2012 8:00 PM&nbsp;&nbsp;&nbsp; 02811A8040280400</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--4 Occurs the Third Monday of every 1 month(s) effective 1/1/2012 4:00 AM&nbsp; 00811A9E08221600</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--4 Occurs the Last Wednesday of every 1 month(s) effective 1/1/2012 8:00 PM&nbsp;&nbsp;&nbsp; 02811A8040241000</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--4 Occurs the Fourth Wednesday of every 1 month(s) effective 1/1/2012 8:00 PM&nbsp; 02811A8040241800</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--4 Occurs the Last Monday of every 1 month(s) effective 1/1/2012 8:00 PM&nbsp;&nbsp; 02811A8040221000</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--3 Occurs every 1 week(s) on Monday effective 1/1/2012 4:00 AM 00811A9E081A2000</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--
+<a href="http://msdn.microsoft.com/en-us/library/cc143300.aspx">http://msdn.microsoft.com/en-us/library/cc143300.aspx</a></code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@RecurrenceType_NONE </code><code style="color:teal;font-weight:bold;">INT</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_DAILY
+</code><code style="color:teal;font-weight:bold;">INT</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_WEEKLY
+</code><code style="color:teal;font-weight:bold;">INT</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_MONTHLYBYWEEKDAY
+</code><code style="color:teal;font-weight:bold;">INT</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_MONTHLYBYDATE
+</code><code style="color:teal;font-weight:bold;">INT</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SELECT</code>
+<code style="color:black;">@RecurrenceType_NONE = 1</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_DAILY = 2</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_WEEKLY = 3</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_MONTHLYBYWEEKDAY = 4</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_MONTHLYBYDATE = 5</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--
+<a href="http://msdn.microsoft.com/en-us/library/cc143505.aspx">http://msdn.microsoft.com/en-us/library/cc143505.aspx</a></code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:green;">--DECLARE @RecurrenceType&nbsp;&nbsp; INT;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SET @RecurrenceTypeecurrenceType_WEEKLY = 3</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_MONTHLYBYWEEKDAY = 4</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, @RecurrenceType_MONTHLYBYDATE = 5</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code style="color:green;">--
+<a href="http://msdn.microsoft.com/en-us/library/cc143505.aspx">http://msdn.microsoft.com/en-us/library/cc143505.aspx</a></code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:green;">--DECLARE&nbsp;&nbsp; = @RecurrenceType_WEEKLY</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">--DECLARE @ScheduleToken&nbsp;&nbsp;&nbsp;&nbsp; CHAR(16); SET @ScheduleToken&nbsp;&nbsp;&nbsp;&nbsp; = &#39;00811A9E081A2000&#39;</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@ScheduleStartTime </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@ScheduleStartTime = </code><code style="color:deeppink;">CAST</code><code style="color:black;">(</code><code style="color:deeppink;">CONVERT</code><code style="color:black;">(</code><code style="color:teal;font-weight:bold;">BINARY</code><code style="color:black;">(4),
+</code><code style="color:deeppink;">LEFT</code><code style="color:black;">(@ScheduleToken, 8), 2)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+INT</code><code style="color:black;">)</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@ScheduleDuration&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@ScheduleDuration&nbsp; = </code><code style="color:deeppink;">CAST</code><code style="color:black;">(</code><code style="color:deeppink;">CONVERT</code><code style="color:black;">(</code><code style="color:teal;font-weight:bold;">BINARY</code><code style="color:black;">(4),
+</code><code style="color:deeppink;">RIGHT</code><code style="color:black;">(@ScheduleToken, 8), 2)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+INT</code><code style="color:black;">)</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">-- Duration is in minutes</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@Duration </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@Duration = @ScheduleStartTime % POWER(2, 6)</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:green;">-- Calculate the start time</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@StartTime DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@StartTime = </code><code style="color:deeppink;">CONVERT</code><code style="color:black;">(DATETIME,
+</code><code style="color:blue;">&#39;01/01/1970 00:00:00&#39;</code><code style="color:black;">)</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@StartTime = DATEADD(</code><code style="color:deeppink;">YEAR</code><code style="color:black;">, (@ScheduleStartTime / POWER(2,6)) % POWER(2, 6), @StartTime)</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@StartTime = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, ((@ScheduleStartTime / POWER(2,12)) % POWER(2, 4)) - 1, @StartTime)</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@StartTime = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, ((@ScheduleStartTime / POWER(2,16)) % POWER(2, 5)) - 1, @StartTime)</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@StartTime = DATEADD(</code><code style="color:teal;font-weight:bold;">HOUR</code><code style="color:black;">, (@ScheduleStartTime / POWER(2,21)) % POWER(2, 5), @StartTime)</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@StartTime = DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, (@ScheduleStartTime / POWER(2,26)) % POWER(2, 5), @StartTime)</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:green;">-- Determinte UTC and Flags</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@IsGMTTime&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">BIT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@IsGMTTime&nbsp;&nbsp;&nbsp;&nbsp; = </code><code style="color:deeppink;">CAST</code><code style="color:black;">(@ScheduleDuration % POWER(2, 1)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+BIT</code><code style="color:black;">)</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@Flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@Flags&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = (@ScheduleDuration / POWER(2,19)) % POWER(2, 3)</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:green;">-- Calculate the total duration in minutes</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@Duration = @Duration &#43; ((@ScheduleDuration / POWER(2,22)) % POWER(2, 5)) * 24 * 60
+</code><code style="color:green;">-- DAYS</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@Duration = @Duration &#43; ((@ScheduleDuration / POWER(2,27)) % POWER(2, 5)) * 60&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code><code style="color:green;">-- HOURS</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@Now DATETIME</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">IF @IsGMTTime = 1
+</code><code style="color:teal;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@Now = GETUTCDATE()</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@Now = GETDATE()</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">END</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@NextMaintenanceWindow DATETIME</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">IF @RecurrenceType = @RecurrenceType_NONE
+</code><code style="color:teal;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @StartTime) &gt;
+ @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @StartTime</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:black;">
+IF @RecurrenceType = @RecurrenceType_DAILY </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @StartTime) &gt;
+ @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @StartTime</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the daily interval in minutes</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@DailyInterval </code><code style="color:teal;font-weight:bold;">INT</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@DailyInterval = ((@ScheduleDuration / POWER(2,3)) % POWER(2, 5)) * 24 * 60</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@DailyInterval = @DailyInterval &#43; ((@ScheduleDuration / POWER(2,8)) % POWER(2, 5)) * 60</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@DailyInterval = @DailyInterval &#43; (@ScheduleDuration / POWER(2,13)) % POWER(2, 6)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the total number of completed intervals</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@DailyNumberOfCompletedIntervals </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@DailyNumberOfCompletedIntervals = ROUND(</code><code style="color:deeppink;">CAST</code><code style="color:black;">(DATEDIFF(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @StartTime, @Now)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+DECIMAL</code><code style="color:black;">) / @DailyInterval, 0, 0)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the next interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@DailyNextInterval DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@DailyNextInterval = DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @DailyNumberOfCompletedIntervals * @DailyInterval, @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Recalc the next interval if the next interval plus the expected duration is in the past</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @DailyNextInterval)
+ &lt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@DailyNextInterval = DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, (@DailyNumberOfCompletedIntervals &#43; 1) * @DailyInterval, @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @DailyNextInterval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:black;">
+IF @RecurrenceType = @RecurrenceType_WEEKLY </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@WeeklyInterval </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@WeeklyInterval = (@ScheduleDuration / POWER(2,13)) % POWER(2, 3)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@WeeklyDoW&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@WeeklyDoW&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = (@ScheduleDuration / POWER(2,16)) % POWER(2, 3)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Adjust the start time to match the next day of week that matches the interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@WeeklyStartTime DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@WeeklyStartTime = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (7 - DATEPART(WEEKDAY, @StartTime) &#43; @WeeklyDoW % 7), @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @WeeklyStartTime)
+ &gt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @WeeklyStartTime</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the total number of completed intervals</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@WeeklyNumberOfCompletedIntervals </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@WeeklyNumberOfCompletedIntervals = ROUND(</code><code style="color:deeppink;">CAST</code><code style="color:black;">(DATEDIFF(WEEK, @WeeklyStartTime, @Now)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+DECIMAL</code><code style="color:black;">) / @WeeklyInterval, 0, 0)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the next interval</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@WeeklyNextInterval DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@WeeklyNextInterval = DATEADD(WEEK, @WeeklyNumberOfCompletedIntervals * @WeeklyInterval, @WeeklyStartTime)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Recalc the next interval if the next interval plus the expected duration is in the past</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @WeeklyNextInterval)
+ &lt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@WeeklyNextInterval = DATEADD(WEEK, (@WeeklyNumberOfCompletedIntervals &#43; 1) * @WeeklyInterval, @WeeklyStartTime)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @WeeklyNextInterval</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:black;">
+IF @RecurrenceType = @RecurrenceType_MONTHLYBYWEEKDAY </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBWWeek&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBWWeek&nbsp;&nbsp;&nbsp;&nbsp; = (@ScheduleDuration / POWER(2,9)) % POWER(2, 3)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MontlhyBWInterval </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MontlhyBWInterval = (@ScheduleDuration / POWER(2,12)) % POWER(2, 4)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBWDoW&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBWDoW&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = (@ScheduleDuration / POWER(2,16)) % POWER(2, 3)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the total number of completed intervals</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBWNumberOfCompletedIntervals </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBWNumberOfCompletedIntervals = ROUND(</code><code style="color:deeppink;">CAST</code><code style="color:black;">(DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @StartTime, @Now)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+DECIMAL</code><code style="color:black;">) / @MontlhyBWInterval, 0, 0)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF @MonthlyBWWeek = 0
+</code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the next interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @MonthlyBWNumberOfCompletedIntervals * @MontlhyBWInterval, @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate last day of month</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, DATEDIFF(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBWLDOMNextInterval, DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">,
+ -1, DATEADD(M, DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, 0, @MonthlyBWLDOMNextInterval) &#43; 1, 0))), @MonthlyBWLDOMNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the last day of the week for the month</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, -(7 - DATEPART(WEEKDAY, @MonthlyBWLDOMNextInterval) &#43; @MonthlyBWDoW % 7), @MonthlyBWLDOMNextInterval)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @MonthlyBWLDOMNextInterval)
+ &lt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Recalc for the next month interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, (@MonthlyBWNumberOfCompletedIntervals &#43; 1) * @MontlhyBWInterval, @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate last day of month</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, DATEDIFF(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBWLDOMNextInterval, DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">,
+ -1, DATEADD(M, DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, 0, @MonthlyBWLDOMNextInterval) &#43; 1, 0))), @MonthlyBWLDOMNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the last day of the week for the month</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, -(7 - DATEPART(WEEKDAY, @MonthlyBWLDOMNextInterval) &#43; @MonthlyBWDoW % 7), @MonthlyBWLDOMNextInterval)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @MonthlyBWLDOMNextInterval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the next interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBWNextInterval DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @MonthlyBWNumberOfCompletedIntervals * @MontlhyBWInterval, @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Set the date to the first day of the month</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, -(</code><code style="color:deeppink;">DAY</code><code style="color:black;">(@MonthlyBWNextInterval) - 1), @MonthlyBWNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Set the date to the first day of week in the month</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (7 - DATEPART(WEEKDAY, @MonthlyBWNextInterval) &#43; @MonthlyBWDoW) % 7, @MonthlyBWNextInterval)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate date based on the week number to add</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(WEEK, @MonthlyBWWeek-1, @MonthlyBWNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @MonthlyBWNextInterval)
+ &lt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Recalc for the next month interval</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, (@MonthlyBWNumberOfCompletedIntervals &#43; 1) * @MontlhyBWInterval, @StartTime)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Set the date to the first day of the month</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, -(</code><code style="color:deeppink;">DAY</code><code style="color:black;">(@MonthlyBWNextInterval) - 1), @MonthlyBWNextInterval)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Set the date to the first day of week in the month</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (7 - DATEPART(WEEKDAY, @MonthlyBWNextInterval) &#43; @MonthlyBWDoW % 7), @MonthlyBWNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate date based on the week number to add</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBWNextInterval = DATEADD(WEEK, @MonthlyBWWeek-1, @MonthlyBWNextInterval)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @MonthlyBWNextInterval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:black;">
+IF @RecurrenceType = @RecurrenceType_MONTHLYBYDATE </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MontlhyBDInterval </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MontlhyBDInterval = (@ScheduleDuration / POWER(2,10)) % POWER(2, 4)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDDoM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBDDoM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = (@ScheduleDuration / POWER(2,14)) % POWER(2, 5)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF @MonthlyBDDoM = 0
+</code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="bode> <code style="color:black;">
+@MontlhyBDInterval = (@ScheduleDuration / POWER(2,10)) % POWER(2, 4)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDDoM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBDDoM&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = (@ScheduleDuration / POWER(2,14)) % POWER(2, 5)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF @MonthlyBDDoM = 0
+</code><code style="color:teackground-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">/* This
+</code><code style="color:teal;font-weight:bold;">is</code> <code style="color:black;">
+the </code><code style="color:teal;font-weight:bold;">last</code> <code style="color:deeppink;">
+day</code> <code style="color:teal;font-weight:bold;">of</code> <code style="color:deeppink;">
+month</code> <code style="color:black;">logic */</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the total number of completed intervals</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDLDOMNumberOfCompletedIntervals </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBDLDOMNumberOfCompletedIntervals = ROUND(</code><code style="color:deeppink;">CAST</code><code style="color:black;">(DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @StartTime, @Now)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+DECIMAL</code><code style="color:black;">) / @MontlhyBDInterval, 0, 0)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the next interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDLDOMNextInterval DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @MonthlyBDLDOMNumberOfCompletedIntervals * @MontlhyBDInterval, @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate last day of month</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, DATEDIFF(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDLDOMNextInterval, DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">,
+ -1, DATEADD(M, DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, 0, @MonthlyBDLDOMNextInterval) &#43; 1, 0))), @MonthlyBDLDOMNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Recalc the next interval if the next interval plus the expected duration is in the past</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @MonthlyBDLDOMNextInterval)
+ &lt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDLDOMNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, DATEDIFF(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDLDOMNextInterval, DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">,
+ -1, DATEADD(M, DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, 0, DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, (@MonthlyBDLDOMNumberOfCompletedIntervals &#43; 1) * @MontlhyBDInterval,
+ @StartTime)) &#43; 1, 0))), @MonthlyBDLDOMNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @MonthlyBDLDOMNextInterval</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Check to make sure we won&#39;t loop forever if more than 31 days some how ends up in the token</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF @MonthlyBDDoM &gt; 31
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBDDoM = 31</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;terval</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Adjust the start time to match the next day of month that matches the interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDStartTime DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDStartTime = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (31 - DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @StartTime) &#43; @MonthlyBDDoM % 31), @StartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- This loop is used multiple times to search for the next valid date that falls on the desired day of month</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">WHILE(DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDStartTime) &lt;&gt; @MonthlyBDDoM)
+</code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDStartTime = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (31 - DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDStartTime) &#43; @MonthlyBDDoM)
+ % 31, @MonthlyBDStartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @MonthlyBDStartTime)
+ &gt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @MonthlyBDStartTime</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code>
+<code style="color:teal;font-weight:bold;">ELSE</code> <code style="color:teal;font-weight:bold;">
+BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the total number of completed intervals</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDNumberOfCompletedIntervals </code><code style="color:teal;font-weight:bold;">INT</code><code style="color:black;">;
+</code><code style="color:teal;font-weight:bold;">SET</code> <code style="color:black;">
+@MonthlyBDNumberOfCompletedIntervals = ROUND(</code><code style="color:deeppink;">CAST</code><code style="color:black;">(DATEDIFF(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @MonthlyBDStartTime, @Now)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:teal;font-weight:bold;">
+DECIMAL</code><code style="color:black;">) / @MontlhyBDInterval, 0, 0)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Calculate the next interval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">DECLARE</code>
+<code style="color:black;">@MonthlyBDNextInterval DATETIME; </code><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, @MonthlyBDNumberOfCompletedIntervals * @MontlhyBDInterval, @MonthlyBDStartTime)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">WHILE(DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDNextInterval) &lt;&gt; @MonthlyBDDoM)
+</code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (31 - DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDNextInterval) &#43; @MonthlyBDDoM
+ % 31), @MonthlyBDNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- Recalc the next interval if the next interval plus the expected duration is in the past</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">IF DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">, @Duration, @MonthlyBDNextInterval)
+ &lt; @Now </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDNextInterval = DATEADD(</code><code style="color:deeppink;">MONTH</code><code style="color:black;">, (@MonthlyBDNumberOfCompletedIntervals &#43; 1) * @MontlhyBDInterval, @MonthlyBDNextInterval)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">WHILE(DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDNextInterval) &lt;&gt;
+ @MonthlyBDDoM) </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@MonthlyBDNextInterval = DATEADD(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, (31 - DATEPART(</code><code style="color:deeppink;">DAY</code><code style="color:black;">, @MonthlyBDNextInterval) &#43; @MonthlyBDDoM
+ % 31), @MonthlyBDNextInterval)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-colore><code style="color:black;">, @MonthlyBDNextInterval) &lt;&gt;
+ @MonthlyBDDoM) </code><code style="color:teal;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code sty:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SET</code>
+<code style="color:black;">@NextMaintenanceWindow = @MonthlyBDNextInterval</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">END</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">INSERT</code>
+<code style="color:teal;font-weight:bold;">INTO</code> <code style="color:black;">
+@NextServiceWindow </code><code style="color:teal;font-weight:bold;">VALUES</code>
+<code style="color:black;">(@ScheduleToken, @RecurrenceType, @NextMaintenanceWindow, @Duration, @IsGMTTime)</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">RETURN</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">END</code></span></div>
+</div>
+<br />
+To create a simple report that displays the client name and the next maintenance window use the following SQL for an SCCM report:<br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:black;">;</code><code style="color:teal;font-weight:bold;">WITH</code>
+<code style="color:black;">AllServiceWindows </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">(</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">-- All Service Windows for every resource and collection</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">SELECT</code>
+<code style="color:black;">fcm.ResourceID</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, c.</code><code style="color:teal;font-weight:bold;">Name</code>
+<code style="color:teal;font-weight:bold;">AS</code> <code style="color:black;">Collection</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, nsw.Duration</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, nsw.NextServiceWindow</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, ROW_NUMBER() OVER (PARTITION
+</code><code style="color:teal;font-weight:bold;">BY</code> <code style="color:black;">
+ResourceID </code><code style="color:teal;font-weight:bold;">ORDER</code> <code style="color:teal;font-weight:bold;">
+BY</code> <code style="color:black;">nsw.NextServiceWindow) </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">RowNumber</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">FROM</code>
+<code style="color:black;">vSMS_ServiceWindow </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">sw</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">JOIN</code>
+<code style="color:black;">v_FullCollectionMembership </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">fcm</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">ON</code>
+<code style="color:black;">sw.SiteID = fcm.CollectionID</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">JOIN</code>
+<code style="color:black;">v_Collection </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">c</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">ON</code>
+<code style="color:black;">sw.SiteID = c.CollectionID</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">CROSS</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">APPLY dbo.SCCM_GetNextServiceWindow(sw.Schedules, sw.RecurrenceType)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:black;">
+nsw</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">)</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SELECT</code>
+<code style="color:black;">sys.Name0 </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">[Computer </code><code style="color:teal;font-weight:bold;">Name</code><code style="color:black;">]</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, sys.description0
+</code><code style="color:teal;font-weight:bbackground-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">APPLY dbo.SCCM_GetNextServiceWindow(sw.Schedules, sw.RecurrenceType)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:black;">
+nsw</code></span></span></div>old;">AS</code> <code style="color:black;">
+[Description]</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, asw.Collection
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:black;">
+[Collection]</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">,
+</code><code style="color:deeppink;">CONVERT</code><code style="color:black;">(</code><code style="color:teal;font-weight:bold;">CHAR</code><code style="color:black;">(5), DATEADD(</code><code style="color:teal;font-weight:bold;">MINUTE</code><code style="color:black;">,
+ asw.Duration, 0), 108) </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">[Duration (HH:MM)]</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">,
+</code><code style="color:deeppink;">CONVERT</code><code style="color:black;">(</code><code style="color:teal;font-weight:bold;">CHAR</code><code style="color:black;">(16), asw.NextServiceWindow, 120)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:black;">
+[</code><code style="color:teal;font-weight:bold;">Next</code> <code style="color:black;">
+Maintenance Window]</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, DATENAME(WEEKDAY, asw.NextServiceWindow)
+</code><code style="color:teal;font-weight:bold;">AS</code> <code style="color:black;">
+[</code><code style="color:deeppink;">Day</code> <code style="color:teal;font-weight:bold;">
+of</code> <code style="color:black;">Week]</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">FROM</code>
+<code style="color:black;">v_R_System </code><code style="color:teal;font-weight:bold;">as</code>
+<code style="color:black;">sys</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;</code><span><code style="color:deeppink;">LEFT</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;</code><span><code style="color:gray;">JOIN</code>
+<code style="color:black;">AllServiceWindows </code><code style="color:teal;font-weight:bold;">AS</code>
+<code style="color:black;">asw</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">ON</code>
+<code style="color:black;">sys.ResourceID = asw.ResourceID</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">WHERE</code>
+<code style="color:black;">sys.Client0 = 1</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:gray;">AND</code>
+<code style="color:black;">asw.RowNumber = 1</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">ORDER</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">BY</code>
+<code style="color:black;">asw.NextServiceWindow</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, asw.Collection</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">, sys.Name0</code></span></span></div>
+</div>
+<br />
+<h2><a name="References"></a>References</h2>
+<p>SCCM Maintenance Window Schedule Data Structure:&nbsp;http://msdn.microsoft.com/en-us/library/cc143505.aspx</p>
+
+</div>
+    
+    

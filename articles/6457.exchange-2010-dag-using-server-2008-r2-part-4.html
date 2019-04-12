@@ -1,0 +1,93 @@
+---
+layout: default
+title: Exchange 2010 DAG using Server 2008 R2 – Part 4 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Welcome to Part 4 of this article series. In Part 1, we started off by discussing the goal of this lab. That goal is how to deploy a two-node Exchange 2010 RTM Database Availability Group (DAG) on Windows Server 2008 R2. We then prepared our Operating System
+ with the Exchange 2010 Prerequisites which includes software prerequisites as well as modification to hardware configuration such as our Network Interface Cards (NIC)s.&nbsp; In Part 2, we went over the installation of one of our Exchange 2010 Servers which will
+ include the Mailbox, Client Access, as well as Hub Transport Server Roles. In Part 3, we went over the creation and configuration of our Database Availability Group (DAG).&nbsp; We then added our first Node to our DAG.</p>
+<p>In this Part, I will be adding the second node to the DAG and then create a&nbsp; database which will then be synchronized to the second DAG node.</p>
+<h3><a name="Adding_the_second_Node_to_our_DAG"></a>Adding the second Node to our DAG</h3>
+<p>Well, let’s go ahead and add our first node to the DAG.&nbsp; Go into the <strong>EMC
+</strong>&gt; <strong>Organization Configuration</strong> &gt; <strong>Mailbox </strong>
+&gt; <strong>Database Availability Group</strong> &gt;<strong> Right-Click</strong> our
+<strong>DAG </strong>&gt; <strong>Manage Database availability Group Membership</strong>.</p>
+<p><img alt=" " width="512" height="251" src="http://www.shudnow.net/images/Exchange2010DAG38.jpg" /></p>
+<p>Add the second Node.&nbsp; Click <strong>Manage </strong>to <strong>Continue</strong>.</p>
+<p><img alt=" " width="637" height="557" src="http://www.shudnow.net/images/Exchange2010DAG45.jpg" /></p>
+<p>Our second node has successfully been added.</p>
+<p><img alt=" " width="636" height="284" src="http://www.shudnow.net/images/Exchange2010DAG46.jpg" /></p>
+<p>But… what exactly was done during this behind the scenes when this second node was added to the DAG?&nbsp; The following occurs (from Technet documentation):</p>
+<ul>
+<li>The server is joined to Windows Failover Cluster for the DAG. </li><li>The quorum model is automatically adjusted: </li><li>A Node Majority quorum model is used for DAGs with an odd number of members. </li><li>A Node and File Share Majority quorum is used for DAGs with an even number of members.
+</li><li>The witness directory and share are automatically created by Exchange when needed.
+</li><li>The server is added to DAG object in Active Directory. </li><li>The cluster database is updated with info on mounted databases. </li></ul>
+<p>First of all,we can see the DAG has been joined to the Windows Failover Cluster.</p>
+<p><img alt=" " width="193" height="171" src="http://www.shudnow.net/images/Exchange2010DAG47.jpg" /></p>
+<p>Second of all,we can see the Quorum Model has been adjusted to Node Majority and File Share Witness because we have an even number of nodes.</p>
+<p><img alt=" " width="793" height="229" src="http://www.shudnow.net/images/Exchange2010DAG48.jpg" /></p>
+<p>We can also see the FSW is set to the location we specified when creating our DAG (SHUD-OCSFE01 with a path of C:\ShudnowDAG) and that there is Quorum data in this location.</p>
+<p><img alt=" " width="474" height="151" src="http://www.shudnow.net/images/Exchange2010DAG49.jpg" /></p>
+<h3><a name="Adding_Database_Replicas"></a>Adding Database Replicas</h3>
+<p>Well, let’s go ahead and create a new database and replicate it.&nbsp; Go into the <strong>
+EMC </strong>&gt; <strong>Organization Configuration</strong> &gt; <strong>Mailbox </strong>
+&gt; <strong>Database Management</strong>.</p>
+<p>We can see there’s currently two databases that were created during the installation on our Exchange Mailbox Servers; one for the first node and one for the second node.</p>
+<p><img alt=" " width="312" height="150" src="http://www.shudnow.net/images/Exchange2010DAG50.jpg" /></p>
+<p>We can’t delete these databases because they contain some arbitration mailboxes.&nbsp; Arbitration mailboxes are special mailboxes that are used to manage approval workflows.&nbsp; For example, moderated e-mails.&nbsp; We can see these arbitration mailboxes and what mailbox
+ databases they belong to by running the following command:</p>
+<div dir="ltr">
+<p id="ctl00_MTCS_main_ctl49_ctl00_ctl02">Get-Mailbox -Arbitration | FL Name,Database</p>
+</div>
+<p><img alt=" " width="505" height="162" src="http://www.shudnow.net/images/Exchange2010DAG51.jpg" /></p>
+<p>Create a new Database.&nbsp; I will create a new mailbox database with the name, LABDatabase01.&nbsp; I will then also mount the database The two commands I will use to do this are:</p>
+<div dir="ltr">
+<p id="ctl00_MTCS_main_ctl49_ctl00_ctl02">New-MailboxDatabase -Name LABDatabase01 -Server SHUD-EXC01</p>
+<p>Mount-Database -Identity LABDatabase01</p>
+</div>
+<p><img alt=" " width="637" height="122" src="http://www.shudnow.net/images/Exchange2010DAG52.jpg" /></p>
+<p>Let’s add a Mailbox Database Copy to our second DAG node so we have redundant databases.&nbsp;
+<strong>Database Management</strong> &gt; <strong>Select</strong> the new <strong>Database
+</strong>&gt;<strong> Right-Click</strong> and <strong>Choose </strong>“<strong>Add Mailbox Database Copy</strong>.”</p>
+<p><img alt=" " width="302" height="201" src="http://www.shudnow.net/images/Exchange2010DAG53.jpg" /></p>
+<p>Choose the second server for the server that will obtain our Database Copy.&nbsp; Click
+<strong>Add </strong>to <strong>Continue</strong>.</p>
+<p><img alt=" " width="635" height="553" src="http://www.shudnow.net/images/Exchange2010DAG54.jpg" /></p>
+<p>We should then see a successful copy being added to our second DAG Node.</p>
+<p><img alt=" " width="636" height="276" src="http://www.shudnow.net/images/Exchange2010DAG55.jpg" /></p>
+<p>To verify, in the EMC, click on the LABDatabase01 and we should see a Mounted copy and a Healthy copy below.</p>
+<p><img alt=" " width="571" height="377" src="http://www.shudnow.net/images/Exchange2010DAG56.jpg" /></p>
+<p>To do a switchover, you can right-click on the copied database and choose Activate Database Copy.</p>
+<p><img alt=" " width="578" height="215" src="http://www.shudnow.net/images/Exchange2010DAG57.jpg" /></p>
+<h3><a name="DAGs_Networks"></a>DAGs Networks</h3>
+<p>Go into the <strong>EMC </strong>&gt; <strong>Organization Configuration</strong> &gt;
+<strong>Mailbox </strong>&gt; <strong>Database Availability Group</strong>.&nbsp; At the bottom, you will see the Networks.&nbsp; You can see both are enabled for Replication.&nbsp; Exchange 20/images/Exchange2010DAG54.jpg" /></p>
+<p>We should then see a successful copy being added to our second DAG Node.</p>
+<p><img alt=" " width="636" height="276" src="http://www.shudnow.net/images/Exchange2010DAG55.jpg" /></p>
+<p>To verify, in the EMC, click on the LABDatabase01 and we should see a Mounted copy and a Healthy copy below.</p>
+<p><img alt=" " width="571" height="377" src="http://www.shudnow.net/images/Exchange2010DAG56.jpg" /></p>
+<p>To do a switchover, you can right-click on the copied database and choose Activate Database Copy.</p>
+<p><img alt=" " 10 always uses the last recently used replication network.&nbsp; You can leave both enabled
+ to Replication or you can disable the MAPI Network from having Replication enabled.&nbsp; This will force all replication to go over your dedicated replication network. Keep in mind, when you do this, your MAPI Network can still do replication.&nbsp; It will only do
+ replication when there are no dedicated replication networks available.&nbsp; For example, if the dedicated replicated network were to go down due to some switch but your MAPI network was available, replication would begin to utilize the MAPI network.</p>
+<p><img alt=" " width="209" height="287" src="http://www.shudnow.net/images/Exchange2010DAG58.jpg" /></p>
+<p>If you were in a situation where you were adding a 3rd node to the DAG and it was in a different subnet, you will need to add an IP Address for that subnet so the Network Name resource can come online for that subnet.&nbsp; So let’s say we now added a 3rd DAG
+ node that was on the 172.16.0.0/12 subnet.&nbsp; Remember our Set-DatabaseAvailabilityGroup cmdlet with the -DatabaseAvailabilityGroupIpAddresseses switch?&nbsp; In this case, let’s say 172.16.2.154 was going to be our DAG IP for that subnet.&nbsp; We would have to add that
+ IP to the switch above.&nbsp; But that switch is not additive, so we would have to run the following command:</p>
+<div dir="ltr">
+<div dir="ltr">
+<p id="ctl00_MTCS_main_ctl49_ctl00_ctl02">Set-DatabaseAvailabilityGroup -Identity ShudnowDAG -DatabaseAvailabilityGroupIPAddresses 192.168.1.154,172.16.2.154</p>
+</div>
+</div>
+<p>As you can see, I specified both 192.168.1.154 in addition to 172.16.2.154.</p>
+<p>What happens is if the DAG fails over to the second DAG node, the DAG will keep the 192.168.1.154 address.&nbsp; But if it fails over to the 3rd node, it will use the 172.16.2.154.&nbsp; Again, this command has nothing to do with the replication networks, only the
+ MAPI Networks.&nbsp; And again, it’s only so the Network Name resource can come online which is a cluster dependency.&nbsp; No clients will connect to this Network Name resource and Exchange has multiple mechanisms to connect to Exchange.</p>
+<h3><a name="Summary"></a>Summary</h3>
+<p>Well folks, that is all for Part 4 of this article as well as the article series. Thanks for reading!</p>
+
+</div>
+    
+    

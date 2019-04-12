@@ -1,0 +1,150 @@
+---
+layout: default
+title: Start or Stop a Virtual Machine (SPF) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/contents/articles/19162.service-provider-foundation-programmers-guide-spf.aspx" title="Click to view the page titled: Service Provider Foundation Programmers Guide (SPF)">Service Provider Foundation Programmers Guide (SPF)</a>.</p>
+<div class="table-of-cass="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-hontents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#To_start_or_stop_a_virtual_machine_with_NET">To start or stop a virtual machine with .NET</a></li><li class="hierarchy-item"><a href="#To_start_or_stop_a_virtual_machine_with_HTTP">To start or stop a virtual machine with HTTP</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<div id="mainBody">
+<p>When you have reference to a virtual machine, you can control the state of it by changing the
+<strong>Operation</strong> property and submitting the changed entity to the server. The virtual machine will then respond to the operation you gave it. This can be used to start and stop the virtual machine among other operations.</p>
+<p>To start a stopped virtual machine, set the <strong>Operation</strong> property to
+<strong>Start</strong>.</p>
+<p>To stop a running virtual machine, which will forcibly shut it down, set the <strong>
+Operation</strong> property to <strong>Stop</strong>.</p>
+<div>
+<h2 class="heading"><a name="To_start_or_stop_a_virtual_machine_with_NET"></a><strong>To start or stop a virtual machine with .NET</strong></h2>
+<div class="section" id="procedureSection0">
+<ol class="ordered">
+<li>
+<p>Connect to the Service Provider Foundation <strong>VMM</strong> service.</p>
+</li><li>
+<p>Query for a specific <strong>SpfVMM.VirtualMachine</strong>.</p>
+</li><li>
+<p>Set the <strong>Operation</strong> property of the virtual machine to either <strong>
+Start</strong> or <strong>Stop</strong>.</p>
+</li><li>
+<p>Call the <strong>UpdateObject</strong> method on the <strong>VMM</strong> service object reference, and pass in the virtual machine reference.</p>
+</li><li>
+<p>Call the <strong>SaveChanges</strong> method on the <strong>VMM</strong> service object reference.</p>
+</li></ol>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="To_start_or_stop_a_virtual_machine_with_HTTP"></a><strong>To start or stop a virtual machine with HTTP</strong></h2>
+<div class="section" id="procedureSection1">
+<ol class="ordered">
+<li>
+<p>Create a new <strong>HTTP</strong> PUT or MERGE operation.</p>
+</li><li>
+<p>Set the URL to the appropriate URI of a specific virtual machine: <a href="https://server:30005/subscription-id/services/systemcenter/vmm/VirtualMachines(ID=guid&#39;vm-id&#39;,StampId=guid&#39;stamp-id&#39;">
+https://<em>server</em>:30005/<em>subscription-id</em>/services/systemcenter/vmm/VirtualMachines(ID=guid&#39;<em>vm-id</em>&#39;,StampId=guid&#39;<em>stamp-id</em>&#39;</a>)
+</p>
+</li><li>
+<p>Add the HTTP headers.</p>
+<p>Specifically, add the <strong>x-ms-principal-id</strong> header, which can be set to any value.</p>
+</li><li>
+<p>Create the HTTP payload containing the virtual machine entity, with key properties, and the
+<strong>Operation</strong> property set to <strong>Start</strong> or <strong>Stop</strong>.</p>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/1205.Important.gif" />Important
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+If you supply only the key and changed properties, use a <strong>MERGE</strong> operation.
+<strong>PUT</strong> is used when you want to replace all properties on the entity with new or default values. The
+<strong>MERGE</strong> operation updates the existing entity with the properties supplied.
+<strong>PUT</strong> will update the existing entity with the properties supplied, but will reset all missing properties back to their default values.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li><li>
+<p>Submit the HTTP request.</p>
+</li></ol>
+</div>
+</div>
+<h2 class="heading"><a name="Example"></a>Example</h2>
+<div class="section" id="codeExampleSection">
+<p>The following example shows how to stop an existing virtual machine using .NET.</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>SpfVMM.VMM vmmService = new SpfVMM.VMM(new Uri(&quot;https://wapserver:30005/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/&quot;));
+vmmService.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;
+
+var virtualMachine = vmmService.VirtualMachines.Where(vm =&gt; vm.ID == new Guid(&quot;2fa28d03-8d6d-486b-ae61-9694a2db5d6f&quot;)).FirstOrDefault();
+
+if (virtualMachine != null)
+{
+    virtualMachine.Operation = &quot;Stop&quot;;
+
+    vmmService.UpdateObject(virtualMachine);
+    vmmService.SaveChanges();
+}
+</pre>
+</div>
+<p>The following is an example HTTP request sent to the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>MERGE https://wapserver:30005/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/VirtualMachines(ID=guid&#39;2fa28d03-8d6d-486b-ae61-9694a2db5d6f&#39;,StampId=guid&#39;ba4146fa-fb41-4f59-a193-ad00c52a138c&#39;) HTTP/1.1
+DataServiceVersion: 3.0;NetFx
+MaxDataServiceVersion: 3.0;NetFx
+Accept: application/json;odata=minimalmetadata
+Accept-Charset: UTF-8
+DataServiceUrlConventions: KeyAsSegment
+User-Agent: Microsoft ADO.NET Data Services
+x-ms-principal-id: user@contoso.com
+Content-Type: application/json;odata=minimalmetadata
+Host: wapserver:30005
+Content-Length: 179
+Expect: 100-continue
+Authorization: Negotiate YIIGXgYGKwYBBQUCoIIGUjCCBk6gMDAuBgkqhkiC9xIBAgIGCSqGSIb3EgECAgYKKwYBBAGCNwICHgYKKwYBBAGCNwICCqKCBhgEggYUYIIGEAYJKoZIhvcSAQICAQBuggX/MIIF&#43;6ADAgEFoQMCAQ6iBwMFACAAAACjggSPYYIEizCCBIegAwIBBaEJGwdDRE0uTEFCoiMwIaADAgECoRowGBsESFRUUBsQc3Bmbi00NTcuY2RtLmxhYqOCBE4wggRKoAMCARKhAwIBC6KCBDwEggQ4YxKWDhXtvdW7cOad2YYLdIl1i006LdvK5X1L&#43;Dq5D&#43;rKCF9MuKeeO634eKeCvEg8ogIQuKlZWwCNikXuxKMAp6Js3tjKqV8cOIFYcbn3NjFc2h0iM2hRPlZgx&#43;WleniD83tu57OufXVmrG242TXohgXOB&#43;HldgJszR6eKE4qebx9pfzkgO2TMZOU8e&#43;/2&#43;q&#43;rOK0E9lPk1bAGVI8IhsbeUjiWzg15P2TmhePpAG7Tqn&#43;DRmU134ywJe5WVxmwMzPA9x0RqGKAaeutXKIeSHkSOXVf1Kzfursl03YH&#43;1YMhAu5tj/DLTAu4BKKjYa4/sVo3&#43;lXomaqOOPrwijLGT2XfxsXWe2Tcq/T/yUChrzOOv9hQSRXctB/3FF&#43;S7&#43;yqxNrkcBINIAElQXu&#43;cLhGnMtR6HT5bntions: KeyAsSegment
+User-Agent: Microsoft ADO.NET Data Services
+x-ms-principal-id: user@contoso.com
+Content-Type: application/json;odata=minimalmetadata
+Host: wapserver:30005
+Content-Length: 179
+Expect: 100-continue
+Authorization: Negotiate YIIGXgYGKwYBBQUCoIIGUjCCBk6gMDAuBgkqhkiC9xIBAgIGCSqGSIb3EgECAgYKKwYBBAGCNwICHgYKKwYBBAGCNwICCqKCBhgEggYUYIIGEAYJKoZIhvcSAQICAQBuggX/MIIF&#43;6ADAgEFoQMCAQ6iBwMFACAAAACjggSPYYIEizCCBIegAwIBBaEJGwdDRE0uTEFCoiMwIaADAgECoRowmSO56ezxxUzYYQ9pBBZ2pqpyEr6LtJ8CWNIYLFRuRkffrXL9a&#43;ioSayAJMC/gmuPxN1JjwT1TcSAQUhUYuZrxahrnZHQjkV0&#43;b&#43;Wpjwfx0cQG7S2i/ACf05G&#43;TJU/QOHCwqP0R8dkwZjQNJ0VmpnlDw2DQNnI7cBH3dFcLh8XI13uo16aZiHOUl6WDU1uWO1S5UHV9H6RMGNjt0mk4QTKANtjGt/4ysRCdjcJ2qCYC5rWRbDS/z1&#43;69cH8O5ECuD8UuqvGWIYEF/ZhRbWcrqW2rauLTd5Mtgmzc9wRq3v9g4gR1Iz/z84PQ9lrxZ22lE8pBf9X5eNMio2hqi4Qcu53h3QOad56pCkov3g&#43;/eZzAppwEDycz4DOK8iXgbyZMprBQU7Sq0dF4tDke6zaaWFD9fKRxngIzbLodr22WtiZebUkULuvJOhI7FRlSIA1mH5yZFmqINa/XIHZguBtMhWJFSeg8vwrQRlJGwaA8swtOGO33z5/HMnM8xOasqH5tmCCatTUy3bj1vkhXJpJqHAzRq16b1XsYIdOWoYW3qzgFusoqDrMv4faKj2vZuUSQ7UDBSwGTOfEbQvQgY&#43;DswJF6HFenryyVomQR6q7c/U23kzRePWemhKHefWDnBfSeQ1wV1hcP1DwFn7/AI1kRaFNgoyzFhYVzUBJIiUfVXp3f/iU7srzK6dZLKfbpin&#43;Hg4jPdmScpfzBZUHxeQwGEjc3eHFmKwxWoOC8oI7lJlD5x1FkuH&#43;U&#43;6a1G94IptnFVmqzkREDUoEl2E8Bd4vWt3P6ECn62AH6o81aIrgX1haGmJgeWKuQg&#43;XqitvtiYd8zFfvXRPEzHE6IMekJyoodGeD3t&#43;f2MDCTkIJzKNiS79KanjXCyIG6WdVCtnnazFWiFoQnI&#43;tcgfGCGi&#43;YVxT&#43;jc6jwHzV5kZUeOf9pvuM/JN4j2aQB3WQJf/Kw8NLfD9ZmGoIP8vL9nipjtVBWSt7aZD/B6f/w/9a9qZKux6fycDL4OAXXTRcLVX4wnlP8lOKTiLxdpIIBUTCCAU2gAwIBEqKCAUQEggFAjvEIlMPqTG9asIJ0bpB6sNVEFeGFiFeV3DsMj08B5wSeublAMFyGxdGTZWnM3sToxs&#43;S9C1o&#43;4Lw&#43;VlNF6DhG7jgJZJhkBZDmnO2G375lfo&#43;vzXFyMQD0Ujbx9r2P93YxD5A2Z5ka4BlTOBs1dG94XOHrhG89TQa92h/QHffwgbQpL2846ghwqFb9qc3nabzAy6QzcX/VZd1f&#43;PaeruPwlVBK5ZMqIkwjlPMx45H0cFBS/GR&#43;SbvDOiweD0hM4sL0mT5/U6BAd6EFgroWLZAJDQq6AHQbb7mmRTJRRUjwUcVtm2xAo15Pvj6csOW7wdFzP5Z0htdCxUCQvGdrjj98Q&#43;EE/owKgtIKeETBiePkB3haoWvaomj7e/s&#43;R9MJe5ik0&#43;zjuFpYWQr91joxCwPwv2YPC8GOQcmqqKhigVqyq0=
+
+{
+    &quot;odata.type&quot;: &quot;VMM.VirtualMachine&quot;,
+    &quot;ModifiedTime&quot;: &quot;2013-08-06T23:17:18.4061005-07:00&quot;,
+    &quot;Operation&quot;: &quot;Stop&quot;
+}
+</pre>
+</div>
+<p>The following is an example HTTP response from the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>HTTP/1.1 204 No Content
+Cache-Control: no-cache
+Server: Microsoft-IIS/8.5
+x-ms-request-id: 957320a6-6f62-48ef-a854-a721c579c595
+X-Content-Type-Options: nosniff
+request-id: eda9bde6-834a-0001-46f1-aaed4a83ce01
+DataServiceVersion: 1.0;
+X-AspNet-Version: 4.0.30319
+Persistent-Auth: true
+X-Powered-By: ASP.NET
+WWW-Authenticate: Negotiate oYG2MIGzoAMKAQChCwYJKoZIgvcSAQICooGeBIGbYIGYBgkqhkiG9xIBAgICAG&#43;BiDCBhaADAgEFoQMCAQ&#43;ieTB3oAMCARKicARuBxmfiEwlR7iFBMUoozIOaNsMQD/wtFve4X/yoFT27BiUaibkryGn/tS8in4Nc/ohfIvteyhLhB44&#43;zjZ83aqgE3SW2IpDJJ7pFSGFQDpFQk7I5auEyB9enwfORHt8gAX/0/u8mdAjkaP51HyBls=
+Date: Wed, 07 Aug 2013 21:53:32 GMT
+
+</pre>
+</div>
+</div>
+</div>
+
+</div>
+    
+    

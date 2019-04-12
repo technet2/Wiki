@@ -1,0 +1,222 @@
+---
+layout: default
+title: Hyper-V Step by Step&#58; Windows Server Failover Clustering with SAN Environment - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<hr />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Credits">Credits</a></li><li class="hierarchy-item"><a href="#Equipment">Equipment</a></li><li class="hierarchy-item"><a href="#Softwares">Softwares</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Roles_and_Features">Roles and Features</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Network_Interface_Card">Network Interface Card</a></li><li class="hierarchy-item"><a href="#Step_by_Step">Step by Step</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Configure_the_network_adapters_on_each_node_identically">Configure the network adapters on each node identically.</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Heartbeat">Heartbeat:</a></li><li class="hierarchy-item"><a href="#CSV_Card">CSV Card:</a></li><li class="hierarchy-item"><a href="#Live_Migration_Card">Live Migration Card:</a></li><li class="hierarchy-item"><a href="#Management_Communication_Card_Node_physical_server">Management / Communication Card Node (physical server):</a></li><li class="hierarchy-item"><a href="#VM_Cards">VM Cards:</a></li><li class="hierarchy-item"><a href="#ISCSI_communication_node_gt_storage_cards">ISCSI (communication node&gt; storage) cards:</a></li><li class="hierarchy-item"><a href="#TEAM_Virtual_Card_between_the_two_VM_s_boards_it_should_have_already_been_created">TEAM Virtual Card between the two VM&#39;s boards: (it should have already been created)</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Other_Languages">Other Languages</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Credits"></a>Credits</h1>
+<p>This article was originally written in:</p>
+<p><a href="https://social.technet.microsoft.com/wiki/pt-br/contents/articles/37944.passo-a-passo-hyper-v-e-failover-clustering-com-ambiente-san.aspx">https://social.technet.microsoft.com/wiki/pt-br/contents/articles/37944.passo-a-passo-hyper-v-e-failover-clustering-com-ambiente-san.aspx</a></p>
+<h1><a name="Equipment"></a>Equipment</h1>
+<ol>
+<li>1.&nbsp;2x Servers HP ProLiant ML350 G6:
+<ul>
+<li>- 1 Processor Intel Xeon E5650; </li><li>- 2 discs Sata 500Gb 7k Raid 1; </li><li>- 2 Sources of 750W redundants; </li><li>- 2 NIC&#39;s dual-gigabit onboard; </li><li>- 6 NIC&#39;s HP NC112T offboard </li></ul>
+</li><li>2.&nbsp;1x Storage HP P2000 ISCSI 1Gb;
+<ul>
+<li>- HP P2000 LFF Modular Smart Array Chassis; </li><li>- HP P2000 G3 iSCSI MSA Controller; </li><li>- 6 discs SAS 300Gb 15k Raid 10 </li></ul>
+</li><li>3.&nbsp;3x Switches HP Procurve </li></ol>
+<h1><a name="Softwares"></a>Softwares</h1>
+<ul>
+<li>- Microsoft Windows Server 2008 R2 SP1 Enterprise Full; &nbsp; </li><li>- Antivírus Symantec EndPoint Protection; &nbsp; </li><li>- Windows and Antivirus updates; &nbsp; </li><li>- Drivers and Firmwares updates. &nbsp; &nbsp; </li></ul>
+<h2><a name="Roles_and_Features"></a>Roles and Features</h2>
+<ul>
+<li>&nbsp;- ISCSI Initiator; </li><li>- MPIO; </li><li>- Failover Cluster; </li><li>- Hyper-V. </li></ul>
+&nbsp;
+<h1><a name="Network_Interface_Card"></a>Network Interface Card</h1>
+&nbsp;In a cluster&nbsp;design, the network cards have a very important role, and the choice of the number of cards must be carefully planned. In this project, we built a Failover Clustering (WSFC) with Hyper-V using CSV and Live Migration, and I opted for the following
+ configuration: &nbsp;
+<ul>
+<li>1x Heartbeat; &nbsp; </li><li>1x CSV; </li><li>1x&nbsp;Live Migration; </li><li>1x Host management and LAN communication; </li><li>2x VM&#39;s (NIC Teaming); </li><li>2x&nbsp;ISCSI; </li><li>1x Virtual </li></ul>
+Neither of them can be&nbsp;on&nbsp;the same network, otherwise, it will not pass in the Cluster validation. Keep a naming pattern and rename all of them, remembering that it should be the same name on both nodes. &nbsp;
+<p>It’s important to remember that on each Server, the Windows must be installed on the same volume (C usually).</p>
+<h1><a name="Step_by_Step"></a>Step by Step</h1>
+<p>If the servers do not have Disk Raid configured, do so as per the manufacturer&#39;s guidance. If you have any questions about how to do this, refer to the manual. In this project, we opted for Raid 1 (mirroring) for a reason. We are just storing a partition
+ for the OS, so we bought only two disks. We recommend using Raid 5, 6 or 10 on partitions that will store data; in this case, we will use storage;</p>
+<p>After the Raid is properly configured, install the operating system. In this project, Windows Server 2008 R2&nbsp;Ent.</p>
+<p>Install the antivirus, in this&nbsp;project, Symantec EndPoint Protection;</p>
+<ul>
+<li>Install any drivers that were not automatically installed with the OS. A very important point is to make sure you will install the latest version of the vendor’s website. This will prevent future issues that may occur with the outdated version. In this
+ project, we updated the drivers for the network cards,&nbsp;SAS/SATA&nbsp;controller, video and we installed an HP application to manage the network cards and create TEAM;
+</li><li>Update the BIOS of the servers. In this project it was not necessary because the latest version was already installed;
+</li><li>Set up your Storage. In this project, as stated earlier, we used the HP P2000 ISCSI 1Gb in the design. To do this, we connected a network cable to the management interface on the back side and set my network card up in the same network range used by the
+ storage card. We also used the CLI interface, which is via the command line. We will not go into more detail because your project can use another model of Storage
+</li></ul>
+<p>What is essential in this step is that you configure the main resources for the operation of the Cluster, involving:</p>
+<ul>
+<li>The configuration of management network cards;&nbsp; </li><li>The configuration of the ISCSI network cards (IP address of each port, enable Jumbo Frames,&nbsp;set the&nbsp;speed, etc)
+</li><li>&nbsp;Virtual Disk Configuration. In this project we created only one using the full capacity of the Raid 10 disks for performance and security;<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+</li><li>The configuration&nbsp;of volumes (LUNS). In this project we created four; </li><li>Set up the LUNS masking. This step is the mapping of each LUN to the Cluster nodes,&nbsp;otherwise,&nbsp;when connecting the node to the storage (via ISCSI Initiator), none volume will be available. To do so, you must know the IQN of each server. To do this, open
+ ISCSI Initiator, Configuration, Initiator Name.
+<p>Depending on your storage, when the node is first connected to the storage, the server will automatically be visible in the storage already with its IQN. Then just make the masking for each LUN giving read and write access.</p>
+</li></ul>
+<p>Create a TEAM of the two cards dedicated to VMs. In this project, we used the HP utility. Find out if your manufacturer provides any tools to do this</p>
+<h2><a name="Configure_the_network_adapters_on_each_node_identically"></a>Configure the network adapters on each node identically.</h2>
+<h3><a name="Heartbeat"></a>Heartbeat:</h3>
+<p>In the card&#39;s properties, disable all options except IPv4 and IPv6;</p>
+<p>In IPv4, disable DNS and NetBIOS over IP registration;</p>
+<p>Set the speed to 1000 / Full;</p>
+<p>Set IP and Subnet Mask, only.</p>
+<p>&nbsp;</p>
+<h3><a name="CSV_Card"></a>CSV Card:</h3>
+<p>In the properties of the adapter, enable only, Client for Microsoft, File and Printer, IPv4 and IPv6;</p>
+<p>In IPv4, disable DNS and NetBIOS over IP registration;</p>
+<p>Set the speed to 1000 / Full;</p>
+<p>Set IP and Subnet Mask, only.</p>
+<p>&nbsp;</p>
+<h3><a name="Live_Migration_Card"></a>Live Migration Card:</h3>
+<p>In the card&#39;s properties, disable all options except IPv4 and IPv6;</p>
+<p>In IPv4, disable DNS and NetBIOS over IP registration;</p>
+<p>Set the speed to 1000 / Full;</p>
+<p>Set IP and Subnet Mask, only.</p>
+<p>&nbsp;</p>
+<h3><a name="Management_Communication_Card_Node_physical_server"></a>Management / Communication Card Node (physical server):</h3>
+<p>In the properties of the card, keep all options enabled;</p>
+<p>Set the speed to 1000 / Full;</p>
+<p>Define IP, Subnet Mask,&nbsp;Gateway,&nbsp;and DNS.</p>
+<p>&nbsp;</p>
+<h3><a name="VM_Cards"></a>VM Cards:</h3>
+<p>The two boards were configured in TEAM for balancing and fault tolerance. When creating TEAM, all options will be disabled by default.</p>
+<p>&nbsp;</p>
+<h3><a name="ISCSI_communication_node_gt_storage_cards"></a>ISCSI (communication node&gt; storage) cards:</h3>
+<p>In the card properties, disable all options except IPv4;</p>
+<p>In IPv4, disable DNS and NetBIOS over IP registration;</p>
+<p>Set the speed to 1000 / Full, enable the Jumbo package 9014 bytes,</p>
+<p>Enable Flow Control;</p>
+<p>To test whether Jumbo Frames are supported, use the command ping-l 8000 –f -n 5 &lt;ip storage&gt;.</p>
+<p>&nbsp;</p>
+<h3><a name="TEAM_Virtual_Card_between_the_two_VM_s_boards_it_should_have_already_been_created"></a>TEAM Virtual Card between the two VM&#39;s boards: (it should have already been created)</h3>
+<p>This card will be indicated when creating a virtual card in&nbsp;Hyper-V,&nbsp;so it will be automatically configured and in the&nbsp;end,&nbsp;only the Virtual Switch option will be enabled in the properties.</p>
+<p>Add the Hyper-V role and the Clustering Failover feature on both Servers. In the&nbsp;Hyper-V&nbsp;installation,&nbsp;don&#39;t select any cards for use by VMs. We will do this next;</p>
+<p>&nbsp;</p>
+<p>Open Hyper-V Manager, click Virtual Network Manager, and then External and Add; Choose the description and name of the board, in the External option, select the resulting TEAM board between the two VMS boards. To not create a virtual card for use on the
+ physical host, uncheck Allow Management Operating System to Share this network adapter. In this project, we unchecked it to not create it. Click OK;</p>
+<p>&nbsp;</p>
+<p>&nbsp;Change the order of the boards on each node. Open Control Panel, Network and&nbsp;Internet, Network and Sharing Center, Change adapter settings, Alt-click Advanced, then Advanced Settings. &nbsp;</p>
+<p>Set the following order:</p>
+<ol>
+<li>1º - Physical Node Management </li><li>2º - ISCSI 1 </li><li>3º - ISCSI 2 </li><li>4º - Live Migration </li><li>5º - CSV </li><li>6º - VM1 (TEAM) </li><li>7º - VM2 (TEAM) </li><li>8º - Heartbeat </li><li>9º - Virtual Team </li></ol>
+<p>&nbsp;</p>
+<p>12.&nbsp;Create an unprivileged domain account, just as an ordinary user. Give this user permission to create Computer objects in the entire domain. To do so, follow the steps: &nbsp;</p>
+<ol>
+<li>1º On the domain controller, open Active Directory Users and Computers; </li><li>2º Right-click on the domain and then Delegate Control; </li><li>3º In the wizard that you opened, click Next and add the newly created user to the cluster. Click Next one more time;
+</li><li>4º Select Create a custom task to delegate and then Next; </li><li>5º Click this folder, and then click Next; </li><li>6º Check only the last box, and select the first option, Create Computer Objects;
+</li><li>7º Click Next. Confirm the summary of settings and then Finish. </li></ol>
+<p>&nbsp;</p>
+<p>&nbsp;Add the two nodes into your domain;</p>
+<p>&nbsp;</p>
+<p>&nbsp;Log on as a local administrator on both nodes and add the newly created account to the domain as the Windows Local Administrator. To do so, do the following:</p>
+<ol>
+<li>1º Open Server Manager; </li><li>2º Then, Configuration, Local&nbsp;Users&nbsp;and Groups, Groups; </li><li>3º Double-click Administrators,&nbsp;Add,&nbsp;and enter the&nbsp;username. You will need to enter a domain account to complete this step;
+</li><li>4º Click Ok on the open screens, and then log on to Windows with the respective user on both nodes.
+</li></ol>
+<p>&nbsp;&nbsp;</p>
+<p>&nbsp;Establish&nbsp;a&nbsp;connection&nbsp;between nodes and Storage using the ISCSI Initiator tool. In addition, it will be configured through the MPIO tool, path redundancy between the network adapters of the devices. &nbsp; To add the two tools to the nodes: &nbsp;</p>
+<ol>
+<li>1º For the ISCSI Initiator, open the control panel and click on it. A screen indicating the automatic startup will appear, click Yes;
+</li><li>2º For MPIO, open Server Manager, click Features, Add&nbsp;Features,&nbsp;and check the Multipath I / O option. Click Next and Install.
+</li></ol>
+<p>&nbsp;</p>
+<p>To configure each tool on the nodes, do the following:</p>
+<ol>
+<li>1º Open the ISCSI Initiator tool; </li><li>2º Open the tab called Discovery and click Discover Portal to add the first IP of the Storage (remembering that In this project the storage has two modules adding four ISCSI cards, two for each node);
+</li><li>3º On the tab that opens, enter the storage IP address and port 3260 (default) and click on Advanced;
+</li><li>4º Under Advanced Settings, under the Local adapter option, select Microsoft iSCSI Initiator. Then, in the IP Initiator option, select the IP of the node that will establish a connection to the storage by IP previously informed, click Ok;
+</li><li>5º Navigate to the Targets tab. The newly created connection will be inactive, to connect click the Connect button and then Advanced;
+</li><li>6º In the Local Adapter option, select Microsoft iSCSI Initiator. In IP Initiator select the IP of the node and in Target IP Portal select the IP of the storage. Click Ok on the two screens that are open;
+</li><li>7º Open the MPIO tool and navigate to the Discover Multi-Paths tab. Click Add support for ISCSI devices and then Add. You will need to restart the server;
+</li><li>8º After logging&nbsp;into&nbsp;Windows, open the MPIO tool and check in MPIO Devices if there is a new ID, other than Vendor 8Product 16;
+</li><li>9º Just for confirmation, open the ISCSI Initiator tool and then Devices. Check that the available disks are in the storage. They should point to Target 0;
+</li><li>10º Returning to the Targets tab, click Connect and check the Enable multi-path option. Then click Advanced ...;
+</li><li>11º In the Local Adapter option, select Microsoft iSCSI Initiator. In IP Initiator select the second IP of the node that will connect to the second module of the storage. And in Target IP gateway select the IP of the storage. Click Ok on the two screens
+ that are open; </li><li>12º Again in Targets, click on Devices and check if the disks now point each to Target 0 and 1;
+</li><li>13º Select the first Disk 1 and click MPIO. Under&nbsp;Load&nbsp;balance policy,&nbsp;select&nbsp;the desired policy. Repeat the same procedure for the other disks;
+</li><li>14º If the MPIO policy is not what you want, you will need the following procedure to change it:
+<p>&nbsp;Open the Disk Management tool in Server Manager; - On each disk, right-click Properties; - Navigate to the MPIO option, select the desired policy and click Apply; - Confirm that Path ID 77030000 is Active / Optimized and Path ID 77030001 is Active / Unoptimized.
+ The target of each is 0 and 1 respectively;</p>
+</li><li>15º Still&nbsp;in Disk Management, select each disk, make it online and set the partition as MBR (if it is larger than 2Tb, select GPT). Create simple volume and format with NTFS. You do not need to assign letters to the drive. Then turn the disks into Offline
+ again.
+<p>It is very important that you do this last step on just one of the nodes. After you finish creating the partition and formatting it, leave the disks offline again. If by chance keeping them online simultaneously on the nodes, the partition will be corrupted
+ and the cluster validation will fail a storage test.</p>
+</li></ol>
+<p>&nbsp;</p>
+Open the Failover Cluster Manager tool and click Validate a Configuration Wizard. Enter the name of the nodes and keep the option to run all the tests.
+<p>At thise MPIO option, select the desired policy and click Apply; - Confirm that Path ID 77030000 is Active / Optimized and Path ID 77030001 is Active / Unoptimized.
+ The target of each is 0 and 1 respectively;</p>
+</li><li>15º Still&nbsp;in Disk Management, select each disk, make it online and set the partition as MBR (if it is larger than 2Tb, select GPT). Create simple volume and format with NTFS. You do not need to assign letters to the drive. Then turn the disks into Offline
+ again.
+<p>It is very important that you do this last step on just one of the nodes. After you finish creating the partition and formatting it, leave the disks offline again. If by chance keeping them online simultaneously on the nodes, the partition will be corrupted
+ and the cluster validation will fail a storage test.</p>
+</li></ol>
+<p>&nbsp;</p>
+Open the Failover Cluster Manager tool and click Validate a Configuration Wizard. point, you have already configured all the network cards and already have&nbsp;a&nbsp;connection&nbsp;to the Storage with&nbsp;the&nbsp;redundancy&nbsp;of paths. If you have not done all the previous steps, return and be sure to do them.</p>
+<p>You can only continue to the cluster creation phase if all the tests pass successfully.</p>
+&nbsp;
+<p>17.&nbsp;After you have passed all the tests in Cluster validation, it’s time to create it by typing the nodes hostname, cluster name, and IP address. Check the summary of the configuration you had created, the quorum must be Node and Disk Majority (Cluster Disk
+ 1 - reserved for quorum) if you have only two nodes and one storage.</p>
+<p>&nbsp; &nbsp;</p>
+<p>18.&nbsp;Now with the cluster created and running, open the Failover Cluster Manager tool, and then click Networks. Only the cards whose TCP / IP is enabled will be displayed, In this project only six. Change the name of each one by the same one previously done
+ in Windows. In each of them, click Properties and configure them as follows: &nbsp;</p>
+<ul>
+<li>·&nbsp;Heartbeat = Allow Cluster network communication on this network </li><li>·&nbsp;CSV = Allow Cluster network communication on this network </li><li>·&nbsp;Live Migration = Do Not Allow Cluster Network communication on this network
+</li><li>·&nbsp;Management Node = Allow Cluster network communication on this network / Allow Clients to connect to this network
+</li><li>·&nbsp;ISCSI 1 = Do Not Allow Cluster Network communication on this network </li><li>·&nbsp;ISCSI 2 = Do Not Allow Cluster Network communication on this network </li><li></li></ul>
+<p>19.&nbsp;After configuring each card for Failover Cluster Manager, I recommend to define the AutoMetric and Metric values on each network adapter manually, to ensure that the traffic passes through the correct cards. The values for each card will be: &nbsp;</p>
+<ul>
+<li>·&nbsp;Heartbeat = Metric = 1500. AutoMetric = False </li><li>·&nbsp;CSV = Metric = 500. AutoMetric = False </li><li>·&nbsp;Live Migration = Metric = 1000. AutoMetric = False </li><li>·&nbsp;Management Node = Metric = 10000. AutoMetric = True </li><li>·&nbsp;ISCSI 1 = Metric = 10100. AutoMetric = True </li><li>·&nbsp;ISCSI 2 = Metric = 10200. AutoMetric = True </li></ul>
+<p>To set the above values, open Windows PowerShell Modules in Administrative Tools and run the commands:</p>
+<p>To check the current values enter:</p>
+<p>Get-ClusterNetwork | Ft Name, Metric, AutoMetric</p>
+<p>To set the value on the CSV card:</p>
+<p>$Csv = Get-ClusterNetwork namecard</p>
+<p>$Csv.Metric = 500</p>
+<p>To set the value on the LM card:</p>
+<p>$Lm = Get-ClusterNetwork namecard</p>
+<p>$Lm.Metric = 1000</p>
+<p>To set the value on the HB card:</p>
+<p>$Hb = Get-ClusterNetwork namecard</p>
+<p>$Hb.Metric = 1500</p>
+<p>Confirm the result:</p>
+<p>Get-ClusterNetwork | Ft Name, Metric, AutoMetric</p>
+<p>The other cards must have the values stated above, otherwise do so as shown in the commands, by changing only the name of the cards.</p>
+<p>&nbsp;</p>
+<p>20.&nbsp;Enable Cluster Shared Volumes in Failover Cluster Manager:</p>
+<ul>
+<li>·&nbsp;Accept the term and click Ok; </li><li>·&nbsp;Right-click the new Cluster Shared Volumes option, then Add storage; </li><li>·&nbsp;Add the disk you will use for the VMs (these are the LUNS made available by Storage);
+</li><li>·&nbsp;After enabling CSV, you will notice that a directory called ClusterStorage was created on drive C;
+</li><li>·&nbsp;Inside&nbsp;it,&nbsp;each disk is represented as Volume X, where x is the number of each.
+</li></ul>
+<p>It is in these volumes that all VMs must be stored, so if one node stops for a failure, the other node that is running will be responsible for the continuity of the business.</p>
+<p>&nbsp; &nbsp;</p>
+<p>Now that your cluster has been created, configured, and CSV enabled, it&#39;s time to create a VM. To do this, do the following steps:</p>
+<ol>
+<li>1º In Failover Cluster Manager, right-click Services and Applications, Virtual Machines, New Virtual Machine, select the node to manage it at the first moment;
+</li><li>2º In the storage option, enter the CSV path, being C:\ClusterStorage. The remainder should be set to each VM individually.
+</li></ol>
+<p>Now your VM is configured in a high availability environment by Failover Clustering.</p>
+<p>&nbsp;</p>
+<p>If for some reason all the nodes and storage hang up, you may need to intervene with a command to force the quorum to start again as all the nodes have gone off at once. Run the command at a privileged prompt:</p>
+<p>Net start&nbsp;clussvc&nbsp;/fq</p>
+<p>If needed, run this cmd on all servers in the cluster. To verify that you have quorum again, open Failover Cluster Manager, and in the Quorum Configuration option, you must see it as Node and Disk Majority (or quorum that pertains to your cluster).</p>
+<p>&nbsp;</p>
+<h1><a name="Other_Languages"></a>Other Languages</h1>
+<p>This article is also available the following languages:</p>
+<p><a href="https://social.technet.microsoft.com/wiki/pt-br/contents/articles/37944.passo-a-passo-hyper-v-e-failover-clustering-com-ambiente-san.aspx">Passo a Passo Hyper-V e Failover Clustering com Ambiente SAN (pt-BR)</a></p>
+
+</div>
+    
+    

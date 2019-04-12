@@ -1,0 +1,377 @@
+---
+layout: default
+title: Dynamics CRM 2011 SSIS Monitoring Pending Emails - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+In this article I&#39;ll walk through how to build a simple and fully supported SSIS package to track pending emails in CRM. The idea is to receive an alert email when we reach a threshold suggesting email router is stuck, slow performance or unusual mail activity
+ in CRM.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39agment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div;Times New Roman&#39;;font-size:medium;">
+On this tutorial I use the SSIS CozyRoc component to connect to Dynamics CRM, you can download it here:</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<a href="http://www.cozyroc.com/products">http://www.cozyroc.com/products</a><br />
+<br />
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+The package process:</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<ol style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<li>Connect to a CRM organisation using the API </li><li>Run FetchXML to retrieve all pending emails </li><li>Count how many emails pending and storing the total number in a variable </li><li>Use an IF THEN ELSE statement to set the flow of the package to successful or failure based on the total number of emails pending
+</li><li>send an alert email if successful or failure. </li></ol>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+In Visual Studio go to: New Project; Integration Services Project</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+The first step is to create a variable that will hold the total number of emails within the Control Flow tab select view and variables, this will display the variables screen on the left, click new variable and name it: RowCount, the scope should be set to
+ &#39;Package&#39; this means our variable is a global variable so it can be used either in the &#39;Data Flow&#39; or &#39;Control Flow&#39; area.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0537.variables1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0537.variables1.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+The next step is to create a connection to CRM to retrieve the data we want.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">On the connection Managers diaglog box, right click and select New Connection. From the list choose&nbsp;<strong>DYNAMICS-CRM CozyRoc<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3716.connectionManager2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3716.connectionManager2.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</strong></p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+The following screen should appear, configure it with your CRM information:<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6064.connectionManager3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6064.connectionManager3.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+I renamed my connection as SandBox Connection as per below screenshot:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.connectionManager1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.connectionManager1.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</p>
+<p style="margin:0px;color:#0000et.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6064.connectionManager3.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&00;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+Next Step is to build your Data Flow tasks, click on the Data Flow tab and drag the Dynamics CRM source task on to the Data Flow area.&nbsp;</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+Note: the Dynamics CRM Source should be available on the bottom of your Toolbox, if you have installed the CozyRoc Component and you don&#39;t see it there is because you didn&#39;t complete the post-install steps, you need to add those two tasks to the General section
+ of the Toolbox</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://3.bp.blogspot.com/--ND27o2C_rg/UdFtSUpcuJI/AAAAAAAAAdk/6mG1iUyL4eQ/s485/SSISVs1.png" style="clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://3.bp.blogspot.com/--ND27o2C_rg/UdFtSUpcuJI/AAAAAAAAAdk/6mG1iUyL4eQ/s1600/SSISVs1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+&nbsp;<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+Also drag the Row counter task and the Data Flow area will look like this:</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-W16VVDpOVSw/Uc24p4soMMI/AAAAAAAAAc8/ZQV-4z4jrWM/s290/rowcount1.png" style="clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://1.bp.blogspot.com/-W16VVDpOVSw/Uc24p4soMMI/AAAAAAAAAc8/ZQV-4z4jrWM/s290/rowcount1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+&nbsp;<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+Note: we haven&#39;t linked the Dynamics CRM source with the row counter task we will do this soon.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+Double click the Dynamics CRM source task and the following window appears:</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+&nbsp;<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1537.connectionManager4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1537.connectionManager4.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+On the above screenshot the first tab, you need to select the Connection Manager, on this case we select our SandBox Connection</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+Click on the Second Tab:</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+&nbsp;<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p 00-05/1325.connectionManager5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1325.connectionManager5.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+On the above screenshot we want to make use of the FetchXML feature, so at the bottom under &#39;Custom Properties&#39; on the &#39;InputType&#39; change entity to FetchXML and under &#39;FetchXML&#39; paste the following XML:</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://1.bp.blogspot.com/-cUNrhd2FwOE/Uc24pMv_euI/AAAAAAAAAcI/2yW09S1bPV8/s783/connectionManager6.png" style="clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://1.bp.blogspot.com/-cUNrhd2FwOE/Uc24pMv_euI/AAAAAAAAAcI/2yW09S1bPV8/s1600/connectionManager6.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+Click OK all done on the &#39;Dynamics CRM Source&#39; task. The next step is the &#39;Row Count&#39; task link the &#39;Dynamics CRM source&#39; to the &#39;Row Count&#39; task and double click the &#39;Row Count&#39; task the following screen appears:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7181.rowcount2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7181.rowcount2.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+Here we simply set the &#39;VariableName&#39; to use our global variable, on the variable selection window you should see User::RowCount tick the box and click okay.&nbsp;</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+At this stage we run the package it will:</p>
+<ol style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<li>Connect to CRM Organisation SandBox </li><li>Run the FetchXML </li><li>Pass the data to the Row Count task and store the total on the User::RowCount variable
+</li></ol>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">Great so we the Data Flow process in place, now we need to Send an email if we have more than 100 Emails pending we want our Control Flow area to look like this:</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://2.bp.blogspot.com/-OsFM16-SmH0/Uc24p4YiqjI/AAAAAAAAAcg/Ht6Y3s47HoI/s479/controlFlow1.png" style="clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://2.bp.blogspot.com/-OsFM16-SmH0/Uc24p4YiqjI/AAAAAAAAAcg/Ht6Y3s47HoI/s1600/controlFlow1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+At the above screenshot, we added a &#39;Script Task&#39; task to process the data coming from the Data Flow, we then send an email either if the package runs successful or fails.</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+Double Click the Script Task and on the main screen ReadOnlyVariables select our variable User::RowCount<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2538.scripttask3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2538.scripttask3.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+You should see this:</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://4.bp.blogspot.com/-qYk-e33V7D0/Uc24qeKXPHI/AAAAAAAAAc4/5yOsgPIZ8aQ/s721/scripttask1.png" style="clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://4.bp.blogspot.com/-qYk-e33V7D0/Uc2/social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2538.scripttask3.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+You should see this:</p>
+<p class="separator" style="margin:4qeKXPHI/AAAAAAAAAc4/5yOsgPIZ8aQ/s1600/scripttask1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+On the Script Task what we need to do now is to insert code to check if the variable is bigger than X if yes set to Successful completion or to Failure. On the same window click on The button at the bottom Edit Script and insert the following code under the
+ Main() function:</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;text-align:center;">
+<a href="http://4.bp.blogspot.com/-LiHT-PCy-3A/Uc24q2j2YZI/AAAAAAAAAdE/Spklnhp9u1U/s585/scripttask2.png" style="clear:left;float:left;margin-bottom:1em;margin-right:1em;"><img alt=" " src="http://4.bp.blogspot.com/-LiHT-PCy-3A/Uc24q2j2YZI/AAAAAAAAAdE/Spklnhp9u1U/s1600/scripttask2.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+The last step is to configure the &#39;Send Email&#39; task to send an email in case of Successful or Failure. In this example I&#39;ve added both routes (successful and Failure, however in my production environment I only have one route for when the email is bigger than
+ X, if you understood the above code you should be able to decide how you want to apply your logic the two routes were added to this article to understand better the process flow of this package and for testing purposes you may want to receive an email saying
+ Yes or No to confirm the package is running okay.</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+</p>
+<p class="separator" style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;clear:both;">
+I hope this was useful, please leave your feedback.</p>
+
+</div>
+    
+    

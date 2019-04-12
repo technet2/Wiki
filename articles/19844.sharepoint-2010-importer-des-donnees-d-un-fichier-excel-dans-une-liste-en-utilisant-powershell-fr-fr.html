@@ -1,0 +1,132 @@
+---
+layout: default
+title: SharePoint 2010 &#58; Importer des données dun fichier Excel dans une liste en utilisant PowerShell (fr-FR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><span lang="fr">Il y a différentes manières d&#39;importer des données d&#39;une feuille de calcul dans une liste SharePoint.&nbsp;</span><span lang="fr">Selon
+ vos besoins, vous pouvez copier des données dans des listes SharePoint en utilisant le mode feuille de données, par exemple.&nbsp;</span><span lang="fr">Cependant, il existe certaines circonstances où cela ne fonctionnera pas (c.-à-d., pas de support pour certains
+ champs dans l&#39;affichage feuille de données, et dans ce cas vous avez besoin d&#39;utiliser une approche différente.&nbsp;</span></span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">En PowerShell !</span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><span lang="fr">PowerShell peut gérer l&#39;importation de dizaines, de centaines, de milliers, de dizaines de milliers,
+ voire de centaines de milliers d&#39;éléments depuis un fichier CSV.&nbsp;</span><span lang="fr">Il peut manipuler les données avant de les insérer, et il prend en charge l&#39;insertion de données dans tous types de champ SharePoint.&nbsp;</span><span lang="fr">Il peut aussi
+ automatiquement approuver des éléments (si la liste nécessite l&#39;approbation des éléments), enrichir les données avec des informations supplémentaires (par exemple faire une recherche sur les données importées, les associer avec d&#39;autres colonnes, effectuer
+ la validation, etc.).</span></span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">La procédure de base pour importer des données avec PowerShell est la suivante :&nbsp;</span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><span lang="fr">Enregistrez la feuille de calcul Excel dans un fichier CSV, récupérez le fichier CSV à l&#39;aide
+ de Import-CSV, listez chaque ligne du fichier CSV et enfin, ajoutez chaque ligne dans la liste SharePoint. A chaque parcours de</span><span lang="fr">&nbsp;ligne du fichier CSV, vous pouvez effectuer une manipulation de données avant d&#39;enregistrer l&#39;élément dans
+ la liste.</span></span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><br />
+Ici, les exemples importent un fichier CSV nommé VesselInPortReport.csv, qui contient des données concernant des navires d&#39;une compagnie qui se déplacent dans un port d&#39;expédition.&nbsp;</span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Le fichier CSV comporte les colonnes suivantes (rubriques) :</span><br />
+<ul>
+<li>TRIP_NO </li><li>VESSEL_NAME </li><li>DRAPEAU </li><li>AGENT_NAME </li><li>CURRENT_LOCATION </li><li>RPT_DATE </li><li><span style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">EMPLOYEE&nbsp;</span>(enregistré comme nom de personne, par exemple « Matthew Yarlett »)
+</li><li>EMPLOYEE_TYPE (capitaine, second capitaine, etc.) </li></ul>
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Exemple : Récupérez le fichier CSV et parcourez les éléments, écrivez la colonne « VESSEL_NAME » pour
+ chaque élément dans la console</span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helve :</span><br />
+<ul>
+<li>TRIP_NO </li><li>VESSEL_NAME </li><li>DRAPEAU </li><li>AGENT_NAME </li><li>CURRENT_LOCATION </li><li>RPT_DATE </li><li><span style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">EMPLOYEE&nbsp;</span>(enregistré comme nom de personne, par exemple « Matthew Yarlett »)
+</li><li>EMPLOYEE_TYPE (capitaine, second capitaine, etc.) </li></ul>
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#fffftica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<div class="reCodeBlock" style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;border:1px solid #7f9db9;overflow-y:auto;">
+<div><span><code style="color:gray;">#Get the CSV file and connect to the SharePoint list</code></span></div>
+<div style="background-color:#f8f8f8;"><span><span lang="fr"><code style="color:#000000;">$vessellist = import-csv -Path&nbsp;</code></span><span lang="fr"><code style="color:blue;">&quot;C:\Temp\VesselInPortReport.csv&quot;</code></span></span></div>
+<div><span><code style="color:#000000;">$itemCount = $vessellist.Count;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$currentItem = 1;</code></span></div>
+<div><span><span lang="fr"><code style="color:#006699;font-weight:bold;">foreach</code></span><span lang="fr"><code style="color:#000000;">($item&nbsp;</code><code style="color:#006699;font-weight:bold;">in</code>&nbsp;<code style="color:#000000;">$vessellist)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Update the progress information</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">Write-Progress -Id 1 -ParentId 0 -Activity&nbsp;</code></span><span lang="fr"><code style="color:blue;">&quot;Listing Data In CSV File&quot;</code>&nbsp;</span><span lang="fr"><code style="color:#000000;">-PercentComplete
+ (($currentItem/$itemCount)*100) -Status&nbsp;</code></span><span lang="fr"><code style="color:blue;">&quot;Item $currentItem or $itemCount&quot;</code></span><code style="color:#000000;">;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">$currentItem&#43;&#43;;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Write the rows VESSEL_NAME column to the console</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">Write-Host $item.VESSEL_NAME;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><span lang="fr">Exemple : Récupérez le fichier CSV et parcourez les éléments, en ajoutant chaque élément comme
+ un nouvel élément de liste dans la liste SharePoint VesselsInPort.&nbsp;</span><span lang="fr">Cet exemple montre comment effectuer un cast des données du fichier CSV dans des champs SharePoint de type différent :&nbsp;</span><span lang="fr">Texte, Nombre, Utilisateur
+ (Personne), Choix.&nbsp;</span><span lang="fr">Il affiche des informations sur la progression à chaque fois qu&#39;un élément est ajouté, à l&#39;aide de Write-Progress.</span></span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<div class="reCodeBlock" style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;border:1px solid #7f9db9;overflow-y:auto;">
+<div><span><code style="color:gray;">#Get the CSV file and connect to the SharePoint list</code></span></div>
+<div style="background-color:#f8f8f8;"><span><span lang="fr"><code style="color:#000000;">$vessellist = import-csv -Path&nbsp;</code></span><span lang="fr"><code style="color:blue;">&quot;C:\Temp\VesselInPortReport.csv&quot;</code></span></span></div>
+<div><span><code style="color:gray;">#Get the list used to import the data to</code></span></div>
+<div style="background-color:#f8f8f8;"><span><span lang="fr"><code style="color:#000000;">$l = (Get-Spweb&nbsp;</code><code style="color:blue;">&quot;<a href="http://corporate/" target="_blank" style="color:#00749e;">http://corporate&nbsp;<img alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" title="This link is external to TechNet Wiki. It will open in a new window." style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;</a>&quot;</code></span><code lang="fr" style="color:#000000;">).GetList(</code><span lang="fr"><code style="color:blue;">&quot;<a href="http://corporate/Lists/VesselsInPort" target="_blank" style="color:#00749e;">http://corporate/Lists/VesselsInPort&nbsp;<img alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" title="This link is external to TechNet Wiki. It will open in a new window." style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;</a>&quot;</code></span><code style="color:#000000;">)</code></span></div>
+<div><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:gray;">#Get the lists EmployeeType field (choice)</code></span></div>
+<div><span><span lang="fr"><code style="color:#000000;">$employeeType = $l.Fields[</code><code style="color:blue;">&quot;EmployeeType&quot;</code><code style="color:#000000;">] -</code></span><span lang="fr"><code style="color:#006699;font-weight:bold;">as</code>&nbsp;</span><span lang="fr"><code style="color:#000000;">[Microsoft.SharePoint.SPFieldChoice]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div><span><code style="color:gray;">#Loop through the items and add them to the list</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$r = 1;</code></span></div>
+<div><span><code style="color:#000000;">$itemCount = $vessellist.Count;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$currentItem = 1;</code></span></div>
+<div><span><span lang="fr"><code style="color:#006699;font-weight:bold;">foreach</code></span><span lang="fr"><code style="color:#000000;">($item&nbsp;</code><code style="color:#006699;font-weight:bold;">in</code>&nbsp;<code style="color:#000000;">$vessellist)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">Write-Progress -Id 1 -ParentId 0 -Activity&nbsp;</code></span><span lang="fr"><code style="color:blue;">&quot;Importing Data From CSV into SharePoint&quot;</code>&nbsp;</span><span lang="fr"><code style="color:#000000;">-PercentComplete
+ (($currentItem/$itemCount)*100) -Status&nbsp;</code></span><span lang="fr"><code style="color:blue;">&quot;Adding item $currentItem or $itemCount&quot;</code></span><code style="color:#000000;">;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">$currentItem&#43;&#43;;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">$ni = $l.items.Add();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Add the Title, using the rows VESSEL_NAME column</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;Title&quot;</code></span><code lang="fr" style="color:#000000;">] = $item.VESSEL_NAME;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Add the &quot;Date Recorded&quot; field, using the csv rows &quot;RPT_DATE&quot; column</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">[DateTime]$rd = New-Object System.DateTime;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#006699;font-weight:bold;">if</code></span><code lang="fr" style="color:#000000;">([DateTime]::TryParse($item.RPT_DATE, [</code><span lang="fr"><code style="color:#006699;font-weight:bold;">ref</code><code style="color:#000000;">]$rd)){</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;Date Recorded&quot;</code><code style="color:#000000;">] = $rd;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Add the csv rows &quot;TRIP_NO&quot; column to the new list items &quot;Trip Id&quot; field (Sspan><code>&nbsp;&nbsp;&nbspPFieldNumber)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">[Int64]$tn = New-Object System.Int64;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#006699;font-weight:bold;">if</code></span><code lang="fr" style="color:#000000;">([Int64]::TryParse($item.TRIP_NO, [</code><span lang="fr"><code style="color:#006699;font-weight:bold;">ref</code><code style="color:#000000;">]
+ $tn)){</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;Trip Id&quot;</code><code style="color:#000000;">] = $tn;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Add some other text properties</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;Flag&quot;</code></span><code lang="fr" style="color:#000000;">] = $item.FLAG;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;Agent Name&quot;</code></span><code lang="fr" style="color:#000000;">] = $item.AGENT_NAME;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;Current Location&quot;</code></span><code lang="fr" style="color:#000000;">] = $item.CURRENT_LOCATION;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Add user information</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">$ni[</code><code style="color:blue;">&quot;employee&quot;</code></span><code lang="fr" style="color:#000000;">] = $w.EnsureUser($item.EMPLOYEE); #In&nbsp;</code><span lang="fr"><code style="color:#006699;font-weight:bold;">this</code>&nbsp;<code style="color:#006699;font-weight:bold;">case</code></span><code lang="fr" style="color:#000000;">,
+ the $item.EMPLOYEE value from the spreadsheet&nbsp;</code><span lang="fr"><code style="color:#006699;font-weight:bold;">is</code>&nbsp;</span><code lang="fr" style="color:#000000;">a persons name. Eg.&nbsp;</code><span lang="fr"><code style="color:blue;">&quot;Matthew Yarlett&quot;</code></span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code lang="fr" style="color:#000000;">$employeeType.ParseAndSetValue($ni,$item.EMPLOYEE_TYPE); #In&nbsp;</code><span lang="fr"><code style="color:#006699;font-weight:bold;">this</code>&nbsp;<code style="color:#006699;font-weight:bold;">case</code></span><code lang="fr" style="color:#000000;">,
+ the $item.EMPLOYEE_TYPE value from the spreadsheet&nbsp;</code><span lang="fr"><code style="color:#006699;font-weight:bold;">is</code>&nbsp;<code style="color:#000000;">valid choice present&nbsp;</code><code style="color:#006699;font-weight:bold;">in</code>&nbsp;</span><code lang="fr" style="color:#000000;">the
+ EmployeeType list field. Eg.&nbsp;</code><span lang="fr"><code style="color:blue;">&quot;Manager&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:gray;">#Update the item</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">$ni.Update()</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span lang="fr"><code style="color:#000000;">Write-Host ([String]::Format(</code><code style="color:blue;">&quot;Added record:{0}&quot;</code><code style="color:#000000;">,$r));</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><code style="color:#000000;">$r&#43;&#43;;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<span lang="fr" style="line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Importer des données depuis Excel a été demandé dans les forums suivants :</span><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" />
+<a href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/08ee3efe-eb33-4ae9-b3d0-cf0dd50b7508/how-to-programmatically-import-excell-into-existing-sharepoint-list" target="_blank" lang="fr" style="color:#00749e;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;"></a><a href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/08ee3efe-eb33-4ae9-b3d0-cf0dd50b7508/how-to-programmatically-import-excell-into-existing-sharepoint-list" target="_blank" lang="fr" style="color:#00749e;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;">How
+ to programmatically import Excel into existing SharePoint list?</a><br style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;" rif;line-height:16px;background-color:#ffffff;" />
+<a href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/08ee3efe-eb33-4ae9-b3d0-cf0dd50b7508/how-to-programmatically-import-excell-into-existing-sharepoint-list" target="_blank" lang="fr" style="color:#00749e;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;"></a><a href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/08ee3efe-eb33-4ae9-b3d0-cf0dd50b7508/how-to-programmatically-import-excell-into-existing-sharepoint-list" target="_blank" lang="fr" style="color:#00749e;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,/>
+<a href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/3c60ee05-1408-4b73-bb2b-2d42bf913572/how-to-copy-excel-sheet-data-to-sharepoint-2010-list" target="_blank" lang="fr" style="color:#00749e;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;">How
+ to copy Excel sheet data to SharePoint 2010 List?</a> <br />
+<br />
+<strong>Autres langues disponibles</strong><br />
+Cet article est également disponible dans les langues suivantes :<br />
+<ul>
+<li>en-US :&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/18830.sharepoint-2010-importing-data-from-an-excel-file-into-a-sharepoint-list-using-powershell.aspx" target="_blank">SharePoint 2010: Importing Data from an Excel File into a SharePoint
+ List Using PowerShell</a> </li></ul>
+
+</div>
+    
+    

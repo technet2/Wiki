@@ -1,0 +1,332 @@
+---
+layout: default
+title: The Configuration Manager Service Pack Install Guide - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="tom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></diable-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Contents">Contents:</a></li><li class="hierarchy-item"><a href="#Section_1_Pre-Upgrade_Best_Practices">Section 1 Pre-Upgrade Best Practices</a></li><li class="hierarchy-item"><a href="#Section_2_General_Troubleshooting">Section 2 General Troubleshooting</a></li><li class="hierarchy-item"><a href="#Section_3_List_of_Known_Issues_and_Solutions">Section 3 List of Known Issues and Solutions</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#A_SPN_issues_with_SQL">A. SPN issues with SQL :</a></li><li class="hierarchy-item"><a href="#B_Time_Skew_between_remote_SQL_and_Site_Server">B. Time Skew between remote SQL and Site Server :</a></li><li class="hierarchy-item"><a href="#C_Re-Registering_relevant_files">C. Re-Registering relevant files :</a></li><li class="hierarchy-item"><a href="#D_Deleting_Temp_Files_Setting_Temp_Environment_Variables">D. Deleting Temp Files, Setting Temp Environment Variables:</a></li><li class="hierarchy-item"><a href="#E_Searching_for_a_bad_custom_or_duplicate_report">E. Searching for a bad custom or duplicate report:</a></li><li class="hierarchy-item"><a href="#F_Checking_for_pre-existing_duplicate_reports_that_are_new_to_SCCM_SP2">F. Checking for pre-existing duplicate reports that are new to SCCM SP2:</a></li><li class="hierarchy-item"><a href="#G_Upgrade_fails_due_to_registry_setting">G. Upgrade fails due to registry setting:</a></li><li class="hierarchy-item"><a href="#H_Site_System_does_not_have_rights_to_remote_SQL_System_or_Clustered_SQL_Nodes">H. Site System does not have rights to remote SQL System or Clustered SQL Nodes:</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+This document was created to help in troubleshooting Configuration Manager Service Pack 2 (SP2) install failures. This document is not entirely specific to Service Pack 2 and can apply to Service Pack 1 installs, upgrades from SMS 2003 to SCCM, and future service
+ pack or Configuration Manager versions that rely on .mof file compilations, SQL SPNS, provider DLLs, etc.
+</p>
+<h4><a name="Contents"></a>Contents: </h4>
+<p><strong>Section 1 Pre-Upgrade Best Practices</strong></p>
+<p><strong>Section 2 General Troubleshooting</strong></p>
+<p><strong>Section 3 List of Known Issues and Solutions:</strong></p>
+<blockquote>
+<p>A: SPN issues with SQL</p>
+<p>B: Time Skew between remote SQL and Site Server</p>
+<p>C: Re-Registering relevant files / errors attempting to re-register needed files.</p>
+<p>D. Deleting Temp Files, setting Temp variables.</p>
+<p>E. Searching for a &quot;bad&quot; custom or customized report</p>
+<p>F. Checking for pre-existing duplicate reports that are new to SCCM SP2</p>
+<p>G. Upgrade fails due to registry setting.</p>
+<p>H. Site System does not have rights to remote SQL System or Clustered SQL Nodes
+</p>
+</blockquote>
+<p>______________________________</p>
+<p><strong></strong></p>
+<h2><a name="Section_1_Pre-Upgrade_Best_Practices"></a><strong>Section 1 Pre-Upgrade Best Practices</strong></h2>
+<p>It is important to note that some of the problems outlined below can leave your Configuration Manager or SMS installation in an unusable state (i.e. Admin Console will not launch and connect) this is because the upgraded files have already been copied to
+ the bin\I386 directory of your SCCM installation. In some case setup may rollback successfully and in others you *may* be able to reinitiate upgrade over the top of a failed installation however in others you may have to fully restore to your previous state;
+ SCCM RTM, SP1, SMS 2003, etc, to begin troubleshooting. </p>
+<p>Always insure you have a complete current and full SMS or Configuration Manager backup (performed when SMS services are disabled, all directories, SQL DB, registry settings, etc..) before upgrading your product. Always utilize the testdbupgrade setup switch
+ on a copy(!) of the site database command to insure your database can be upgraded without error. Testdbupgrade can help you insure you are ok to upgrade however you cannot upgrade a database after you have run testdbupgrade against it.
+</p>
+<p>How to Test the Site Database Upgrade Process: <a href="http://technet.microsoft.com/en-us/library/bb693648.aspx">
+http://technet.microsoft.com/en-us/library/bb693648.aspx</a></p>
+<p>______________________________</p>
+<p><strong></strong></p>
+<h2><a name="Section_2_General_Troubleshooting"></a><strong>Section 2 General Troubleshooting</strong></h2>
+<p>Most problems we have seen thus far have been after file copy, around step 4; registering the SMS provider, and compiling .mof files. It takes setup about 10-15 minutes to get to this step. This document primarily focuses on issues of this type.
+</p>
+<p>There are several things to consider in the scenario of&nbsp; .MOF comp failures. First off you should not have to keep going through SP2 setup after testing solutions. Instead try to manually compile the .mof that fails. In most (not all) cases you will get
+ an error doing this as well. Once you have implemented a solution and can manually compile the .mof file that setup was failing on, it may be safe to assume that SCCM SP2 setup can again be run and may pass this stage.
+</p>
+<p>Things to look at (not necessarily in this order):</p>
+<ul>
+<li>Relevant log files: C:\ConfigMgrSetup.log, %ConfigMgrInstallDir%\Logs\Smsprov.log and SMSProv.lo_, %Windir%\System32\Wbem\Mofcomp.log
+</li><li>Verify that DCOM and Windows Management Instrumentation (WMI) is enabled </li><li>Take a SQL Profiler (yes, because we are going through the Provider we do look in SQL. Specifically at the SMS_Reports table)
+</li><li>Double check WMI permissions </li><li>Check Security Rights in the SMS Admin console for the user that is executing the mofcomp command against smsrprt.mof
+</li><li>Verify permissions on the extnprov.dll file </li><li>We write .tmp files to various locations during compile. Run a Filemon. </li></ul>
+<p>As stated above, the files to compile during setup should be able to compile outside of setup. it is likely that you will not be able to complete setup successfully until you can compile smsrprt.mof (or whatever mof file is failing to compile) manually successfully
+ from a command prompt. </p>
+<p>If you try to manually compile the SMSrprt.mof and it fails you usually get the following error:</p>
+<p><em><span style="color:#004080;">E:\SMS\bin\i386&gt;mofcomp smsrprt.mof <br />
+Microsoft (R) 32-bit MOF Compiler Version 5.2.3790.3959 <br />
+Copyright (c) Microsoft Corp. 1997-2001. All rights reserved. <br />
+Parsing MOF file: smsrprt.mof <br />
+MOF file has been successfully parsed <br />
+Storing data in the repository... <br />
+An error occurred while processing item X defined on lines X - X in file smsrprt.mof:
+<br />
+Compiler returned error 0x80041001 </span></em></p>
+<p>It may be worth noting that 0x80041001 = generic failure, so this is not helpful other than to let you know that you have not resolved your issue as of yet since you are not able to manually compile this file.
+</p>
+<p>______________________________</p>
+<p><strong></strong>ou can compile smsrprt.mof (or whatever mof file is failing to compile) manually successfully
+ from a command prompt. </p>
+<p>If you try to manually compile the SMSrprt.mof and it fails you usually get the following error:</p>
+<p><em><span style="color:#004080;">E:\SMS\bin\i386&gt;mofcomp smsrprt.mof <br />
+Microsoft (R) 32-bit MOF Compiler Version 5.2.3790.3959 <br />
+Copyright (c) Microsoft Corp. 1997-2001. All rights reserved. <br />
+Parsing MOF file: smsrprt.mof <br />
+MOF file has been successfully parsed <br />
+Storing data in the repository... <br />
+An error occurred while processing item X defin</p>
+<h2><a name="Section_3_List_of_Known_Issues_and_Solutions"></a><strong>Section 3 List of Known Issues and Solutions</strong></h2>
+<p>The most common issue we see with SP2 upgrades is a failed to compile .mof error around the time that SP2 is trying to upgrade the SMS provider component:</p>
+<p><em><span style="color:#004080;">&lt;12-09-2009 15:17:37&gt; CompileMOFFile: Starting to compile MOF C:\Program Files (x86)\Microsoft Configuration Manager\bin\i386\smsRprt.mof
+<br />
+&lt;12-09-2009 15:18:11&gt; CompileMOFFile: Failed to compile MOF C:\Program Files (x86)\Microsoft Configuration Manager\bin\i386\smsRprt.mof, error -1
+<br />
+&lt;12-09-2009 15:18:11&gt; Setup cannot compile MOF file C:\Program Files (x86)\Microsoft Configuration Manager\bin\i386\smsRprt.mof.&nbsp; Do you want to continue?
+<br />
+&lt;12-09-2009 15:18:11&gt; Setup failed to install SMS Provider.&nbsp; For more information about this error, see Microsoft Knowledge Base at &lt;</span></em><a href="http://microsoft.com/"><em><span style="color:#004080;">http://microsoft.com</span></em></a><em><span style="color:#004080;">&gt;
+ or contact Microsoft Technical Support for further assistance.</span></em> </p>
+<h3><a name="A_SPN_issues_with_SQL"></a><span style="text-decoration:underline;">A. SPN issues with SQL</span>:
+</h3>
+<p>The first thing you will want to check is that the SQL SPNs are registered correct in Active Directory. In a nutshell 2 things can go wrong here:</p>
+<p>1. Duplicate SPNs for SQL <br />
+2. SQL is running under a Domain User account and the SPNs have not been created manually.
+</p>
+<p>Resolution: Use the setspn tool.&nbsp; You can find it online if it&#39;s not installed.
+</p>
+<p><strong>1. setspn -l nameofcomputerrunningsql &gt; C:\ComputerSPN.txt <br />
+2. setspn -l domain\accountSQLisRunningUnder &gt; C:\SQLaccountSPN.txt <br />
+3. setspn -x &gt; C:\duplicates.txt</strong> </p>
+<p>So if your SQL server is called sqlcomputer and the account SQL is running under is called SQLAccount number 1 and 2 above would be :
+</p>
+<p><strong>1. setspn -l sqlcomputer &gt; C:\ComputerSPN.txt <br />
+2. setspn -l domain\sqlaccount C:\SQLaccountSPN.txt</strong> </p>
+<p>Use the txt files above to insure SQL SPNs are registered correctly. You should have the entries listed as follows under the domain account running SQL or the actual SQL Servers computer account:
+</p>
+<p><strong>MSSQLSvc/sqlcomputer.domain.com:1433 <br />
+MSSQLSvc/sqlcomputer:1433</strong></p>
+<p>If you are running a SQL cluster insure the same for all physical nodes and the virtual instance name.
+<br />
+To add a FQDN and NETBIOS SPN for SQL use the following syntax:</p>
+<p><strong>setspn -a MSSQLSvc/SQLcomputer.domain.com:1433 Domain\SQLaccount</strong></p>
+<p>and</p>
+<p><strong>setspn -a MSSQLSvc/SQLcomputer:1433 Domain\SQLaccount</strong> </p>
+<p>To delete a duplicate SPN use the -d switch:</p>
+<p><strong>SETSPN -D MSSQLSvc/SQLcomputer:1433 Domain\SQLcomputer</strong> </p>
+<p>You can also easily view SPNs (Service Principal Names) using ADSIEDIT.msc (install from a Windows&nbsp; Server CD, \Support Tools\Suptools.msi) right click the computer or user account object and view attributes, scroll down to ServicePrincipalName.
+</p>
+<p><strong>Note:</strong>&nbsp;<em>SQL creates its OWN SPN for the computer account when SQL is running under the Local System account. Having more then one SPNs registered under different accounts with the same machine name as the one SQL is running on will cause
+ these problems as well.</em> </p>
+<p>Switches for SetSPN: </p>
+<p><strong>-R</strong> = reset HOST ServicePrincipalName <br />
+Usage: setspn -R computername</p>
+<p><strong>-A</strong> = add arbitrary SPN <br />
+Usage: setspn -A SPN computername</p>
+<p><strong>-S</strong> = add arbitrary SPN after verifying no duplicates exist <br />
+Usage: setspn -S SPN computername</p>
+<p><strong>-D</strong> = delete arbitrary SPN <br />
+Usage: setspn -D SPN computername</p>
+<p><strong>-L</strong> = list registered SPNs <br />
+Usage: setspn [-L] computername</p>
+<p><strong>-Q</strong> = query for existence of SPN <br />
+Usage: setspn -Q SPN</p>
+<p><strong>-X</strong> = search for duplicate SPNs <br />
+Usage: setspn -X </p>
+<h3><a name="B_Time_Skew_between_remote_SQL_and_Site_Server"></a><span style="text-decoration:underline;">B. Time Skew between remote SQL and Site Server</span>:
+</h3>
+<p>If SQL is remote from the site server you are trying to upgrade insure there is not a time skew between the two machines. A default Windows Active Directory domain has a Kerberos policy to allow no more than a 5 minute time difference between machines for
+ successful Kerberos authentication. </p>
+<h3><a name="C_Re-Registering_relevant_files"></a><span style="text-decoration:underline;">C. Re-Registering relevant files</span>:
+</h3>
+<p>In some case re-registering a couple of files has resolved SP2 install issues.
+</p>
+<p>Configmgrsetup.log: </p>
+<p><em><span style="color:#004080;">&lt;11-14-2008 23:20:11&gt; CompileMOFFile: Starting to compile MOF
+<br />
+E:\SMS\bin\i386\smsRprt.mof <br />
+&lt;11-14-2008 23:20:12&gt; CompileMOFFile: Failed to compile MOF <br />
+E:\SMS\bin\i386\smsRprt.mof, error –2147217407</span></em></p>
+<p>If you try to manually compile smsRprt.mof you get the following error: </p>
+<p><em><span style="color:#004080;">E:\SMS\bin\i386&gt;mofcomp smsrprt.mof <br />
+Microsoft (R) 32-bit MOF Compiler Version 5.2.3790.3959 <br />
+Copyright (c) Microsoft Corp. 1997-2001. All rights reserved. <br />
+Parsing MOF file: smsrprt.mof <br />
+MOF file has been successfully parsed <br />
+Storing data in the repository... <br />
+An error occurred while processing item 1 defined on lines 7 - 32 in file <br />
+smsrprt.mof: <br />
+Error Number: 0x80041013, Facility: WMI <br />
+Description: Provider load failure <br />
+Compiler returned error 0x80041001</span></em> </p>
+<p>From the command prompt type the following:</p>
+<ul>
+<li>Change directory to \Program Files\Microsoft Configuration Manager\Bin\I386\ </li><li>Run <strong>regsvr32 smsprov.dll</strong> </li><li>Run<strong> regsvr32 extnprov.dll</strong> </li></ul>
+<p>Similar to the above issue during the fourth step of SCCM setup you may see the following pop up error
+<br />
+message: </p>
+<p><strong><em>Fatal Error Setup Failed to install SMS Provider</em></strong></p>
+<p>The ConfigMgrSetup.log may read as follows: </p>
+<p><em><span style="color:#004080;">TaskSequenceProvider.mof comp failure</span></em>
+</p>
+<p>Once this occurs the SCCM services will not start and the site server is not in a usable state.
+</p>
+<p>Additionally, after you quit setup you are unable to manually mofcomp smsprov.mof or TaskSequenceProvider.mof. The following error occurs:
+</p>
+<p><strong>Provider Load Failure</strong></p>
+<p>If you try to manually regsvr32 smsprov.dll you receive the following: </p>
+<p><strong>LoadLibrary(&quot;D:\SMS\Bin\I386\smsprov.dll&quot;) failed - The specified module could not
+<br />
+be found.</strong> </p>
+<p>The error is valid although this is *also* the default regsvr32 error when a path to a file you are trying to register cannot be found or the file you are trying to register does not exist in the defined path.
+</p>
+<p>The solution is to use <strong>Depends.exe</strong> (Dependency Walker) against the file that wont re-register SMSprov.dll (Note: not all files are &quot;registerable&quot;!)
+<a href="http://www.dependencywalker.com/">http://www.dependencywalker.com/</a></p>
+<p>In our case it was missing MSVCR80.dll and it wanted this file in the \Microsoft Configuration Manager\Bin\I386
+<br />
+directory. Copy the missing files that depends identifies to the \Bin\I386 directory.
+</p>
+<p>Once placing the file there we were able to manually register SMSProv.dll and Extnprov.dll and complete setup.
+</p>
+<h3><a name="D_Deleting_Temp_Files_Setting_Temp_Environment_Variables"></a><span style="text-decoration:underline;">D. Deleting Temp Files, Setting Temp Environment Variables:</span></h3>
+<p>The following error appeared in the ConfigMgrSetup.log:</p>
+<p><em><span style="color:#004080;">&lt;02-19-2008 12:52:42&gt; VC redist is being installed from C:\DOCUME~1\customer\Local
+<br />
+Settings\Temp\vcredist_x86.exe.</span></em></p>
+<p>***You may get an MSIEXEC help screen popup although no error will show up in the log.***
+</p>
+<p><em><span style="color:#004080;">&lt;02-19-2008 13:08:23&gt; CompileMOFFile: Starting to compile MOF C:\Program
+<br />
+Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof <br />
+&lt;02-19-2008 13:08:24&gt; CompileMOFFile: Failed to compile MOF C:\Program <br />
+Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof, error -2147217407 <br />
+&lt;02-19-2008 13:08:26&gt; Setup cannot compile MOF file C:\Program Files\Microsoft <br />
+Configuration Manager\bin\i386\smsRprt.mof. Do you want to continue?</span></em> </p>
+<p>The .mof&#t-decoration:underline;">D. Deleting Temp Files, Setting Temp Environment Variables:</span></h3>
+<p>The following error appeared in the ConfigMgrSetup.log:</p>
+<p><em><span style="color:#004080;">&lt;02-19-2008 12:52:42&gt; VC redist is being installed from C:\DOCUME~1\customer\Local
+<br />
+Settings\Temp\vcredist_x86.exe.</span></em></p>
+<p>***You may get an MSIEXEC help screen popup although no error will show up in the log.***
+</p>
+<p><em><span style="color:#004080;">&lt;02-19-2008 13:08:23&gt; CompileMOFFile: Starting to compile MOF C:\Program
+<br />
+Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof <br />
+&lt;02-19-2008 13:08:24&gt; CompileMOFFile: Failed to compile MOF C:\Program <br />
+Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof, error -2147217407 <br />
+&lt;02-19-2008 13:08:26&gt; Setup cannot compile MOF file C:\Program Files\Microsoft <br />
+Configuration Manager\bin\i386\smsRprt.mof. Do you want to continue?</span></em> </p>
+<p>The .mof39;s referenced in the ConfigMgrSetup.log above could not be compiled manually using mofcomp.exe.
+</p>
+<p>Change the TEMP folder location from %USERPROFILE%\Local Settings\Temp to C:\TEMP and deleting all temp files fixed this issue. An alternate solution and better explanation for this behavior is as follows:
+</p>
+<p>In one instance, the issue was caused when the admin logged onto the server BEFORE 8.3 support was turned off and therefore his user profile was created in this manner, including the path to the temp directory.&nbsp; Configuration Manager does not support 8.3
+ and in fact, the pre-req checker will determine if 8.3 support is enabled. In this instance, however, it was off by the time the setup was run and it does NOT check the logged on user for how their profile was created.</p>
+<p>Log on with a user who has a profile created AFTER 8.3 support was disabled or delete the current users profile and have them log back on to re-create a new profile in the proper format and run setup again
+</p>
+<h3><a name="E_Searching_for_a_bad_custom_or_duplicate_report"></a><span style="text-decoration:underline;">E. Searching for a bad custom or duplicate report:</span></h3>
+<p>Look in the C:\ConfigMgrSetup.log for something like this: </p>
+<p><em><span style="color:#004080;">&lt;12-27-2009 14:02:36&gt; ***SqlError: [42S01][2714][Microsoft][ODBC SQL Server Driver][SQL Server]There is already an object named &#39;ExistingRights_Setup&#39; in the database.
+<br />
+&lt;12-27-2009 14:03:04&gt; CompileMOFFile: Failed to compile MOF F:\Program Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof, error -2147217407</span></em>
+</p>
+<p>And a corresponding entry in the SMSprov.log: </p>
+<p><em><span style="color:#004080;">[3338][Sun 12/27/2009 14:03:03]:ERROR&gt; SQL command failed: update Report set Category = &#39;Software Distribution - Packages&#39;, Comment = &#39;Displays all packages at a site.&#39;, DrillThroughReportID = 127,
+</span></em></p>
+<p><em><span style="color:#004080;">DrillThroughURL = null, GraphCaption = &#39;&#39;, GraphType = null, GraphXCol = 1, GraphYCol = 2, MachineDetail = 0, MachineSource = 0, Name = &#39;All packages&#39;, RefreshInterval = 0, ReportGUID = &#39;{54AB50FF-A9E8-4116
+</span></em></p>
+<p><em><span style="color:#004080;">-8D56-AB10B6CD66A0}&#39;, StatusMessageDetailSource = 0, UnicodeData = 0, XColLabel = &#39;&#39;, YColLabel = &#39;&#39;&nbsp; where ReportID = 132</span></em>
+</p>
+<p>***Note above that the report called &quot;All Packages&quot; is referenced*** </p>
+<p><em><span style="color:#004080;">e:\nts_sms_fre\sms\siteserver\sdk_provider\smsprov\sspclassbase.cpp(841) : SQL command failed:&nbsp;
+<br />
+SQL Error: [23000][2627][Microsoft][ODBC SQL Server Driver][SQL Server]Violation of UNIQUE KEY constraint &#39;Report_AK2&#39;. Cannot insert duplicate key in object &#39;dbo.Report&#39;.
+<br />
+SQL command failed:&nbsp; [23000][2627][Microsoft][ODBC SQL Server Driver][SQL Server]Violation of UNIQUE KEY constraint &#39;Report_AK2&#39;. Cannot insert duplicate key in object &#39;dbo.Report&#39;.</span></em>
+</p>
+<p>To resolve this issue we looked at the &quot;All Packages&quot; report, this report is included in a default install of SCCM Sp1 and SCCM SP2. However in this customers case it was noted that the report itself had been somewhat modified. To resolve this issue we deleted
+ this report after which, we were able to compile the smsrprt.mof manually and thus SCCM SP2 install succeeded. After the install SCCM SP2 did recreate this report with the default queries. An alternate resolution may have been to simply modify the customized
+ query in this report back to the SCCM SP1 defaults. It is not known why the report was not able to be upgraded as that troubleshooting path was not pursued.
+</p>
+<h3><a name="F_Checking_for_pre-existing_duplicate_reports_that_are_new_to_SCCM_SP2"></a><span style="text-decoration:underline;">F. Checking for pre-existing duplicate reports that are new to SCCM SP2:</span></h3>
+<p>In a different case that was very similar to Item E, another issue was discovered. The customer had created a custom report in SCCM SP1 called “Computers that do not meet the minimum system requirements for Windows 7”. This report does not exist in SP1 however
+ SCCM SP2 tries to create this very same report as part of its default install.</p>
+<p>The customer was seeing this message in ConfigMgrSetup.log: </p>
+<p><em><span style="color:#004080;">&lt;12-09-2009 15:17:37&gt; CompileMOFFile: Starting to compile MOF C:\Program Files (x86)\Microsoft Configuration Manager\bin\i386\smsRprt.mof
+<br />
+&lt;12-09-2009 15:18:11&gt; CompileMOFFile: Failed to compile MOF C:\Program Files (x86)\Microsoft Configuration Manager\bin\i386\smsRprt.mof, error -1
+<br />
+&lt;12-09-2009 15:18:11&gt; Setup cannot compile MOF file C:\Program Files (x86)\Microsoft Configuration Manager\bin\i386\smsRprt.mof.&nbsp; Do you want to continue?</span></em>
+</p>
+<p>In the SMSProv.log there was a message similar to the following: </p>
+<p><em><span style="color:#004080;">Violation of UNIQUE KEY constraint &#39;Report_AK2&#39;. Cannot insert duplicate key in object &#39;dbo.Report&#39;.</span></em>
+</p>
+<p>Report names can in fact be the same as long as their conditions and queries are different. For example create a new report and call it “Computers that do not meet the minimum system requirements for Windows 7”&nbsp; for the category type select Asset Intelligence.
+ This report can be created without error. However if you clone an existing report and try to name it the same you get a failure in the console.
+</p>
+<p><strong>&quot;A report with this name and category already exists.&nbsp; Change the Name of this report to create a unique combination.&quot;</strong>
+</p>
+<p>As with item E above, the resolution is to delete the pre-existing custom report and let SP2 recreate this report for you. A few other reports that do not exist in SCCM SP1 but are created in SCCM Sp2 to look out for are:
+</p>
+<ul>
+<li>“Computers that meet the recommended system requirements for Windows 7” </li><li>“Computers that do not meet the minimum system requirements for Windows 7” </li><li>&quot;Windows 7 Upgrade Assessment - Hardware summary for all systems in a collection&quot;
+</li></ul>
+<p><strong>Note:</strong> <em>Likely there are others as well. If you feel you have this issue compare SCCM SP2 Reports with SCCM SP1 Reports.
+</em></p>
+<h3><a name="G_Upgrade_fails_due_to_registry_setting"></a><span style="text-decoration:underline;">G. Upgrade fails due to registry setting:</span></h3>
+<p>In the ConfigMgrSetup.LOG: </p>
+<p><em><span style="color:#004080;">&lt;01-14-2009 16:50:22&gt; CompileMOFFile: Compiled MOF D:\SMS\bin\i386\smsprov.mof
+<br />
+&lt;01-14-2009 16:50:22&gt; CompileMOFFile: Starting to compile MOF <br />
+D:\SMS\bin\i386\smsRprt.mof <br />
+&lt;01-14-2009 17:06:12&gt; CompileMOFFile: Failed to compile MOF <br />
+D:\SMS\bin\i386\smsRprt.mof, error -2147217407 <br />
+&lt;01-14-2009 17:06:12&gt; Setup cannot compile MOF file D:\SMS\bin\i386\smsRprt.mof.</span></em>
+</p>
+<p>In the MofComp.LOG file: </p>
+<p><em><span style="color:#004080;">(Wed Jan 14 16:50:23 2009.102320sment - Hardware summary for all systems in a collection&quot;
+</li></ul>
+<p><strong>Note:</strong> <em>Likely there are others as well. If you feel you have this issue compare SCCM SP2 Reports with SCCM SP1 Reports.
+</em></p>
+<h3><a name="G_Upgrade_fails_due_to_registry_setting"></a><span style="text-decoration:underline;">G. Upgrade fails due to registry setting:</span></h3>
+<p>In the ConfigMgrSetup.LOG: </p>
+<p><em><span style="color:#004080;">&lt;01-14-2009 16:50:22&gt; CompileMOFFile: Compiled MOF D:\SMS\bin\i386\smsprov.mof
+<br />
+&lt;01-14-2009 16:50:22&gt; CompileMOFFile: Starting to compile MOF <br />
+D:\SMS\bin\i386\smsRprt.mof <br />
+&lt;01-14-2009 17:06:12&gt; CompileMOFFile: Failed to compile MOF <br3) : Storing data in the repository...
+<br />
+(Wed Jan 14 17:06:12 2009.1971531) : An error occurred while processing item 1 <br />
+defined on lines 7 - 32 in file D:\SMS\bin\i386\smsRprt.mof: <br />
+(Wed Jan 14 17:06:12 2009.1971546) : Error Number: 0x800706be, Facility: Win32 <br />
+Description: The remote procedure call failed.</span></em> </p>
+<p>Cause: This can occur if the following registry value is set: </p>
+<p><strong>HLKM\Software\Microsoft\SMS\Providers <br />
+SQL Cache Logging =1</strong> </p>
+<p>Resolution: To resolve this issue, set SQL Cache Logging=0</p>
+<p><strong>Note</strong>:<em> SQl Cache Logging should be enabled only for troubleshooting purposes and should not be left &quot;on&quot;.</em></p>
+<p>For more information see SMS: How to Enable SQL Cache Logging in the Systems Management Server Provider
+<br />
+<a href="http://support.microsoft.com/kb/295040">http://support.microsoft.com/kb/295040</a></p>
+<h3><a name="H_Site_System_does_not_have_rights_to_remote_SQL_System_or_Clustered_SQL_Nodes"></a><span style="text-decoration:underline;">H. Site System does not have rights to remote SQL System or Clustered SQL Nodes:</span></h3>
+<p>ConfigMgrSetup.log: </p>
+<p><em><span style="color:#004080;">&lt;05-19-2008 15:10:45&gt; CompileMOFFile: Starting to compile MOF D:\Program
+<br />
+Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof <br />
+&lt;05-19-2008 15:11:26&gt; CompileMOFFile: Failed to compile MOF D:\Program <br />
+Files\Microsoft Configuration Manager\bin\i386\smsRprt.mof, error -1 <br />
+&lt;05-19-2008 15:11:26&gt; Setup cannot compile MOF file D:\Program Files\Microsoft <br />
+Configuration Manager\bin\i386\smsRprt.mof. Do you want to continue?</span></em> </p>
+<p>SMSPROV.log showed a log in failure for the computer account of the site server.&nbsp; Check the rights for the Clustered SQL instance per
+<a href="http://technet.microsoft.com/en-us/library/bb680513.aspx">http://technet.microsoft.com/en-us/library/bb680513.aspx</a></p>
+<p>In this case we found that the computer account for the site server was not a member of the local admin group on either node. Adding the site server computer account to the local administrators group on both nodes and installation proceeded to a successful
+ conclusion. </p>
+<p><em>Note: A special thanks goes to to those who helped in the creation of this troubleshooter:
+<strong>Jason Adams, Ryan Anderson, Jeevan Bisht, Manish Raval, Steve Hornaday</strong> and
+<strong>Jason Schroeder.</strong></em></p>
+<p><em>Note: This information was originally contributed by <strong>Buz Brodin,&nbsp;Senior Support Escalation Engineer</strong>, on the Configuration Manager Support Team blog:</em>
+</p>
+<p><strong><a href="http://blogs.technet.com/configurationmgr/archive/2010/01/05/the-configuration-manager-service-pack-install-guide.aspx">http://blogs.technet.com/configurationmgr/archive/2010/01/05/the-configuration-manager-service-pack-install-guide.aspx</a></strong></p>
+
+</div>
+    
+    

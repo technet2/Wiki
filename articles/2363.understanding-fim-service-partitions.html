@@ -1,0 +1,270 @@
+---
+layout: default
+title: Understanding FIM Service Partitions - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">The objective of FIM is to process requests that can be initiated by various FIM clients such as the FIM synchronization service and the self-service
+ components according to your configured business policies. </span></p>
+<p style="margin:0in 0in 10tent-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Understanding FIM Service Partitions</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615__3263f305_ctl00_ctl01" title="Rated Fair [2 out of 5]."></span><input type="hidden" value="2" id="ctl00_ctl00_content_content_ctl00_w_6615__3263f305_ctl00_ctl01_Value" /></div>
+
+    <div clapt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">By design, each FIM service instance belongs to a logical group that consists of one or more FIM service instances, which is also known as FIM service
+ partition. </span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">If you have only one FIM service instance deployed to handle the all requests, it is possible that you experience processing latencies. Some operations
+ can even exceed the default timeout values that are appropriate for self-service operations.<br />
+FIM service partitions can help you to address this issue.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">Regardless of whether you have only one or multiple FIM service instances deployed, your current FIM service partition configuration has an impact on
+ how requests and associated workflows are processed in your environment.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">The objective of this article is to explain, what FIM service partitions are, what you need to know about architectural components of a FIM service
+ partition and how you can leverage and configure this feature to address latency related issues when processing requests in your environment.
+</span></p>
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Architectural_Components_of_a_FIM_Service_Partition">Architectural Components of a FIM Service Partition</a></li><li class="hierarchy-item"><a href="#Considerations_for_FIM_Service_Partition_Parameters">Considerations for FIM Service Partition Parameters</a></li><li class="hierarchy-item"><a href="#Using_FIM_Service_Partitions_to_Control_Request_Workloads">Using FIM Service Partitions to Control Request Workloads</a></li><li class="hierarchy-item"><a href="#Designing_Service_Partitions">Designing Service Partitions</a></li><li class="hierarchy-item"><a href="#Summary">Summary</a></li></ul><div class="hierarchy-list-footer"> </div></div>&nbsp;</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Architectural_Components_of_a_FIM_Service_Partition"></a>Architectural Components of a FIM Service Partition</h2>
+<p>When you configure a FIM service instance, you must provide a FIM Service Server address.
+<br />
+The following screenshot shows an example for this: <br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/5008.FSP01.jpg" style="border:0px solid;" /></p>
+<p>The FIM Service Server address is used by the FIM Portal and other clients to contact a FIM service instance.
+<br />
+In the FIM terminology, the FIM Service Server address is also known as external host name attribute.<br />
+<br />
+Each FIM service instance belongs to a logical group that consists of one or more FIM service instances, which is also known as FIM service partition.
+<br />
+The default value for this attribute is the value of the external host name attribute.
+<br />
+<br />
+Requests are associated with a specific service partition and must be completed using FIM service instances that are associated with the same service partition.
+<br />
+You can find the service partition name a request is associated with under the Extended Attributes of a request’s Advanced View.<br />
+The following screenshot shows an example for this:<br />
+&nbsp;<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/6082.FSP02.jpg" style="border:0px solid;" /><br />
+<br />
+Processing a request can result in the execution of one or more related workflows.&nbsp;
+<br />
+Each FIM service instance that belongs to that service partition can process the request or execute associated workflows; however an individual workflow instance can only run within one FIM service instance at a time.<br />
+This design keeps other FIM service instances from trying to load an already executing workflow program.<br />
+The record of the workflow in the FIM service database is locked using the name of the FIM service instance.&nbsp;
+<br />
+The name of a FIM service instance is also known as service name. <br />
+The default value of the service name attribute is the name of the computer that hosts a FIM service instance.</p>
+<p>The following table provides a summary of the architectural components that are related to a FIM service partition:</p>
+<table style="padding:5px;border-collapse:collapse;">
+<tbody>
+<tr>
+<th nowrap="nowrap" style="border-bottom-color:#999999;border-bottom-width:1px;border-bottom-style:solid;text-align:center;background-color:#d4d0c8;height:20px;border-top-color:#999999;border-top-width:1px;border-top-style:solid;">
+<strong>Attribute Name</strong></th>
+<th style="border-bottom-color:#999999;border-bottom-width:1px;border-bottom-style:solid;text-align:center;background-color:#d4d0c8;height:20px;border-top-color:#999999;border-top-width:1px;border-top-style:solid;">
+<strong>Default Value</strong></th>
+<th style="border-bottom-color:#999999;border-bottom-width:1px;border-bottom-style:solid;text-align:center;background-color:#d4d0c8;height:20px;border-top-color:#999999;border-top-width:1px;border-top-style:solid;">
+<strong>Description</strong></th>
+</tr>
+<tr>
+<td style="text-align:left;padding-left:5px;padding-right:5px;white-space:nowrap;">
+external host name</td>
+<td style="text-align:left;padding-left:5px;padding-right:5px;">The FIM Service Server address provided during the configuration of a FIM service instance.</td>
+<td style="text-align:left;padding-left:5px;padding-right:5px;">The address FIM Portal and other clients should use to contact the FIM Service.</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left:5px;padding-right:5px;white-space:nowrap;">
+service partition name</td>
+<td style="text-align:left;padding-left:5px;padding-right:5px;">external host name</td>
+<td style="text-align:left;padding-left:5px;padding-right:5px;">Identifier for a service partition.</td>
+</tr>
+<tr>
+<td style="text-align:left;padding-left:5px;padding-right:5px;white-space:nowrap;">
+service name</td>
+<td style="text-align:left;padding-left:5px;padding-right:5px;">The name of the computer that hosts the FIM service instance.</td>
+<td style="text-align:left;padding-left:5px;padding-right:5px;">Unique identifier for the FIM service instance.</td>
+</tr>
+</tbody>
+</table>
+<p>Because it is a common practice for stand-alone  Server address provided during the configuration of a FIM service instance.</td>
+<td style="text-align:left;padding-left:5FIM service instances to enter the computer name as FIM Service Server address during setup, the three configuration parameters that are related to a FIM service partition can have the same initial values:
+<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/0285.FSP03.jpg" style="border:0px solid;" /><br />
+<br />
+<br />
+</p>
+<p>The FIM service partition related configuration settings are stored as attributes of the resourceManagementService tag in the
+<em>Microsoft.ResourceManagement.Service.exe</em> configuration file. <br />
+This file is located in the following folder:</p>
+<p style="text-align:center;"><strong>%ProgramFiles%\Microsoft Forefront Identity Manager\2010\Service<br />
+</strong></p>
+<p>The following shows an example for a related setting:</p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#0000ff;">&lt;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#a31515;">resourceManagementService</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#ff0000;">externalHostName</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#0000ff;">=</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&quot;<span style="color:#0000ff;">FIMServer01</span>&quot;<span style="color:#0000ff;">
+ /&gt;<br />
+<br />
+</span></span></p>
+<p>If you want to overwrite the default values of the servicePartitionName or the serviceName, you need to manually add these attributes including the new values to your configuration file. The following shows an example for this:
+</p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#0000ff;">&lt;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#a31515;">resourceManagementService</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#ff0000;">externalHostName</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#0000ff;">=</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&quot;<span style="color:#0000ff;">FIMServer01</span>&quot;
+<span style="color:#ff0000;">servicePartitionName</span><span style="color:#0000ff;">=</span>&quot;<span style="color:#0000ff;">MyFIMPartition</span>&quot;
+<span style="color:#ff0000;">serviceName</span><span style="color:#0000ff;">=</span>&quot;<span style="color:#0000ff;">MyFIMService</span>&quot;<span style="color:#0000ff;">/&gt;</span></span>&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-bottom:5px;background-color:#c0c0c0;padding-left:5px;padding-top:5px;">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1731.Note.gif" style="border:0px solid;" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;padding-left:5px;">When you have updated your configuration file, you need to restart your FIM service instance to activate the most recent configuration settings.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Considerations_for_FIM_Service_Partition_Parameters"></a>Considerations for FIM Service Partition Parameters</h2>
+<p>The parameters of a FIM service partition are relevant in the context of a processing sequence that consists of a request and the related workflows.
+<br />
+The servicePartitionName is stored with the request object and the workflow instances are stamped with the serviceName of the FIM service instance that is processing them.
+<br />
+<br />
+In FIM, already queued workflow instances can only be completed by a FIM service instance that has the same values for servicePartitionName and serviceName attributes as the originating instance.
+<br />
+<br />
+If a FIM service instance that has already added workflows to the related processing queues goes down, the workflow instances are locked in the FIM service database.<br />
+To unlock these workflow instances, you need to replace the faulty FIM service instance with a new instance that has the same values for the service partition name and service name attributes configured as the faulty instance.
+<br />
+In other words, when you have to replace a faulty FIM service instance, you might be required to overwrite the default values of the servicePartitionName and the serviceName attribute in the configuration file of the new FIM service instance if you have locked
+ workflow instances in the FIM service database.<br />
+<br />
+</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Using_FIM_Service_Partitions_to_Control_Request_Workloads"></a>Using FIM Service Partitions to Control Request Workloads
+</h2>
+<p>In FIM, all actions within the system result in request objects. <br />
+Requests can be initiated by various sources such as self-service users, administrators that are managing the FIM environment or the synchronization service that is exchanging identity data with the FIM service.
+<br />
+<br />
+The following diagram shows a logical example for this:<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3755.FSP04.jpg" style="border:0px solid;" /><br />
+<br />
+</p>
+<p>In the context of the request and workflow processing model, it is important to keep in mind that some activities can result in a large amount of requests and associated workflows.
+<br />
+This is especially true for administrative tasks such as the identity data exchange between the FIM synchronization service and the FIM service or activities that are triggering the run on policy update feature.
+<br />
+<br />
+When the FIM service is busy processing already queued requests, a new request that is generated in response to the attempt of user to create a distribution group can take an unacceptable amount of time to be completed or the request can even time out while
+ waiting for a response.&nbsp;<br />
+One option you have to address this issue is to increase the timeout values.&nbsp;<br />
+&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-bottom:5px;background-color:#c0c0c0;padding-left:5px;padding-top:5px;">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1731.Note.gif" style="border:0px solid;" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;padding-left:5px;">For more details about the timeout related attributes and how to configure them, see
+<a href="http://technet.microsoft.com/en-us/library/gg607341(WS.10).aspx" target="_blank">
+Troubleshooting FIM 2010</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>The FIM architecture supports having multiple FIM service instances that are connected to the same FIM database.
+<br />
+The following diagram shows an example for this:<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/7827.FSP05.jpg" style="border:0px solid;" /></p>
+<p>Because administrative tasks have the potential to generate a large amount of requests that may take a long time to complete, just distributing the incoming requests amongst several FIM service instances does not necessarily help to improve the experienced
+ performance of a user that tries to create a distribution group.</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-bottom:5px;background-color:#c0c0c0;padding-left:5px;padding-top:5px;">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1731.Note.gif" style="border:0px solid;" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;padding-left:5px;">As a best practice recommendation, you should keep the number of your deployed FIM service instances at a required minimum.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;In addition to deploying multiple FIM service instances and connecting them to a single instance of a FIM service database, you can also group one or more of these FIM service instances into workload based FIM service partitions.
+<br />
+The following diagram shows an example for this:<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1488.FSP06.jpg" style="border:0px solid;" /></p>
+<p>The FIM service instances that are grouped based on a workload share the processing of requests and workflow in an environment.
+<br />
+A workload based FIM service partition is a group of one or more FIM service instances that are sharing the same servicePartitionName.
+<br />
+If you have workload based service partitions deployed, the request initiators can use the partition name to access your FIM service because each member has the same authority to process requests for the configured workload.
+ deploying multiple FIM service instances and connecting them to a single instance of a FIM service database, you can also group one or more of these FIM service instances into workload based FIM service partitions.
+<br />
+The following diagram shows an example for this:<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1488.FSP06.jpg" style="border:0px solid;" /></p>
+<p>T<br />
+<br />
+One common scenario for deploying workload based service partition is to isolate self-service and administrative request workflows, to improve the experienced response time of a self-service related task such as the creation of a new distribution group.
+<br />
+The following diagram shows an example for this: <br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/2350.FSP07.jpg" style="border:0px solid;" /></p>
+<p>In FIM, each request must be completed and approved in the context of the FIM service instance that was used to initiate it.
+<br />
+This is important to know when you have to troubleshoot request and workflow related issues.
+<br />
+Because all FIM service instances are sharing the same database, you can find all requests on each FIM service instance of a FIM service partition cluster.<br />
+However, if necessary, to take action on a request, you need a FIM service instance that belongs to the same workload service partition that was used to initiate a request.
+<br />
+The reason of this behavior is the fact that service partitioning is designed to support the isolation of request based workloads.</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Designing_Service_Partitions"></a>Designing Service Partitions</h2>
+<p>The objective of deploying FIM service partitions is to improve the experienced response time for request workloads in your environment.<br />
+Depending on the workload type, it might be sufficient to have only one FIM service instance in a FIM service partition configured.<br />
+If you experience timeout related issues, you can adjust the timeout values. <br />
+This is, for example, a good method to handle timeout issues in the case of an administrative service partition.
+<br />
+However, for self-service based service partitions, increasing the timeout values, doesn’t improve the experienced response time.
+<br />
+If the response time for such a service partition is not acceptable, you can add additional FIM service instances to a partition and connect them by using Network Load Balancing (NLB). The following diagram shows an example for this:
+<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/5672.FSP08.jpg" style="border:0px solid;" /><br />
+<br />
+<br />
+</p>
+<h2 style="color:#365f91;font-weight:bold;"><a name="Summary"></a>Summary</h2>
+<p>To isolate request based workloads in your environment, you can deploy several FIM service instances that are connected to a single FIM service database and group them into service partitions.
+<br />
+A client component connects to a service partition by specifying the related partition name.
+<br />
+The main objective of deploying service partitions is to improve the experienced performance of users performing self-service related tasks.
+<br />
+<br />
+</p>
+<p>&nbsp;</p>
+<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+<tbody>
+<tr>
+<th style="text-align:left;padding-bottom:5px;background-color:#c0c0c0;padding-left:5px;padding-top:5px;">
+<img alt="note" src="http://apfhrw.bay.livefilestore.com/y1pCed6u9dxDV3LOdzgtYt8xFaDWmIf_thMiOiFb3SmUARdxwIei5b6sPCHGruZWYphrJEU8j2BZEd51ZoAkp_ONkG8moMODvLC/Note.gif" />
+<strong>Note</strong> </th>
+</tr>
+<tr>
+<td style="background-color:#f0f0f0;padding-left:5px;">To provide feedback about this article, create a post on the
+<a href="http://go.microsoft.com/fwlink/?LinkID=163230" target="_blank">FIM TechNet Forum</a>&nbsp;or respond to
+<a href="http://social.technet.microsoft.com/Forums/en-US/ilm2/thread/352b1a15-e5ff-4627-b190-9094da413b3b" target="_blank">
+this post</a>.</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+    
+    

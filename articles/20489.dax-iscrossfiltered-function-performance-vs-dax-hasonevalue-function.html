@@ -1,0 +1,72 @@
+---
+layout: default
+title: DAX ISCROSSFILTERED Function Performance vs. DAX HASONEVALUE Function - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+Consider the following DAX query on AdventureWorks.<br />
+<p style="text-indent:0in;margin-left:0in;"><span style="color:blue;font-family:Consolas;font-size:9.5pt;"></span></p>
+<div class="reCodeBlock">
+<div><span><code>DEFINE</code></span></div>
+<div><span><code>MEASURE
+</code><code style="color:blue;">&#39;Date&#39;</code><code>[Bad Measure] =</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>COUNTROWS(GENERATE(</code><code>ALL</code><code>(</code><code style="color:blue;">&#39;Internet
+ Sales&#39;</code><code>), </code><code style="font-weight:bold;">VALUES</code><code>(</code><code style="color:blue;">&#39;Date&#39;</code><code>[Week
+</code><code style="font-weight:bold;">Of</code> <code>
+Year</code><code>])))</code></span></span></div>
+<div><span><code>MEASURE
+</code><code style="color:blue;">&#39;Date&#39;</code><code>[Conditional Evaluation] =</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>IF(ISCROSSFILTERED(</code><code style="color:blue;">&#39;Product&#39;</code><code>[Product
+</code><code style="font-weight:bold;">Name</code><code>]), [Bad Measure], 0)</code></span></span></div>
+<div><span><code>//&nbsp; IF(HASONEVALUE(</code><code style="color:blue;">&#39;Product&#39;</code><code>[Product
+</code><code style="font-weight:bold;">Name</code><code>]), [Bad Measure], 0)</code></span></div>
+<div><span><code>EVALUATE</code></span></div>
+<div><span><code>ADDCOLUMNS(</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">VALUES</code><code>(</code><code style="color:blue;">&#39;Date&#39;</code><code>[Calendar
+</code><code>Year</code><code>])</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>,</code><code style="color:blue;">&quot;Conditional Evaluation&quot;</code><code>, [Conditional Evaluation]
+ //(</code><code style="color:blue;">&#39;Product&#39;</code><code>[Product
+</code><code style="font-weight:bold;">Name</code><code>] =
+</code><code style="color:blue;">&quot;Mountain Pump&quot;</code><code>)</code></span></span></div>
+<div><span><code>)</code></span></div>
+<div><span><code style="font-weight:bold;">ORDER</code>
+<code style="font-weight:bold;">BY</code> <code style="color:blue;">
+&#39;Date&#39;</code><code>[Calendar </code><code>Year</code><code>]</code></span></div>
+</div>
+<br />
+<span style="font-size:12.1px;">Uncomment the product filter [&#39;Product&#39;[Product Name] = “Mountain Pump”] to include it. Now it takes about 8 seconds. Looking at the query, this makes sense because it has to call the “Bad Measure”. This suggests that IF ISCROSSFILTERED
+ is optimized to perform conditional logic only when necessary. This behavior is similar to
+<a href="http://en.wikipedia.org/wiki/Short-circuit_evaluation">short-circuit evaluation</a>, but not quite the same thing.<br />
+</span><br />
+Now comment out the line containing ISCROSSFILTERED and uncomment the line containing HASONEVALUE. It takes about 8 seconds whether the product filter is applied or not. This suggests that using IF HASONEVALUE is not optimized; it does perform conditional logic
+ unnecessarily.<br />
+<br />
+I ran Profiler traces to confirm this theory. For the above query at least, this does seem to be the case.<br />
+<ul>
+<li><span style="font-size:12.1px;">Even when the product filter is not applied, IF HASONEVALUE executes a Vertipaq SE Query on ‘Internet Sales’[RowNumber]. RowNumber is an internal, unique column on every table.</span>
+</li><li><span style="font-size:12.1px;">The physical DAX query plan includes the following operation, which I believe means it is iterating 19.2 million rows for the formula engine to deal with.</span>
+</li></ul>
+<blockquote style="margin:0px 0px 0px 40px;padding:0px;border:currentColor;">
+<div class="reCodeBlock">
+<div><span><code>Spool_Iterator&lt;Spool&gt;: IterPhyOp IterCols(0, 108, 136)(</code><code style="color:blue;">&#39;Date&#39;</code><code>[Calendar
+ Year], </code><code style="color:blue;">&#39;Internet Sales&#39;</code><code>[RowNumber],
+</code><code style="color:blue;">&#39;Date&#39;</code><code>[Week Of Year]) #Records=19206564 ...</code></span></div>
+</div>
+</blockquote>
+<blockquote style="margin:0px 0px 0px 40px;padding:0px;border:currentColor;">Note: 19,206,564 = 60,398 (number of rows in Internet Sales) * 53 (number of distinct Week of Year values) * 6 (number of rows in the resultset)</blockquote>
+<br />
+Needless to say, none of this happens with IF ISCROSSFILTERED when the product filter is not applied. There are less Vertipaq SE Queries, and the largest Spool_Iterator operation in the physical plan is for 6 rows (the number of rows in the resultset).<br />
+<hr />
+<h1><a name="See_Also"></a>See Also</h1>
+<br />
+<ul>
+<li><span style="font-size:12.1px;"><a class="ExistingPageLink" href="/wiki/contents/articles/19747.sql-server-analysis-services-portal.aspx" title="Click to view the page titled: SQL Server Analysis Services Portal">SQL Server Analysis Services Portal</a></span>
+</li></ul>
+<hr />
+<br />
+
+</div>
+    
+    

@@ -1,0 +1,292 @@
+---
+layout: default
+title: Securely connecting to Azure ServiceBus using WebClient and OAuth WRAP - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<h1><a name="Introduction"></a>Introduction</h1>
+<p><em>The following illustrates a way to connect to an Azure ServiceBus Queue using a WebClient instead of using the latest APIs supplied in the Azure SDK. &nbsp;The primary reason for this is to illustrate connectivity from clients that either are not .net based
+ or are limited in their version of .Net.</em></p>
+<p><em>In this particular situation, we&#39;re integrating the <a href="http://unity3d.com/">
+Unity 3D</a> game engine which does not support .NET 4.0 as it runs on Mono. &nbsp;This required us to create a client using &nbsp;.NET Framework 3.5 and to use a WebClient to post messages to the queue. As well as requiring a change to the client, we also needed to
+ configure my ServiceBus namespace to support ACS.</em></p>
+<p><em>In August 2014, new namespace&#39;s created in the Azure portal stopped supported ACS by default. &nbsp;As there is no way of adding ACS support, ACS support must be specified when the namespace is created. &nbsp;More information is supplied in MSDN
+<a href="https://msdn.microsoft.com/en-us/library/azure/dn170478.aspx">here</a>.</em></p>
+<h1><a name="Sample_Project"></a><span>Sample Project</span></h1>
+<p><em>You will need an Azure subscription and the ability to create a new Service Bus namespace. &nbsp;Because of this Azure Powershell is also required.</em></p>
+<p><em>There are not any requirements for additional packages from NuGet.<br />
+<br />
+A sample project is available for download from the <a href="https://code.msdn.microsoft.com/Securely-connecting-to-b1f08adc">
+MSDN Gallery</a>.</em></p>
+<p><span style="font-size:20px;font-weight:bold;">Client</span></p>
+<p><em>The solution contains two projects: a SBClient project and unity test project. &nbsp;The SBClient illustrates a simple post of a message to an Azure Service Bus Queue using the WebClient class. &nbsp;The code snippet below shows the actual post is very straightforward:</em></p>
+<div class="scriptcode">
+<div class="pluginEditHolder">
+<div class="title"><span style="font-size:12.1px;">
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+bool</code> <code style="color:#000000;">SubmitEvent(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">payload)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">WebClient webClient =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+WebClient();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">webClient.Headers[HttpRequestHeader.Authorization] = GetToken();</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var response = webClient.UploadData(ServiceHttpAddress,
+</code><code style="color:blue;">&quot;POST&quot;</code><code style="color:#000000;">, System.Text.Encoding.Default.GetBytes(payload));</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">responseString = Encoding.UTF8.GetString(response);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.IsNullOrEmpty(responseString);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+&nbsp;</span><span style="font-size:12.1px;">&nbsp;</span></div>
+</div>
+</div>
+<p>The GetToken method takes a bit more explaining. &nbsp;MSDN does a better job <a href="https://msdn.microsoft.com/en-us/library/azure/hh674475.aspx">
+here</a>. &nbsp;In our terms, we again use an instance of WebClient to get a token to from the our ACS endpoint in Azure.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+string</code> <code style="color:#000000;">GetToken()</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var acsEndpoint =
+</code><code style="color:blue;">&quot;<a href="https://social.technet.microsoft.com/wiki/contents/articles/31719.securely-connecting-to-azure-servicebus-using-webclient-and-oauth-wrap/edit.aspx">https://</a>&quot;</code>
+<code style="color:#000000;">&#43; ServiceNamespace &#43; </code><code style="color:blue;">&quot;-sb.&quot;</code>
+<code style="color:#000000;">&#43; acsHostName &#43; </code><code style="color:blue;">&quot;/WRAPv0.9/&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Note that the realm used when requesting a token uses the HTTP scheme, even though</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// calls to the service are always issued over HTTPS</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var realm =
+</code><code style="color:blue;">&quot;<a href="http://social.technet.microsoft.com/wiki/contents/articles/add.aspx">http://</a>&quot;</code>
+<code style="color:#000000;">&#43; ServiceNamespace &#43; </code><code style="color:blue;">&quot;.&quot;</code>
+<code style="color:#000000;">&#43; sbHostName &#43; </code><code style="color:blue;">&quot;/&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">NameValueCollection values =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+NameValueCollection();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">values.Add(</code><code style="color:blue;">&quot;wrap_name&quot;</code><code style="color:#000000;">, issuerName);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">values.Add(</code><code style="color:blue;">&quot;wrap_password&quot;</code><code style="color:#000000;">, issuerSecret);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">values.Add(</code><code style="color:blue;">&quot;wrap_scope&quot;</code><code style="color:#000000;">, realm);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">WebClient webClient =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+WebClient();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">byte</code><code style="color:#000000;">[] response = webClient.UploadValues(acsEndpoint, values);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">responseString = Encoding.UTF8.GetString(response);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var responseProperties = responseString.Split(</code><code style="color:blue;">&#39;&amp;&#39;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var tokenProperty = responseProperties[0].Split(</code><code style="color:blue;">&#39;=&#39;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var token = Uri.UnescapeDataString(tokenProperty[1]);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:blue;">&quot;WRAP access_token=\&quot;&quot;</code> <code style="color:#000000;">
+&#43; token &#43; </code><code style="color:blue;">&quot;\&quot;&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+&nbsp;<br />
+<span style="font-size:12.1px;">In the class there are several strings that will need to be updated with values from the particular Azure ServiceBus namespace (where to locate the values is explained below when setting up Azure):</span>
+<div class="endscriptcode">
+<div class="scriptcode">
+<div class="pluginEditHolder">
+<div class="title">
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+ServiceNamespace = </code><code style="color:blue;">&quot;&lt;namespace name&gt;&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+ServiceHttpAddress = </code><code style="color:blue;">&quot;<a href="https://%3c/">https://&lt;</a>;namespace name&gt;.servicebus.windows.net/&lt;queue name&gt;/messages&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+acsHostName = </code><code style="color:blue;">&quot;accesscontrol.windows.net&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+sbHostName = </code><code style="color:blue;">&quot;servicebus.windows.net&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+issuerName = </code><code style="color:blue;">&quot;&lt;service identity name&gt;&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+issuerSecret = </code><code style="color:blue;">&quot;&lt;service identity password&gt;&quot;</code><code style="color:#000000;">;</code></span></div>
+</div>
+<br />
+</div>
+</div>
+</div>
+<div class="endscriptcode"></div>
+</div>
+<p><span style="font-size:1.5em;">Unit Test</span></p>
+<p>The unit test is a bit simple but it does what we need it to do for this sample.</p>
+<h1><a name="TestClass_public_class_ServiceBusWriterTests_TestMethod_public_void_PostNewMessage_var_wasSuccessful_ServiceBusWriter_SubmitEvent_quot_This_is_a_test_quot_Assert_IsTrue_wasSuccessful_Setting_Up_Azure_Service_Bus"></a>
+<div class="scriptcode">
+<div class="pluginEditHolder">
+<div class="title">
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span style="font-size:12px;"><code style="color:#000000;">[TestClass]
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;"><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+ServiceBusWriterTests </code></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;"><code style="color:#000000;">{
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">[TestMethod]
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+PostNewMessage() </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">var wasSuccessful = ServiceBusWriter.SubmitEvent(</code><code style="color:blue;">&quot;This
+ is a test.&quot;</code><code style="color:#000000;">); </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;"><code>&nbsp;</code><span style="font-size:12px;">&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">Assert.IsTrue(wasSuccessful);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;"><code style="color:#000000;">}</code></span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="endscriptcode"><br />
+</div>
+Setting Up Azure Service Bus</h1>
+<p>Now for the interesting part. &nbsp;The first step is to launch Azure PowerShell and add your Azure account using the Add-AzureAccount command:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6237.add_2D00_azureaccount.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashpx;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">Assert.IsTrue(wasSuccessful);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span style="font-size:12px;"><code style="color:#000000;">}
+</code></span></span></div>x/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6237.add_2D00_azureaccount.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>In this situation, we have two subscriptions so we selected the desired subscription using the Set-AzureSubscription command.</p>
+<p>Next is to create a new Azure ServiceBus Namespace with ACS enabled. &nbsp;In this situation, we specified MyServiceBusQueue but you will need to choose a unique namespace for your namespace.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5415.newsbnamespace.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5415.newsbnamespace.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Notice the AcsManagementEndpoint. &nbsp;In the Azure portal create a new Queue under the namespace (you can use PowerShell but the portal is simpler).</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5850.createqueue1.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5850.createqueue1.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>&nbsp;</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8267.createqueue2.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8267.createqueue2.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>We have enough now to update our source code and get the basic sample running. &nbsp;See the updated constant strings below:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+ServiceNamespace = </code><code style="color:blue;">&quot;MyServiceBusQueue&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+ServiceHttpAddress = </code><code style="color:blue;">&quot;<a href="https://myservicebusqueue.servicebus.windows.net/samplequeue/messages">https://myservicebusqueue.servicebus.windows.net/samplequeue/messages</a>&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+acsHostName = </code><code style="color:blue;">&quot;accesscontrol.windows.net&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+sbHostName = </code><code style="color:blue;">&quot;servicebus.windows.net&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+issuerName = </code><code style="color:blue;">&quot;owner&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+issuerSecret = </code><code style="color:blue;">&quot;PmAIPe0XGySxvw8zvz/ELfOh2oPTh28Wa3EEzVAkJ3M=&quot;</code><code style="color:#000000;">;</code></span></div>
+</div>
+<div class="endscriptcode"><span style="font-size:12.1px;">And when running our test we see that we retrieve the token and submit without a failure:</span><br />
+</div>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6332.unittest.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6332.unittest.PNG" style="border-width:0px;border-style:solid;" /></a>&nbsp;</p>
+<p>&nbsp;</p>
+<h1><a name="ACS_Security_Service_Identity"></a>ACS Security - Service Identity</h1>
+<p>Using owner to connect to the service bus is not ideal in most situations where access might be performed by clients outside your control. &nbsp;In this situation, desktop games will be connecting to a namespace so we wanted to limit the access to only being
+ able to post messages to the queue and wanted to control the password being used.</p>
+<p>By creating a service identity in the Azure Access Control Service with send only permission, we can limit access to the queue for those clients.</p>
+<p>First, let&#39;s create a new service identity called UnityClient. &nbsp;In the Azure portal, select the namespace and click Connection Information. Be sure to do this at the namespace level and not at the queue level!</p>
+<p><img alt=" " id="140646" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/imagG" style="border-width:0px;border-style:solie/file/140646/1/connection.png" width="958" height="366" /></p>
+<p>This then allows us to navigate to the ACS portal:</p>
+<p><img alt=" " id="140648" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140648/1/openacs.png" width="719" height="718" /></p>
+<p>&nbsp;</p>
+<p>Now we need to create a new Service Identity:</p>
+<p><img alt=" " id="140649" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140649/1/addserviceidentity.png" width="1031" height="420" /></p>
+<p>&nbsp;</p>
+<p>The UnityClient identity and a generated password are shown below:</p>
+<p><img alt=" " id="140653" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140653/1/unityclient.png" width="821" height="722" /></p>
+<p>&nbsp;</p>
+<p>Now that the service identity is created, we need to amend the rule group for when we connect to the identity has permission to send to the queue.</p>
+<p><img alt=" " id="140650" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140650/1/rulegroup.png" width="1034" height="412" /></p>
+<p>&nbsp;</p>
+<p>The Default Rule Group has three already defined rules for the owner Service identity. &nbsp;In my terms they are:</p>
+<ol>
+<li>If the Service Identity is owner then they can manage </li><li>If the Service Identity is owner then they can listen </li><li>If the Service Identity is owner then they can send </li></ol>
+<p>The following adds a new rule that is basically:</p>
+<ol>
+<li>If the Service Identity is UnityClient then they can send </li></ol>
+<p><img alt=" " id="140651" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140651/1/ruleif.png" width="829" height="512" /></p>
+<p><img alt=" " id="140652" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140652/1/rulethen.png" width="828" height="285" /></p>
+<p>&nbsp;</p>
+<h2><a name="Back_to_the_Unit_Test"></a>Back to the Unit Test!</h2>
+<p>Now that our identity has been set up, we need to update our settings in our client to now use the all-powerful owner but use the limited client:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+ServiceNamespace = </code><code style="color:blue;">&quot;MyServiceBusQueue&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">static</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+ServiceHttpAddress = </code><code style="color:blue;">&quot;<a href="https://myservicebusqueue.servicebus.windows.net/samplequeue/messages">https://myservicebusqueue.servicebus.windows.net/samplequeue/messages</a>&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+acsHostName = </code><code style="color:blue;">&quot;accesscontrol.windows.net&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+sbHostName = </code><code style="color:blue;">&quot;servicebus.windows.net&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+issuerName = </code><code style="color:blue;">&quot;UnityClient&quot;</code><code style="color:#000000;">;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+issuerSecret = </code><code style="color:blue;">&quot;V1nRW&#43;pJV5/62voWmqnDo6dxLC9M/&#43;SfQWUbfuq6iRg=&quot;</code><code style="color:#000000;">;</code></span></div>
+</div>
+<br />
+<div class="scriptcode">
+<div class="pluginEditHolder">
+<div class="preview"></div>
+</div>
+</div>
+<div class="endscriptcode">And our unit test should still pass!</div>
+<div class="endscriptcode"><img alt=" " id="140654" src="https://i1.code.msdn.s-msft.com/securely-connecting-to-b1f08adc/image/file/140654/1/unittest2.png" width="413" height="76" /></div>
+<div class="endscriptcode"></div>
+<div class="endscriptcode"></div>
+<p>&nbsp;<span style="font-size:22px;line-height:28.6px;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;color:#3a3e43;">Summary</span></p>
+<p>The sample project illustrated how to send messages to an Azure Queue using a WebClient and ACS. &nbsp;In situations where the technology available includes the ability to use the Azure SDK, this is recommended as it simplifies both security and interoperability
+ with Azure.</p>
+<p>It is also important to note that access to Azure should be limited to only what is required. &nbsp;In most situations communication to Azure should be done via specific identity and the use of owner should be restricted.</p>
+
+</div>
+    
+    

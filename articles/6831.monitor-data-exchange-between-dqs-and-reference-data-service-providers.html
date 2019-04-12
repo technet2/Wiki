@@ -1,0 +1,293 @@
+---
+layout: default
+title: Monitor Data Exchange between DQS and Reference Data Service Providers - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>One of the key features in Data Quality Services (DQS)                  </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Monitor Data Exchange between DQS and Reference Data Service Providers</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p>One of the key features in is to use knowledge from a cloud-based reference data service (<a href="https://datamarket.azure.com/">Windows Azure Marketplace</a>) to cleanse your data. However, in Data Quality Client, you cannot
+ monitor information about the data exchanged between DQS and the reference data service providers during the cleansing process. This article provides information about why and how you can view/monitor this information.</p>
+<h1><a name="Why_to_monitor_data_exchange"></a>Why to monitor data exchange?</h1>
+<p>Well, primarily for the following two reasons:</p>
+<ul>
+<li><strong>Financial auditing</strong>: You are charged/billed for data exchange between DQS and reference data service providers in the cloud. It is good to have the information handy in case you find any discrepancy in your billing, and want to verify actual
+ usage of the reference data service. </li><li><strong>Troubleshooting</strong>: Provides various information about the data exchange such as total time taken for the cleansing of a batch of records, how many records were cleansed, response from the reference data service provider (HTTP status), and
+ so on. This information enables you to efficiently track issues with reference data-based cleansing, and quickly answer support calls from customer.
+</li></ul>
+<h1><a name="How_to_monitor_data_exchange"></a>How to monitor data exchange?</h1>
+<p>The V_A_REFERENCE_DATA_AUDIT view in the DQS_MAIN database contains information about the data exchange between DQS and reference data service. Each batch data request is stored as a row in the view. This V_A_REFERENCE_DATA_AUDIT view contains the following
+ columns:</p>
+<ul>
+<li><strong>ID</strong>: Unique ID of the data exchange record in this view. </li><li><strong>Provider Name</strong>: Reference data service provider name used for cleansing.
+</li><li><strong>Project</strong>: Data Quality Project name used for cleansing. </li><li><strong>Knowledge Base</strong>: DQS Knowledge base used for cleansing. </li><li><strong>Batch ID</strong>: Unique ID of the data batch sent to the reference data provider.<br />
+<hr />
+<span style="background-color:#f2f2f2;"><strong>IMPORTANT</strong>: When a domain value is successfully queried once from the reference data service provider, it is cached locally to prevent the same domain values from being queried multiple times from the reference
+ data service provider. You are not billed for queries against the cached data. In this case,
+<strong>##Cache Lookup##</strong> is displayed in the Batch ID column instead of a GUID to signify that the data has been queried against the local cache.</span>
+<hr />
+</li><li><strong>Number of records sent</strong>: Number of records sent to the reference data provider.
+</li><li><strong>Number of records received</strong>: Number of records received from the reference data provider.
+</li><li><strong>Time sent</strong>: Time when the batch request was sent to the reference data provider for data cleansing. (Note: this time stays constant across multiple batches within the same activity, because there is a bug where the time is not refreshed
+ for each individual batch in SQL Server 2012 RTM) </li><li><strong>Time received</strong>: Time when the reference date service responded with the cleansed data.
+</li><li><strong>Duration</strong>: Time taken by the reference data provider to respond with the cleansed data. This is calculated as the difference between the request and response time. (Note: this duration is cumulative is since the beginning of the activity,
+ since the Time sent column is not incremented per individual batch in SQL Server 2012 RTM)
+</li><li><strong>Response Code</strong>: The HTTP status code for the operation. For example, 200 OK, 504 - Gateway Timeout, and so on.
+</li></ul>
+<h2><a name="To_view_data_in_the_V_A_REFERENCE_DATA_AUDIT_view_in_the_DQS_MAIN_database"></a>To view data in the V_A_REFERENCE_DATA_AUDIT view in the DQS_MAIN database:</h2>
+<ol>
+<li>Start Microsoft SQL Server Management Studio </li><li>In Microsoft SQL Server Management Studio, right-click the SQL Server instance where DQS is installed, and then click
+<strong>New Query</strong> in the shortcut menu. </li><li>In the Query Editor window, copy the following SQL statement:<br />
+<em><span style="font-size:11px;font-family:&#39;courier new&#39;;">select * from DQS_MAIN.dbo.V_A_REFERENCE_DATA_AUDIT</span></em>
+</li><li>Press F5 to run the statement. The Results pane will display the data in the V_A_REFERENCE_DATA_AUDIT view.
+</li></ol>
+<p><strong>Example Output:</strong></p>
+<table border="0" cellspacing="0" cellpadding="2" style="width:100px;border-collapse:collapse;overflow:auto;">
+<colgroup><col width="64" style="width:48pt;"><col width="82" style="width:62pt;"><col width="47" style="width:35pt;"><col width="88" style="width:66pt;"><col width="216" style="width:162pt;"><col width="74" style="width:56pt;"><col width="59" style="width:44pt;"><col width="133" style="width:100pt;"><col width="135" style="width:101pt;"><col width="111" style="width:83pt;"><col width="116" style="width:87pt;"></col></col></col></col></col></col></col></col></col></col></col></colgroup>
+<tbody>
+<tr style="height:45.75pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">ID</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">PROVIDER NAME</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">PROJECT</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KNOWLEDGEBASE</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">BATCH ID</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">NUMBER OF RECORDS SENT</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">NUMBER OF RECORDS RECEIVED</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">TIME SENT</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">TIME RECEIVED</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">DURATION</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">RESPONSE CODE</span></t-size:8px;font-family:arial;">NUMBER OF RECORDS SENT</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">NUMBER OF RECORDS RECEIVED</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">TIME SENT</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">TIME RECEIVED</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid wind>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">##Cache Lookup##</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">38</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">0</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2011-12-12 14:49:40.973</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2011-12-12 14:49:41.063</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:00.0900000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000001</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">354aae07-bb1e-47ea-a9f8-43afdcbacefb</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">38</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">0</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2011-12-12 14:49:41.127</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2011-12-12 14:50:27.067</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:45.9400000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">504 - Gateway Timeout</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000002</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB1</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">191c6a4e-af18-4117-a273-53d9e80988c8</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">20</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">20</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2011-12-12 14:50:27.097</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2011-12-12 14:50:35.153</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:08.0570000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000003</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">##Cache Lookup##</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">288</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">0</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:40.163</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:40.560</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:00.3970000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000004</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000004</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">
+<span style="font-size:8px;font-family:arial;">82db1c29-b77b-4452-a837-d4e1744b655e</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">100</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">100</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:40.630</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:46.057</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:05.4270000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000005</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">5d0e526d-56db-47bc-bebe-caaa43123665</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">100</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">100</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:40.630</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:50.447</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:09.8170000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+<tr style="height:15pt;">
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">1000006</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Provider 2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">Project2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">KB2</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">847ba394-92aa-4a55-b882-940834838d69</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">88</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">88</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:40.630</span></td>
+<td style="padding-bottom:0in;background-color:transparent;white-space:nowrap;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">2012-02-07 11:38:54.453</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">00:00:13.8230000</span></td>
+<td style="padding-bottom:0in;background-color:transparent;padding-top:0in;border:0.5pt solid windowtext;">
+<span style="font-size:8px;font-family:arial;">OK</span></td>
+</tr>
+</tbody>
+</table>
+
+<p>If you have enabled logging for reference data service (RDS) in Data Quality Client (see
+<a href="http://msdn.microsoft.com/en-us/library/hh510405(SQL.110).aspx">Configure Severity Levels for DQS Log Files</a>), each batch request is also logged in the DQS Server log file (DQServerLog.DQS_MAIN.log). A sample entry in the DQS Server log file looks
+ like the following:</p>
+<p><span style="font-size:11px;font-family:&#39;courier new&#39;;">12/14/2011 9:44:55 AM|[]|15|INFO|f592c205-3a81-40d3-8fe8-08a511df6762|Microsoft.Ssdqs.ReferenceData.Auditing.ReferenceDataAuditor| Batch Job: PROVIDER [1002], PROJECT [1000078], PROCESS [1079], BATCH
+ ID [f6388357-a209-413f-b2df-499c3ea8b12e], NUMBER OF RECORDS SENT [10], NUMBER OF RECORDS RECEIVED [10], TIME SENT = [12/14/2011 09:44:03], TIME RECEIVED [12/14/2011 09:44:55], DURATION [00:00:52.2082203], RESPONSE CODE [OK]</span>
+</p>
+<hr />
+<h1><a name="See_Also"></a>See Also</h1>
+<ul>
+<li><a href="http://msdn.microsoft.com/en-us/library/hh213066(SQL.110).aspx">Reference Data Services in DQS</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/4385.aspx">DQS Resources on TechNet Wiki</a>
+</li></ul>
+
+</div>
+    
+    

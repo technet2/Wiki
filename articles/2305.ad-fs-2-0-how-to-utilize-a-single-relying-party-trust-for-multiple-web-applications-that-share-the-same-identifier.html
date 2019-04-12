@@ -1,0 +1,203 @@
+---
+layout: default
+title: AD FS 2.0&#58; How to Utilize a Single Relying Party Trust for Multiple Web Applications that Share the Same Identifier - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">A common request we receive from customers&nbsp;is:<br />
+<br />
+&quot;I have multiple environments for the same web application. For example, development (DEV), staging (STAGE), and production (PROD). I want to create one Relying Party (RP)&nbsp;Trust in AD FS 2.0 which utilizes a single set of issuance claim rules, and I want AD FS 2.0 to send the user to the correct web application once they have authenticated.&quot;<br />
+<br />
+<br />
+<br />
+<em>The out-of-the-box, AD FS 2.0 capabilities&nbsp;answer:</em> For <strong>WS-Federation passive</strong> RPs, this is not possible in AD FS 2.0 since we are bound to a single endpoint URL per protocol binding. For example, the WS-Federation POST binding can hold only a single value for endpoint URL. Although AD FS 2.0 allows for multiple identifiers (URIs) per RP Trust, there is no way within AD FS 2.0 to map each identifier to a unique WS-Federation endpoint URL.<br />
+<br />
+<br />
+<br />
+For<strong> SAML 2.0 protocol</strong> RPs, we can handle this out of the box in AD FS 2.0. Please see the <strong>More Information</strong> section for more detail.<br />
+<br />
+<br />
+<br />
+<em>The you-are-on-your-own, custom solution answer:</em> For <strong>WS-Federation passive</strong> RPs, it is possible to develop a page to sit in between your AD FS 2.0 RP-STS and your application environments. This page will be accessed by users instead of having users browse directly to the various web applications. There are several ways you could develop this page depending on the user experience you desire.<br />
+<br />
+<br />
+<br />
+Below, you will find a sample ASPX page which accepts a query string parameter named <strong>ENV</strong>. The valid values for ENV are:<strong> test</strong> and <strong>stage</strong>. If this page is accessed without specifying the ENV query string parameter or a ENV value that is not valid, the user will be placed in the<strong> production</strong> environment.<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<strong>NOTE:</strong> This code is provided &quot;AS IS&quot; with no warranties, and confers no rights.<br />
+<br />
+For more information please visit <a href="http://www.microsoft.com/info/cpyright.mspx">http://www.microsoft.com/info/cpyright.mspx</a> to find terms of use.<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+Steps:<br />
+<br />
+<br />
+<br />
+1. Copy the following code into a text file and save as default.aspx:<br />
+<br />
+<p><span style="font-family:consolas;font-size:9.5pt;">&lt;%<span style="color:#0000ff;">@</span> <span style="color:#800000;">Page</span> <span style="color:#ff0000;">Language</span><span style="color:#0000ff;">=&quot;VB&quot;</span> %&gt;</span></p>
+<p><span style="font-family:consolas;color:#0000ff;font-size:9.5pt;">&lt;</span><span style="font-family:consolas;color:#800000;font-size:9.5pt;">html</span><span style="font-family:consolas;font-size:9.5pt;"> <span style="color:#ff0000;">dir</span><span style="color:#0000ff;">=&quot;ltr&quot;&gt;&lt;</span><span style="color:#800000;">head</span><span style="color:#0000ff;">&gt;&lt;</span><span style="color:#800000;">title</span><span style="color:#0000ff;">&gt;</span>SSO Redirect<span style="color:#0000ff;">&lt;/</span><span style="color:#800000;">title</span><span style="color:#0000ff;">&gt;</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&lt;%</span></p>
+<p><span style="font-family:consolas;color:#0000ff;font-size:9.5pt;">Dim</span><span style="font-family:consolas;font-size:9.5pt;"> Env, Endpoint</span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">Env=Request.QueryString(<span style="color:#a31515;">&quot;Env&quot;</span>)</span></p>
+<p><span style="font-family:consolas;color:#0000ff;font-size:9.5pt;">If</span><span style="font-family:consolas;font-size:9.5pt;"> Request.HTTPMethod=<span style="color:#a31515;">&quot;GET&quot; </span><span style="color:#0000ff;">Then</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">If </span>Env=<span style="color:#a31515;">&quot;test&quot;</span> <span style="color:#0000ff;">Then</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Endpoint=<span style="color:#a31515;">&quot;<span style="background:yellow;"><a href="https://your-test-endpoint/"><span style="color:#0000ff;"><em><strong>https://your-test-endpoint/</strong></em></span></a>&quot;</span></span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">ElseIf </span>Env=<span style="color:#a31515;">&quot;stage&quot;</span> <span style="color:#0000ff;">Then</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Endpoint=<span style="color:#a31515;">&quot;<span style="background:yellow;"><a href="https://your-stage-endpoint/"><span style="color:#0000ff;"><strong><em>https://your-stage-endpoint/</em></strong></span></a>&quot;</span></span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp; E<span style="color:#0000ff;">lse</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Endpoint=<span style="color:#a31515;">&quot;<span style="background:yellow;"><a href="https://your-production-endpoint/"><span style="color:#0000ff;"><strong><em>https://your-production-endpoint/</em></strong></span></a>&quot;</span></span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp; E<span style="color:#0000ff;">nd</span> I<span style="color:#0000ff;">f</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp; Response.Cookies(<span style="color:#a31515;">&quot;Endpoint&quot;</span>).value = Endpoint</span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp; Response.Redirect(<span style="color:#a31515;">&ldquo;<a href="https://your-rp-sts/adfs/ls/IdpInitiatedSignOn.aspx?LoginToRP=your-RP-identifier"><span style="color:#0000ff;">https://<span style="background:yellow;"><strong><em>your-RP-STS</em></strong></span>/adfs/ls/IdpInitiatedSignOn.aspx?LoginToRP=<span style="background:yellow;"><strong><em>your-RP-identifier</em></strong></span></span></a>&rdquo;</span>)</span></p>
+<p><span style="font-family:consolas;color:#0000ff;font-size:9.5pt;">ElseIf</span><span style="font-family:consolas;font-size:9.5pt;"> Request.HTTPMethod=<span style="color:#a31515;">&quot;POST&quot; </span><span style="color:#0000ff;">Then</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;"><span style="color:#0000ff;">&nbsp;&nbsp;&nbsp;&nbsp;If</span> <span style="color:#0000ff;">Not </span>Request.Cookies(<span style="color:#a31515;">&quot;Endpoint&quot;</span>).value <span style="color:#0000ff;">Is</span> <span style="color:#0000ff;">Nothing</span> <span style="color:#0000ff;">Then</span></span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Endpoint = Request.Cookies(<span style="color:#a31515;">&quot;Endpoint&quot;</span>).value<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-family:consolas;font-size:9.5pt;">Response.ClearContent()<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-family:consolas;font-size:9.5pt;">Response.StatusCode = 307<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-family:consolas;font-size:9.5pt;">Response.StatusDescription = <span style="color:#a31515;">&quot;Temporary Redirect&quot;<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span style="font-family:consolas;font-size:9.5pt;">Response.RedirectLocation = ResolveClientUrl(Endpoint)<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-family:consolas;font-size:9.5pt;">Response.Flush()</span></p>
+<p><span style="font-family:consolas;font-size:9.5pt;">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#0000ff;">End</span> <span style="color:#0000ff;">If</span></span></p>
+<p><span style="font-family:consolas;color:#0000ff;font-size:9.5pt;">Else</span> </p>
+<p><span style="font-family:consolas;font-size:9.5pt;">Response.Write(<span style="color:#a31515;">&quot;The requested HTTP method (&quot;</span> &amp; Request.HTTPMethod &amp; <span style="color:#a31515;">&quot;) is not supported by this redirector page. This page supports HTTP GET and POST. Please contact your administrator.&quot;</span>)<br />
+<br />
+<br />
+<br />
+</span><span style="font-family:consolas;color:#0000ff;font-size:9.5pt;">End</span><span style="font-family:consolas;font-size:9.5pt;"> I<span style="color:#0000ff;">f</span></span></p>
+<p>%&gt;&lt;/head&gt;<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+2. Copy the following code into a text file and save as web.config:<br />
+<br />
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;configuration&gt;<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;system.web&gt;<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;compilation debug=&quot;true&quot;/&gt;<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;pages validateRequest=&quot;false&quot; /&gt;<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/system.web&gt;<br />
+<br />
+&nbsp;&nbsp;&nbsp; &lt;/configuration&gt;<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+3. Set up a web site to host the default.aspx and web.config&nbsp;files from step 1. This site must have a valid&nbsp;SSL binding.<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+4. Create a RP Trust in AD FS 2.0 with at least a SAML 2.0 POST endpoint URL. If your RP applications utilize WS-Federation, create both SAML 2.0 POST and WS-Federation POST bindings with the same endpoint URL for both. The endpoint URL(s) must point to our custom page site. <br />
+<br />
+<br />
+<br />
+<br />
+<br />
+5. Create a set of RP Trust claim rules that you wish to have apply to all of your RP web applications.<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+6. Ensure that all of your RP web applications accept a single identifier (audience URI) from AD FS 2.0<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+7. Modify the default.aspx of our custom site and replace the highlighted portions from above with values appropriate for your environment.<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+8. Test by browsing to the custom page. Examples of options:<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a. <a href="https://your-custom-site/">https://your-custom-site/</a> (result is PRODUCTION)<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b. <a href="https://your-custom-site/?env=test">https://your-custom-site/?env=test</a> (result is TEST)<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c. <a href="https://your-custom-site/?env=stage">https://your-custom-site/?env=stage</a> (result is STAGE)<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+Explanation of flow:<br />
+<br />
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;In this example, we will use ENV=test.<br />
+<br />
+<br />
+<br />
+1. User browses to <a href="https://your-custom-site/?env=test">https://your-custom-site/?env=test</a><br />
+<br />
+<br />
+<br />
+2. ENV=test is evaluated to Endpoint=https://your-test-endpoint/<br />
+<br />
+<br />
+<br />
+3. A session cookie named Endpoint is written to the client with a value of: <a href="https://your-test-endpoint/">https://your-test-endpoint/</a><br />
+<br />
+<br />
+<br />
+4. The client is redirected to the IDP-initiated sign-on page of the AD FS 2.0 RP-STS with the query string parameter LoginToRP=your-RP-identifier<br />
+<br />
+<br />
+<br />
+5. The user provides credentials to AD FS 2.0<br />
+<br />
+<br />
+<br />
+6. The RP Trust&nbsp;policy is processed<br />
+<br />
+<br />
+<br />
+7.&nbsp;A&nbsp;SAML assertion is&nbsp;posted from AD FS 2.0 to our custom page site<br />
+<br />
+<br />
+<br />
+8.&nbsp;Along with the POST, the&nbsp;client presents the Endpoint cookie back to our custom page<br />
+<br />
+<br />
+<br />
+9. Our custom page redirects (HTTP 307) the POST data&nbsp;to the URL specified in the Endpoint cookie<br />
+<br />
+<br />
+<br />
+10. The end application consumes the token POST and access is granted to the site&nbsp;<br />
+<br />
+<br />
+<br />
+</p>
+<h2><a name="More_Information"></a>More Information</h2>
+<p>This section is a work in progress.<br />
+<br />
+<br />
+</p></div>
+    
+    

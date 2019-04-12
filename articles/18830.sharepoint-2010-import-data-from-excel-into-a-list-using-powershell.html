@@ -1,0 +1,122 @@
+---
+layout: default
+title: SharePoint 2010&#58; Import Data from Excel into a List using PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="Introduction"></a>Introduction</h2>
+<br />
+There are several different ways to import data from a spreadsheet into a SharePoint list. Depending on your requirements, you can copy data into SharePoint lists using the DataSheet view, for example. However, there are some circumstances where this won&#39;t
+ work (i.e. lack of support for certain fields in the DataGrid view), where you need to use a different approach.&nbsp;
+<br />
+<br />
+<h2><a name="The_PowerShell_Approach"></a>The PowerShell Approach</h2>
+<br />
+<span style="font-size:12.1px;">PowerShell can handle importing tens, hundreds, thousands, tens of thousand, even hundreds of thousands of items from a CSV. It can manipulate the data before inserting it, and it supports inserting data into all the different
+ SharePoint field types. It can also automatically approve items (if the list requires approval of items), as well augment data with additional information (e.g. performing a lookup on the data being imported, joining it with other columns, performing validation,
+ etc).</span><br />
+<br />
+The basic process for importing data with PowerShell is; <br />
+<br />
+Save the Excel Spreadsheet as a CSV file, get the CSV file using Import-CSV, enumerate each row in the CSV, and finally, add each row to the SharePoint list. As you iterate through the rows in the CSV file, you can perform data manipulation before saving the
+ list item.<br />
+<br />
+The examples here import a CSV called VesselInPortReport.csv, which contains data about a companies ships as they move into a shipping port.
+<br />
+<br />
+The CSV file has the following columns (headings):<br />
+<br />
+TRIP_NO<br />
+VESSEL_NAME<br />
+FLAG<br />
+AGENT_NAME<br />
+CURRENT_LOCATION<br />
+RPT_DATE<br />
+EMPLOYEE (recorded as a persons name, e.g. &quot;Matthew Yarlett&quot;)<br />
+EMPLOYEE_TYPE (e.g. Captain, First Mate, etc)<br />
+<br />
+Example: Get the CSV file, and iterate through the items, writing the &quot;VESSEL_NAME&quot; column for each item to the console<br />
+<br />
+<pre class="PowerShellColorizedScript" style="font-family:consolas;font-size:12px;border:1px solid #7f9db9;overflow-y:auto;"><span style="color:#006400;">#Get the CSV file and connect to the SharePoint list</span>            
+<span style="color:#ff4500;">$vessellist</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">import-csv</span> <span style="color:#000080;">-Path</span> <span style="color:#8b0000;">&quot;C:\Temp\VesselInPortReport.csv&quot;</span>            
+<span style="color:#ff4500;">$itemCount</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$vessellist</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$currentItem</span> <span style="color:#a9a9a9;">=</span> <span style="color:#800080;">1</span><span style="color:#000000;">;</span>            
+<span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$item</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$vessellist</span><span style="color:#000000;">)</span>            
+<span style="color:#000000;">{</span>            
+    <span style="color:#006400;">#Update the progress information</span>            
+    <span style="color:#0000ff;">Write-Progress</span> <span style="color:#000080;">-Id</span> <span style="color:#800080;">1</span> <span style="color:#000080;">-ParentId</span> <span style="color:#800080;">0</span> <span style="color:#000080;">-Activity</span> <span style="color:#8b0000;">&quot;Listing Data In CSV File&quot;</span> <span style="color:#000080;">-PercentComplete</span> <span style="color:#000000;">(</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$currentItem</span><span style="color:#a9a9a9;">/</span><span style="color:#ff4500;">$itemCount</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">*</span><span style="color:#800080;">100</span><span style="color:#000000;">)</span> <span style="color:#000080;">-Status</span> <span style="color:#8b0000;">&quot;Item $currentItem or $itemCount&quot;</span><span style="color:#000000;">;</span>            
+    <span style="color:#ff4500;">$currentItem</span><span style="color:#a9a9a9;">&#43;&#43;</span><span style="color:#000000;">;</span>            
+    <span style="color:#006400;">#Write the rows VESSEL_NAME column to the console</span>            
+    <span style="color:#0000ff;">Write-Host</span> <span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">VESSEL_NAME</span><span style="color:#000000;">;</span>            
+<span style="color:#000000;">}</span></pre>
+<br />
+<br />
+Example: Get the CSV file, and iterate through the items, adding each item as a new list item in the SharePoint VesselsInPort list. This example shows how to cast the data from the CSV file into some different SharePoint fields; Text, Number, User (Person),
+ Choice. It displays progress information as items are added using Write-Progress.<br />
+<br />
+<pre class="PowerShellColorizedScript" style="font-family:consolas;font-size:12px;border:1px solid #7f9db9;overflow-y:auto;"><span style="color:#006400;">#Get the CSV file and connect to the SharePoint list</span>            
+<span style="color:#ff4500;">$vessellist</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">import-csv</span> <span style="color:#000080;">-Path</span> <span style="color:#8b0000;">&quot;C:\Temp\VesselInPortReport.csv&quot;</span>            
+<span style="color:#006400;">#Get the list used to import the data to</span>            
+<span style="color:#ff4500;">$l</span> <span style="color:#a9a9a9;">=</span> <span style="color:#000000;">(</span><span style="color:#0000ff;">Get-Spweb</span> <span style="color:#8b0000;">&quot;http://corporate&quot;</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">GetList</span><span style="color:#000000;">(</span><span style="color:#8b0000;">&quot;http://corporate/Lists/VesselsInPort&quot;</span><span style="color:#000000;">)</span>            
+             
+<span style="color:#006400;">#Get the lists EmployeeType field (choice)</span>            
+<span style="color:#ff4500;">$employeeType</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$l</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Fields</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;EmployeeType&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">-as</span> <span style="color:#008080;">[Microsoft.SharePoint.SPFieldChoice]</span>            
+             
+<span style="color:#006400;">#Loop through the items and add them to the list</span>            
+<span style="color:#ff4500;">$r</span> <span style="color:#a9a9a9;">=</span> <span style="color:#800080;">1</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$itemCount</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$vessellist</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$currentItem</span> <span style="color:#a9a9a9;">=</span> <span style="color:#800080;">1</span><span style="color:#000000;">;</span>            
+<span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$item</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$vessellist</span><span style="color:#000000;">)</span>            
+<span style="color:#000000;">{</span>            
+    <span style="color:#0000ff;">Write-Progress</span> <span style="color:#000080;">-Id</span> <span style="color:#800080;">1</span> <span style="color:#000080;">-ParentId</span> <span style="color:#800080;">0</span> <span style="color:#000080;">-Activity</span> <span style="color:#8b0000;">&quot;Importing Data From CSV into SharePoint&quot;</span> <span style="color:#000080;">-PercentComplete</span> <span style="color:#000000;">(</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$currentItem</span><span style="color:#a9a9a9;">/</span><span style="color:#ff4500;">$itemCount</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">*</span><span style="color:#800080;">100</span><span style="color:#000000;">)</span> <span style="color:#000080;">-Status</span> <span style="color:#8b0000;">&quot;Adding item $currentItem or $itemCount&quot;</span><span style="color:#000000;">;</span>            
+    <span style="color:#ff4500;">$currentItem</span><span style="color:#a9a9a9;">&#43;&#43;</span><span style="color:#000000;">;</span>            
+    <span style="color:#ff4500;">$ni</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$l</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">items</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Add</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span>            
+    <span style="color:#006400;">#Add the Title, using the rows VESSEL_NAME column</span>            
+    <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;Title&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">VESSEL_NAME</span><span style="color:#000000;">;</span>            
+                 
+    <span style="color:#006400;">#Add the &quot;Date Recorded&quot; field, using the csv rows &quot;RPT_DATE&quot; column</span>            
+    <span style="color:#008080;">[DateTime]</span><span style="color:#ff4500;">$rd</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">New-Object</span> <span style="color:#8a2be2;">System.DateTime</span><span style="color:#000000;">;</span>            
+    <span style="color:#00008b;">if</span><span style="color:#000000;">(</span><span style="color:#008080;">[DateTime]</span><span style="color:#a9a9a9;">::</span><span style="color:#000000;">TryParse</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">RPT_DATE</span><span style="color:#a9a9a9;">,</span> <span style="color:#008080;">[ref]</span><span style="color:#ff4500;">$rd</span><span style="color:#000000;">)</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span>            
+        <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;Date Recorded&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$rd</span><span style="color:#000000;">;</span>            
+    <span style="color:#000000;">}</span>            
+                 
+    <span style="color:#006400;">#Add the csv rows &quot;TRIP_NO&quot; column to the new list items &quot;Trip Id&quot; field (SPFieldNumber)</span>            
+    <span style="color:#008080;">[Int64]</span><span style="color:#ff4500;">$tn</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">New-Object</span> <span style="color:#8a2be2;">System.Int64</span><span style="color:#000000;">;</span>            
+    <span style="color:#00008b;">if</span><span style="color:#000000;">(</span><span style="color:#008080;">[Int64]</span><span style="color:#a9a9a9;">::</span><span style="color:#000000;">TryParse</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">TRIP_NO</span><span style="color:#a9a9a9;">,</span> <span style="color:#008080;">[ref]</span> <span style="color:#ff4500;">$tn</span><span style="color:#000000;">)</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span>            
+        <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;Trip Id&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$tn</span><span style="color:#000000;">;</span>            
+    <span style="color:#000000;">}</span>            
+                 
+    <span style="color:#006400;">#Add some other text properties</span>            
+    <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;Flag&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">FLAG</span><span style="color:#000000;">;</span>            
+    <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;Agent Name&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">AGENT_NAME</span><span style="color:#000000;">;</span>              
+    <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;Current Location&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">CURRENT_LOCATION</span><span style="color:#000000;">;</span>                  
+                 
+    <span style="color:#006400;">#Add user information</span>            
+    <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;employee&quot;</span><span style="color:#a9a9a9;">]</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$w</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EnsureUser</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EMPLOYEE</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span> <span style="color:#006400;">#In this case, the $item.EMPLOYEE value from the spreadsheet is a persons name. Eg. &quot;Matthew Yarlett&quot; </span>            
+    <span style="color:#ff4500;">$employeeType</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ParseAndSetValue</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">,</span><span style="color:#ff4500;">$item</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EMPLOYEE_TYPE</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span> <span style="color:#006400;">#In this case, the $item.EMPLOYEE_TYPE value from the spreadsheet is valid choice present in the EmployeeType list field. Eg. &quot;Manager&quot;</span>            
+                 
+    <span style="color:#006400;">#Update the item</span>            
+    <span style="color:#ff4500;">$ni</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Update</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span>            
+    <span style="color:#0000ff;">Write-Host</span> <span style="color:#000000;">(</span><span style="color:#008080;">[String]</span><span style="color:#a9a9a9;">::</span><span style="color:#000000;">Format</span><span style="color:#000000;">(</span><span style="color:#8b0000;">&quot;Added record:{0}&quot;</span><span style="color:#a9a9a9;">,</span><span style="color:#ff4500;">$r</span><span style="color:#000000;">)</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span>            
+    <span style="color:#ff4500;">$r</span><span style="color:#a9a9a9;">&#43;&#43;</span><span style="color:#000000;">;</span>            
+<span style="color:#000000;">}</span></pre>
+<br />
+<br />
+Importing data from Excel has been asked in the following forums:<br />
+<a target="_blank" href="http://social.techpan><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Update</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span>            
+    <span style="color:#0000ff;">Write-Host</span> <span style="color:#000000;">(</span><span style="color:#008080;">[String]</span><span style="color:#a9a9a9;">::</span><span net.microsoft.com/Forums/sharepoint/en-US/08ee3efe-eb33-4ae9-b3d0-cf0dd50b7508/how-to-programmatically-import-excell-into-existing-sharepoint-list">How to programmatically import Excel into existing SharePoint list?</a><br />
+<a target="_blank" href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/3c60ee05-1408-4b73-bb2b-2d42bf913572/how-to-copy-excel-sheet-data-to-sharepoint-2010-list">How to copy Excel sheet data to SharePoint 2010 List?</a><br />
+<br />
+<br />
+<h2><a name="Other_Languages_Available"></a>Other Languages Available</h2>
+<br />
+This article is also available in the following languages :<br />
+<ul>
+<li>fr-FR :&nbsp;<a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/19844.sharepoint-2010-importer-des-donnees-d-un-fichier-excel-dans-une-liste-en-utilisant-powershell-fr-fr.aspx">SharePoint 2010 : Importer des données d&#39;un fichier
+ Excel dans une liste en utilisant PowerShell (fr-FR)</a> </li></ul>
+
+</div>
+    
+    

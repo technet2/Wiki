@@ -1,0 +1,82 @@
+---
+layout: default
+title: SQL Server 2012 Reporting Services Native Mode Configuration - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong>If SQL Server Reporting Services (SSRS) is setup in Native mode along with SQL Server database engine, the configuration is automatically done and SSRS is ready for use.
+</strong>SSRS Setup options can be reviewed at <a href="http://social.technet.microsoft.com/wiki/contents/articles/15183.ji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SQL Server 2012 Reporting Services Native Mode Configurationsql-server-2012-reporting-services-setup-considerations.aspx">
+http://social.technet.microsoft.com/wiki/contents/articles/15183.sql-server-2012-reporting-services-setup-considerations.aspx</a></p>
+<p><strong>In scenarios where SSRS is installed separately from SQL Server database engine, or the option to setup but not configure is selected, SSRS needs to be configured before first use</strong>. After configuration, SSRS can be verified using the steps
+ mentioned in Verify a Reporting Services Installation at <a href="http://msdn.microsoft.com/en-US/library/ms143773.aspx">
+http://msdn.microsoft.com/en-US/library/ms143773.aspx</a></p>
+<p>In this article we will review the <strong>steps that have to be completed for a Native mode SSRS installation</strong>.</p>
+<p>1. <strong>Verify setup folders </strong>- SSRS is usually installed to the location &lt;DesiredPath&gt;\Microsoft SQL Server\MSRS11.&lt;instancename &gt;\Reporting Services\. File Locations for Default and Named Instances of SQL Server at
+<a href="http://msdn.microsoft.com/en-us/library/ms143547.aspx">http://msdn.microsoft.com/en-us/library/ms143547.aspx</a> shares this info -
+</p>
+<p>The registry hive is created under HKLM\Software\Microsoft\Microsoft SQL Server\&lt;Instance_ID&gt; for instance-aware components. For example,<br />
+•<br />
+HKLM\Software\Microsoft\Microsoft SQL Server\MSRS11.MyInstance</p>
+<p>The registry also maintains a mapping of instance ID to instance name. Instance ID to instance name mapping is maintained as follows:<br />
+•<br />
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Microsoft SQL Server\Instance Names\RS] &quot;InstanceName&quot;=&quot;MSRS11&quot;
+</p>
+<p>In HKLM\Software\Microsoft\Microsoft SQL Server\MSRS11.MyInstance\Setup we can find SQLPath which will show the location of the installed components.</p>
+<p><a href="http://support.microsoft.com/kb/938245">http://support.microsoft.com/kb/938245</a> has this tip regarding 32 bit installations - If you are running a 32-bit version of SQL Server 2005 Reporting Services on a 64-bit Windows operating system, locate
+ the following registry subkey: HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SQL Server\MSSQL.X\Setup</p>
+<p>2. <strong>Check whether the instance is shown when Reporting Services Configuration manager is opened</strong>. The contents of the registry in Instance Names\RS mentioned above will be shown. How to: Start Reporting Services Configuration Manager at
+<a href="http://msdn.microsoft.com/en-us/library/ms159644.aspx">http://msdn.microsoft.com/en-us/library/ms159644.aspx</a> shows how to invoke it.</p>
+<p>3. <strong>Use the Reporting Services Configuration manager to ensure valid values are present in each of the tabs on the left side</strong>. Reporting Services Configuration Manager (Native Mode) at
+<a href="http://msdn.microsoft.com/en-us/library/bb934490.aspx">http://msdn.microsoft.com/en-us/library/bb934490.aspx</a> covers the common tasks. The essential ones are &quot;Service Account&quot;, &quot;Web Service URL&quot;, &quot;Report Manager URL&quot;, and &quot;Database&quot;.</p>
+<p><strong>Service Account - <br />
+</strong>Local Service is the least privileged, Local System is highly privileged. For that reason, we can avoid both. When deciding between NetworkService and domain accounts, check whether Kerberos delegation is going to be needed and what are the SPNs present
+ for that. Refer <a href="http://social.technet.microsoft.com/wiki/contents/articles/1406.kerberos-for-microsoft-bi-en-us.aspx">
+http://social.technet.microsoft.com/wiki/contents/articles/1406.kerberos-for-microsoft-bi-en-us.aspx</a> for Kerberos setup.</p>
+<p><strong>Web Service URL, Report Manager URL - <br />
+</strong>Pick a site/name that does not conflict with existing ones. If the server has multiple NIC cards, use Advanced option to bind with specific IP addresses rather than All Assigned, if it did not work at first. Before implementing certificates, ensure
+ it works without SSL. </p>
+<p>When implementing certificates, Configure SSL Connections on a Native Mode Report Server at
+<a href="http://msdn.microsoft.com/en-us/library/ms345223(v=sql.110).aspx">http://msdn.microsoft.com/en-us/library/ms345223(v=sql.110).aspx</a> and
+<a href="http://support.microsoft.com/kb/2418246">http://support.microsoft.com/kb/2418246</a> could be used.</p>
+<p>Once these have been set, use this from the command prompt to verify that SSRS is listening on the correct server name and port - netsh http show urlacl
+</p>
+<p><strong>Database - <br />
+</strong>While creating a SSRS catalog database. ensure existing database is not selected, unless sure of the operation being performed. Change Database is used to provide server name, create or select existing database and provide the credentials to be used
+ for the connection.</p>
+<p>Encryption Keys - When all the buttons are enabled, the SSRS instance is connected to its database and is usually working fine. When only Restore and Delete options are enabled, it indicates either a database connectivity issue or an issue with the encryption
+ key. In case of new databases, if the database connectivity seems alright, Delete option can be taken from the Encryption Key tab. Deleting encrypted content would not be advisable on anything but new installs of Reporting Services –
+<br />
+Delete and Re-create Encryption Keys at <a href="http://msdn2.microsoft.com/en-us/library/ms156010.aspx">
+http://msdn2.microsoft.com/en-us/library/ms156010.aspx</a> indicates this - </p>
+<p>Deleting the encryption keys removes all symmetric key information from the report server database and deletes any encrypted content. All unencrypted data is left intact; only encrypted content is removed. When you delete the encryption keys, the report
+ server re-initializes itself automatically by adding a new symmetric key. The followinare enabled, the SSRS instance is connected to its database and is usually working fine. Wg occurs when you delete encrypted content:<br />
+•<br />
+Connection strings in shared data sources are deleted. Users who run reports get the error &quot;The ConnectionString property has not been initialized.&quot;</p>
+<p>•<br />
+Stored credentials are deleted. Reports and shared data sources are reconfigured to use prompted credentials.</p>
+<p>•<br />
+Reports that are based on models (and require shared data sources configured with stored or no credentials) will not run.</p>
+<p>•<br />
+Subscriptions are deactivated.</p>
+<p>&nbsp;Once you delete encrypted content, you cannot recover it. You must re-specify connection strings and stored credentials, and you must activate subscriptions.
+</p>
+<p><strong>Scale-out Deployment:<br />
+</strong>Lists all the SSRS servers that are connected to the same catalog database. It also includes key information from a Encryption Key restore operation. Multiple keys are only okay when scale-out architecture is in use.</p>
+<p><strong>Issues?</strong><br />
+Troubleshooting Configuration Problems at <a href="http://msdn.microsoft.com/en-us/library/ms159704.aspx">
+http://msdn.microsoft.com/en-us/library/ms159704.aspx</a> helps solve some known issues. Report Server Service Trace Log&nbsp; and Report Server HTTP Log can provide clues, if still stuck.<br />
+<br />
+<strong>Thanks</strong></p>
+<p>Hope this helps configure SSRS in Native mode. Do share your questions or if there&#39;s any area needing more attention or references, please add those topics to the comments below. Thanks for choosing Microsoft.</p>
+
+</div>
+    
+    

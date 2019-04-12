@@ -1,0 +1,84 @@
+---
+layout: default
+title: Copying ACEs in the .NET Framework (PowerShell) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>A PowerShell script to copy&nbsp;access entries&nbsp;from one user to another user might look something like this:</p>
+<hr />
+<p>$oldUser = [System.Security.Principal.NTAccount] &#39;DOMAIN\User01&#39;<br />
+$newUser = [System.Security.Principal.NTAccount] &#39;DOMAIN\User02&#39;<br />
+<br />
+$acl = Get-Acl -Path &#39;C:\Program Files&#39;<br />
+$accessLisss="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="fullt = $acl.Access | Where-Object { $_.IsInherited -eq $false&nbsp;}<br />
+<br />
+foreach ($ace in $accessList) {<br />
+&nbsp;&nbsp;&nbsp; if ($ace.IdentityReference.Translate([System.Security.Principal.NTAccount]) -eq $oldUser) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$newRule = New-Object&nbsp;&#39;System.Security.AccessControl.FileSystemAccessRule&#39; (<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$newUser,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$ace<span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">FileSystemRights</span><span class="pun" style="color:#666600;">,</span><span class="pun" style="color:#666600;"><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">InheritanceFlags</span><span class="pun" style="color:#666600;">,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">PropagationFlags</span><span class="pun" style="color:#666600;">,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">AccessControlType</span><span class="pln">&nbsp;</span><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$acl.AddAccessRule($newRule)<br />
+&nbsp;&nbsp;&nbsp; }<br />
+}<br />
+<br />
+$acl | Set-Acl</p>
+<hr />
+<p>The problem with this script is that you will eventually run into this type of error:<br />
+<br />
+New-Object : Exception calling &quot;.ctor&quot; with &quot;5&quot; argument(s): &quot;The value &#39;268435456&#39; is not valid for this usage of the type FileSystemRights.<br />
+Parameter name: fileSystemRights&quot;<br />
+<br />
+The reason for this is that the Win32 API&#39;s &quot;Access Mask&quot; definitions&nbsp;and the .NET Framework FileSystemRights enumerated type don&#39;t contain all of the same flags.&nbsp; Specifically, the GENERIC_READ, GENERIC_WRITE, GENERIC_EXECUTE and GENERIC_ALL values from the
+ Win32 API cannot be cast to a [System.Security.AccessControl.FileSystemRights] value.&nbsp; See
+<a href="http://msdn.microsoft.com/en-us/library/aa374896(v=vs.85).aspx">http://msdn.microsoft.com/en-us/library/aa374896(v=vs.85).aspx</a>&nbsp;for details of the Win32 API access masks.<br />
+<br />
+The way to get around this is to use the AccessRuleFactory method on the FileSystemSecurity class.&nbsp; This method accepts an integer &quot;bitmask&quot; parameter, rather than only accepting values that will cast to a FileSystemRights value:&nbsp;
+<a href="http://msdn.microsoft.com/en-us/library/system.security.accesscontrol.filesystemsecurity.accessrulefactory.aspx">
+http://msdn.microsoft.com/en-us/library/system.security.accesscontrol.filesystemsecurity.accessrulefactory.aspx</a><br />
+<br />
+Because you have no control over what the ACLs of objects might be (and whether they will contain the GENERIC_* values from the Win32 API), you should use the AccessRuleFactory&nbsp;method any time you&#39;re trying to create a new access rule
+<em>based on the rights defined in&nbsp;an ACE&nbsp;that you read from an object</em>.&nbsp; If you are hard-coding the rights in a new ACE, using the FileSystemAccessRule constructor with a valid FileSystemRights value is the preferred approach.<br />
+<br />
+This information applies to the SACL and to&nbsp;other securable objects as well (ActiveDirectorySecurity, RegistrySecurity, etc);&nbsp; each has an AccessRuleFactory and AuditRuleFactory method in the .NET Framework.<br />
+<br />
+The revised sample script looks like this:</p>
+<hr />
+<p>$oldUser = [System.Security.Principal.NTAccount] &#39;DOMAIN\User01&#39;<br />
+$newUser = [System.Security.Principal.NTAccount] &#39;DOMAIN\User02&#39;<br />
+<br />
+$acl = Get-Acl -Path &#39;C:\Program Files&#39;<br />
+$accessList = $acl.Access | Where-Object { $_.IsInherited -eq $false&nbsp;}<br />
+<br />
+foreach ($ace in $accessList) {<br />
+&nbsp;&nbsp;&nbsp; if ($ace.IdentityReference.Translate([System.Security.Principal.NTAccount]) -eq $oldUser) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>$newRule = $acl.AccessRuleFactory(</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$newUser,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$ace<span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">FileSystemRights</span><span class="pun" style="color:#666600;">,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><strong><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">IsInherited</span></strong><span class="pun" style="color:#666600;"><strong>,</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">InheritanceFlags</span><span class="pun" style="color:#666600;">,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">PropagationFlags</span><span&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$ace<span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">FileSystemRights</span><span class="pun" style="color:#666600;">,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nb class="pun" style="color:#666600;">,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="pln">$ace</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">AccessControlType</span><span class="pln">&nbsp;</span><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$acl.AddAccessRule($newRule)<br />
+&nbsp;&nbsp;&nbsp; }<br />
+}<br />
+<br />
+$acl | Set-Acl</p>
+
+</div>
+    
+    

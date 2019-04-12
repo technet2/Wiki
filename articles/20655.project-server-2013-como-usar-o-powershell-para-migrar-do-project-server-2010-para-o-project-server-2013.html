@@ -1,0 +1,83 @@
+---
+layout: default
+title: Project Server 2013 - Como usar o PowerShell para migrar do Project Server 2010 para o Project Server 2013 - artigos TechNet - Brasil (Português) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+Este artigo foi originalmente escrito&nbsp;<a href="http://social.technet.microsoft.com/profile/michael%20wharton,%20mvp/">Michael Wharton</a> na língua inglesa intitulado por
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/13938.how-to-use-powershell-to-migrate-project-server-2010-to-2013.aspx">
+How to Use PowerShell to Migrate Project Server 2010 to 2013</a>.<br />
+<div><br />
+&nbsp;</div>
+<div><span class="hps"><strong>Descrição</strong></span><span>: O script</span> <span class="hps">
+PowerShell</span> aqui descrito visa&nbsp;<span class="hps">automatizar</span> <span class="hps">
+a migração do</span> <span class="hps">Project Server 2010</span> <span class="hps">
+para o Project Server</span> <span class="hps">2013.</span><br />
+<span class="hps"><br />
+Este scritp é a versão 1.0, ou seja, o</span>&nbsp;<span class="hps">primeiro</span> <span class="hps">
+projeto</span> <span class="hps">de</span> <span class="hps">migração</span> utilizando o
+<span class="hps">PowerScript</span><span>.</span> <br />
+<span class="hps"><br />
+Laboratórios de teste e versões posteriores</span> <span class="hps">podem&nbsp;verificar&nbsp;</span><span class="hps">a integridade&nbsp;</span><span class="hps">do script.</span><br />
+<br />
+<span class="hps">Primeira disposição</span> de <span class="hps">um site do PWA</span><span>.</span>
+<br />
+<span class="hps"><br />
+<strong>O script</strong></span><strong> a seguir <span class="hps">irá migrar e&nbsp;atualizar o</span>
+<span class="hps">PWA</span> <span class="hps">com um novo</span> <span class="hps">
+banco de dados</span></strong><br />
+<br />
+$URL = &quot;<a href="http://betasp2013/" target="_blank"><span>http://betasp2013/
+<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</span></a>&quot;<br />
+$PWA = &quot;<a href="http://betasp2013/PWA" target="_blank"><span>http://BetaSP2013/PWA
+<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</span></a>&quot;<br />
+$DatabaseServer = &quot;WCC035SQL&quot;<br />
+$ContentDBname = &quot;PWA_WSS_Content&quot;<br />
+$DraftDBname = &quot;PWA_Draft&quot;<br />
+$ArchiveDBname = &quot;PWA_Archive&quot;<br />
+$PublishedDBname = &quot;PWA_Published&quot;<br />
+$ReportingDBname = &quot;PWA_Reporting&quot;<br />
+$ProjectServiceDBname = &quot;PWA_ProjectWebApp&quot;<br />
+$LCID = &quot;20&quot; # I picked a number that wasn&#39;t used in SQL Server<br />
+<br />
+<br />
+<strong><span class="hps">Atualize</span> <span class="hps">o seguinte</span></strong><br />
+<br />
+Set-ExecutionPolicy &quot;Unrestricted&quot;<br />
+Add-PSSnapin Microsoft.SharePoint.PowerShell -ErrorAction SilentlyContinue<br />
+Get-SPContentDatabase -WebApplication $URL | Dismount-SPContentDatabase -WhatIf<br />
+Mount-SPContentDatabase -Name $ContentDBname -DatabaseServer $DatabaseServer -WebApplication $URL -NoB2BSiteUpgrade<br />
+<br />
+<strong><span class="hps">Atualize o tipo de autenticação&nbsp;</span><span class="hps">para</span>
+<span class="hps">Claims</span> <span class="hps">Authentication</span></strong>&nbsp;<br />
+<em><span class="hps">Isso pode não</span> <span class="hps">ser</span> <span class="hps">
+necessário porque</span> <span class="hps">o padrão é</span> <span class="hps">a autenticação de declarações.</span></em><br />
+<br />
+$WA=Get-SPWebApplication $URL<br />
+$WA.MigrationUserToClaimsUser($true)<br />
+$WA.MigrateUsers($true)<br />
+<br />
+Upgrade-SPSite $PWA -VersionUpgrade<br />
+<br />
+<strong><span class="hps">Cria um novo</span> <span class="hps">serviço de Project no</span><span class="hps">&nbsp;banco de dados.</span></strong><br />
+<br />
+ConvertTo-SPProjectDatabase -WebApplication $URL -Dbserver $Databaseserver -LCID $LCID -ProjectServiceDbname $ProjectServiceDBname -ArchiveDbname $ArchiveDBname -DraftDbname $DraftDBname -PublishedDbname $PublishedDBname -ReportingDbname $ReportingDBname<br />
+Mount-SPProjectDatabase $ProjectServiceDBname -ServiceApplication &quot;Project Service Application&quot;<br />
+<br />
+<strong><span class="hps">Desmonte o</span> <span class="hps">atual</span> <span class="hps">
+instância do Project</span> <span class="hps">Web</span></strong><br />
+<br />
+Dismount-SPProjectWebInstance -SiteCollection $PWA<br />
+Mount the Project Web Instance with converted Project Service DB<br />
+Mount-SPProjectWebInstance -SiteCollection $PWA -DatabaseName $ProjectServiceDBname<br />
+<br />
+Upgrade-SPProjectWebInstance $PWA</div>
+<br />
+
+</div>
+    
+    

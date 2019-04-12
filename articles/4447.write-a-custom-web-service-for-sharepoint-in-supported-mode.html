@@ -1,0 +1,173 @@
+---
+layout: default
+title: Write a Custom Web Service for SharePoint in Supported Mode - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="titlji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1e">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#How_SharePoint_process_web_services">How SharePoint process web services</a></li><li class="hierarchy-item"><a href="#Create_Custom_Web_Service_for_SharePoint">Create Custom Web Service for SharePoint</a></li><li class="hierarchy-item"><a href="#More_Information">More Information</a></li><li class="hierarchy-item"><a href="#Source_code">Source code</a></li><li class="hierarchy-item"><a href="#Demo">Demo</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>If you have read my comments on the <strong><em>Writing Custom Web Service for SharePoint, Is it supported?</em></strong> (<a title="http://blog.libinuko.com/2011/02/16/sharepoint-writing-custom-web-service-for-sharepoint-is-it-supported/" href="http://blog.libinuko.com/2011/02/16/sharepoint-writing-custom-web-service-for-sharepoint-is-it-supported/">http://blog.libinuko.com/2011/02/16/sharepoint-writing-custom-web-service-for-sharepoint-is-it-supported/</a>)
+ ; you may have already created standard ASPNET web services. It is working, but with some limitation:</p>
+<ol>
+<li>You can not have path virtualization <br />
+Virtualization is one of SharePoint’s technique provided by SPVirtualPath provider, that enable virtualization of your web service path. For example, list.asmx will be available for
+<a href="http://mysite.com/_vti_bin/lists.asmx">http://mysite.com<strong>/_vti_bin/lists.asmx</strong></a> , or
+<a href="http://mysite.com/sites/myothersitecollection/_vti_bin/lists.asmx">http://mysite.com/sites/myothersitecollection<strong>/_vti_bin/lists.asmx</strong></a>. The site collection has been virtualized by SharePoint.
+<br />
+Without virtualization any web service consumer will have to access to the same path, usually in the root; for example
+<a href="http://%3cwebapps%3e/_services/mywebservice.asmx">/_services/mywebservice.asmx&quot;&gt;http://&lt;webapps&gt;/_services/mywebservice.asmx</a>
+</li><li>You can not have SPContext <br />
+SPContext is very powerful object in SharePoint development. Using this context, we can retrieve current SharePoint context without having to instantiate it. For example, you can get current SPWeb by calling SPContext.Current.Web – and you don’t need to dispose
+ it (in fact you’re not suppose to dispose it). Still using SPContext you can have direct access to list and everything under SharePoint.
+<br />
+Without having direct access to SPContext, you have to instantiate SPWeb or SPSite using normal constructor with URL as parameter. It means new SPSite/SPWeb thread in the server memory, and you have to dispose it once you’ve done working with it.
+</li></ol>
+<p>So, how can we write custom web service for SharePoint in supported mode?</p>
+<p>Before we start, we have to understand SharePoint architecture and how does the processing works for web services. I take following picture from
+<a href="http://msdn.microsoft.com/en-us/library/bb892189(v=office.12).aspx">SharePoint Architecture</a> in MSDN. It describe how SharePoint process our request. There is SPHttpApplication which has SPRequestModule and any additional ASP.NET Module; and before
+ the request returned back to the user SPHttpHandler is doing the job.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0020.WSS1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0020.WSS1.png" style="border:0px solid currentColor;" /></a></p>
+<p>&nbsp;</p>
+<h1><a name="How_SharePoint_process_web_services"></a>How SharePoint process web services</h1>
+<p>&nbsp;</p>
+<p>If we dig into into the process on how SharePoint process request to web services in _vti_bin.
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3666.wss2.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2772.ws2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2772.ws2.png" width="554" height="183" style="border:0px solid currentColor;width:577px;height:200px;" /></a><a href="http://social.technet.microsoft.com/wiki/contents/articles/$image[9].png"></a></p>
+<p>There are 3 scenarios of http request to the web services,</p>
+<ol>
+<li>Disco request, identified by suffix ?DISCO in the web service address. For example, */_vti_bin/list.asmx?Disco
+</li><li>WSDL request, identified by suffix ?WSDL in the web service address. For example, */_vti_bin/list.asmx?Wsdl
+</li><li>Web service post request. For example, */_vti_bin/list.asmx?op=GetListItems </li></ol>
+<p>Every request will be processed by SPHttpHandler (SharePoint) and ScriptHandlerFactory (system.web.extension), but the SPHttpHandler will be selective only for Disco and Wsdl request.
+</p>
+<p>On disco/wsdl request, SPHttpHandler will transfer the request to wsdisco.aspx or wswsdl.aspx using
+<strong>Server.Execute</strong> operation. This operation ensure that wsdisco.aspx/wswsdl.aspx is receiving same request object. wsDISCO.aspx or wsWSDL.aspx will then instantiate SharePoint Context object. Any *.aspx will be successfully instantiate SharePoint
+ context object because they are managed by SPHttpApplication and hence it also impacted by SPVirtualPath provider from SharePoint which will activate path virtualization.
+</p>
+<p>Next, wsDISCO.aspx will transfer the request to the &lt;service&gt;DISCO.aspx and wsWSDL.aspx will transfer to the &lt;service&gt;WSDL.aspx – using Server.Execute operation. So here we have seen 2 transfer operation. At the end, the result is correct WSDL/DISCO request.
+ The correct WSDL/DISCO will point to the correct virtual path of the request. <em>
+(Remember how do you create &lt;service&gt;disco.aspx / &lt;service&gt;wsdl.aspx) </em></p>
+<p>When a consumer use the contract and tries to consume it. The SPHttpHandler will no longer intercept the request, but the normal ScriptHandlerFactory from System.Web.Extensions. However with the correct path in disco/wsdl, now the asmx now have the ability
+ to look into current context from SharePoint. And hence you will be able to use SPContext.Current.Web in custom web services.</p>
+<h1><a name="Create_Custom_Web_Service_for_SharePoint"></a>Create Custom Web Service for SharePoint</h1>
+<p><strong>Create Visual Studio Solution</strong></p>
+<ol>
+<li>Open Visual Studio 2010 </li><li>Create Blank Visual Studio Solution. Give name for example DemoCustomWS. </li></ol>
+<p><strong>Create ASP.NET Web Services</strong></p>
+<ol>
+<li>Add ASP.NET Web Service Application project. Give name for example CustomWS </li><li>Open Service1.asmx.cs and change the implementation accordingly. For example change the namespace, class name etc.
+</li><li>Open CustomWS project property and sign the assembly </li><li>Build and open the new web service in the browser </li><li>Open command prompt and run disco againts the web service url.<br />
+<br />
+&nbsp;&nbsp;&nbsp; <em>disco </em><a href="http://webserviceurl/customservice.asmx"><em>http://webserviceurl/customservice.asmx</em></a><br />
+<br />
+The results are <strong>CustomService.disco</sCurrent.Web in custom web services.</p>
+<h1><a name="Create_Custom_Web_Service_for_SharePoint"></a>Create Custom Web Service for SharePoint</h1>
+<p><strong>Create Visual Studio Solution</strong></p>
+<ol>
+<li>Open Visual Studio 2010 </li><li>Create Blank Visual Studio Solution. Give name for example DemoCustomWS. </li></ol>
+<p><strong>Create ASP.NET Web Services</strong></p>
+<ol>
+<trong> and <strong>CustomService.wsdl</strong> which will be useful later in this process.
+</li><li>Still in the command prompt, execute&nbsp;<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp; <em>sn -T DemoCustomWS.dll<br />
+</em></li><li>Open Service1.asmx markuppage, and change the markup accordingly using the PublicKeyToken from previous operation.<br />
+<em>For example:&nbsp;&nbsp;<br />
+</em>&nbsp;&nbsp; <em>&lt;% WebService Language=&quot;C#&quot; Class=&quot;CustomWS.CustomService, CustomWS, PublicKeyToken=2938173ce&quot; %&gt;</em>
+</li></ol>
+<p><strong>Create SharePoint 2010 Project</strong></p>
+<ol>
+<li>Add Empty SharePoint Project. Give a name for example DemoWS. </li><li>Open DemoWS project property and sign the assembly. </li><li>Inside DemoWS open package designer and add Assembly from project output. </li><li>Select CustomWS project deploy in the <strong>GAC</strong> </li><li>Inside DemoWS add SharePoint Mapped Folder, select <strong>ISAPI\CustomWS</strong>. If the folder is not available, you can create ISAPI\CustomWS under SharePoint hive.
+</li><li>Add CustomService.disco and CustomService.wsdl to the CustomWS folder. </li><li>Rename CustomService.disco into CustomServiceDisco.aspx and CustomService.wsdl into CustomServiceWSDL.aspx
+</li><li>Change the implementation of CustomServiceDisco.aspx and CustomServiceWsdl.aspx in order to support path virtualization (<em>See Writing Custom Web Services for SharePoint Products and Technology</em>)
+</li><li>Add CustomService.asmx file to the CustomWS folder in DemoWS project. </li><li>Inside DemoWS add SharePoint Mapped folder, select <strong>ISAPI</strong> </li><li>Copy <strong>spdisco.aspx</strong> from ISAPI folder in SharePoint hive into the mapped folder ISAPI in the project.
+</li><li>Rename spdisco.aspx into<strong> spdisco.disco.aspx</strong>. </li><li>Create copy of spdisco.disco.aspx and rename it into <strong>DemoWS.spdisco.aspx</strong>
+</li><li>Remove all lines from DemoWS.spdisco.aspx leaving only registration for the new web services
+</li><li>Add new HttpHandler class to the DemoWS , the most important is&nbsp; on the ProcessRequest it will merge original SPDISCO.aspx and DemoWS.SPDISCO.aspx<br />
+<br />
+<div class="reCodeBlock">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">01.</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">void</code> <code>
+ProcessRequest(HttpContext context) </code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">02.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">03.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>StringWriter
+ sw1 = </code><code style="font-weight:bold;">new</code> <code>
+StringWriter(); </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">04.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>//
+ Original - cop spdisco.aspx </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">05.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>context.Server.Execute(</code><code style="color:blue;">&quot;spdisco.disco.aspx&quot;</code><code>,
+ sw1); </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">06.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlDocument
+ spdiscoXml = </code><code style="font-weight:bold;">new</code>
+<code>XmlDocument(); </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">07.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>spdiscoXml.LoadXml(sw1.ToString());
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>var
+ files = Directory.GetFiles(context.Server.MapPath(</code><code style="color:blue;">&quot;&quot;</code><code>),
+</code><code style="color:blue;">&quot;*.spdisco.aspx&quot;</code><code>);
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">foreach</code>
+<code>(var file </code><code style="font-weight:bold;">in</code>
+<code>files) </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">12.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>StringWriter
+ sw2 = </code><code style="font-weight:bold;">new</code> <code>
+StringWriter(); </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>context.Server.Execute(System.IO.Path.GetFileName(file),
+ sw2); </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">14.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlDocument
+ otherSPDiscoXml = </code><code style="font-weight:bold;">new</code>
+<code>XmlDocument(); </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">16.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>otherSPDiscoXml.LoadXml(sw2.ToString());
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">17.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">foreach</code>
+<code>(XmlNode importedNode </code><code style="font-weight:bold;">in</code>
+<code>otherSPDiscoXml.DocumentElement.ChildNodes) </code>
+</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>spdiscoXml.DocumentElement.AppendChild(spdiscoXml.ImportNode(importedNode,
+</code><code style="font-weight:bold;">true</code><code>));
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">20.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">21.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">22.</code><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:rightbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>spdiscoXml.DocumentElement.AppendChild(spdiscoXml.ImportNode(importedNode,
+</code><code style="font-weight;padding-right:0.3em;float:left;display:block;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>context.Response.Write(String.Format(</code><code style="color:blue;">&quot;&lt;?xml
+ version=&#39;1.0&#39; encoding=&#39;utf-8&#39; ?&gt; {0}&quot;</code><code>, spdiscoXml.InnerXml));
+</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+</div>
+</li><li>Inside DemoWS add SharePoint Mapped folder, select <strong>CONFIG</strong> </li><li>Add webconfig.demows.xml to the CONFIG folder. Inside webconfig.demows.xml we will register configuration changes for the web config.
+</li></ol>
+<p>Finally you can build and deploy the solution.</p>
+<h1><a name="More_Information"></a>More Information</h1>
+<ol>
+<li>Writing Custom Web Services for SharePoint Products and Technology (<a href="http://msdn.microsoft.com/en-us/library/dd583131(v=office.11).aspx">http://msdn.microsoft.com/en-us/library/dd583131(v=office.11).aspx</a>)
+</li><li>SharePoint Architecture (<a title="http://msdn.microsoft.com/en-us/library/bb892189(v=office.12).aspx" href="http://msdn.microsoft.com/en-us/library/bb892189(v=office.12).aspx"><span>http://msdn.microsoft.com/en-us/library/bb892189(v=office.12).aspx</span></a>
+ ) </li><li>Architectural Overview of Windows SharePoint Services (<a title="http://msdn.microsoft.com/en-us/library/dd583133(v=office.11).aspx" href="http://msdn.microsoft.com/en-us/library/dd583133(v=office.11).aspx"><span>http://msdn.microsoft.com/en-us/library/dd583133(v=office.11).aspx</span></a>)
+ &nbsp; </li><li>Modifying Built-In SharePoint Files (<a title="http://msdn.microsoft.com/en-us/library/bb803457(v=office.12).aspx" href="http://msdn.microsoft.com/en-us/library/bb803457(v=office.12).aspx"><span>http://msdn.microsoft.com/en-us/library/bb803457(v=office.12).aspx</span></a>)
+</li></ol>
+<h1><a name="Source_code"></a>Source code</h1>
+<ol>
+<li>SharePoint 2010 and Visual Studio 2010 Sample Code : Demo Custom WS (<a href="http://code.msdn.microsoft.com/Writing-SharePoint-Web-in-cb9de1be">http://code.msdn.microsoft.com/Writing-SharePoint-Web-in-cb9de1be</a>&nbsp;)
+</li></ol>
+<h1><a name="Demo"></a>Demo</h1>
+<ol>
+<li><script src="https://i1.social.s-msft.com/wiki/rrcontent/18839adc85fee1b0971fa3728f8f3979-b1af1b7835ad549c70d465c5efb07b5e-RequestReducedScript.js" type="text/javascript" ></script><div id="video_035026be-c95d-42bc-9677-c56d796be537"><noscript><embed src="https://www.youtube.com/v/YBaIJvwmB44?fs=1&amp;rel=0" type="application/x-shockwave-flash" wmode="transparent" width="550" height="330" allowfullscreen="true"></embed></noscript></div><script type="text/javascript">
+cs_setInnerHtml('video_035026be-c95d-42bc-9677-c56d796be537','<embed src=\"https:\/\/www.youtube.com\/v\/YBaIJvwmB44?fs=1&amp;rel=0\" type=\"application\/x-shockwave-flash\" wmode=\"transparent\" width=\"550\" height=\"330\" allowfullscreen=\"true\"><\/embed>');
+</script> </li></ol>
+
+</div>
+    
+    

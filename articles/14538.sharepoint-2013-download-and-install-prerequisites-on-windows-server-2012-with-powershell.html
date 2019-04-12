@@ -1,0 +1,141 @@
+---
+layout: default
+title: SharePoint 2013&#58; Download and Install Prerequisites on Windows Server 2012 with PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Install-SPTwentyThirteenRolesFeatures_ps1">Step 1: Install-SP2013RolesFeatures.ps1</a></li><li class="hierarchy-item"><a href="#Download-SPTwentyThirteenPreReqFiles_ps1">Step 2: Download-SP2013PreReqFiles.ps1</a></li><li class="hierarchy-item"><a href="#Install-SPTwentyThirteenPreReqFiles_ps1">Step 3: Install-SP2013PreReqFiles.ps1</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<h2><a name="Introduction"></a>Introduction</h2>
+<p style="font-size:13px;"><strong style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;">Download the PowerShell Scripts from the TechNet Gallery -
+</strong><a href="http://gallery.technet.microsoft.com/DownloadInstall-SharePoint-e6df9eb8" style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;font-weight:bold;">Download and Install SharePoint 2013 Prerequisites on Windows Server 2012</a><br />
+<br />
+<span style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;">The intent of these scripts is to assist those who are required to perform an &#39;offline&#39; Prerequisite Installation of SharePoint 2013 on Windows Server 2012. It is also for those who wish to learn more about
+ the Prerequisite installation process and/or perform the Prerequisite installation manually. It is intended that you execute each script in order. The reasons for breaking up the scripts into three different scripts are explained in each section below.</span></p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">There are three scripts within the .zip file download:</p>
+<ol style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">Install-SP2013RolesFeatures.ps1 </li><li style="padding-bottom:10px;">Download-SP2013PreReqFiles.ps1 </li><li style="padding-bottom:10px;">Install-SP2013PreReqFiles.ps1 </li></ol>
+<p style="font-size:13px;"><strong style="font-size:10px;background-color:#ffffff;"><span style="text-decoration:underline;font-family:&#39;Segoe UI&#39;;font-size:13px;">Please read this documentation completely prior to using my scripts. There is a lot of insight
+ into the PrerequisiteInstaller.exe process that you should know in these instructions.</span></strong></p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">NOTE THAT THESE SCRIPTS APPLY ONLY TO WINDOWS SERVER 2012. DO NOT USE THEM ON A WINDOWS SERVER 2008 R2 SP1 SERVER.</p>
+For complete insight into the potential issues and&nbsp;solutions addressed&nbsp;by these scripts related to installing the SharePoint 2013 Prerequisites on&nbsp;Windows Server 2012 in an offline environment see&nbsp;<strong><a href="http://social.technet.microsoft.com/wiki/contents/articles/14582.install-sharepoint-2013-prerequisites-offline-or-manually-on-windows-server-2012-a-comprehensive-guide.aspx">Install
+ SharePoint 2013 Prerequisites Offline or Manually on Windows Server 2012 - A Comprehensive Guide</a></strong> on the TechNet Wiki
+<br />
+<br />
+<h2><a name="Install-SPTwentyThirteenRolesFeatures_ps1"></a>Step 1: Install-SP2013RolesFeatures.ps1</h2>
+<p style="font-size:13px;"><span style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;">This script installs all of the necessary Windows Server 2012 Roles/Features to prepare for a SharePoint 2013 installation. This script was tested and executed on a freshly installed
+ Windows 2012 server after the adding it to my domain and configuring the network adapter with a static IP address. Note that the Roles/Features installed are exactly the same ones Microsoft uses in their Prerequisite install app (in fact, in the same order
+ they execute the Add-WindowsFeature cmdlet).&nbsp;</span><span style="background-color:#ffffff;font-size:13px;">This script supports installing the Roles/Features &#39;Online&#39; with an Internet connection and &#39;Offline&#39; without an Internet connection.</span></p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Windows Server 2012 Environment Assumptions:</span></p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">This script assumes (and does not check) that the following Windows Server 2012 Features are installed (they should installed be by default in Windows Server 2012):</p>
+<ul style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">.NET Framework 4.5 Features (NET-Framework-45-Features)
+</li><li style="padding-bottom:10px;">.NET Framework 4.5 Features &gt; .NET Framework 4.5 (NET-Framework-45-Core)
+</li><li style="padding-bottom:10px;">Windows PowerShell (PowerShellRoot)-Windows PowerShell &gt; Windows PowerShell 3.0 (PowerShell)
+</li></ul>
+<p style="font-size:13px;"><span style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;">Please be sure that the RTM versions (i.e. no CTP versions) are installed in your environment prior to running this script.</span><br />
+<br />
+</p>
+<p style="font-size:10px;"><span style="text-decoration:underline;font-size:13px;">Are you installing the Roles/Features &#39;Online&#39; or &#39;Offline&#39;?</span></p>
+<ul style="font-size:10px;">
+<li><span style="font-family:&#39;Segoe UI&#39;;font-size:13px;">If your server is &#39;Online&#39; and you use the PrerequisiteInstaller.exe (i.e. out of the box), it will execute a PowerShell script to install the necessary Roles/Features to configure Windows Server 2012
+ for SharePoint 2013. Part of the (PowerShell) Add-WindowsFeature installation installs the NET-Framework-Core feature which is .NET 3.5. This installation requires binaries and other files that are not included by default in Windows Server 2012. This requires
+ Windows Update to download/install these files and an Internet connection. There is no way (that I have found - please correct me if I am wrong) around this. You must be &#39;Online&#39; for the &quot;Configuring Application Server Role, Web Server &nbsp;(IIS Role)&quot; phase of
+ the PrerequisiteInstaller.exe to successfully work.</span> </li><li><span style="font-family:&#39;Segoe UI&#39;;font-size:13px;">If your server is &#39;Offline&#39; the&nbsp;&quot;Configuring Application Server Role, Web Server &nbsp;(IIS Role)&quot; phase of the PrerequisiteInstaller.exe will not work - this also means that manually installing the Roles/Feat PowerShell script to install the necessary Roles/Features to configure Windows Server 2012
+ for SharePoint 2013. Part of the (PowerShell) Adures
+ will not work (without the Windows Server 2012 installation media - keep reading). You&#39;ll need to do this manually. Even if you are &#39;Online&#39;, installing the Windows Server 2012 Roles/Features for SharePoint 2013 is faster if you install them &#39;Offline&#39; as you
+ bypass the Windows Update download part of the process.&nbsp;</span>
+<ul>
+<li><span style="font-family:&#39;Segoe UI&#39;;font-size:13px;">If you intend on using this script to install the Windows 2012 Roles/Features for SharePoint 2013 &#39;Offline&#39;, you need to have downloaded the Windows Server 2012 installation media from MSDN, TechNet or
+ Volume Licensing/Software Assurance etc. and have it available locally (either mounted, locally copied, or accessible via a UNC path) for this script to work.</span>
+</li></ul>
+</li></ul>
+<br />
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Why did I write this script?</span></p>
+<ul style="font-size:13px;padding-left:0px;margin-left:40px;">
+<li style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-bottom:10px;">To document and share the specific Roles/Features required by SharePoint 2013 and to demonstrate how to install them via PowerShell using the Add-WindowsFeature cmdlet.
+</li><li style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-bottom:10px;">To isolate the installation of the required Windows Server 2012 Roles/Features for SharePoint 2013. After you install the Roles/Features, your server will require a reboot. This script will
+ prompt you to reboot.&nbsp; </li><li style="padding-bottom:10px;"><span style="background-color:#ffffff;font-size:13px;">To enable individuals to install the&nbsp;specific Roles/Features required by SharePoint 2013 &#39;Offline&#39;.</span>
+</li></ul>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Procedure:</span></p>
+<ol style="font-size:13px;padding-left:0px;margin-left:40px;">
+<li style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-bottom:10px;">Download .zip file containing my scripts and extract the .ps1 files to c:\powershellscripts (or another directory of your choosing)
+</li><li style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-bottom:10px;"><strong>Run</strong> PowerShell as Administrator (you can do this from the Start Screen - right click PowerShell and select &quot;Run as Administrator&quot;
+</li><li style="font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-bottom:10px;">Ensure you have set your PowerShell execution policy to
+<strong>Remote-Signed</strong> (you can change it later if you need to) </li><li style="padding-bottom:10px;"><span style="background-color:#ffffff;font-size:13px;"><strong>Run</strong> this script: c:\powershellscripts\Install-SP2013RolesFeatures.ps1)&nbsp;</span>
+<ol>
+<li style="padding-bottom:10px;"><span style="background-color:#ffffff;font-family:&#39;Segoe UI&#39;;">When you run the script, it will prompt you to decide if you are installing the Roles/Features &#39;Online&#39; or &#39;Offline&#39;. If you select &#39;Online&#39; your server must have
+ an Internet Connection. In this case, Windows Update will be used to download then install binaries and other files related to the installation of .NET 3.5. If you select &#39;Offline&#39;, the script will prompt you for the location of your Windows Server 2012 installation
+ media. The binaries and other files required are included in this media. Enter the path (without a trailing slash) to the &#39;sources\sxs&#39; folder (for example D:\sources\sxs) of your Windows Server 2012 installation media. This can be a mounted ISO, a local drive
+ or a UNC path. Using the &#39;Offline&#39; method will install the Roles/Features faster than the &#39;Online&#39; method.&nbsp;</span>
+</li><li style="padding-bottom:10px;"><span style="background-color:#ffffff;font-family:&#39;Segoe UI&#39;;"></span><span style="background-color:#ffffff;font-family:&#39;Segoe UI&#39;;">The script will prompt you to Reboot your server after the Roles/Features have installed. You
+ can opt in or out, but I recommend that you opt-in and reboot your server as you need to in order for the Windows Features to be configured correctly.</span>
+</li></ol>
+</li></ol>
+<h2><a name="Download-SPTwentyThirteenPreReqFiles_ps1"></a>Step 2: Download-SP2013PreReqFiles.ps1</h2>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">This script downloads the ENGLISH versions of the required Prerequisite files for SharePoint 2013 on Windows Server 2012. It stores them in a directory of your choosing.</p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Why did I write this script?</span></p>
+<ul style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">To download the prerequisite files required by the SharePoint 2013 installer
+</li><li style="padding-bottom:10px;">So those who need to install SharePoint 2013 on an &#39;offline&#39; server that does not have an Internet connection can use the script to download the prerequisite files on a computer that does have an Internet connection. The files
+ can then be copied to the &#39;offline&#39; server to proceed with the SharePoint 2013 installation.&nbsp;
+</li></ul>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Procedure:</span></p>
+<ol style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;"><strong>Create</strong> a local directory where the script can save the SharePoint 2013 Pre-requisite downloads. For example, c:\sp2013downloads.
+</li><li style="padding-bottom:10px;"><strong>Run</strong> PowerShell as Administrator (you can do this from the Start Screen - right click PowerShell and select &quot;Run as Administrator&quot;
+</li><li style="padding-bottom:10px;"><strong>Run</strong> this script: c:\powershellscripts\Download-SP2013PreReqFiles.ps1. You will be required to define a path where the script can save the downloaded files. (e.g. c:\sp2013downloads)
+</li><li style="padding-bottom:10px;">Sit back and let the files download. </li></ol>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">&nbsp;</p>
+<h2><a name="Install-SPTwentyThirteenPreReqFiles_ps1"></a>Step 3: Install-SP2013PreReqFiles.ps1</h2>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">This script utilizes the PrerequisiteInstaller.exe included in the SharePoint 2013 installation media to install the necessary prerequisites for SharePoint 2013 on Windows Server 2012.</p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Assumptions:</span></p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;">You have downloaded the SharePoint 2013 installation media from MSDN, TechNet or Volume Licensing/Software Assurance etc.</p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Notes:</span></p>
+<ul style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">If you did not run my Install-SP2013RolesFeatures.ps1 script, this script will install the Windows Server 2012 Roles/Features necessary for SharePoint 2013. Just be aware that you&#39;ll need to run the script twice. The first run
+ will install the Roles/Features then you&#39;ll reboot. The second run is required to install the Prerequisites.
+</li><li style="padding-bottom:10px;">I intentionally am NOT running the PrerequisiteInstaller in unattended mode. This way, you&#39;ll see the Prerequisite installer screen and see what it is doing. I know there are other ways this can be launched and monitored, however,
+ this is the way I prefer to do it so there is an on-screen indication of what is going on with the installer.
+</li></ul>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Why did I write this script?</span></p>
+<ul style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">To assist those who wish to install the SharePoint 2013 Prerequisites &#39;offline&#39;
+</li><li style="padding-bottom:10px;">To demonstrate how you can install the SharePoint 2013 Prerequisites via PowerShell
+</li></ul>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><em>There are two different scenarios for how you can use this script</em></p>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Procedure - Scenario 1:</span></p>
+<ul style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">You have already executed Install-SP2013RolesFeatures.ps1 and rebooted your server
+</li><li style="padding-bottom:10px;">You have already executed Download-SP2013PreReqFiles.ps1
+</li></ul>
+<ol style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;"><strong>Copy</strong> the SharePoint 2013 installation media files into a local directory on your Windows Server 2012 server. For example, c:\sp2013.
+</li><li style="padding-bottom:10px;"><strong>Copy</strong> the Prerequisite files into the c:\sp2013\prerequisiteinstallerfiles directory.
+</li><li style="padding-bottom:10px;"><strong>Run</strong> PowerShell as Administrator (you can do this from the Start Screen - right click PowerShell and select &quot;Run as Administrator&quot;
+</li><li style="padding-bottom:10px;"><strong>Run</strong> this script: c:\powershellscripts\Install-SP2013PreReqFiles.ps1. You will be required to define a path where to your SharePoint 2013 installation media. (e.g. c:\sp2013). Watch the Prerequisite installer
+ tool install all of the prerequisites. </li><li style="padding-bottom:10px;">When the installer is complete, <strong>reboot</strong> your server prior to installing SharePoint 2013. You should now be able to run the SharePoint 2013 installer, bypassing the Pre-requisite step.
+</li></ol>
+<p style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;"><span style="text-decoration:underline;">Procedure - Scenario 2:</span></p>
+<ul style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;">You have NOT executed Install-SP2013RolesFeatures.ps1 and rebooted your server
+</li><li style="padding-bottom:10px;">You have already executed Download-SP2013PreReqFiles.ps1
+</li></ul>
+<ol style="font-size:13px;font-family:&#39;Segoe UI&#39;,Verdana,Arial;padding-left:0px;margin-left:40px;">
+<li style="padding-bottom:10px;"><strong>Copy</strong> the SharePoint 2013 installation media files into a local directory on your Windows Server 2012 server. For example, c:\sp2013.
+</li><li style="padding-bottom:10px;"><strong>Copy</strong> the Prerequisite files into the c:\sp2013\prerequisiteinstallerfiles directory.
+</li><li style="padding-bottom:10px;"><strong>Run</strong> PowerShell as Administrator (you can do this from the Start Screen - right click PowerShell and select &quot;Run as Administrator&quot;
+</li><li style="padding-bottom:10px;"><strong>Run</strong> this script: c:\powershellscripts\Install-SP2013PreReqFiles.ps1. You will be required to define a path where to your SharePoint 2013 installation media. (e.g. c:\sp2013). On this run, defining the path isn&#39;t
+ technically required as it will add the Windows Server 2012 Roles/Features for SharePoint 2013. When the Roles/Features are installed, click Finish and your server will reboot.
+</li><li style="padding-bottom:10px;"><strong>After</strong> the reboot, when you log in, if the PrerequisiteInstaller launches, close the installer.Prerequisite installer tool. Install all of the prerequisites.
+</li><li style="padding-bottom:10px;"><strong>Run</strong> this script: c:\powershellscripts\Install-SP2013PreReqFiles.ps1. You will be required to define a path where to your SharePoint 2013 installation media. (e.g. c:\sp2013). Watch the Prerequisite installer
+ tool install all of the prerequisites. </li><li style="padding-bottom:10px;">When the installer is complete, <strong>reboot</strong> your server prior to installing SharePoint 2013. You should now be able to run the SharePoint 2013 installer, bypassing the Pre-requisite step.
+</li></ol>
+
+</div>
+    
+    

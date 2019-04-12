@@ -1,0 +1,98 @@
+---
+layout: default
+title: Using SQL Server Integration Service WMI Event Watcher to Trigger ETL on a File Drop Event on a Shared Folder - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Agenda"></a>Agenda</h1>
+<br />
+<div style="text-align:justify;">This case study will teach you how you can use WMI (<em>Windows Management Instrumentation</em>) to monitor a file drop
+<br />
+</div>
+<div style="text-align:justify;">event on a shared folder. We will build a solution that will keep watch on&nbsp; a &quot;shared folder&quot; and then trigger an ETL when<br />
+a file gets drop or copied into it and then process the file and then load it to a database server.
+<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Agenda">Agenda</a></li><li class="hierarchy-item"><a href="#Technical_Design">Technical Design</a></li><li class="hierarchy-item"><a href="#Physical_Design">Physical Design</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#A_Building_The_SSIS_Package">A. Create a new the SSIS Package and Add the WMI Event Watcher task</a></li><li class="hierarchy-item"><a href="#B_Configure_the_WMI_Task"></a></li><li class="hierarchy-item"><a href="#B_Add_and_Configure_a_new_WMI_Connection_to_the_solution">B. Add and Configure a new WMI Connection to the solution</a></li><li class="hierarchy-item"><a href="#C_Configure_the_WMI_Query">C. Configure the WMI Query</a></li><li class="hierarchy-item"><a href="#D_Run_The_Package_and_Drop_a_File">D. Run The Package and Drop a File.</a></li><li class="hierarchy-item"><a href="#E_Add_a_for_each_loop_And_loop_for_each_file_in_the_shared_folder">E. Add a for each loop to iterate each file in the shared folder.</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#E_Assign_the_Files_to_variables_inside_the_for_each_loop">E. Assign the Files to variables inside the for each loop.</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="Technical_Design"></a>Technical Design</h1>
+<p>Below is a high-level technical design for this case study:<br />
+<br />
+1.&nbsp; A folder &quot;C:\WmifileWatcher&quot; will be created.&nbsp; User can drop file<br />
+on this folder using FTP, network fileshare or simply as local folder for testing<br />
+<br />
+2. A file name &quot;employee.csv&quot; that contains employee data will be dropped into the shared drive<br />
+<br />
+3. An SSIS package will keep watch on the file drop(copy) event and then it will process the employee.csv<br />
+and load it to the employee table in the HRIS database<br />
+<br />
+4. When loading to SSIS is complete it will archive the file to c:\wmifilewatcher_archive<br />
+<br />
+</p>
+<h1><a name="Physical_Design"></a>Physical Design</h1>
+<p>The first requirement is to build the physical folder &quot;C:\WmifileWatcher&quot; which is rather easy so
+<br />
+we&#39;ll skip it.</p>
+<h2><a name="A_Building_The_SSIS_Package"></a>A.&nbsp; Create a new&nbsp; the SSIS Package and Add the WMI Event Watcher task</h2>
+<p>To be able to watch for a file drop event you should build an SSIS and add a WMI task as shown.<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4617.drag-a-wmi.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4617.drag-a-wmi.jpg" style="border-width:1px;border-style:solid;" /></a></p>
+<h2><a name="B_Configure_the_WMI_Task"></a></h2>
+<h2><a name="B_Add_and_Configure_a_new_WMI_Connection_to_the_solution"></a>B. Add and Configure a new WMI Connection to the solution</h2>
+<p>You need to configure a WMI connection to the server which you want to monitor in this case it will be
+<br />
+the localhost.<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4201.connection.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4201.connection.png" style="border-width:1px;border-style:solid;" /></a><br />
+<br />
+</p>
+<h2><a name="C_Configure_the_WMI_Query"></a>C. Configure the WMI Query</h2>
+<p>Configure the WMi query source with the following<br />
+<span style="color:#00b050;"><em>SELECT * FROM __InstanceCreationEvent WITHIN 10 WHERE TargetInstance ISA &quot;CIM_DirectoryContainsFile&quot;<br />
+and TargetInstance.GroupComponent= &quot;Win32_Directory.Name=\&quot;c:\\\\WMIFileWatcher\&quot;&quot; .</em></span><br />
+<br />
+This will monitor the C:\WMIFilewatcher folder for changes<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3733.wmiquery.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3733.wmiquery.jpg" style="border-width:1px;border-style:solid;" /></a><br />
+<br />
+<br />
+</p>
+<h2><a name="D_Run_The_Package_and_Drop_a_File"></a>D. Run The Package and Drop a File.</h2>
+<p>Basically you can now Run the Package and drop a file<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3022.Run-the-Package.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3022.Run-the-Package.jpg" style="border-width:1px;border-style:solid;" /></a><br />
+<br />
+</p>
+<div style="text-align:justify;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.completedexec.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communitytyserver-wikis-components-files/00-00-00-00-05/3733.wmiquery.jpg" style="border-width:1px;border-style:solid;" /></a><br />
+<br />
+<br />
+</p>
+<h2><a name="D_Run_The_Package_and_Drop_a_File"></a>D. Run The Package and Drop a File.</h2>
+<p>Basically you can now Run the Package and drop a file<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3022.Run-the-Package.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3022.Run-the-Packaserver-wikis-components-files/00-00-00-00-05/4544.completedexec.jpg" style="border-width:1px;border-style:solid;" /></a><br />
+This will serve as a trigger to look into the folder. And we are sure enough that there is a file in there.<br />
+<br />
+</div>
+<h2 style="text-align:justify;"><a name="E_Add_a_for_each_loop_And_loop_for_each_file_in_the_shared_folder"></a>E. Add a for each loop to iterate each file&nbsp; in the shared folder.</h2>
+<p>Add a For each loop container and configure it to browse each file in the shared folder.
+</p>
+<div style="text-align:justify;"><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1856.For-Each-loop.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1856.For-Each-loop.jpg" style="border-width:1px;border-style:solid;" /></a><br />
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="E_Assign_the_Files_to_variables_inside_the_for_each_loop"></a>E.&nbsp; Assign the Files to variables inside the for each loop.</h1>
+<div style="text-align:justify;"><br />
+If you are seasoned SSIS developer you can already proceed from here. Assigned the files to variable.<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+</div>
+
+</div>
+    
+    

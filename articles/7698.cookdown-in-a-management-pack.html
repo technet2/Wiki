@@ -1,0 +1,113 @@
+---
+layout: default
+title: Cookdown in a Management Pack - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1 style="margin:24pt 0in 0pt;"><a name="Cookdown"></a>Cookdown</h1>
+<p style="margin:3pt 0in;">Cookdown refers to a feature of Operations Manager 2007 and 2012 where a single copy of a data source module is shared among multiple workflows to reduce overhead. Understanding how cookdown works and how to design workflows to take
+ advantage of cookdown can be important to making sure that a particular workflow operates in the most efficient manner and does not place too much overhead on the managed agent.</p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Overview_of_Cookdown"></a><a name="_Toc275764432">Overview of Cookdown</a></h2>
+<h3 style="margin:10pt 0in 0pt;"><a name="Multiple_Workflows"></a><a name="_Toc275764433">M</div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Cookdown in a Management Pack</h1>
+    
+
+    <div clultiple Workflows</a></h3>
+<p style="margin:3pt 0in;">The Operations Manager agent will load a separate copy of a workflow for each instance of the target class. Most agents manage a considerable number of objects each with several workflows targeted at them. This means that several workflows
+ are typically running on any given agent. The Operations Manager agent can run multiple workflows efficiently, so that this is typically not a concern. However, Data Source modules often run processes outside of the Operations Manager agent that have the potential
+ for considerable overhead. The most obvious example of this is a script that can potentially generate significant overhead, depending on what actions it is performing. If a workflow running that script is targeted at a class that has multiple instances on
+ an agent, that agent will be running multiple instances of the script at the same time. As the number of instances of the class increases, the number of instances of the script increases. These could generate significant overhead on the agent.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;"><strong>Multiple instances of workflow on a single agent</strong></p>
+<p class="Figure" style="margin:3pt 0in;line-height:12pt;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7181.AuthGuide_5F00_21_5F00_MultipleWorkflows.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7181.AuthGuide_5F00_21_5F00_MultipleWorkflows.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:3pt 0in;">For example, the <strong>Windows Server&nbsp;2008</strong> management pack has a monitor called
+<strong>Microsoft.Windows.Server.2008.LogicalDisk.FreeSpace</strong> (display name
+<strong>Logical Disk Free Space</strong>) that runs a script to measure the free space on each logical disk on a managed agent. This monitor is targeted at the
+<strong>Windows Server 2008 Logical Disk</strong> class, and will have multiple instances on any agent that has more than one logical disk defined. The monitor has three states, meaning that the agent will load a copy of three workflows for each instance of
+ the target class. This means that an agent with four logical disks would have 12 different workflows. Without cookdown, every time the monitor was scheduled to run, 12 copies of the script would run at the same time.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<h3 style="margin:10pt 0in 0pt;"><a name="Multiple_Workflows_with_Cookdown"></a><a name="_Toc275764434">Multiple Workflows with Cookdown</a></h3>
+<p style="margin:3pt 0in;">With cookdown, the agent still runs a separate workflow for each instance of the target class. However, it loads only a single instance of the data source sharing the output with the different workflows. This is a significant reduction
+ in potential overhead.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;"><strong>Multiple instances of workflow sharing a single data source</strong></p>
+<p class="Figure" style="margin:3pt 0in;line-height:12pt;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5381.AuthGuide_5F00_22_5F00_MultipleWorkflowsSingleDatasource.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5381.AuthGuide_5F00_22_5F00_MultipleWorkflowsSingleDatasource.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;">Only data source modules are cooked down. However, composite data source modules may contain modules of other types such as probe action modules and condition detection modules. If such a composite data source module supports cookdown,
+ it will be cooked down. Because only a single instance of the data source module is loaded, only a single instance of the modules within it is also loaded.</p>
+<p style="margin:3pt 0in;">The previously mentioned monitor <strong>Microsoft.Windows.Server.2008.LogicalDisk.FreeSpace</strong> supports cookdown, and only a single instance of its data source is loaded regardless of the number of logical disks on the agent.
+ A separate set of workflows are still loaded for each agent, yet they all share the single copy of the data source module. Because the data source module runs the script, the result is a significant reduction in the overhead generated by the different instances
+ of the monitor.</p>
+<p style="margin:3pt 0in;">In addition to multiple copies of the same workflow, cookdown applies to different workflows sharing the data source module. For example, one data source module running a script might be used by a monitor for measuring health state
+ and also used by a rule for collecting performance data. Cookdown could be performed in such a way that a single copy of the data source module would be shared between the different workflows.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;"><strong>Multiple workflows sharing single data source module</strong></p>
+<p class="Figure" style="margin:3pt 0in;line-height:12pt;">&nbsp;</p>
+<p class="Figure" style="margin:3pt 0in;line-height:12pt;text-align:left;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5280.AuthGuide_5F00_23_5F00_RuleAndMonitor.png"><img alt=" " width="406" height="301" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5280.AuthGuide_5F00_23_5F00_RuleAndMonitor.png" style="border-width:0px;border-style:solid;width:389px;height:278px;" /></a></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5280.AuthGuide_5F00_23_5F00_RuleAndMonitor.png">
+<div style="text-align:left;">&nbsp;</div>
+</a>
+<p>&nbsp;</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Criteria_for_Cookdown"></a><a name="_Toc275764435">Criteria for Cookdown</a></h2>
+<p style="margin:3pt 0in;">A workflow does not have to specify whether cookdown should be performed. Cookdown is performed automatically on any workflow that meets the cookdown criteria: the only criterion is that all copies of the data source module are called
+ by using identical values for each parameter. If this is the case, all instances of the workflow on each agent will cookdown to a single data source module.</p>
+<p style="margin:3pt 0in;">The only way that values for a parameter will vary for different instances of the same module is if a $Target variable is used. This kind of variable uses the value of a property on the target object. Because this value may vary between
+ different instances, the value that is provided to the module parameter could vary. In this case, cookdown would not be performed, and a separate copy of the data source would be used for each workflow.
+</p>
+<p style="margin:3pt 0in;">Values that are provided to the parameters for a data source module shared between different kinds of workflows have more potential to vary. For example, a rule and a monitor might share a data source module running a script. The iets the cookdown criteria: the only criterion is that all copies of the data source module are called
+ by using identical values for each parameter. If this is the case, all instances of the workflow on each agent will cookdown to a single data source module.</p>
+<p style="margin:3pt 0in;">The only way that values for a parameter will vary for different instances of the same module is if a $Target variable is used. This kind of variable uses the value of a property on the targetnterval
+ that the script should run is provided to the data source module as a parameter. If the monitor and rule are configured to run at different intervals, the value that is provided to that parameter will vary between the workflows. In this case, cookdown would
+ not be performed, and a separate copy of the data source module would be required for the different workflows.</p>
+<h2 style="margin:10pt 0in 0pt;"><a name="When_to_Configure_for_Cookdown"></a><a name="_Toc275764436">When to Configure for Cookdown</a></h2>
+<p style="margin:3pt 0in;">Changing a script and a workflow to support cookdown can take significant effort, and that effort is not valuable in all circumstances. You should be concerned about cookdown only when multiple instances of the target class are expected
+ on a single agent. When there is only a single instance of the target class expected on the agent, cookdown will not be performed anyway because there will only be a single copy of the workflow.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Scripts_Supporting_Cookdown"></a><a name="_Toc275764437">Scripts Supporting Cookdown</a><a name="zf330337f956e4ca28388f633fa784bfc"></a></h2>
+<p style="margin:3pt 0in;">Frequently, a script in a data source module will require the value of a property from the target object. The most straightforward method of providing this value would be to use a $Target variable in a parameter to the module, but
+ then cookdown cannot be performed. The method for supporting this type of scenario is to have the script collect information for all instances of the target class and return a property bag for each. Because the script itself becomes responsible for identifying
+ the values of the individual properties, you do not have to provide them through parameters to the module. Because there are no $Target variables in the parameters, cookdown is preserved.</p>
+<h3 style="margin:10pt 0in 0pt;"><a name="Multiple_Property_Bags"></a><a name="_Toc275764438">Multiple Property Bags</a></h3>
+<p style="margin:3pt 0in;">For the script to perform cookdown, it will frequently re-create some basic logic used in a discovery script for the target class. The discovery script is typically responsible for identifying the different instances and collecting
+ values for the different properties. Whereas adding this logic makes the script itself more complex and requires more overhead than a script written for only a single instance, the script has the advantage of supporting cookdown. One copy of the script running
+ for all instances of the target class typically generates significantly less overhead than multiple copies of a script running for each single instance.</p>
+<p style="margin:3pt 0in;">A script can return multiple property bags by using the
+<strong>ReturnItems</strong> method on the MOM.ScriptAPI object instead of <strong>
+Return</strong>. This returns a single property bag. When a script returns multiple property bags, each one is collected and processed by the next module in the workflow. If a method of filtering is not used, each workflow will incorrectly complete for each
+ instance. This can result in unwanted situations such as all monitors going to an error state when an error condition is detected on a single instance or collecting multiple duplicate performance values for each instance.</p>
+<p style="margin:3pt 0in;">To have a workflow filter for the property bag matching its target instance, a condition detection module is used after the data source module or probe action module running the script. This condition detection module uses a $Target
+ variable for the key property of the target instance. The property bag itself must include the same value in one of its properties. The condition detection is then able to match the value from the property bag to the value of the $Target property to let each
+ copy of the workflow to select the property bag specific to its particular instance. This concept is illustrated in the following diagram.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;"><strong>Sample workflow supporting cookdown<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3704.AuthGuide_5F00_24_5F00_CookdownWorkflow.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3704.AuthGuide_5F00_24_5F00_CookdownWorkflow.png" style="border-width:0px;border-style:solid;" /></a><br />
+<strong><br />
+<br />
+Detailed operation of sample workflow supporting cookdown</strong><br />
+</strong></p>
+<p class="Figure" style="margin:3pt 0in;line-height:12pt;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0181.AuthGuide_5F00_24_5F00_CookdownWorkflow.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0181.AuthGuide_5F00_24_5F00_CookdownWorkflow.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;">The module Microsoft.SQLServer.2008.DBSizeRawPerfProvider described in
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/7698.cookdown-in-a-management-pack/edit.aspx#zb3f7fae7291c49a9b153ef4cc51370aa">
+Module Implementations</a> provides an example of a script creating multiple property bags to support cookdown. The DatabaseName of the target instance is sent to the module; the name is not passed to the Microsoft.Windows.TimedScript.PerformanceProvider module
+ which runs the actual script. This module can cookdown to a single instance, although the modulecreates a separate property bag for each database. Each property bag includes a value for the name of the database. The value of the DatabaseName parameter is sent
+ to the System.Expression module that compares it to the value in the property bag. Using this method, all instances of a workflow on a particular agent that uses this module will be able to share a single copy of the data source module yet will be able to
+ select only the property bag specific to the particular instance.</p>
+<p style="margin:3pt 0in;">The following is a simplified view of the Microsoft.SQLServer.2008.DBSizeRawPerfProvider module showing this concept.</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;"><strong>SQL Database Raw Performance module using cookdown</strong></p>
+<p class="Figure" style="margin:3pt 0in;line-height:12pt;">&nbsp;<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4722.AuthGuide_5F00_25_5F00_SQLRawPerfModule.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4722.AuthGuide_5F00_25_5F00_SQLRawPerfModule.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+<p style="margin:3pt 0in;">&nbsp;</p>
+
+</div>
+    
+    

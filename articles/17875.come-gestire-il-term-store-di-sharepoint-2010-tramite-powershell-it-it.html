@@ -1,0 +1,111 @@
+---
+layout: default
+title: Come gestire il term store di SharePoint 2010 tramite Powershell (it-IT) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<a name="Top"></a>
+<table align="center"   History
+                    </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-rstyle="width:90%;">
+<tbody>
+<tr>
+<td></td>
+<td style="width:30%;"><acronym title="Please abstain from editing it right now. You're welcome to contribute here in a couple of hours or days, though! (Please remove this sign if there are no changes made in last 48 hours).">
+<table align="center" style="width:100%;">
+<tbody>
+<tr>
+<td style="text-align:center;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer.Wikis.Components.Files/articles/8623.workinprogress.png" />
+</td>
+<td><strong>Work in progress</strong> </td>
+</tr>
+</tbody>
+</table>
+</acronym></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduzione</a></li><li class="hierarchy-item"><a href="#What_Is_Term_Store">Che cosa è il term store?</a></li><li class="hierarchy-item"><a href="#Connecting_Store">Accedere al term store</a></li><li class="hierarchy-item"><a href="#Getting_Groups">Ottenere i gruppi di termini</a></li><li class="hierarchy-item"><a href="#Getting_Sets">Ottenere gli insiemi di termini</a></li><li class="hierarchy-item"><a href="#Getting_Terms">Ottenere i termini</a></li><li class="hierarchy-item"><a href="#Exporting">Esempio completo: esportare il term store in un file XML</a></li><li class="hierarchy-item"><a href="#Community_Content">Contenuti della Community</a></li><li class="hierarchy-item"><a href="#See_Also">Vedere anche</a></li><li class="hierarchy-item"><a href="#Other_Languages">Altre lingue</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#English_en-US">English (en-US)</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<br />
+<hr />
+<h2><a name="Introduction"></a>Introduzione</h2>
+<p>SharePoint 2010 si è affermato come una valida piattaforma in termini di caratteristiche e funzionalità disponibili per quanto concerne l&#39;are della gestione documentale. Una di queste è la possibilità per gli utenti e gi amministratori di creare
+<strong>un insieme di termini ben stabilito e strutturato</strong> che può essere utilizzato per classificare i documenti memorizzati in un sito SharePoint, permettendo così la definizione di una
+<em>tassonomia</em> che può essere utilizzata nell&#39;ambito dell&#39;implementazione SharePoint presente in un&#39;azienda e che consente di migliorare i risultati delle ricerche eseguite.<br />
+In questo articolo illustreremo le caratteristiche principali del Managed Metadata Service di SharePoint (noto anche come
+<em>term store</em>) e come questo possa esssere manipolato e gestito per mezzo di Powershell.</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="What_Is_Term_Store"></a>Che cosa è il term store?</h2>
+<p>Il&nbsp;term store (il cui &quot;vero nome&quot;&nbsp;è Managed Metadata Services)&nbsp;è una <strong>collezione di termini organizzati gerarchicamente&nbsp;</strong>che possono essere utilizzati per descrivere diversi tipi di elementi, come documenti ed elementi presenti negli elenchi.
+ Il term store&nbsp;consente di <strong>organizzare termini, elenchi e classificazioni</strong> affinchè possano essere sfruttati attraverso molteplici web applications o raccolte di siti SharePoint.<br />
+Si può accedere ai Managed Metadata Services attraverso la Central Administration, facendo click su Application Management, Manage Service Applications e Managed Metadata Service.</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Connecting_Store"></a>Accedere al term store</h2>
+<p>Il primo passo nella manipolazione del term store è l&#39;accesso alla service application (o alle service applications, essendo possibile averne più di una) di tipo Managed Metadata Service Application che rappresenta il term store globale presente all&#39;interno
+ di SharePoint e che contiene i gruppi di termini ivi memorizzati.<br />
+Per accedere alla service application si utilizza una variabile nella quale si va a memorizzare il risultato dell&#39;esecuzione del cmdlet&nbsp;<a href="http://technet.microsoft.com/it-it/library/ff608087.aspx"><strong>Get-SPTaxonomySession</strong></a> riferito al
+ sito per il quale si vuole manipolare il term store: aprire la SharePoint Management Shell, digitare ed eseguire il comando seguente</p>
+<pre>$SPTax = Get-SPTaxonomySession -Site http://siteaddress</pre>
+<p>La variabile $SPTax conterrà un oggetto di tipo <a href="http://msdn.microsoft.com/en-us/library/microsoft.sharepoint.taxonomy.taxonomysession.aspx">
+<strong>Microsoft.SharePoint.Taxonomy.TaxonomySession</strong></a>, contenente l&#39;insieme di tutti i term stores di metadati disponibili per il sito passato come parametro. Utilizzando le proprietà ed i metodi (ricavabili digitando ed eseguendo il cmdlet Get-Member
+ in pipe con la variabile $SPTax) messi a disposizione dall&#39;oggetto TaxonomySession: ad esempio, è possibile accedere al term store predefinito per la raccolta siti utilizzando la proprietà DefaultSiteCollectionTermStore. Avendo la necessità di attraversare
+ l&#39;intera gerarchia del term store fino ad arrivare ad accedere ai singoli termini presenti in uno o più term store, è necessario ottenere un riferimento all&#39;insieme dei term stores disponibili e questo può essere effettuato tramite la
+<strong>proprietà TermStores</strong>, che rappresenta, appunto,&nbsp;una collezione di term stores. Per comodità e riutilizzo, si memorizza un riferimento all&#39;insieme dei term stores in una variabile nel modo seguente</p>
+<pre>$SPTSs = $SPTax.TermStores</pre>
+<p>Utilizzando questo riferimento è possibile procedere ulteriormente a fondo nella gerarchia del term store accedendo ai gruppi di termini (e, quindi, agli insiemi di termini ed ai singoli termini) presenti in un term store.</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Getting_Groups"></a>Ottenere i gruppi di termini</h2>
+<p>&nbsp;</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Getting_Sets"></a>Ottenere gli insiemi di termini</h2>
+<p>&nbsp;</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Getting_Terms"></a>Ottenere i termini</h2>
+<p>&nbsp;</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Exporting"></a>Esempio completo: esportare il term store in un f rappresenta, appunto,&nbsp;una collezione di term stores. Per comodità e riutilizzo, si memorizza un riferimento all&#39;insieme dei term stores in una variabile nel modo seguente</p>
+<pre>$SPTSs = $SPTax.TermStores</pre>
+<p>Utilizzando questo riferimento è possibile procedere ulteriormente a fondo nella gerarchia del term store accedendo ai gruppi di termini (e, quindi, agli insiemi di termini ed ai ile XML</h2>
+<p>&nbsp;</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<hr />
+<h2><a name="Community_Content"></a>Contenuti della Community</h2>
+<ul>
+<li><a href="http://technet.microsoft.com/it-it/library/ee424402(v=office.14).aspx">Panoramica dei metadati gestiti</a> (TechNet Library)
+</li><li><a href="http://msdn.microsoft.com/en-us/library/ee559337(v=office.14).aspx">Managing Enterprise Metadata in SharePoint Server 2010</a> (MSDN Library)
+</li><li><a href="http://msdn.microsoft.com/en-us/library/ee539977.aspx">What&#39;s New: Windows PowerShell for SharePoint</a> (MSDN Library)
+</li></ul>
+<hr />
+<h2><a name="See_Also"></a>Vedere anche</h2>
+<p><strong>NOTA:</strong> i links seguenti sono esterni a TechNet Wiki.</p>
+<ul>
+<li><a href="http://shop.oreilly.com/product/9780735627222.do">Microsoft® SharePoint® 2010 Administrator&#39;s Pocket Consultant</a> (Capitolo 10, &quot;<em>Enterprise Content Types and Metadata</em>&quot;)&nbsp;di Ben Curry - Microsoft Press, Giugno 2010
+</li></ul>
+<hr />
+<h2><a name="Other_Languages"></a>Altre lingue</h2>
+<p>Questo articolo è disponibile anche nelle seguenti lingue:</p>
+<h4><a name="English_en-US"></a>English (en-US)</h4>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/17874.how-to-manage-the-sharepoint-2010-term-store-via-powershell.aspx">How To: Manage the SharePoint 2010 Term Store via Powershell</a>
+</li></ul>
+<p>&nbsp;</p>
+
+</div>
+    
+    

@@ -1,0 +1,210 @@
+---
+layout: default
+title: Iteratively Processing Recursive Data, Such As Directories - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+<p>This article was originally published as the two articles <a href="http://www.c-sharpcorner.com/UploadFile/SamTomato/retrieving-hierarchically-recursive-data-iteratively">
+Retrieving Hierarchically Recursive Data Iteratively</a> and <a href="http://www.c-sharpcorner.com/UploadFile/SamTomato/processing-folders-iteratively">
+Processing Folders Iteratively</a> that are also in my website <a href="http://simplesamples.iclass="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Iteratively Processing Recursive Data, Such As Directories</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<hr />
+<p>This article was originally published as the two articles <a href="httpnfo/" target="_blank">
+Sam&#39;s Simple Samples.</a></p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#The_quot_To_Do_quot_Stack">The &quot;To Do&quot; Stack</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li><li class="hierarchy-item"><a href="#Implementation">Implementation</a></li><li class="hierarchy-item"><a href="#Sample_Program">Sample Program: Retrieving Internet Explorer Favorites (Folders)</a></li><li class="hierarchy-item"><a href="#Main_Method">Main Method</a></li><li class="hierarchy-item"><a href="#Folder_Class">Folder Class</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li><li class="hierarchy-item"><a href="#Source_Code">Source Code</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<hr />
+ <h2><a name="Introduction"></a>Introduction</h2>
+<p>Many objects are recursive hierarchies (you can say, like the root system of a tree where roots have roots). The directories of a file system are recursive hierarchies since a directory can contain one or more sub-directories that can also contain one or
+ more sub-directories. Windows of a GUI are recursive hierarchies since a window can contain client windows or controls (which are windows) that can contain controls or other windows. Engineering and manufacturing parts lists (such as for refrigerators and
+ spacecraft) are recursive hierarchies. Organizational structures (employees) are recursive hierarchies.</p>
+<p>Recursively hierarchical data can be retrieved and processed recursively. For each parent item, such as a directory or a window, the function processing the structure can call itself for each child. It is very easy to design a way to retrieve hierarchical
+ data recursively.</p>
+<p>This article does not explain the advantages and disadvantages of recursion and iteration. The purpose of this article is to explain how to iteratively process recursively hierarchical data with an example.</p>
+<h2><a name="The_quot_To_Do_quot_Stack"></a>The &quot;To Do&quot; Stack</h2>
+<p>When processing data recursively, recursion uses a stack internally. Each time a function is called (recursively or not), the data for the calling function is pushed onto the stack. For a recursive call, part or all of that data is usually the parent item,
+ such as the directory or window, whose children are to be processed.</p>
+<p>The trick to processing data iteratively (not recursively) is to simply use a (&quot;to do&quot;) stack for the data that has not yet been processed but needs to be processed. During the processing of a parent item, the children (that are then to be done) are stacked
+ (using a Last-In-First-Out (LIFO) collection). The .Net Stack class can be used for that. Objects are pushed onto the stack and popped off the stack until all data is processed. The data is subsequently processed in reverse, in the sense that if &quot;1&quot;, 2&quot;&quot;,
+ &quot;3&quot; and &quot;4&quot; pushed onto the stack in that order, they are processed as &quot;4&quot;, &quot;3&quot;, &quot;2&quot; and &quot;1&quot;.</p>
+<h2><a name="Example"></a>Example</h2>
+<p>Let us use the following data as an example. </p>
+<div style="margin-left:40px;">
+<ul>
+<li>Top
+<ul>
+<li>First
+<ul>
+<li>First-1
+<ul>
+<li>John </li><li>Mike </li><li>Steve </li></ul>
+</li><li>First-2
+<ul>
+<li>Susan </li><li>Julie </li><li>Kara </li></ul>
+</li><li>First-3
+<ul>
+<li>Kim </li><li>Kelly </li><li>Pat </li></ul>
+</li></ul>
+</li><li>Second
+<ul>
+<li>Second-1 </li><li>Second-2 </li><li>Second-3 </li></ul>
+</li></ul>
+</li></ul>
+</div>
+<p>When processing the data iteratively, the stack would be as follows, one line per iteration:</p>
+<pre>Top
+First Second 
+First-1 First-2 First-3 Second 
+John Mike Steve First-2 First-3 Second 
+Mike Steve First-2 First-3 Second 
+Steve First-2 First-3 Second 
+First-2 First-3 Second 
+Susan Julie Kara First-3 Second 
+Julie Kara First-3 Second 
+Kara First-3 Second 
+First-3 Second 
+Kim Kelly Pat Second 
+Kelly Pat Second 
+Pat Second 
+Second 
+Second-1 Second-2 Second-3 
+Second-2 Second-3 
+Second-3 
+</pre>
+<p>In other words, we begin by pushing &quot;Top&quot; onto the stack. We then iterate (loop) by popping that off the stack and processing it. Processing includes pushing the children onto the stack. So the iteration continues until there are no more children to be processed;
+ in other words, there is nothing more to process. Therefore as each item is processed, it is effectively replaced by its children, if any.</p>
+<h2><a name="Implementation"></a>Implementation</h2>
+<p>The preceding example could be implemented with the following code that processes items of a class called &quot;Hierarchy&quot; that consists of:</p>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;width:800px;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">class Hierarchy</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public string Name;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public List Children = new List();</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public Hierarchy Parent = null;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public Hierarchy(string Name, Hierarchy Parent)</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">this.Name = Name;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">this.Parent = Parent;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div></div></pre>
+<p>The stack of items to be processed could then be:</p>
+<pre>Stack&lt;Hierarchy&gt; ToDo = new Stack&lt;Hisp;</code><span><code style="color:#000000;">public Hierarchy(erarchy&gt;();</pre>
+<p>The data could be processed iteratively using:</p>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;width:800px;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">ToDo.Push(Top);</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">while (ToDo.Count &gt; 0)</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Hierarchy h = ToDo.Pop();</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Put(h, ToDo);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div></div>
+</pre>
+<p>Where the following is the &quot;Put&quot; method:</p>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;width:800px;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">private void Put(Hierarchy h, Stack ToDo)</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">string tabs = new string(&#39;\t&#39;, Level);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(&quot;{0}{1}&quot;, tabs, h.Name);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// store the children in the to do stack</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if (h.Children == null)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">return;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// since the stack is LIFO, the objects will be popped off in</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// reverse order from what they are pushed, so we will push</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// in reverse order </code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">for (int i = h.Children.Count - 1; i &gt;= 0; --i)</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ToDo.Push(h.Children[i]);</code></span></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div></div></pre>
+<p>See the sample code to see how &quot;Level&quot; is determined.</p>
+<p>The following is an equivalent method for processing the data recursively:</p>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;width:800px;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">private static void PutRecursively(Hierarchy h)</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">string tabs = new string(&#39;\t&#39;, Level);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(&quot;{0}{1}&quot;, tabs, h.Name);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// store the children in the to do stack</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if (h.Children == null)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">return;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">foreach (Hierarchy child in h.Children)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PutRecursively(child);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div></div>
+</pre>
+<h2><a name="Sample_Program"></a>Sample Program: Retrieving Internet Explorer Favorites (Folders)</h2>
+<p>The sample program for this article retrieves the directories of the user&#39;s Internet Explorer favorites but could easily be adapted for other directories. Internet Explorer Favorites are often organized into many folders. This example does not retrieve the
+ actual favorites; they are individual files within the directories. Reading the files (favorites) would be an easy addition.</p>
+<p>To retrieve the directories, a class called &quot;Folder&quot; is used with the following members:</p>
+<table align="center" style="width:90%;">
+<tbody>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>Name</td>
+<td>string</td>
+<td>Unqualified folder name</td>
+</tr>
+<tr>
+<td>Parent</td>
+<td>Folder</td>
+<td>Recursive reference to a parent folder</td>
+</tr>
+<tr>
+<td>Attributes</td>
+<td>FileAttributes</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td>CreationTime</td>
+<td>DateTime</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td>LastAccessTime</td>
+<td>DateTime</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td>LastWriteTime</td>
+<td>DateTime</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td>Children</td>
+<td>List&lt;Folder&gt;</td>
+<td>Subdirectories</td>
+</tr>
+<tr>
+<td>Level</td>
+<td>int</td>
+<td>Hierarchical depth, used only for formatting output</td>
+</tr>
+<tr>
+<td>GetFolder</td>
+<td>Stack&lt;Folder&gt; ToDo, string root</td>
+<td>Gets the subdirectories of the directory</td>
+</tr>
+<tr>
+<td>Qualify</td>
+<td>string</td>
+<td>Creates an absolute path</td>
+</tr>
+<tr>
+<td>Unqualify</td>
+<td>string</td>
+<td>Gets just the unqualified name of a directory</td>
+</tr>
+<tr>
+<td>PutFolder(Stack&lt;Folder&gt; ToDo, StreamWriter sw)</td>
+<td>void</td>
+<td>Writes the folder to the text file and queues the children</td>
+</tr>
+</tbody>
+</table>
+<p>Note that the Name is just the unqualified name and does not include the qualification.</p>
+<p>The Internet Explorer Favorites are usually stored in the &quot;<a>C:\Users\{User}\Favorites</a>&quot; directory, so Name in the Folder object for the top folder to be processed is just &quot;Favorites&quot;. The Internet Explorer
+ Favorites are usually stored in the &quot;<a>C:\Users\{User}\Favorites</a>&quot; directory. We use the following to get the &quot;<a>C:\Users\{User}</a>&quot; portion:</p>
+<pre>Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);</pre>
+<p>To begin the iteration, we first create a &quot;Folder&quot; object for the top folder, &quot;Favorites &quot;, and push it onto the stack. After pushing &quot;Favorites&quot; onto the stack, we begin the iteration that pops it off the stack and processes it. We process each object (folder)
+ by retrieving its children and pushing each of them onto the stack of folders to do.</p>
+<p>The sample program retrieves the folders into &quot;Folder&quot; objects then uses (shows) a separate loop to write them to a text file. Note that you will need to change the name of the file in the sample program.</p>
+<h2><a name="Main_Method"></a>Main Method</h2>
+<p>The following is the Main method of the console program:</p>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;width:800px;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">string RootFolderName = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);</code></span></div><div style="background-color:#f8f8f8;"><span>&nbsp;</span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">Folder TopFolder = new Folder();</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">TopFolder.Name = &quot;Favorites&quot;;</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">ToDo.Push(TopFolder);</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">try {sw = new StreamWriter(OutFilename);}</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">catch (Exception ex)</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div><div style="background-colorauto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">string RootFolderName = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);</code></span></div><div style="background-color:#f8f8f8;"><span>&nbsp;</span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">Folder TopFolder = new Folder();</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">TopFolder.Name = &quot;Favorites&quot;;</code></span></div><div style="background-color:#ffffff;"><s:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(&quot;Output file error: {0}&quot;, ex.Message);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">return;</code></span></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">// Get the folders</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">Console.WriteLine(&quot;\tGetting&quot;);</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">while (ToDo.Count &gt; 0)</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(ToDo.Pop()).GetFolder(ToDo, RootFolderName);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// The following will write something to the console</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// just so we know the program is working.</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(&quot;\tToDo.Count={0}&quot;, ToDo.Count);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">// Put the folders. Start by creating the ToDo stack again.</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Console.WriteLine(&quot;\tPutting&quot;);</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">ToDo.Push(TopFolder);</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">while (ToDo.Count &gt; 0)</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(ToDo.Pop()).PutFolder(ToDo, sw);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// The following will write something to the console</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// just so we know the program is working.</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Console.WriteLine(&quot;ToDo.Count={0}&quot;, ToDo.Count);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">sw.Flush();</code></span></div></div></pre>
+<p>Where the &quot;ToDo&quot; stack is:</p>
+<pre><span style="color:#a52a2a;">static</span> <span style="color:#004085;">Stack</span>&lt;<span style="color:#004085;">Folder</span>&gt; <span style="font-style:italic;">ToDo</span> = <span style="font-weight:bold;color:#008b8b;">new</span> <span style="color:#004085;">Stack</span>&lt;<span style="color:#004085;">Folder</span>&gt;();</pre>
+<p>And &quot;sw&quot; is a StreamWriter as in:</p>
+<pre><span style="color:#a52a2a;">static</span> <span style="color:#004085;">StreamWriter</span> <span style="font-style:italic;">sw</span> = <span style="font-weight:bold;">null</span>;</pre>
+<h2><a name="Folder_Class"></a>Folder Class</h2>
+<p>The following is the &quot;Folder&quot; class:</p>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;width:800px;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">class Folder</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public string Name;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public Folder Parent = null;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public FileAttributes Attributes { get; set; }</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public DateTime CreationTime { get; set; }</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public DateTime LastAccessTime { get; set; }</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public DateTime LastWriteTime { get; set; }</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public List&lt;</code><code style="color:#006699;font-weight:bold;">Folder</code><code style="color:#000000;">&gt; Children = new List&lt;</code><code style="color:#006699;font-weight:bold;">Folder</code><code style="color:#000000;">&gt;();</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">int Level = 0;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // only for formatting output</code></span></span></div><div style="background-color:#ffffff;"><span>&nbsp;</span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">summary</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// Gets the information for a folder including the subdirectories.</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// A new object is created for each subdirectory and each of them</code></span></span></div><div style="backgro></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">int Level = 0;&nbsp;&nbsp;&und-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// is added to the Children for this directory and to the ToDo stack.</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;/</code><code style="color:#006699;font-weight:bold;">summary</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">param</code> <code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ToDo&quot;</code><code style="color:#000000;">&gt;&lt;/</code><code style="color:#006699;font-weight:bold;">param</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">internal void GetFolder(Stack&lt;</code><code style="color:#006699;font-weight:bold;">Folder</code><code style="color:#000000;">&gt; ToDo, string root)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">string Path = root &#43; &#39;\\&#39; &#43; Qualify();</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DirectoryInfo di = new DirectoryInfo(Path);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Attributes = di.Attributes;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">CreationTime = di.CreationTime;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LastAccessTime = di.LastAccessTime;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LastWriteTime = di.LastWriteTime;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">List&lt;</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">&gt; dirs = new List&lt;</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">&gt;(Directory.EnumerateDirectories(Path));</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">foreach (string fn in dirs)</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Folder sf = new Folder();</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sf.Name = Folder.Unqualify(fn);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sf.Parent = this;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sf.Level = Level &#43; 1;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Children.Add(sf);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ToDo.Push(sf);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#ffffff;"><span>&nbsp;</span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">summary</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// This will prefix the parent directory names separated</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// by backslashes to create a fully qualified path. The</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// result must be qualified by the root path.</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;/</code><code style="color:#006699;font-weight:bold;">summary</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">param</code> <code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Folder&quot;</code><code style="color:#000000;">&gt;&lt;/</code><code style="color:#006699;font-weight:bold;">param</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">returns</code><code style="color:#000000;">&gt;&lt;/</code><code style="color:#006699;font-weight:bold;">returns</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public string Qualify()</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Folder TempFolder = this;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Stack&lt;</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">&gt; names = new Stack&lt;</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">&gt;();</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">names.Push(Name);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">while (TempFolder.Parent != null)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">TempFolder = TempFolder.Parent;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">names.Push(TempFolder.Name);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">return string.Join(&quot;\\&quot;, names.ToArray());</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#ffffff;"><span>&nbsp;</span></div><div style="background-color:#f8f8f8;"><span><code>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">TempFolder = TempFolder.Parent;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">names.Push(TempFolder.Name);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">summary</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// Since Directory.EnumerateDirectories returns the fully qualified path</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// of each directory, we need to get just the unqualified name of a directory.</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;/</code><code style="color:#006699;font-weight:bold;">summary</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">param</code> <code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;dir&quot;</code><code style="color:#000000;">&gt;fully qualified path&lt;/</code><code style="color:#006699;font-weight:bold;">param</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/// &lt;</code><code style="color:#006699;font-weight:bold;">returns</code><code style="color:#000000;">&gt;unqualified path&lt;/</code><code style="color:#006699;font-weight:bold;">returns</code><code style="color:#000000;">&gt;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">public static string Unqualify(string dir)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">int i = dir.LastIndexOf(&#39;\\&#39;);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">return dir.Substring(i &#43; 1);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#ffffff;"><span>&nbsp;</span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">internal void PutFolder(Stack&lt;</code><code style="color:#006699;font-weight:bold;">Folder</code><code style="color:#000000;">&gt; ToDo, StreamWriter sw)</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">string tabs = new string(&#39;\t&#39;, Level);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sw.WriteLine(&quot;{0}{1} {2} {3}&quot;, tabs, Name, CreationTime, LastAccessTime);</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// since the stack is LIFO, the objects will be popped off in</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// reverse order from what they are pushed, so we will push</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">// in reverse order </code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">for (int i = Children.Count - 1; i &gt;= 0; --i)</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ToDo.Push(Children[i]);</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div></div></pre>
+<h2><a name="See_Also"></a>See Also</h2>
+<ul>
+<li><a href="https://docs.microsoft.com/en-us/dotnet/api/system.collections.generic.stack-1?view=netframework-4.7"><span style="text-decoration:underline;color:#0066cc;">Stack&lt;T&gt; Class (System.Collections.Generic)</span></a>
+</li></ul>
+<h2><a name="Source_Code"></a>Source Code</h2>
+<p>Download a complete project with source code from this article from the TechNet Gallery item
+<a href="https://gallery.technet.microsoft.com/Iteratively-Processing-820b2879">Iteratively Processing Recursive Data, Such As Directories</a>.</p>
+<br />
+<div id="radePasteHelper" style="border:0px solid red;left:-10000px;top:0px;width:1px;height:1px;overflow:hidden;position:absolute;">
+</div>
+<br />
+<div id="radePasteHelper" style="border:0px solid red;left:-10000px;top:0px;width:1px;height:1px;overflow:hidden;position:absolute;">
+</div>
+<br />
+<div id="radePasteHelper" style="border:0px solid red;left:-10000px;top:16px;width:1px;height:1px;overflow:hidden;position:absolute;">
+</div>
+<hr />
+
+</div>
+    
+    

@@ -1,0 +1,60 @@
+---
+layout: default
+title: SharePoint 2010&#58; Anatomy of Managed Metadata Fields - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Taxonomy_Hidden_Lragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SharePoist">Taxonomy Hidden List</a></li><li class="hierarchy-item"><a href="#Field_usage_in_SharePoint">Field usage in SharePoint</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+From an end-user perspective it looks like there is only one field type that creates only a single taxonomy field in sharepoint; but this is not the whole story behind managed metadata fields. If a managed metadata field will be created SharePoint creates two
+ fields instead. For this post I create a field called “TaxTest” which creates the field itself and a field “TaxTest_0”. I will use this field name for reference.</p>
+<p>Let’s take a closer look on both fields that was created</p>
+<ul>
+<li><strong>“TaxTest” Field is type of “TaxonomyFieldType” </strong></li><li><strong>“TaxTest_0” field is type of “Multiple lines of text”</strong> </li></ul>
+<p>The TaxTest field is basically a lookup field. The target to look up is a hidden list in every site collection called TaxonomyHiddenList. This list only exists once per site collection and stores ever Managed Metadata term that ever was used in your site
+ collection. The list cannot be found in SharePoint because it is a hidden list but can be located using the following URL pattern:<br />
+&nbsp;<strong>&nbsp;&nbsp;&nbsp;&nbsp;http://&lt;yourserver&gt;/&lt;sitecollection root&gt;/Lists/TaxonomyHiddenList</strong>&nbsp;or root site collection.<br />
+Field values stored in this field has also the same pattern as lookup fields and look like this: “1;#Test Term”</p>
+<p>The “TaxTest_0” field will only store key/value pairs which looks like this:</p>
+<p><em>TestTerm|15017394-438b-4c1d-b710-454c7055cc7</em><br />
+<em>&lt;Term value from Taxonomy Store&gt;|&lt;Term Guid from Taxonomy Store&gt;</em></p>
+<p>That’s all for now from these fields I will continue later on with this.</p>
+<h2><a name="Taxonomy_Hidden_List"></a>Taxonomy Hidden List</h2>
+<p>The taxonomy hidden list has two base functionalities. The main reason is the list and view performance in special and SharePoint performance in general. It is much easier to lookup field values from this list than perform a query against the term store
+ every time the data will be used. So if a new term is added to any list in your SharePoint site collection the value will be added to this list.</p>
+<p>The second reasons for this list is that changes to in the Taxonomy Store only have to be done to a single list instead of propagate the values to every list and every list item. I think it is a really smart solution to handle massive updates from the taxonomy
+ store.</p>
+<p>If a user change, merge or deletes a term in the term store management a timer job will handle the update to the Taxonomy Hidden list. The timer job is called “Enterprise Metadata site data update”. One timer job exists for ever web application. If a changed
+ term will be added to a list item the update goes directly to the hidden taxonomy list in case the timer job was not executed already.</p>
+<div class="mceTemp mceIEcenter" style="text-align:center;">
+<dl id="attachment_255" class="wp-caption aligncenter" style="margin:10px auto;width:310px;text-align:center;padding-top:4px;display:block;">
+<dt class="wp-caption-dt"><a href="http://www.n8d.at/blog/wp-content/uploads/2011/05/mmdtimerjob.png"><img class="size-medium wp-image-255" title="Managed Metadata Timer Job" alt="Managed Metadata Timer Job" src="http://www.n8d.at/blog/wp-content/uploads/2011/05/mmdtimerjob-300x130.png" width="300" height="130" style="border-width:0px;margin:0px;padding:0px;" /></a>
+</dt><dd class="wp-caption-dd" style="margin:0px;padding:0px 4px 5px;line-height:17px;font-size:11px;">
+Managed Metadata Timer Job </dd></dl>
+</div>
+<p>The field on the list are quite self-explaining. You have some Guid that identifies the values in the term store. The different language values of the term will be stored there too. So again I think it’s quite smart from a performance perspective. The catch
+ all field will be used for queries I think but I’m not sure about this. Documentation also lacks a little bit about that.</p>
+<div class="mceTemp mceIEcenter" style="text-align:center;">
+<dl id="attachment_256" class="wp-caption aligncenter" style="margin:10px auto;width:310px;text-align:center;padding-top:4px;display:block;">
+<dt class="wp-caption-dt"><a href="http://www.n8d.at/blog/wp-content/uploads/2011/05/taxonomyhiddenlist.png"><img class="size-medium wp-image-256" title="TaxonomyHiddenList Item View" alt=" " src="http://www.n8d.at/blog/wp-content/uploads/2011/05/taxonomyhiddenlist-300x169.png" width="300" height="169" style="border-width:0px;margin:0px;padding:0px;" /></a>
+</dt><dd class="wp-caption-dd" style="margin:0px;padding:0px 4px 5px;line-height:17px;font-size:11px;">
+TaxonomyHiddenList Item View </dd></dl>
+</div>
+<p>As always this list should never be changed or update by any user or code. This list is system managed and therefore should only be changed by the system. You can take a look, browse or query but never change anything.</p>
+<h2 style="padding-top:20px;font-size:1.5em;"><a name="Field_usage_in_SharePoint"></a>Field usage in SharePoint</h2>
+<p>The last question to answer is how SharePoint renders the Taxonomy Fields and where which field will be used.</p>
+<p>The TaxonomyFieldType (“TestTax”) field will be used whenever it is necessary to display the values from the TaxonomyHiddenList. This field type behaves like a normal lookup and will be rendered as a lookup.<br />
+<strong>Usage:</strong>&nbsp;Display form of list items and views.</p>
+TestTax_0 field which is a “multiline of text” field type will be used to find and resolve the terms from the Taxonomy Store.<br />
+<strong>Usage:</strong>&nbsp;New and edit form of list item.&nbsp;
+
+</div>
+    
+    

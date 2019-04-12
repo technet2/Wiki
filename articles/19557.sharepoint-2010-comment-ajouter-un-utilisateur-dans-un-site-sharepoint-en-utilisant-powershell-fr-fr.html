@@ -1,0 +1,109 @@
+---
+layout: default
+title: SharePoint 2010&#58; Comment ajouter un utilisateur dans un site SharePoint en utilisant PowerShell (fr-FR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<table align="center" style="width:80%;">
+<tbody>
+<tr>
+<td style="text-align:center;"><img src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer.Wikis.Components.Files/articles/0474.howto03.png" alt=" " />
+</td>
+<td><strong>This topic is a <em>how to.</em><br />
+</strong>Please keep it as clear and simple as possible. Avoid speculative discussions as well as a deep dive into underlying mechanisms or related technologies.
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note : Cet article est une traduction de l&#39;article&nbsp;<a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/1159.how-to-add-a-user-in-a-sharepoint-site-using-powershell.aspx">How To: Add a User in a SharePoint Site Using PowerShell<span style="font-size:12.1px;color:#333333;">.</span><br />
+</a><br />
+<br />
+<strong>Qu&#39;est-ce que Windows Powershell ? </strong><br />
+<br />
+Windows <strong>PowerShell </strong>est un nouvel outil en ligne de commandes &nbsp;et langage de script de Microsoft qui complète Cmd.exe dans le contexte de l&#39;administration de Windows. Dans le contexte de l&#39;administration de SharePoint, Windows PowerShell &nbsp;remplace
+ l&#39;outil d&#39;administration Stsadm.exe. De plus, vous devez désormais utiliser la technologie de scripting Windows PowerShell pour développer des scripts en ligne de commande pour SharePoint Foundation 2010.<br />
+<br />
+Tout d&#39;abord nous devons charger dans la console PowerShell&nbsp;l&#39;assembly SharePoint, qui est la référence pour tous les objets de SharePoint.<br />
+<br />
+Nous devons ensuite :<br />
+<br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PS C:\Users\sunil&gt; [System.Reflection.Assembly]::LoadWithPartialName(</code><code style="color:blue;">&quot;Microsoft.Sharepoint&quot;</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">GAC Version Location --- ------- -------- True v2.0.50727 C:\Windows\assembly\GAC_MSIL\Microsoft.SharePoint\12.0.0.0__71e9bce111e9429c\Microsoft.SharePo...</code></span></div>
+</div>
+<br />
+<br />
+Créer un objet &quot;site&quot; qui contient la référence au <strong>SPSite</strong>.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PS C:\Users\sunil&gt; $site=</code><code style="color:#006699;font-weight:bold;">new</code><code style="color:#000000;">-</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">Microsoft.Sharepoint.SPSite(</code><code style="color:blue;">&quot;<a href="http://mossportal/">http://mossportal</a>&quot;</code><code style="color:#000000;">)</code></span></div>
+</div>
+<br />
+<br />
+Obtenir une référence au site web qui est associé à l&#39;URL utilisée dans un constructeur SPSite.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PS C:\Users\sunil&gt; $web=$site.OpenWeb()</code></span></div>
+</div>
+<br />
+<br />
+Définir les attributions de rôles pour un utilisateur.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PS C:\Users\sunil&gt; $spRoleAssignment=</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">(SPRoleAssignment(</code><code style="color:blue;">&quot;mossportal\sunil&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;sunilyadav165@gmail.com&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;Sunil Yadav&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;Sharepoint developer&quot;</code><code style="color:#000000;">)</code></span></div>
+</div>
+<br />
+Obtenir le rôle du site (web) et assigner la permission de base pour la définition du rôle.
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $spRoleDefinition=$web.RoleDefinitions[</code><code style="color:blue;">&quot;Read&quot;</code><code style="color:#000000;">]</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $spRoleAssignment.RoleDefinitionBindings.Add($spRoleDefinition)</code></span></div>
+</div>
+<br />
+<p>Et enfin ajouter le &quot;RoleAssignments&quot; au site (web) courant et mettre à jour l&#39;objet &quot;spweb&quot;.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $web.RoleAssignments.Add($spRoleAssignment)</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $web.Update()</code></span></"background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $spRoleDefinition=$web.RoleDefinitions[</code><code style="color:blue;">&quot;Read&quot;</code><code style="color:#000000;">]</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $spRoleAssignment.RoleDefinitionBindings.Add($spRoleDefinition)</code></span></div>
+</div>
+<br />
+<p>Et enfin ajouter le &quot;RoleAssignments&quot; au site (web) courant et mettre à jour l&#39;objet &quot;spweb&quot;.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&gt;&gt; $web.RoleAssignments.Add($spRoleAssignment)</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;"div>
+</div>
+<br />
+<hr />
+<h2><a name="See_Also"></a>Voir aussi</h2>
+<ul>
+<li><a target="_blank" href="http://msdn.microsoft.com/en-us/library/ee539977.aspx">What&#39;s New: Windows PowerShell for SharePoint
+<img alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" title="This link is external to TechNet Wiki. It will open in a new window." style="border-width:0px;border-style:solid;" /></a>
+</li></ul>
+<h2><a name="Other_Languages"></a>Autres langues</h2>
+<p>Cet article est également disponible dans les langues suivantes :</p>
+<h4 style="line-height:20px;"><a name="English_en-US"></a>English (en-US)</h4>
+<ul>
+<li><a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/1159.how-to-add-a-user-in-a-sharepoint-site-using-powershell.aspx" style="font-size:12.1px;color:#ff6600;">How To: Add a User in a SharePoint Site Using PowerShell<span style="font-size:12.1px;color:#333333;">.</span></a>
+</li></ul>
+<h4><a name="Italian_it-IT"></a>Italian (it-IT)</h4>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/18333.sharepoint-2010-come-aggiungere-un-utente-ad-un-sito-usando-powershell-it-it.aspx">SharePoint 2010: come aggiungere un utente ad un sito usando Powershell (it-IT)</a>
+</li></ul>
+
+</div>
+    
+    

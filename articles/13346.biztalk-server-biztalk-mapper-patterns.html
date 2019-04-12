@@ -1,0 +1,109 @@
+---
+layout: default
+title: BizTalk Server&#58; BizTalk Mapper Patterns - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Grouping">Grouping</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Using_preceding-sibling_expression">Using preceding-sibling expression</a></li><li class="hierarchy-item"><a href="#Using_Muenchian_method">Using Muenchian method</a></li><li class="hierarchy-item"><a href="#Grouping_elements_from_different_messages">Grouping elements from different messages</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Calling_an_external_assembly_from_Custom_XSLT">Calling an external assembly from Custom XSLT</a></li><li class="hierarchy-item"><a href="#Working_with_Name_Value_Pair_Structures">Working with Name/Value Pair Structures</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>This article will provide you with common mapper problems and solutions, i.e., some BizTalk Mapper Patterns specifying best practices and some of the best ways to address some of your needs within the context of message transformation and also to enhance
+ your skills when using the BizTalk Server Mapper.</p>
+<h1><a name="Grouping"></a>Grouping</h1>
+<p>One of the more challenging things to do in BizTalk Mapper is to make grouping values operations, i.e., getting a distinct list of values from a set of nodes/elements and do grouping operations over that list of values. For accomplish this we need to use
+ custom XSLT and there is no simple syntax to write this type of XPath query in XSL 1.0 (however this is very easy to do in XSL 2.0).</p>
+When grouping nodes, we also think in sort things to get them into a certain order, then we group all items that have the same value for the sort key (or keys). We&#39;ll use xsl:sort for this grouping, then use variables or functions like key() or generate-id()
+ to finish the job.<br />
+<br />
+<h2><a name="Using_preceding-sibling_expression"></a>Using preceding-sibling expression</h2>
+<p>The preceding-sibling axis contains all the preceding siblings of the context node; if the context node is an attribute node or namespace node, the preceding-sibling axis is empty.</p>
+Basically, the expression checks the value of every preceding-sibling and returns True when none of the preceding-sibling elements has the same value that we are validating or False otherwise. This expression is used in conjunction with xsl:for-each element.<br />
+<br />
+The xsl:for-each element will loop through the first occurrence of each unique grouping value and the preceding-sibling expression will validate the previous existence, emulating this way the existence of a list of unique values.<br />
+<br />
+The following is a list of resources that explain how to accomplish this:<br />
+<ul>
+<li><a href="http://sandroaspbiztalkblog.wordpress.com/2009/09/14/biztalk-advanced-mapping-tips-inline-xslt-selecting-distinct-nodes-grouping/" target="_blank">BizTalk Advanced Mapping Tips – Inline XSLT – Selecting distinct nodes (grouping)</a>
+</li><li><a href="http://docstore.mik.ua/orelly/xml/xslt/ch06_02.htm" target="_blank">Grouping Nodes</a>
+</li></ul>
+This algorithm is not efficient for large messages but work well for ‘normal’ messages. For large messages Muenchian method is generally more efficient than using preceding-sibling.<br />
+<p>The trouble with this method is that it involves two XPaths that take a lot of processing for big XML sources.&nbsp; Searching through all the preceding siblings with the &#39;preceding-siblings&#39; axis takes a long time if you&#39;re near the end of the records.&nbsp; Similarly,
+ getting all the elements with a certain values involves looking at every single element each time.&nbsp; This makes it very inefficient.</p>
+<h2><a name="Using_Muenchian_method"></a>Using Muenchian method</h2>
+<p>The Muenchian Method is a method developed by Steve Muench for performing the previous functions in a more efficient way using keys.&nbsp; Keys work by assigning a key value to a node and giving you easy access to that node through the key value.&nbsp; If there are
+ lots of nodes that have the same key value, then all those nodes are retrieved when you use that key value.&nbsp; Effectively this means that if you want to group a set of nodes according to a particular property of the node, then you can use keys to group them
+ together.</p>
+When leading with large files, speed processing is vital. Classical Muenchian grouping use generate-id(). Muenchian grouping using generate-id() is slowest that using count() function , and shows worst scalability. Probably the reason is poor generate-id()
+ function implementation. In other words, count() function performs is much better.<br />
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7115.grouping_2D00_graph.gif"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/433x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7115.grouping_2D00_graph.gif" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<br />
+So to improve Muenchian a little more we have to use count() function instead of generate-id():<br />
+<blockquote>&lt;xsl:for-each select=&quot;Order[count(. | key(&#39;groups&#39;,OrderId)[1]) = 1]&quot;&gt;<br />
+</blockquote>
+The following is a list of resources that explain how to accomplish this:<br />
+<ul>
+<li><a href="http://blogs.msdn.com/b/chrisromp/archive/2008/07/31/muenchian-grouping-and-sorting-in-biztalk-maps.aspx" target="_blank">Muenchian Grouping and Sorting in BizTalk Maps</a>
+</li><li><a href="http://sandroaspbiztalkblog.wordpress.com/2009/10/28/biztalk-training-mapping-muenchian-grouping-and-sorting-in-biztalk-maps-without-losing-map-functionalities/" target="_blank">BizTalk Training – Mapping – Muenchian Grouping and Sorting in BizTalk
+ Maps without losing Map functionalities</a> </li><li><a href="http://sandroaspbiztalkblog.wordpress.com/2012/05/15/biztalk-training-mapping-how-to-implement-multi-level-muenchian-grouping-in-biztalk-maps/" target="_blank">BizTalk Training – Mapping – How to implement multi-level Muenchian grouping in BizTalk
+ Maps</a> </li><li><a href="http://www.tkachenko.com/blog/archives/000401.html" target="_blank">How to speed up Muenchian grouping in .NET</a>
+</li></ul>
+<h2><a name="Grouping_elements_from_different_messages"></a>Grouping elements from different messages</h2>
+<p>The previous two options are related with group operations associated with the same message, but if we want to combine values from different messages into the same output message. For example: we have a message with user information and another message that
+ have addresses,&nbsp; and each user can have multiple addresses, we want to combine data from two different messages and we want to group all user and addresses information into one single message.</p>
+The following is a list of resources that explain how to accomplish this:<br />
+<ul>
+<li><a href="http://sandroaspbiztalkblog.wordpress.com/2012/06/05/biztalk-training-mapping-grouping-elements-from-different-messages-in-biztalk-maps/" target="_blank">BizTalk Training – Mapping – Grouping elements from different messages in BizTalk Maps</a>
+</li></ul>
+<h1><a name="Calling_an_external_assembly_from_Custom_XSLT"></a>Calling an external assembly from Custom XSLT</h1>
+<p>In complex maps is usual to have scripting functoid with custom inline XSLT, and sometimes is useful to call custom .Net components directly from XSLT. There are two cases in which you will need to build your own custom extension XML file and set the Custom
+ Extension XML file to refer to it, as follows:</p>
+<ul>
+<li>If you use the Custom XSLT Path property to specify your own XSLT for the entire map file and you call an external .NET assembly from your XSLT, you are responsible for creating a properly formatted custom extension XML file that provides the appropriate
+ namespace-to-assembly binding. </li><li>If you use the Inline XSLT or the Inline XSLT Call Template script types in a Scripting functoid and you call a method in an external .NET assembly from that XSLT, you are responsible for creating a properly formatted custom extension XML file that provides
+ the appropriate namespace-to-assembly binding. This is required because BizTalk Mapper does not parse into the XSLT you provide looking for calls to external assemblies. Any binding information you provide by using the Custom Extension XML property will be
+ appended to any binding information that has already been generated when the map was compiled (such as bindings required by other Scripting functoids in the map that use the external assembly option). When you validate the map, the resulting contents of the
+ custom extension XML file contain the union of the binding information you provided and any binding information generated by BizTalk Mapper.
+</li></ul>
+The following is a list of resources that explain how to accomplish this:<br />
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/sandroaspbiztalkblog.wordpress.com/2012/07/29/biztalk-mapper-patterns-calling-an-external-assembly-from-custom-xslt-in-biztalk-server-2010/" target="_self">BizTalk Mapper Patterns: Calling
+ an external assembly from Custom XSLT in BizTalk Server 2010</a> </li><li><a href="http://sandroaspbiztalkblog.wordpress.com/2010/04/06/calling-an-external-assembly-from-custom-xslt-custom-extension-xml-grid-property/" target="_blank">Calling an external assembly from Custom XSLT – Custom Extension XML (Grid Property)</a>
+</li></ul>
+<h1><a name="Working_with_Name_Value_Pair_Structures"></a>Working with Name/Value Pair Structures</h1>
+<p>It is very normal for us to work with Name/Value Pair structures inside the schema, this type of problem happens with some regularity, either mapping one Hierarchical Schema to a Name Value Pair or the reverse process.</p>
+The major problem with this type of mapping is that it can be done in many different ways: some ways quite simple to implement, but with serious performance problems or difficult to maintain; other difficult to implement; dynamic mapping and so on. Therefore
+ it is good to know what alternatives possible as well as their advantages and disadvantages.<br />
+<br />
+The basic thing we need to know is how I can read the name of the element from the source schema. By default when we drag a link from the source to the destination schema, the value of the element is mapped in the destination schema, but we can change this
+ behavior in the link properties by choosing “Copy name” in the “Source Links” property:<br />
+<p style="text-align:center;"><a href="http://sandroaspbiztalkblog.files.wordpress.com/2012/10/copy-name-link-property.png"><img alt=" " src="http://sandroaspbiztalkblog.files.wordpress.com/2012/10/copy-name-link-property.png" style="border-width:0px;border-style:solid;" /></a></p>
+<div style="text-align:left;"><a href="http://sandroaspbiztalkblog.files.wordpress.com/2012/10/copy-name-link-property.png">&nbsp;</a>The following is a list of resources that explain how to accomplish this<br />
+</div>
+<ul>
+<li><a href="http://sandroaspbiztalkblog.wordpress.com/2012/10/28/biztalk-mapper-patterns-how-to-map-hierarchical-schema-to-a-name-value-pair/" target="_blank">BizTalk Mapper Patterns: How to Map Hierarchical Schema to a Name Value Pair</a>
+</li><li><a href="http://sandroaspbiztalkblog.wordpress.com/2012/11/08/biztalk-mapper-patterns-how-to-map-name-value-pair-to-a-hierarchical-schema/" target="_blank">BizTalk Mapper Patterns: How to Map Name Value Pair to a Hierarchical Schema</a>
+</li></ul>
+<h1><a name="See_Also"></a>See Also</h1>
+<p>Read suggested related topics: </p>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9104.biztalk-server-basics-principles-of-maps-en-us.aspx" target="_blank">BizTalk Server: Basics principles of Maps</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/10782.biztalk-server-how-maps-work-en-us.aspx" target="_blank">BizTalk Server: How Maps Work</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/6943.biztalk-server-2010-mapper.aspx" target="_blank">BizTalk Server 2010: Mapper</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/10001.biztalk-virtual-mapper-vs-custom-xslt-en-us.aspx" target="_blank">BizTalk Virtual Mapper VS Custom-XSLT</a>
+</li></ul>
+Another important place to find a huge amount of BizTalk related articles is the TechNet Wiki itself. The best entry point is
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/2240.biztalk-server-resources-on-the-technet-wiki.aspx" target="_blank">
+BizTalk Server Resources on the TechNet Wiki</a>. <br />
+<br />
+<br />
+<br />
+<a href="https://social.technet.microsoft.com/wiki/contents/articles/13346.biztalk-server-biztalk-mapper-patterns/edit.aspx#Introduction">Back to Top</a><br />
+<br />
+
+</div>
+    
+    

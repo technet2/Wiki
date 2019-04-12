@@ -1,0 +1,65 @@
+---
+layout: default
+title: 如何讓 IIS6 / IIS7 中同站台不同應用程式間共用 Session 資料 (zh-TW) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>在 Web Farm 環境下部署網站需要關注的細節可不少，在部署大型網站的時候 IIS 這部分到底要算 <strong>IT</strong> 的領域還是<strong>開發人員</strong>(Developer) 的領域其實分不太清楚，像要在「同一個站台」區分「不同應用程式」且還要能讓 Session 彼此互通，這到底應該歸誰管呢？這可不是用「ASP.NET 開發伺服器」可以模擬出來的，而 IT 人員如果不會寫程式應該也不知該如何是好，這也是我認為 ASP.NET 開發人員應該多熟悉 IIS 的原因。</p>
+<p>要在 Web Farm 環境下要達成 Session 互通有以下條件：</p>
+<ol>
+<li>確保 &lt;machineKey&gt; 要設定一致</li>
+<li>確保各站台在 IIS 中 metabase 定義的「應用程式路徑」必須一致</li>
+<li>使用者的 Session Cookie 的 <strong>名稱/值</strong> 必須一致 (不能跨越<strong>不同的網域網址</strong>或<strong>不同的父網域網址</strong>) </li>
+</ol>
+<p>這三個條件是我從四處的文件與實際經驗累積而來的結果，而其中最不容易發現的是<strong>「應用程式路徑」必須一致</strong>這個條件。</p>
+<p>例如在 IIS 中，預設站台的 ID 為 1，在站台根目錄這個預設用程式的「應用程式路徑」為：</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">/LM/W3SVC/1/ROOT</pre>
+</div>
+<p>若你在 Web Farm 環境下的第二台伺服器，除了原本的預設站台外，再建立另一個新的站台，則該站台的 ID 為 2，其「應用程式路徑」為：</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">/LM/W3SVC/2/ROOT</pre>
+</div>
+<p>那麼這兩個站台便無法共用 Session，即便 Session 儲存後端用 <strong>SQL Server</strong> 或 <strong>ASP.NET 狀態服務</strong> 且也設定好相同的 &lt;machineKey&gt; 也一樣無法互通 Session 資料。</p>
+<p>基於這個規則，在架設 Web Farm 網站時就必須特別小心設定，否則可能查設定查到天荒地老也不知道為什���會這樣，但在不太複雜的網站下，通常多台 Web Farm 主機下也各別只會有一個站台，所以也不一定會遇到這狀況。</p>
+<p>那麼在「同一個站台」下「不同應用程式」時，其實就是「兩個應用程式」，我們可以利用 appcmd 指令列工具測試一下：</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">C:\Windows\System32\inetsrv&gt;appcmd list app<br />APP <span class="str">&quot;Default Web Site/&quot;</span> (applicationPool:DefaultAppPool)<br />APP <span class="str">&quot;Default Web Site/WebSite2&quot;</span> (applicationPool:DefaultAppPool)</pre>
+</div>
+<p>以上述為例，在 <strong>Default Web Site</strong> 站台下另外新增了一個「應用程式」為 <strong>/WebSite2</strong>，其「應用程式路徑」分別為：</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">/LM/W3SVC/1/ROOT<br />/LM/W3SVC/1/ROOT/WebSite2</pre>
+</div>
+<p>所以這兩個<strong>應用程式</strong>基本上是無法互通 Session 的，但你可能會納悶在同一個站台下為何 Session 無法互通，因為在 .NET Framework 裡的 System.Web.SessionState 命名空間已經預先設定了取得 Session 資料的邏輯，所以這是 by design 的情況，程式碼並無法修改。</p>
+<p><img height="81" width="494" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7Session/147812E2/image.png" border="0" style="border:0px none;display:inline;" alt=" " /> </p>
+<p>&nbsp;<img height="116" width="494" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7Session/37E4917A/image.png" border="0" style="border:0px none;display:inline;" alt=" " /> </p>
+<p><img height="72" width="286" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7Session/5AE4DD1D/image.png" border="0" style="border:0px none;display:inline;" alt=" " /> </p>
+<p>這些屬性無法透過「正規」的管道進行修正或調整，所以「表面上」似乎無解，除非你自行撰寫新的 Session 機制並將 IIS 中內建的 Session Module 抽換掉，但這實在太累人了，沒必要重新發明輪子。</p>
+<p>還好在 .NET 有 <strong>Reflection</strong> (反映) 機制，透過自訂的 HttpModule 可以讓 SessionStateModule 模組被載入之前動態將 System.Web.HttpRuntime 型別中的 _appDomainAppId 的值換成我們希望的值，這樣就可以讓不同應用程式之間共用 Session 資料了，程式碼如下：</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">FieldInfo runtimeInfo = <span class="kwrd">typeof</span>(HttpRuntime).GetField(<span class="str">&quot;_theRuntime&quot;</span>, <br />    BindingFlags.Static | BindingFlags.NonPublic);<br />    <br />HttpRuntime theRuntime = (HttpRuntime)runtimeInfo.GetValue(<span class="kwrd">null</span>);<br /><br />FieldInfo appDomainAppIdInfo = <span class="kwrd">typeof</span>(HttpRuntime).GetField(<span class="str">&quot;_appDomainAppId&quot;</span>, <br />    BindingFlags.Instance | BindingFlags.NonPublic);<br /><br />appDomainAppIdInfo.SetValue(theRuntime, <span class="str">&quot;SharedAppDomainAppId&quot;</span>);</pre>
+</div>
+<p>假設我們這個 HttpModule 的類別名稱為 SharedSessionModule 並放置在 App_Code 動態編譯目錄下，我們就可以修改 web.config 將我們自訂的 SharedSessionModule 註冊到 IIS6 的 &lt;httpModules&gt; 區段，或 IIS7 的 &lt;modules&gt; 區段中。</p>
+<p><strong>IIS6</strong></p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">&lt;</span><span class="html">httpModules</span><span class="kwrd">&gt;</span><br />  <span class="kwrd">&lt;</span><span class="html">add</span> <span class="attr">name</span><span class="kwrd">=&quot;SharedSessionModule&quot;</span> <span class="attr">type</span><span class="kwrd">=&quot;SharedSessionModule, App_Code&quot;</span><span class="kwrd">/&gt;</span><br /><span class="kwrd">&lt;/</span><span class="html">httpModules</span><span class="kwrd">&gt;</span></pre>
+</div>
+<p><strong>IIS7</strong></p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">&lt;</span><span class="html">modules</span><span class="kwrd">&gt;</span><br />    <span class="kwrd">&lt;</span><span class="html">remove</span> <span class="attr">name</span><span class="kwrd">=&quot;Session&quot;</span> <span class="kwrd">/&gt;</span><br />    <span class="kwrd">&lt;</span><span class="html">add</span> <span class="attr">name</span><span class="kwrd">=&quot;SharedSessionModule&quot;</span> <span class="attr">type</span><span class="kwrd">=&quot;SharedSessionModule, App_Code&quot;</span><span class="kwrd">/&gt;</span><br />    <span class="kwrd">&lt;</span><span class="html">add</span> <span class="attr">name</span><span class="kwrd">=&quot;Session1&quot;</span> <span class="attr">type</span><span class="kwrd">=&quot;System.Web.SessionState.SessionStateModule,<br />        System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a&quot;</span> <span class="kwrd">/&gt;</span> <br /><span class="kwrd">&lt;/</span><span class="html">modules</span><span class="kwrd">&gt;</span></pre>
+</div>
+<p>注意: 在 IIS7 中由於 ">&gt;</span><br />    <span class="kwrd">&lt;</span><span class="html">remove</span> <span class="attr">name</span><span class="kwrd">=&quot;Session&quot;</span> <span class="kwrd">/&gt;</span><br />    <span class="kwrd">&lt;</span><span class="html">add</span> <span class="attr">name</span><span class="kwrd">=&quot;SharedSessionModu整合管線(Integrated Pipeline) 的關係 HttpModule 的載入順序有些應該注意的地方，你不能使用在 applicationHost.config 中已經定義過的模組名稱，否則將無法調整載入模組的順序，所以才必須「先移除 Session」再「載入 SharedSessionModule」然後再「重新載入 SessionStateModule 並命名為 Session1」才行。如果預設的 SessionStateModule 模組在 SharedSessionModule 之前先執行，在 SessionStateModule 模組完成初始化動作後 SharedSessionModule 再做任何修改就沒有作用了。</p>
+<p><strong>相關連結</strong></p>
+<ul>
+<li><a target="_blank" rel="nofollow" href="http://www.codeproject.com/KB/session/sharedsession.aspx">Sharing Session Across Applications</a></li>
+<li><a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/zh-tw/library/ms178586.aspx">工作階段狀態模式</a> ( <a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/en-us/library/ms178586.aspx">Session-State Modes</a> )</li>
+<li><a target="_blank" rel="nofollow" href="http://support.microsoft.com/kb/325056/zh-tw">PRB：如果您使用 SqlServer 或 StateServer 工作階段模式，在 Web Farm 中的 Session 會遺失</a></li>
+<li><a target="_blank" rel="nofollow" href="http://support.microsoft.com/kb/325056/en-us">PRB: Session State Is Lost in Web Farm If You Use SqlServer or StateServer Session Mode</a></li>
+<li><a target="_blank" rel="nofollow" href="http://support.microsoft.com/kb/312906/en-us">How to create keys by using Visual C# .NET for use in Forms authentication</a></li>
+<li><a target="_blank" rel="nofollow" href="http://blogs.msdn.com/tess/archive/2006/01/26/asp-net-memory-how-much-are-you-caching-an-example-of-foreach.aspx">ASP.NET Memory - How much are you caching? + an example of .foreach</a></li>
+<li><a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/en-us/library/aa531332.aspx">State Management and Caching</a></li>
+<li><a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/en-us/library/ms690693.aspx">IIS 7.0: add Element for modules for system.webServer (IIS Settings Schema)</a></li>
+<li><a target="_blank" rel="nofollow" href="http://learn.iis.net/page.aspx/101/introduction-to-iis-70-architecture/">Introduction to IIS 7.0 Architecture</a></li>
+</ul></div>
+    
+    

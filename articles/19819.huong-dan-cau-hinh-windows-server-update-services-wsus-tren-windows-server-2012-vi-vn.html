@@ -1,0 +1,432 @@
+---
+layout: default
+title: Hướng dẫn cấu hình Windows Server Update Services (WSUS) trên Windows Server 2012 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">GIỚI THIỆU</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trong hệ thống mạng chuyên nghiệp, nhu cầu cập nhật các bản vá lỗi cho Windows và các ứng dụng là hết sức cần thiết để hệ thống có thể hoạt động ổn định nhất có thể. Trên các phiên bản Windows đều có chức năng
+ Automatic Update cho phép tự động tải và cài đặt các bản vá lỗi (hotfix) từ Server Microsoft Update. Tuy nhiên trong trường hợp hệ thống lớn có rất nhiều máy tính đề cập nhật từ Server Microsoft Update sẽ gây ra hiệu ứng xấu cho đường truyền Internet như tốn
+ băng thông và chậm chạp. Giải pháp sử dụng một Server cập nhật các hotfix từ Server Microsoft Update để cung cấp cho tất cả các máy tính trong mạng là hết sức cần thiết. Bài viết này sẽ giới thiệu thao tác cấu hình Windows Server Update Services (WSUS) trên
+ Windows Server 2012 cho phép thực hiện giải pháp đó.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;">&nbsp;</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bài LAB sử dụng các máy tính sau</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- 1 Máy Windows Server 2012 Domain Controller của domain&nbsp;<em>mcthub.local</em>&nbsp;&nbsp;(DC2012, IP 172.16.0.10) (Máy này sẽ đảm nhận WSUS và cập nhật các hotfix từ Server Microsoft Update và phục vụ cho toàn bộ máy
+ tính trong mạng).</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- 1 hoặc 2 Máy Windows 8 đã join domain (CLIENT1 và CLIENT2): Các máy này đóng vai trò Client sẽ cập nhật hotfix từ Server (DC2012)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bài LAB gồm các bước chính sau đây</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- Cài đặt WSUS</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- Cấu hình WSUS</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- Cấu hình Client bằng Group Policy Object (GPO)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- Tạo Computer Group</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">- Approve updates</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">TRIỂN KHAI CHI TIẾT</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">1- Cài đặt WSUS</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Do WSUS sử dụng account&nbsp;<strong><em>NETWORK SERVICE</em></strong>&nbsp;để lưu trữ các file tạm nên bạn cần phân quyền Full Control cho account này trên 2 thư mục C:\Windows\Microsoft.NET\Framework\v4.0.30319\Temporary
+ ASP.NET Files và C:\Windows\Temp</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Phân quyền Full Control cho account&nbsp;<strong><em>NETWORK SERVICE&nbsp;</em></strong>trên 2 thư mục&nbsp;<strong><em>C:\Windows\Microsoft.NET\Framework\v4.0.30319\Temporary ASP.NET Files</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="413" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image001.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="377" height="457" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image002.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Phân quyền Full Control cho account&nbsp;<strong><em>NETWORK SERVICE&nbsp;</em></strong>trên 2 thư mục&nbsp;<strong><em>C:\Windows\Temp</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="413" src="http://www.mcthub.</p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="377" height="457" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image002.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Phân quyền Full Control cho account&nbsp;<strong><em>NETWORK SERVICE&nbsp;</em></strong>trên 2 thư mục&nbsp;<strong><em>C:\Windows\Temp</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New com/images/ContentLab/WSUS1_files/image003.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="377" height="457" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image004.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo bạn tiến hành cài đặt WSUS bằng cách mở&nbsp;<strong><em>Server Manager - Manage - Add&nbsp; Roles and Features</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="444" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image005.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Hộp thoại&nbsp;<strong><em>Select server roles</em></strong>: Chọn&nbsp;<strong><em>Windows Server Update Services</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image006.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Cài đặt các Feature cần thiết cho WSUS - Nhấn&nbsp;<strong><em>Add Features</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="420" height="438" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image007.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Hộp thoại Select role services: Chấp nhận 2 thành phần mặc định là&nbsp;<strong><em>WID (Windows Internal Database)</em></strong>&nbsp;và&nbsp;<strong><em>WSUS Servies</em></strong>&nbsp;-&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image008.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Hộp thoại&nbsp;<strong><em>Content location selection</em></strong>: Chỉ định một thư mục tùy ý để lưu trữ các bản update -&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image009.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn nút&nbsp;<strong><em>Install</em></strong>&nbsp;để bắt đầu cài đặt</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image010.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi quá trình cài đặt hoàn tất, nhấn&nbsp;<strong><em>Launch Post-Installation task</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image011.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình cấu hình server</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image012.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Khi quá trình thành công, hộp thoại sẽ hiển thị&nbsp;<strong><em>&quot;Configuration successfully completed&quot;</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Close</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image013.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">2- Cấu hình WSUS</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Mở WSUS từ Server Manager</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="637" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image014.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bắt đầu tiến trình cấu hình WSUS. Màn hình&nbsp;<strong><em>Before You Begin</em></strong>, bạn nhấn&nbsp;<strong><em>Next.</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image015.jpg" /></span></p>
+<p style="margin:0in39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="637" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image014.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-siz 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Join the Microsoft Update Improvement Program</em></strong>, bỏ chọn ô&nbsp;<strong><em>Yes, I would like to join the Microsoft Update Improvement Program</em></strong>. Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image016.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Choose Upstream Server</em></strong>, bạn chọn ô&nbsp;<strong><em>Synchronize from Microsoft Update</em></strong>&nbsp;để download các bản cập nhật từ Server Microsoft - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image017.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Specify Proxy Server</em></strong>, do truy cập Internet trược tiếp không thông qua Proxy server nên bạn không cần chọn dấu chọn ở ô&nbsp;<strong><em>Use a proxy server when synchronizing -&nbsp;</em></strong>Nhấn<strong><em>&nbsp;Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image018.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Connect to Upstream Server</em></strong>, bạn nhấn vào nút&nbsp;<strong><em>Start Connecting</em></strong>&nbsp;để&nbsp;kết nối đến server Microsoft update</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image019.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình kết nối, quá trình này mất khá nhiều thời gian và phụ thuộc vào tốc độ đường truyền Internet.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image020.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi kết nối thành công, nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image021.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Choose Languages</em></strong>, bạn chọn&nbsp;<strong><em>Download Updates only in these languages</em></strong>, sau đó lựa chọn ngôn ngữ cho bản cập nhật, tôi chỉ chọn&nbsp;<strong><em>English</em></strong>&nbsp;-
+ Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image022.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Choose Products</em></strong>, bạn lựa chọn sản phẩm cần download các bản Update. Trong bài LAB này tôi chỉ muốn cập nhật cho các máy tính chạy Windows 8 nên tôi bỏ tất cả các dấu check
+ có sẵn và chỉ đánh dâu Windows 8 - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image023.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Choose Classifications</em></strong>, bạn chọn loại&nbsp;Update. Trong bài LAB này, để tiết kiệm thời gian download nên tôi chỉ chn phẩm cần download các bản Update. Trong bài LAB này tôi chỉ muốn cập nhật cho các máy tính chạy Windows 8 nên tôi bỏ tất cả các dấu check
+ có sẵn và chỉ đánh dâu Windows 8 - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image023.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Vọn&nbsp;<strong><em>Critical Updates</em></strong>. Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image024.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Set Sync Schedule</em></strong>, bạn chọn&nbsp;<strong><em>Synchronize automatically</em></strong>, sau đó đặt thời gian để lập lịch tùy ý để WSUS server tự động cập nhật với&nbsp;Microsoft Update,
+ tôi chọn 1 giờ sáng và mỗi ngày thực hiện đồng bộ 1 lần - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image025.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image026.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Màn hình&nbsp;<strong><em>Finish</em></strong>, bạn đánh dấu chọn vào ô&nbsp;<strong><em>Begin initial synchronization</em></strong>, chương trình sẽ bắt đầu download các bản update đã chỉ định ở bước trước</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="526" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image027.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Synchronizations</em></strong>, quan sát và chờ đợi quá trình download hoàn tất, thời gian chờ đợi phụ thuộc vào số lượng Update được chọn và tốc độ đường truyền Internet của bạn.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image028.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi hoàn tất, chọn&nbsp;<strong><em>Synchronizations</em></strong>, kiểm tra trạng thái thành công (Succeeded).</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image029.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Updates</em></strong>&nbsp;-&nbsp;<strong><em>All Updates</em></strong>&nbsp;. Mục&nbsp;<strong><em>Approval</em></strong>&nbsp;chọn&nbsp;<strong><em>Any Except Declined</em></strong>, mục&nbsp;<strong><em>Status</em></strong>&nbsp;chọn&nbsp;<strong><em>Any</em></strong>.
+ Nhấn nút&nbsp;<strong><em>Refresh</em></strong>&nbsp;bạn sẽ thấy các bản update đã download được từ Microsoft.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image030.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">3- Cấu hình Client bằng Group Policy Object (GPO)</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Mở&nbsp;<strong><em>Active Directory Users and Computers</em></strong>, tạo OU tên là&nbsp;<strong><em>WSUS Clients</em></strong>, sau đó bạn di chuyển các&nbsp;Computers Client&nbsp;vào OU này</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="697" height="357" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image031.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo, mở&nbsp;<strong><em>Group Policy Management</em></strong>, nhấn chuột phải vào OU&nbsp;<strong><em>WSUS Clients</em></strong>, chọn&nbsp;<strong><em>Create a GPO in this domain, and Link it here</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="503" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image032.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Ở khung&nbsp;<strong><em>New GPO</em></strong>, bạn đặt tên&nbsp;GPO và nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="400" height="187" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image033.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chuột phải vào&nbsp;GPO&nbsp;vừa tạo, chọn&nbsp;<strong><em>Edit</em></strong>.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="503" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image034.jpg" /</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="400" height="187" src="http://www.mcthub.com/images/Conten></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Ở khung bên trái, bạn lần lượt bung&nbsp;<strong><em>Computer Configuration</em></strong>&nbsp;-&nbsp;<strong><em>Policies</em></strong>&nbsp;-&nbsp;<strong><em>Administrative Templates</em></strong>&nbsp;-&nbsp;<strong><em>Windows Components</em></strong>&nbsp;-&nbsp;<strong><em>Windows
+ Update</em></strong>,&nbsp;ở khung bên phải, bạn nhấn chuột phải vào mục&nbsp;Configure Automatic Updates, chọn&nbsp;Edit</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="393" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image035.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Qui định các Client sẽ tự động Download Update và cài đặt vào lúc 1 giờ trưa hằng ngày - Nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="700" height="643" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image036.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chuột phải vào mục&nbsp;<strong><em>Specify intranet Microsoft update service location</em></strong>, chọn&nbsp;<strong><em>Edit.</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="393" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image037.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Do WSUS sử dụng HTTP port 8530, bạn nhập vào URL WSUS Server cho 2 mục&nbsp;<strong><em>Set the intranet update service for detecting services</em></strong>&nbsp;và&nbsp;<strong><em>Set the Intranet static server&nbsp;</em></strong>là<strong><em>&nbsp;http://IP
+ của server:8530 -&nbsp;</em></strong>Nhấn<strong><em>&nbsp;OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="700" height="643" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image038.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Cập nhật policy bằng lệnh&nbsp;<strong><em>GPUPDATE /FORCE</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="677" height="259" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image039.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sang máy client, kiểm tra client có được áp đặt policy hay không bằng lệnh&nbsp;<strong><em>GPRESULT /R</em></strong>&nbsp;và bảo đảm trong mục&nbsp;<strong><em>COMPUTER SETTINGS</em></strong>&nbsp;có&nbsp;<strong><em>GPO Configure
+ WSUS</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="677" height="487" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image040.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi cấu hình GPO, sẽ mất một khoảng thời gian khá lâu để các máy client có thể xuất hiện trong mục&nbsp;<strong><em>Computers</em></strong>&nbsp;trên WSUS Console. Đối cới những client được áp dụng GPO, sẽ mất khoảng
+ 20 phút để GPO được cập nhật. Để không phải chờ đợi lâu, trên các máy client bạn có thể dùng lệnh GPUPDATE /FORCE để cập nhật policy và lệnh WUAUCTL /DETECTNOW để tiến hành cập nhật nhanh. Tuy nhiên quá trình này cũng có thể mất khá nhiều thời gian, bạn nên
+ kiển nhẫn chờ đợi hoặc thực hiện tiếp các bước tiếp theo và quay lại kiểm tra sau.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="677" height="259" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image041.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="677" height="235" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image042.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi cập nhật client, chuyển sang server, chọn&nbsp;<strong><em>Computers - All Computers</em>n></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="677" height="259" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image041.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="677" height="235" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image042.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi cập nhật client, chuyển sang server, chọn&nbsp;<strong><em>Comput</strong>&nbsp;- Mục&nbsp;<strong><em>Status</em></strong>&nbsp;chọn&nbsp;<strong><em>Any</em></strong>&nbsp;- Nhấn nút&nbsp;<strong><em>Refresh</em></strong>&nbsp;bạn
+ sẽ thấy danh sách các client đã được cập nhật. Nếu chưa cập nhật, bạn có thể thực hiện tiếp các bước tiếp theo (bỏ qua bước đưa client vào group) và quay lại kiểm tra sau.</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image043.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">4- Tạo Computer Group</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trong hệ thống mạng, các client có thể chạy nhiều hệ điều hành khác nhau (Windows 8, Windows 7, Windows XP hay Windows Server 2012). Mỗi Hệ điều hành cần cập nhật các bản update khác nhau. Vì vậy bạn cần phân
+ loại các client dựa vào hệ điều hành bằng cách tạo các Computer Group</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bung mục&nbsp;<strong><em>Computers</em></strong>, nhấn chuột phải vào&nbsp;<strong><em>All Computers</em></strong>, chọn&nbsp;<strong><em>Add Computer Group</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image044.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Hộp thoại&nbsp;<strong><em>Add Computer Group</em></strong>, ở mục&nbsp;<strong><em>Name</em></strong>, đặt tên cho&nbsp;<strong><em>Computer Group -&nbsp;</em></strong>Nhấn<strong><em>&nbsp;OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="516" height="204" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image045.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn máy tính Client để đưa vào&nbsp;Computer Group, nhấn phải chuột chọn&nbsp;<strong><em>Change Membership</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image046.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;Group&nbsp;<strong><em>Windows 8 Clients</em></strong>&nbsp;sau đó nhấn&nbsp;<strong><em>OK.</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="415" height="412" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image047.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;Kiểm tra máy Client đã được đưa vào Computer Group&nbsp;<strong><em>Windows 8 Clients.</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image048.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">5- Approve updates</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Để cho phép các máy client download và cài đặt các update, bạn cần approve các ban update cho các computer group chỉ định.&nbsp; Chọn&nbsp;<strong><em>Updates - All Updates</em></strong>, chọn các bản Update cần&nbsp;Approve
+ - Chuột phải và chọn&nbsp;<strong><em>Approve</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="431" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image049.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chỉ định&nbsp;Computer Group&nbsp;cần&nbsp;Approve - Chọn&nbsp;<strong><em>Approved for install</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="619" height="383" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image050.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="619" height="383" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image051.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình approve, quá trình này có thể nhanh hay chậm tùy thuộc vào số lượng các bản update mà bạn approve</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="641" height="347" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image052.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Kiểm tra các Update đã được&nbsp;Approve - Nhấn&nbsp;<strong>ont-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;<em>Close</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="641" height="347" src="http://www.mcthub.com/images/ContentLab/WSUS1_files/image053.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Như vậy dựa vào các cấu hình vừa rồi, WSUS server hàng ngày vào lúc 1 giờ sáng sẽ tự động đồng bộ với server của Microsoft để cập nhật các bản update mới, các máy client sẽ tự động download các bản update từ
+ WSUS server và tự động cài đặt các bản update đó vào lúc 1 giờ trưa hàng ngày.</span></p>
+<div style="text-align:left;"><span style="font-family:Verdana;font-size:13px;color:#000000;"><br />
+</span></div>
+<span style="font-size:10pt;text-align:right;font-family:Verdana;color:#000000;">
+<div style="text-align:left;"><span style="font-size:10pt;">Cám ơn bạn đã xem bài viết<br />
+<a href="http://www.mcthub.com/technologies/microsoft/windows-server/226-h%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-c%E1%BA%A5u-h%C3%ACnh-windows-server-update-services-wsus-tr%C3%AAn-windows-server-2012.html">mcthub.com</a><br />
+<br />
+<br />
+</span></div>
+</span>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a>
+
+</div>
+    
+    

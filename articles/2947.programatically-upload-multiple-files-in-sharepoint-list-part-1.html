@@ -1,0 +1,125 @@
+---
+layout: default
+title: Programatically Upload Multiple Files in SharePoint List (Part 1) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-size:12.1px;">This is&nbsp;first part of the series of &quot;Programmatically Upload Multiple Files in SharePoint List&quot;</span><br />
+<br />
+This is two part series. At first part I will show you a method through which you can implement Multiple files attachment.<br />
+<br />
+In Part 1, I will show you Design Related&nbsp;concept while in&nbsp;<a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/multiple-file-attachment-in-sharepoint-list-part-2.aspx">Part II</a> will show development and coding related stuff.<br />
+<br />
+Go To <a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/multiple-file-attachment-in-sharepoint-list.aspx">
+<span style="color:#0066dd;">PART 1<br />
+</span></a>Go To <a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/multiple-file-attachment-in-sharepoint-list-part-2.aspx">
+<span style="color:#0066dd;">PART 2</span></a><br />
+<br />
+<br />
+There are two things we need to consider before implementation.<br />
+1. Attachment of files at the client side<br />
+2. Upload files<br />
+<br />
+Attachment should be more than one at a time at client side and then we should finally Upload all attached files.<br />
+<br />
+SharePoint&nbsp;by default&nbsp;provides a JavaScript File through which we can&nbsp;implement Multiple file attachment feature. FORM.JS file provides method through which you can attach multiple file at a time.<br />
+<br />
+<strong>using FORM.JS File<br />
+</strong>Before using FORM.JS File we need to dig something about it. FORM.JS file is located in TEMPLATE\1033 Folder.
+<br />
+so,<br />
+<br />
+Below is the structure of the Attachment Form and Flow.<br />
+Clicking the “Attach File” link at the top of the form calls a JavaScript function
+<strong>UploadAttachment()</strong> . <br />
+It&nbsp;hides <strong>Part1</strong> section and show <strong>partAttachment</strong> section.&nbsp;</p>
+<p><img alt=" " height="445" width="832" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/800x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/8360.attachment2.GIF" style="width:883px;height:527px;border:0px solid;" /></p>
+<p>Select a file for attachment and click OK. But Wait... these files are actually not uploaded, they are only attached.<br />
+<br />
+SharePoint uses a&nbsp; variable called “FileUploadIndex” which it uses to keep track of how many attachments are present. The ID for each files becomes “fileupload” concatenated with the current “FileUploadIndex” .&nbsp;&nbsp;fileID=FileuploadString&#43;FileUploadIndex<br />
+<br />
+When you click the OK button it calls the “OKAttach()” function that performs the following tasks:</p>
+<strong>First it creates a new row in&nbsp;&quot;idAttachmentsTable&quot; containing the file path and the link to delete the file<br />
+</strong><strong>Creates a new file field inside&nbsp;idAttachmentsTable incrementing 1 to the “FileUploadIndex”.&nbsp;<br />
+so&nbsp;if you had just uploaded first file (fileupload0),&nbsp;it will create fileupload1. It creates&nbsp;two TD one for filename and another for Delete Link</strong><br />
+&nbsp;&nbsp;<br />
+<span style="background-color:#ffff00;">&nbsp; var L_FileUploadToolTip_text=&quot;Name&quot;;<br />
+&nbsp;&nbsp;oRow=document.getElementById(&quot;idAttachmentsTable&quot;).insertRow(-1);&nbsp;<br />
+&nbsp;&nbsp;<br />
+&nbsp;&nbsp;RowID=&#39;attachRow&#39;&#43;FileUploadIndex;<br />
+&nbsp;&nbsp;oRow.id=RowID;<br />
+&nbsp;&nbsp;oCellFileName=oRow.insertCell(-1);<br />
+&nbsp;&nbsp;oCellFileName.className=&quot;ms-vb&quot;;<br />
+&nbsp;&nbsp;oCellFileName.innerHTML=&quot;&lt;span dir=\&quot;ltr\&quot;&gt;&quot;&#43;filename&#43;&quot;&lt;/span&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&quot;;<br />
+&nbsp;&nbsp;oCellControl=oRow.insertCell(-1);<br />
+&nbsp;&nbsp;oCellControl.className=&quot;ms-propertysheet&quot;;<br />
+&nbsp;&nbsp;oCellControl.innerHTML=&quot;&lt;IMG SRC=&#39;&quot;&#43;document.getElementsByName(&quot;RectGifUrl&quot;).item(0).value&#43;&nbsp;&nbsp;&nbsp;&quot;&#39;&gt;&amp;nbsp;&lt;a href=&#39;javascript:RemoveLocal(&quot;&#43;RowID&#43;&quot;,\&quot;&quot;&#43;fileID&#43;&nbsp;&nbsp;&nbsp;&quot;\&quot;)&#39;&gt;&quot;&#43;L_Delete_Text&#43;&quot;&lt;/a&gt;&quot;;<br />
+&nbsp;&nbsp;fileInput.style.display=&quot;none&quot;;<br />
+&#43;&#43;FileUploadIndex;<br />
+<br />
+&nbsp;&nbsp;oAttachments=document.getElementById(&quot;attachmentsOnClient&quot;);<br />
+&nbsp;&nbsp;var inputNode=document.createElement(&quot;input&quot;);<br />
+&nbsp;&nbsp;inputNode.tabIndex=&quot;1&quot;;<br />
+&nbsp;&nbsp;inputNode.type=&quot;File&quot;;<br />
+&nbsp;&nbsp;inputNode.className=&quot;ms-longfileinput&quot;;<br />
+&nbsp;&nbsp;inputNode.title=L_FileUploadToolTip_text;<br />
+&nbsp;&nbsp;inputNode.name=FileuploadString&#43;FileUploadIndex;<br />
+&nbsp;&nbsp;inputNode.id=FileuploadString&#43;FileUploadIndex;<br />
+&nbsp;&nbsp;inputNode.size=&quot;56&quot;;<br />
+&nbsp;&nbsp;oAttachments.appendChild(inputNode);<br />
+&nbsp;&nbsp;var theForm=fileInput.form;<br />
+&nbsp;&nbsp;theForm.encoding=&#39;multipart/form-data&#39;;<br />
+&nbsp;&nbsp;document.getElementById(&quot;idAttachmentsRow&quot;).style.display=&quot;&quot;;<br />
+&nbsp;&nbsp;ShowPart1();</span><br />
+<br />
+So by using the same method you can&nbsp;design the same look and feel Page like SharePoint NewForm.aspx with attachment functionality.<br />
+download the working example from below link:<br />
+<a href="http://cid-9f89234e32135c71.office.live.com/self.aspx/.Public/SP%5E_Attachment.aspx">http://cid-9f89234e32135c71.office.live.com/self.aspx/.Public/SP%5E_Attachment.aspx</a><br />
+<br />
+<strong>using <a class="ExistingPageLink" href="/wiki/contents/articles/3952.notmsrelated-jquery.aspx" title="Click to view the page titled: JQuery">JQuery</a> jquery.MultiFile.js Plugin <br />
+This is the easiest one :)<br />
+<br />
+</strong><strong><span style="background-color:#ffff00;"><span style="font-family:&#39;courier new&#39;;">&lt;asp:Content ID=&quot;contentScriptsHeader&quot; ContentPlaceHolderID=&quot;PlaceHolderAdditionalPageHead&quot; runat=&quot;server&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;!--Add JQuery Library--&gt;<br />
+&nbsp;&nbsp;&nbsp; &nbsp;&lt;script type=&quot;text/javascript&quot; src=&quot;../js/jquery.1.4.2.js&quot;&gt;&lt;/script&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;script type=&quot;text/javascript&quot; src=&quot;../js/jquery.MultiFile.js&quot; &gt;&lt;/script&gt;<br />
+&lt;/asp:Content&gt;<br />
+<br />
+&lt;asp:Content contentplaceholderid=&quot;PlaceHolderMain&quot; runat=&quot;server&quot;&gt;<br />
+&lt;span id=&quot;partAttachment&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;table cellSpacing=&quot;0&quot; cellPadding=&quot;0&quot; width=&quot;100%&quot; border=&quot;0&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;tbody&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;tr&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td class=&quot;ms-formlabel&quot; valign=&quot;top&quot; width=&quot;190&quot; height=&quot;50&quot;&gt;File Name &lt;/td&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;td class=&quot;ms-formbody&quot; valign=&quot;bottom&quot; width=&quot;400&quot; height=&quot;15&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;span dir=&quot;ltr&quot;&gt;&lt;/span&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;asp:FileUpload ID=&quot;inputFile&quot; runat=&quot;server&quot; class=&quot;multi&quot; style=&quot;width: 350px&quot;&gt;&lt;/asp:FileUpload&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/td&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/tr&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/tbody&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/table&gt;<br />
+&lt;/span&gt; <br />
+&lt;/asp:Content&gt;</span><br />
+</span><br />
+It will show you the Page like below<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/7242.attachment1.GIF" style="border:0px solid;" /><br />
+<br />
+</strong>you can delete/add more files also.<br />
+you can download this JQuery Multi File Upload Plugin from <a href="http://www.fyneworks.com/jquery/multiple-file-upload/">
+http://www.fyneworks.com/jquery/multiple-file-upload/</a><br />
+you can also download the Jquery Main Library from <a href="http://jquery.com/">http://jquery.com/</a><br />
+<br />
+download the source page (working example)&nbsp;from below link:<br />
+<a href="http://cid-9f89234e32135c71.office.live.com/self.aspx/.Public/SP%5E_Attachment%5E_JQuery.aspx">http://cid-9f89234e32135c71.office.live.com/self.aspx/.Public/SP%5E_Attachment%5E_JQuery.aspx</a><br />
+<br />
+In <a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/multiple-file-attachment-in-sharepoint-list-part-2.aspx">
+Part II </a>I will show you how to upload all attached files to SharePoint List.<br />
+<br />
+Jayant Sharma
+
+</div>
+    
+    

@@ -1,0 +1,114 @@
+---
+layout: default
+title: Creating a certificate template that includes the Microsoft Platform Crypto Provider on a CA with no TPM - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-family:calibri;">Applies to Windows Server 2012 R2 Preview,&nbsp;Windows Server 2012, Windows 8, and Windows 8.1 Preview<br />
+<br />
+Windows 8 and Windows Server 2012 Certificate Authority support the use of <a title="TPM explanation" href="http://technet.microsoft.com/library/cc749022.aspx" target="_blank">
+Trusted Platform Modules (TPMs)</a> to secure certificate keys. A&nbsp;<a title="KSP explanation" href="http://msdn.microsoft.com/library/windows/desktop/bb931355.aspx" target="_blank">key storage provider (KSP)</a>
+<br />
+named the “Microsoft Platform Crypto Provider” is available for use in which TPMs are provisioned in Windows 8 and Windows Server 2012 computers.</span></p>
+<p><span style="font-family:calibri;">In order to utilize this capability, a certificate template must be configured to use the
+<span style="font-family:calibri;">Microsoft Platform Crypto Provider</span> KSP. This can be done in the template UI by switching to the Cryptography tab and select the “Key Storage Provider” then select the TPM KSP. The configuration
+ would look like this:</span></p>
+<p><span style="font-family:calibri;">We can also select the software KSP, in that case client will try to use TPM KSP first, if that is not available or does not work, the client will move on to use software KSP.</span></p>
+<p><span style="font-family:calibri;">When an administrator is configuring the template, the KSP is enumerated from local computer. The KSP “Microsoft Platform Crypto Provider” is only shown if a TPM is available and properly provisioned.
+ If the administrator needs to configure the KSP using a computer that does not have a TPM installed, the following workaround can be used:</span></p>
+<ol>
+<li>Ensure that you are logged on as an Enterprise Administrator and Certificate Administrator to your certification authority.
+</li><li>Open the <strong>Certificate Templates Console</strong> (<strong>certtmpl.msc</strong>).
+</li><li>Duplicate a certificate template, such as Workstation Authentication.&nbsp; </li><li>On the <strong>Compatibility </strong>tab, ensure that <strong>Certification Authority</strong> is set to
+<strong>Windows Server 2012</strong> and Certificate recipient is configured for <strong>
+Windows 8 / Windows Server 2012</strong>. </li><li>In the <strong>General </strong>tab, ensure you give the certificate template a unique name.
+</li><li>On the <strong>Cryptography</strong> tab, in the <strong>Provider Category</strong>, configure
+<strong>Key Storage Provider</strong>. </li><li>Under <strong>Choose which cryptographic providers can be used for requests</strong>, select
+<strong>Requests must use one of the following providers</strong>. </li><li>In <strong>Providers</strong>, select <strong>Microsoft Software Key Storage Provider</strong>.
+</li><li>Configure the remaining tabs of the certificate template to meet your certificate issuance requirements, and then click
+<strong>OK</strong> </li><li>From a command prompt, dump the certificate to a text file. You can use the following command:
+<strong>certutil –dstemplate </strong><em>MyTemplate</em><strong> &gt; </strong><em>MyTemplate</em><strong>.txt</strong>
+<br />
+<ul>
+<li>Note: Substitute the actual name of the certificate template for <em>MyTemplate</em>.
+</li></ul>
+</li><li>Open the file in a text editor, such as Notepad (<strong>notepad </strong><em>MyTemplate</em><strong>.txt</strong>)
+</li><li>The file will show the template content, including the KSP information. An example of a certutil dump is shown below. Edit the file:<br />
+<ul>
+<li>Locate the line that reads <strong><span style="font-family:calibri;">pKIDefaultCSPs = &quot;1,Microsoft Software Key Storage Provider&quot;,
+</span></strong>change <strong>Microsoft Software Key Storage Provider</strong> to
+<strong>Microsoft Platform Crypto Provider</strong> </li><li>Delete the last line of output from the file that reads <strong>CertUtil: -dsTemplate command completed successfully.</strong>
+</li><li>Save the file </li></ul>
+</li><li>Use certutil to upload the content to the AD DS Configuration container. The command is
+<strong>certutil -dsaddtemplate </strong><em>MyTemplate</em><strong>.txt</strong>
+</li><li>Run <strong>Certutil -pulse</strong> to make sure the template cache in local computer is updated.
+</li><li>In the <strong>Certificate Templates Console</strong>, right-click the template you created and then click
+<strong>Properties</strong>. </li><li>In the <strong>Cryptography</strong> tab, ensure that under <strong>Providers</strong> that
+<strong>Microsoft Platform Crypto Provider</strong> appears . </li></ol>
+<p>Certutil dump of&nbsp;a template named User_V3:</p>
+<table border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="padding:0in 5.4pt;border:1pt solid windowtext;width:583.3pt;background-color:transparent;">
+<p><span style="font-family:calibri;">[User_V3]<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; objectClass = &quot;top&quot;, &quot;pKICertificateTemplate&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; cn = &quot;User_V3&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; distinguishedName = &quot;CN=User_V3,CN=Certificate Templates,CN=Public Key ervices,CN=Services,CN=Configuration,DC=MyDC,DC=com&quot;</span></p>
+<p><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; instanceType = &quot;4&quot;<br />
+</span><span style="font- that under <strong>Providers</strong> that
+<strong>Microsoft Platform Crypto Provider</strong> appears . </li></ol>
+<p>Certutil dump of&nbsp;a template named User_V3:</p>
+<table border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="padding:0in 5.4pt;border:1pt solid windowtext;width:583.3pt;background-color:transparent;">
+<p><span style="font-family:calibri;">[User_V3]<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; objectClass = &quot;top&quot;, &quot;pKICertificateTemplate&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; cn = &quot;User_V3&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; distingfamily:calibri;">&nbsp;&nbsp;&nbsp; whenCreated = &quot;20120714222057.0Z&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; whenChanged = &quot;20121008225126.0Z&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; displayName = &quot;User_V3&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; uSNCreated = &quot;26796&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; uSNChanged = &quot;97640&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; showInAdvancedViewOnly = &quot;TRUE&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; name = &quot;User_V3&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; objectGUID = &quot;608628c3-2717-451c-892b-b084ff3978d8&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; flags = &quot;131642&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; revision = &quot;100&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; objectCategory = &quot;CN=PKI-Certificate-Template,CN=Schema,CN=Configuration,DC=d9-1351D0423,DC=nttest,DC=microsoft,DC=com&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIDefaultKeySpec = &quot;1&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIKeyUsage = &quot;a0&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIMaxIssuingDepth = &quot;0&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKICriticalExtensions = &quot;2.5.29.15&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIExpirationPeriod =&nbsp; &quot;1 Years&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIOverlapPeriod =&nbsp; &quot;6 Weeks&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIExtendedKeyUsage = &quot;1.3.6.1.4.1.311.10.3.4&quot;, &quot;1.3.6.1.5.5.7.3.4&quot;, &quot;1.3.6.1.5.5.7.3.2&quot;<br />
+</span><strong><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; pKIDefaultCSPs =
+<span>&quot;1,<span>Microsoft Software Key Storage Provider</span>&quot;</span><br />
+</span></strong><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; dSCorePropagationData = &quot;20120714222100.0Z&quot;, &quot;20120714222100.0Z&quot;, &quot;16010101000000.0Z&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-RA-Signature = &quot;0&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Enrollment-Flag = &quot;41&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Private-Key-Flag = &quot;33685520&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Certificate-Name-Flag = &quot;-1509949440&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Minimal-Key-Size = &quot;2048&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Template-Schema-Version = &quot;3&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Template-Minor-Revision = &quot;3&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Cert-Template-OID = &quot;1.3.6.1.4.1.311.21.8.7686780.5497180.1657228.10716309.12491915.247.13620649.13495913&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-Certificate-Application-Policy = &quot;1.3.6.1.4.1.311.10.3.4&quot;, &quot;1.3.6.1.5.5.7.3.4&quot;, &quot;1.3.6.1.5.5.7.3.2&quot;<br />
+</span><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; msPKI-RA-Application-Policies = &quot;msPKI-Asymmetric-Algorithm`PZPWSTR`RSA`msPKI-Hash-Algorithm`PZPWSTR`SHA1`msPKI-Key-Usage`DWORD`16777215`msPKI-Symmetric-Alg</span><span style="font-family:calibri;">orithm`PZPWSTR`3DES`msPKI-Symmetric-Key-Length`DWORD`168`&quot;</span></p>
+<p><span style="font-family:calibri;">[TemplateList]</span></p>
+<p><span style="font-family:calibri;">&nbsp;&nbsp;&nbsp; Template = &quot;User_V3&quot;</span></p>
+<p><span><strong><span style="font-family:calibri;">CertUtil: -dsTemplate command completed successfully.</span></strong></span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<br />
+<p><span style="font-family:calibri;">&nbsp;</span></p>
+
+</div>
+    
+    

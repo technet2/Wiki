@@ -1,0 +1,206 @@
+---
+layout: default
+title: Uninstall KBUninstall folders - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong><span style="font-size:20px;">Uninstall KBUninstall folders on your computers in a domain<br />
+</span></strong>Glenn Turner gracious posted up this script to delete KBUninstall folders that end up taking a great deal of room on computers. If you have applied a service pack that replaces the need for a hotfix you do not need these folders.&nbsp;Keep in mind
+ if you remove a folder from a workstation and later on you need to uninstall a specific patch, if you have removed the KBuninstall folder, you can&#39;t then uninstall the update.</p>
+<p>&quot;Our script is now in production and we were able to delete around 45GB. This will save us 4TB of tape writes annually.<br />
+<br />
+The script connects to AD, grabs a list of all machines in the Servers OU, then goes through each one, first ensuring that it’s online, then checking that the hostname that the server responds with is the machine you’re trying to target (that’s also good for
+ checking that WMI is working.&nbsp;We then find out the location of the windows directory, enumerate all directories containing the string KBUninstall, then delete them if they are older than the deletionthreshold (we chose 60 days).<br />
+<br />
+Load it up in a script editor that is VBScript aware and shows colours so that you can get a better idea of the comments.&nbsp;Obviously, test it before running it (even though I’ve commented out the line that actually does the deletion. When you do run it, use
+ cscript.exe scriptname.vbs otherwise you’ll get a whole load of popups.<br />
+<br />
+I hope this helps somebody.&quot;</p>
+<p>To download this see below or go to the codeplex site to download the .vbs file directly -
+<a href="http://kbuninstall.codeplex.com/">http://kbuninstall.codeplex.com/</a></p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p>&#39; Script written by Glenn Turner - nzdude (at) hotmail dot com.<br />
+&#39; Dedicated to Susan.<br />
+&#39; Please feel free to modify and distribute as you see fit, including deleting these lines.<br />
+&#39; Sign up for the patch management mailing list because it&#39;s awesome:<br />
+&#39; <a href="http://www.patchmanagement.org/">http://www.patchmanagement.org/</a></p>
+<p>&nbsp;</p>
+<p>Option Explicit</p>
+<p>Const HKEY_LOCAL_MACHINE = &amp;H80000002<br />
+Const HKEY_CURRENT_USER = &amp;H80000001<br />
+Const REG_SZ = 1<br />
+Const REG_EXPAND_SZ = 2<br />
+Const REG_BINARY = 3<br />
+Const REG_DWORD = 4<br />
+Const REG_MULTI_SZ = 7<br />
+Const HKLM = 0<br />
+Const HKCU = 1<br />
+Const ADS_SCOPE_SUBTREE = 2<br />
+Const ForReading = 1<br />
+Const ForWriting = 2<br />
+Const ForAppending = 8</p>
+<p>Dim objFSO, objOutputFile, objNetwork, objRoot, objMachineDictionaryItem, objMachineDictionary, objUserDictionaryItem, objUserDictionary<br />
+Dim strComputer, vMachineDictionaryCount, vUserDictionaryCount, vCurrentMachineCount<br />
+Dim vIPAddress, sLocation, objWMIService, colItems, objItem, HostName<br />
+Dim strDefaultDomainNC, eqs, eqs1, DiffString, DomainString, strADSQuery<br />
+Dim objADOConn, objADOCommand, objQueryResultSet<br />
+Dim strWindowsDirectory, strRemoteWindowsDirectory, objFolder, colSubfolders, objSubFolder, objCurrentSubFolder, arrNames, vTotalSubFolderSize, vAllServersTotalSubFolderSize<br />
+Dim DeletionThreshold</p>
+<p>Set objFSO = CreateObject(&quot;Scripting.FileSystemObject&quot;) &#39;Creates File System Object<br />
+Set objNetwork = CreateObject(&quot;WScript.Network&quot;) &#39;Creates Network Object</p>
+<p>Set objMachineDictionary = CreateObject(&quot;Scripting.Dictionary&quot;)<br />
+Set objUserDictionary = CreateObject(&quot;Scripting.Dictionary&quot;)</p>
+<p>vMachineDictionaryCount = 0<br />
+vUserDictionaryCount = 0<br />
+vCurrentMachineCount = 0</p>
+<p>DeletionThreshold = 60&nbsp; &#39;This is where we specify the minimum age (days) at which folders can be deleted.</p>
+<p>WScript.Echo &quot;Running script with deletion threshold of &quot; &amp; DeletionThreshold &amp; &quot; days&quot;<br />
+&#39;This gets all PCs from the PCs Ou in the active directory<br />
+WScript.Echo Time &amp; &quot;: Retrieving all computers (in specified OU only) from Active Directory . . .&quot;</p>
+<p>&#39;Attempts to get the RootDSE of the Active Directory<br />
+Set objRoot = GetObject(&quot;<a>ldap://RootDSE/</a>&quot;)<br />
+strDefaultDomainNC = objRoot.Get(&quot;DefaultNamingContext&quot;)<br />
+&#39;----------------------------------------------------------------------------------</p>
+<p>eqs = InStr(1,strDefaultDomainNC,&quot;=&quot;)<br />
+eqs1 = InStr(1,strDefaultDomainNC,&quot;,&quot;)</p>
+<p>DiffString = (Len(strDefaultDomainNC)-(eqs1-eqs-1))<br />
+DomainString = Mid(strDefaultDomainNC, eqs&#43;1, Len(strDefaultDomainNC)-DiffString)</p>
+<p>If DomainString = &quot;internal&quot; Then<br />
+&nbsp;DomainString = &quot;companyname&quot;&nbsp;&nbsp; &#39;This is where we put our domain name in.<br />
+End If</p>
+<p>&#39;----------------------------------------------------------------------------------</p>
+<p>Set objRoot = Nothing</p>
+<p>If (IsEmpty(strDefaultDomainNC)) Then<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WScript.Echo(&quot;Could not get the Default Naming Context&quot;)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WScript.Quit<br />
+End If</p>
+<p>Set objADOConn = createObject(&quot;ADODB.Connection&quot;)</p>
+<p>objADOConn.Provider = &quot;ADsDSOObject&quot;<br />
+objADoConn.Open &quot;Active Directory Provider&quot;</p>
+<p>Set objADOCommand = CreateObject(&quot;ADODB.Command&quot;)<br />
+Set objADOCommand.ActiveConnection = objADOConn</p>
+<p>&#39;Sets up a connector to the Active Directory, and runs a query to get all servers.<br />
+strADSQuery = &quot;SELECT Name FROM &#39;LDAP://ou=Servers,&quot; &amp; strDefaultDomainNC &amp; &quot;&#39; WHERE objectClass = &#39;computer&#39;&quot;&nbsp;&nbsp; &#39; this is where you specify the OU that you want to grab the members from.<br />
+&#39;Run the command, output results to a record Set<br />
+objADOCommand.CommandText = strADSQuery<br />
+&#39;----------------------------------------------------------------------------------<br />
+&#39;Set caching etc<br />
+objADOCommand.properties(&quot;Timeout&quot;)=30&nbsp;&#39;30 Secs<br />
+objADOCommand.properties(&quot;Cache Results&quot;)=True<br />
+objADOCommand.properties(&quot;Page Size&quot;)=200<br />
+objADOCommand.properties(&quot;Size Limit&quot;)=5000<br />
+objADOCommand.properties(&quot;searchscope&quot;)=ADS_SCOPE_SUBTREE<br />
+&#39;----------------------------------------------------------------------------------</p>
+<p>Set objQueryResultSet = objADOCommand.Execute</p>
+<p>If (objQueryResultSet.EOF) Then<br />
+&nbsp;&nbsp; WScript.Echo(&quot;Error searching for machines&quot;)<br />
+&nbsp;&nbsp; WScript.Quit<br />
+End If</p>
+<p>While Not objQueryResultSet.EOF<br />
+&nbsp;objMachineDictionary.Add vMachineDictionaryCount, UCASE(objQueryResultSet.Fields(&quot;Name&quot;))<br />
+&nbsp;vMachineDictionaryCount = vMachineDictionaryCount &#43; 1<br />
+&nbsp;objQueryResultSet.MoveNext<br />
+Wend</p>
+<p>WScript.Echo Time &amp; &quot;: &quot; &amp; vMachineDictionaryCount &amp; &quot; machine accounts retrieved from Active Directory.&quot;<br />
+Set objADOConn = Nothing</p>
+<p>vAllServersTotalSubFolderSize = 0</p>
+<p>For Each objMachineDictionaryItem in objMachineDictionary<br />
+&nbsp;strComputer = UCase(objMachineDictionary.Item(objMachineDictionaryItem))<br />
+&nbsp;<br />
+&nbsp;&#39;WScript.Echo strComputer<br />
+&nbsp;If PingMachine(strComputer) = &quot;Online&quot; Then<br />
+&nbsp;&nbsp;&#39;wscript.Echo strComputer &amp; &quot; is online.&quot;<br />
+&nbsp;&nbsp;If CheckHostName(strComputer) = True Then<br />
+&nbsp;&nbsp;&nbsp;&#39;WScript.Echo &quot;Hostname matches&quot;<br />
+&nbsp;&nbsp;&nbsp;strWindowsDirectory = &quot;&quot;<br />
+&nbsp;&nbsp;&nbsp;strWindowsDirectory = GetszValue(strComputer, HKLM, &quot;software\microsoft\windows NT\currentversion&quot;, &quot;systemroot&quot;)<br />
+&nbsp;&nbsp;&nbsp;&#39;WScript.Echo &quot;Windows directory for &quot; &amp; strComputer &amp; &quot; located at: &quot; &amp; strWindowsDirectory<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;arrNames = Split(strWindowsDirectory, &quot;:&quot;)<br />
+&nbsp;&nbsp;&nbsp;strRemoteWindowsDirectory = &quot;\\&quot; &amp; strComputer &amp; &quot;\&quot; &amp; arrNames(0) &amp; &quot;$&quot; &amp; arrNames(1)<br />
+&nbsp;&nbsp;&nbsp;&#39;WScript.Echo VbCrLf &amp; strComputer &amp; &quot; (&quot; &amp; strWindowsDirectory &amp; &quot;)&quot; &amp;&nbsp; VbCrLf<br />
+&nbsp;&nbsp;&nbsp;If objFSO.FolderExists(strRemoteWindowsDirectory) Then<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Set objFolder = objFSO.GetFolder(strRemoteWindowsDirectory)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Set colSubfolders = objFolder.Subfolders<br />
+&nbsp;&nbsp;&nbsp;&nbsp;vTotalSubFolderSize = 0<br />
+&nbsp;&nbsp;&nbsp;&nbsp;For Each objSubFolder in colSubfolders<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If InStr (UCase(objSubfolder.Name), &quot;$NTUNINSTALLKB&quot;) Then<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set objCurrentSubFolder = objFSO.GetFolder(strRemoteWindowsDirectory &amp; &quot;\&quot; &amp; objSubfolder.Name)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If DateDiff(&quot;d&quot;,objCurrentSubFolder.DateLastModified,Date()) &gt; DeletionThreshold Then
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#39;WScript.echo &quot;Folder: &quot; &amp; objCurrentSubFolder.Name &amp; vbTab &amp; &quot;Created on: &quot; &amp; objCurrentSubFolder.DateLastModified &amp;&nbsp; &quot; (&quot; &amp; DateDiff(&quot;d&quot;,objCurrentSubFolder.DateLastModified,Date()) &amp; &quot; days old)&quot; &amp; vbTab &amp; &quot;Size: &quot; &amp; Round((objCurrentSubFolder.Size
+ / 1048576),1) &amp; &quot; MB&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vTotalSubFolderSize = vTotalSubFolderSize &#43; objSubfolder.Size<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#39;objCurrentSubFolder.Delete&nbsp; &#39;This line does the actual deletion.&nbsp; To determine how much data will be saved, keep it commented.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;End If<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;End If<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Next<br />
+&nbsp;&nbsp;&nbsp;&nbsp;vAllServersTotalSubFolderSize = vAllServersTotalSubFolderSize &#43; vTotalSubFolderSize<br />
+&nbsp;&nbsp;&nbsp;&nbsp;WScript.Echo strComputer &amp; &quot; &quot; &amp; Round((vTotalSubFolderSize / 1048576),1) &amp; &quot;MB&quot;<br />
+&nbsp;&nbsp;&nbsp;End If<br />
+&nbsp;&nbsp;End If<br />
+&nbsp;End If<br />
+Next</p>
+<p>WScript.Echo VbCrLf &amp; Round((vAllServersTotalSubFolderSize / 1048576),1) &amp; &quot;MB total on all servers.&quot; &amp; VbCrLf &amp; &quot;Script finished.&quot;<br />
+WScript.Quit&nbsp; </p>
+<p>&#39;==========================================================================<br />
+Function PingMachine(strComputer)<br />
+&#39;==========================================================================<br />
+&nbsp;<br />
+&nbsp;Dim cPingResults&nbsp;&#39;collection of instances of Win32_PingStatus Class<br />
+&nbsp;Dim objPingResult&nbsp;&nbsp;&#39;single instance of Win32_PingStatus Class<br />
+&nbsp;<br />
+&nbsp;Set cPingResults = GetObject(&quot;winmgmts:{impersonationLevel=impersonate}//&quot; &amp; _<br />
+&nbsp;&nbsp;&nbsp;&quot;./root/cimv2&quot;). ExecQuery(&quot;SELECT * FROM Win32_PingStatus &quot; &amp; _<br />
+&nbsp;&nbsp;&nbsp;&quot;WHERE Address = &#39;&quot; &#43; strComputer &#43; &quot;&#39;&quot;)<br />
+&nbsp;<br />
+&nbsp;For Each objPingResult In cPingResults<br />
+&nbsp;&nbsp;If objPingResult.StatusCode = 0 Then<br />
+&nbsp;&nbsp;&nbsp;PingMachine = &quot;Online&quot;<br />
+&nbsp;&nbsp;&nbsp;vIPAddress = objPingResult.ProtocolAddress<br />
+&nbsp;&nbsp;Else<br />
+&nbsp;&nbsp;&nbsp;PingMachine = &quot;Offline&quot;<br />
+&nbsp;&nbsp;End If<br />
+&nbsp;Next</p>
+<p>End Function</p>
+<p>&#39;==========================================================================<br />
+Function CheckHostName(strComputer)<br />
+&#39;==========================================================================<br />
+&nbsp;On Error Resume Next<br />
+&nbsp;Set objWMIService = GetObject(&quot;winmgmts:\\&quot; &amp; strComputer &amp; &quot;\root\cimv2&quot;)<br />
+&nbsp;Set colItems = objWMIService.ExecQuery(&quot;Select * from Win32_NetworkAdapterConfiguration&quot;,,48)<br />
+&nbsp;For Each objItem in colItems<br />
+&nbsp;&nbsp;HostName = objItem.DNSHostName<br />
+&nbsp;&nbsp;If Not IsNull(HostName) Then Exit For<br />
+&nbsp;Next<br />
+&nbsp;<br />
+&nbsp;If UCASE(HostName) = UCASE(strComputer) Then<br />
+&nbsp;&nbsp;CheckHostName = True<br />
+&nbsp;End If<br />
+&nbsp;<br />
+End Function</p>
+<p>&#39;==========================================================================<br />
+Function GetszValue(strComputer, HKEY, strKeyPath, strValueName)<br />
+&#39;==========================================================================</p>
+<p>&nbsp;On Error Resume Next<br />
+&nbsp;<br />
+&nbsp;Dim objReg<br />
+&nbsp;Dim strValue<br />
+&nbsp;<br />
+&nbsp;Set objReg=GetObject(&quot;winmgmts:{impersonationLevel=impersonate}!\\&quot; &amp; strComputer &amp; &quot;\root\default:StdRegProv&quot;)<br />
+&nbsp;If HKEY = HKLM Then<br />
+&nbsp;&nbsp;objReg.GetStringValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,strValue<br />
+&nbsp;ElseIf HKEY = HKCU Then<br />
+&nbsp;&nbsp;objReg.GetStringValue HKEY_CURRENT_USER,strKeyPath,strValueName,strValue<br />
+&nbsp;End If<br />
+&nbsp;<br />
+&nbsp;GetszValue = strValue<br />
+&nbsp;<br />
+End Function</p>
+
+</div>
+    
+    

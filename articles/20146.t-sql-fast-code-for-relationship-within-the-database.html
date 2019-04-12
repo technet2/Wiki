@@ -1,0 +1,88 @@
+---
+layout: default
+title: T-SQL&#58; Fast Code for Relationship within the Database - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+Sometimes one needs to find out all the relationships within a database. For example, if you are a contractor and you go to new company even for only one day, just to make some new report requested by the boss or other &nbsp;similar stuff; &nbsp;probably you need fast
+ code that you can keep in your personal code folder, just for a quick copy and paste:<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#fffer" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="contefff;"><span><code style="color:#000000;">;</code><code style="color:#006699;font-weight:bold;">with</code>
+<code style="color:#000000;">cte </code><code style="color:#006699;font-weight:bold;">as</code>
+<code style="color:#000000;">(</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">constraint_object_id, constraint_column_id, c.parent_object_id
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+parentobjectid, parent_column_id</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">, referenced_object_id, referenced_column_id,&nbsp;
+</code><code style="color:#006699;font-weight:bold;">name</code> <code style="color:#006699;font-weight:bold;">
+as</code> <code style="color:#000000;">parentname&nbsp; </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">sys.foreign_key_columns c </code><code style="color:#006699;font-weight:bold;">inner</code>
+<code style="color:#808080;">join</code> <code style="color:#000000;">sys.tables </code>
+<code style="color:#006699;font-weight:bold;">on</code> <code style="color:#000000;">
+c.parent_object_id=object_id)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">,cte2
+</code><code style="color:#006699;font-weight:bold;">as</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">constraint_object_id, constraint_column_id, parentobjectid, referenced_object_id, parent_column_id, parentname, referenced_column_id,</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">name</code>
+<code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+referencedname </code><code style="color:#006699;font-weight:bold;">from</code> <code style="color:#000000;">
+cte ct </code><code style="color:#006699;font-weight:bold;">inner</code> <code style="color:#808080;">
+join</code> <code style="color:#000000;">sys.tables </code><code style="color:#006699;font-weight:bold;">on</code>
+<code style="color:#000000;">ct.referenced_object_id=object_id)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#000000;">, cte3
+</code><code style="color:#006699;font-weight:bold;">as</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">constraint_object_id, constraint_column_id, parentobjectid, parent_column_id</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">, referenced_object_id, referenced_column_id, parentname, referencedname,
+</code><code style="color:#006699;font-weight:bold;">name</code> <code style="color:#006699;font-weight:bold;">
+as</code> <code style="color:#000000;">parentcolumname </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">cte2 </code><code style="color:#006699;font-weight:bold;">inner</code>
+<code style="color:#808080;">join</code> <code style="color:#000000;">sys.all_columns cl
+</code><code style="color:#006699;font-weight:bold;">on</code> <code style="color:#000000;">
+parentobjectid=cl.object_id</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#000000;">cl.column_id=parent_column_id)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">constraint_object_id, constraint_column_id, parentobjectid, parent_column_id</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">, referenced_object_id, referenced_column_id, parentname
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+ParentTable, referencedname </code><code style="color:#006699;font-weight:bold;">as</code>
+<code style="color:#000000;">ReferencedTable, parentcolumname </code><code style="color:#006699;font-weight:bold;">as</code>
+<code style="color:#000000;">parentsColumn, </code><code style="color:#006699;font-weight:bold;">name</code>
+<code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+ReferencedColumn </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">cte3 </code><code style="color:#006699;font-weight:bold;">inner</code>
+<code style="color:#808080;">join</code> <code style="color:#000000;">sys.all_columns cl
+</code><code style="color:#006699;font-weight:bold;">on</code> <code style="color:#000000;">
+referenced_object_id=cl.object_id</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#000000;">cl.column_id=referenced_column_id </code><code style="color:#006699;font-weight:bold;">order</code>
+<code style="color:#006699;font-weight:bold;">by</code> <code style="color:#000000;">
+ParentTable</code></span></span></div>
+</div>
+<br />
+Another purpose of this code is that (after having saved the results in a table for example) it can be compared. That means that if you save the last result in a table that you can call LastRelantionship dated February 2013 and you being called after months
+ for another contract in the same company because &quot;maybe someone changed something and now the software doesn&#39;t work or the statistics are wrong&quot;, you can run the same query, building a new table LastRelantionship date October 2013 and after comparing the two
+ tables you can quickly find out if someone touched the relationships (believe me, this can happen pretty frequently).&nbsp;<br />
+So, I hope this code can help everyone to be faster in case of job contract issues.&nbsp;&nbsp;
+<br />
+<hr />
+<h1><a name="Sode><code style="color:#006699;font-weight:bold;">order</code>
+<code style="color:#006699;font-weight:bold;">by</code> <code style="color:#000000;">
+ParentTable</code></span></span></div>
+</div>
+<br />
+Another purpose of this code is that (after having saved the results in a table for example) it can be compared. That means that if you save the last result in a table that you can call LastRelantionship dated February 2013 and you being called after months
+ for another contract in the same company because &quot;maybe someone changed something and now the software doesn&#39;t work or the statistiee_Also"></a>See Also</h1>
+<ul>
+<li><a class="ExistingPageLink" href="/wiki/contents/articles/17785.transact-sql-portal.aspx" title="Click to view the page titled: Transact-SQL Portal">Transact-SQL Portal</a> </li></ul>
+<hr />
+
+</div>
+    
+    

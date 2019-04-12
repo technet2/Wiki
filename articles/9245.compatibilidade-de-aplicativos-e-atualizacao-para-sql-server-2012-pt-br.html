@@ -1,0 +1,153 @@
+---
+layout: default
+title: Compatibilidade de aplicativos e atualização para SQL Server 2012 (pt-BR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introdução</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Identificar_metas_de_atualiza_ccedil_atilde_o">Identificar metas de atualização</a></li><li class="hierarchy-item"><a href="#Identificar_e_corrigir_bloqueadores_de_Upgrade">Identificar e corrigir bloqueadores de Upgrade</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Executar_Verifica_ccedil_atilde_o_de_Sa_uacute_de_Inicial">Executar Verificação de Saúde Inicial</a></li><li class="hierarchy-item"><a href="#Execute_Upgrade_Advisor">Execute Upgrade Advisor</a></li><li class="hierarchy-item"><a href="#Perform_AppCompat_Testing">Realizar testes de AppCompat</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Escolha_Uma_Estrat_eacute_gia_de_Atualiza_ccedil_atilde_o">Escolha Uma Estratégia de Atualização</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#In-Place_Upgrade">In-Place Upgrade</a></li><li class="hierarchy-item"><a href="#Side-By-Side_Upgrade">Atualização Side-By-Side</a></li><li class="hierarchy-item"><a href="#Upgrade_By_Migration">Atualizar por Migração</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Perform_Your_Upgrade">Realize sua Atualização</a></li><li class="hierarchy-item"><a href="#Other_Languages">Outros Idiomas</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Ingles">Inglês (en-US)</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<br />
+<em>Esse artigo foi originalmente escrito em:</em> <a class="ExistingPageLink" href="/wiki/contents/articles/7009.sql-server-2012-upgrade-and-application-compatibility.aspx" title="Click to view the page titled: SQL Server 2012 Upgrade and Application Compatibility (en-US)">SQL Server 2012 Upgrade and Application Compatibility (en-US)</a><br />
+<h1><a name="Introduction"></a>Introdução</h1>
+<p>O <a class="ExistingPageLink" href="/wiki/contents/articles/6976.sql-server-2012-developer-training-kit-content.aspx" title="Click to view the page titled: SQL Server 2012 Developer Training Kit Content">SQL Server 2012 Developer Training Kit Content</a> é projetado para desenvolvedores que desejam explorar todas as novas melhorias nesta versão. Mas&nbsp;o&nbsp;que dizer sobre&nbsp;todas as aplicções que foram desenvolvidos para versões anteriores do SQL Server? Este
+ wiki é para desenvolvedores, testadores e profissionais de serviços que são responsáveis por certificar que seu aplicativo tem suporte ao SQL Server 2012.<br />
+<br />
+Em um mundo perfeito, aplicativos que foram desenvolvidos para versões anteriores devem funcionar perfeitamente no SQL Server 2012. Acredite em mim, a Microsoft investe um bom tempo e energia em fazer isto possível para uma ampla gama de aplicações. Se você
+ tiver um aplicativo relativamente simple que apenas usa o mecanismo de banco de dados e não usa um monte de recursos avançados, e você não está preocupado com a possibilidade de tempo de paralização relacionado atualização, então você pode querer apenas puxar
+ o gatilho e tentar um in-place upgrade de sua instância do SQL Server.<br />
+<br />
+Departamentos de TI freqüentemente aproveitam a oportunidade de atualizações de versão para fazer upgrade ou consolidar o hardware. Se você quiser ser um pouco mais conservador, você pode fazer backup de bancos de dados SQL Server existentes e restaurá-los
+ em uma nova instalação do SQL Server 2012 e apenas realinhar suas seqüências de conexão para a nova instância. Você sempre poderá alternar novamente para a instância antiga ja que ela não foi alterada durante o processo de atualização.<br />
+<br />
+Infelizmente, pó de fadas mágico não é sempre suficiente para aplicativos de missão crítica. Se as operações de negócios dependem da disponibilidade de um aplicativo de SQL Server que você pretende atualizar, você deve provavelmente criar um plano de teste
+ que garanta que seu aplicativo funcionará corretamente contra o SQL Server 2012. Você pode até querer fazer algumas execuções a seco da atualização real antes de fazer a atualização propriamente dita para evitar surpresas ou tempo paralização da aplicação.<br />
+<br />
+Este wiki é para aquelas pobres almas paranóicas que não acreditam na poeira de fadas mágico. Se você quiser ser mais previsível e sistemático sobre a atualização, você realmente precisa testar os aplicativos que serão afetados. Chamamos esta atualização teste
+ de compatibilidade de aplicativos ou apenas AppCompat para abreviar. Desenvolvemos ferramentas e metodologias para fazer AppCompat teste mais fácil, mas você precisa entender, desde o início, que exigirá um compromisso significativo de tempo e recursos para
+ concluir o processo de teste. Você estará sujeito a uma curva de aprendizado bastante íngreme ao testar seu aplicativo primeiro, mas depois que você tiver o domínio do processo a próxima execução deve ser um moleza!<br />
+<br />
+Testar aplicações críticas ao negócio para compatibilidade com o SQL Server 2012 é uma parte importante de qualquer plano abrangente de atualização. Se o aplicativo foi desenvolvido por você mesmo ou comprou de terceiros, há um amplo conjunto de ferramentas
+ e estratégias você pode usar para identificar potenciais bloqueadores de atualização para que eles podessam ser resolvidos antes que uma atualização seja tentada.<br />
+<br />
+Este wiki é focado principalmente em SQL Server 2012 Upgrade e teste de aplicativo e compatibilidade (AppCompat) e descreve como identificar sistematicamente bloqueadores de atualização potenciais em aplicativos que têm uma dependência no mecanismo de banco
+ de dados do SQL Server. Fornecemos algumas orientações gerais atualização focada no mecanismo de banco de dados do SQL Server, mas talvez você precise encontrar alguns recursos adicionais ao planejar sua atualização se você estiver usando recursos avançados
+ como replicação, espelhamento de banco de dados ou o cluster de failover. Não abordamos atualizações do Integration Services, Reporting Services ou o Analysis Services neste wiki.<br />
+<br />
+Aqui está uma descrição de alto nível das etapas envolvidas em uma atualização de mecanismo de banco de dados SQL Server 2012 típica:</p>
+<ol>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Identificar_metas_de_atualização">Identificar metas de atualização</a>&nbsp;
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Identificar_e_corrigir_bloqueadores_de_Upgrade">Identificar e corrigir bloqueadores de Upgrade</a>
+<ol>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Executar_verificação_de_saúde_inicial">Executar verificação de saúde inicial</a>&nbsp;
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Execute_Upgrade_Advisor">Execute Upgrade Advisor</a>&nbsp;
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Realizar_testes_de_AppCompat">Realizar testes de AppCompat</a>&nbsp;
+</li></ol>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Escolha_Uma_Estratégia_de_Atualização">Escolha Uma Estratégia de Atualização</a>
+<ol>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#In-Place_Upgrade">In-Place Upgrade</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Atualização_Side-By-Side">Atualização Side-By-Side</a>&nbsp;
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Atualizar_por_Migração">Atualizar por Migração</a>&nbsp;
+</li></ol>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9245.compatibilidade-de-aplicativos-e-atualizacao-para-sql-server-2012-pt-br/edit.aspx#Realize_sua_Atualização">Realize sua Atualização</a>&nbsp;
+</li></ol>
+<hr />
+<h2><a name="Identificar_metas_de_atualiza_ccedil_atilde_o"></a>Identificar metas de atualização</h2>
+<p>Atualizando para o SQL Server 2012 pode ser tão simple como atualizar um par de instâncias para uma pequena empresa ou departamento, mas as grandes empresas podem ter centenas de instalações do SQL Server, que algumas das quais o departamento de TI pode
+ nem mesmo estar estar ciente. Assim o primeiro passo é obter um inventário de todas as instalações do SQL Server que são alvos potenciais de atualização. Se precisar de ajuda para identificar metas de atualização, confira o&nbsp;<a href="http://technet.microsoft.com/en-us/solutionaccelerators/dd537566.aspx">Microsoft
+ Assessment and Planning Toolkit</a> (também conhecido como MAP Toolkit).&nbsp; <br />
+<br />
+Depois de encontrar todas as instalações a serem atualizadas, você também precisará identificar os aplicativos que a utilizam. Aplicativos que são essenciais para as operações de negócios devem ser sinalizados para o teste de AppCompat.</p>
+<hr />
+<h2><a name="Identificar_e_corrigir_bloqueadores_de_Upgrade"></a>Identificar e corrigir bloqueadores de Upgrade</h2>
+<p>Depois de identificadas as instalações do SQL Server e aplicativos associados que você pretende atualizar, a próxima etapa é identificar qualquer coisa que possam impedir uma atualização bem-sucedida. As seções a seguir descrevem três abordagens diferentes
+ (e complementares) para a detecção de bloqueadores de atualização. Você pode decidir usar alguns, todos ou nenhum deles, a escolha é sua. A quantidade de testes e preparação que você fazer antecipadamente terá um resultado direto no quanto preparado está para
+ resolver problemas que ocorrem quando o tempo vier para realizar sua atualização.</p>
+<h3><a name="Executar_Verifica_ccedil_atilde_o_de_Sa_uacute_de_Inicial"></a>Executar Verificação de Saúde Inicial</h3>
+<p>Você pode começar com o básico, verificando a integridade física da instalação do SQL Server e seus bancos de dados associados com ferramentas como DBCC (verificador de consistência de banco de dados). Em seguida, você pode considerar reduzir o tamanho físico
+ do banco de dados o que pode ser útil se sua estratégia de atualização envolve mover o banco de dados para um novo armazenamento.&nbsp;<br />
+<br />
+Você também pode considerar a utilização do <a href="http://www.microsoft.com/download/en/details.aspx?displaylang=en&amp;id=15289" target="_blank">
+SQL Server 2008 R2 Best Practices Analyzer</a> para&nbsp;encontrar em sua instância e bancos de dados possíveis violações das práticas recomendadas. É uma boa idéia solucionar estas violações antes de fazer um upgrade. Você também deve verificar também se alguma
+ instância esta iniciando com qualquer sinalizador de rastreamento especial e se você ainda precisa utilizá-los após a atualização. É uma boa idéia eliminar estes sinalizadores se possível.</p>
+<h3><a name="Execute_Upgrade_Advisor"></a>Execute Upgrade Advisor</h3>
+<p>Em seguida, você deve verificar a instância e todos seus bancos de dados por potenciais bloqueadores de atualização usando&nbsp;<a href="http://msdn.microsoft.com/en-us/library/ms144256(v=SQL.110).aspx" title="Upgrade Advisor" target="_blank">SQL Server 2012
+ Upgrade Advisor</a>.&nbsp; Esta ferramenta executa um conjunto de verificações baseadas em regras para identificar bloqueadores de atualização comuns e produz um relatório de recursos. Você deve então sistematicamente abordar todas as violações de regra antes de
+ tentar atualizar. É importante observar que o Upgrade Advisor usa análise estática e não detectará problemas que estão ocultos no código fonte da aplicação ou que só pode ocorrer em tempo de execução.</p>
+<h3><a name="Perform_AppCompat_Testing"></a>Realizar testes de AppCompat</h3>
+<p>A etapa final é usar a ferramenta <a class="ExistingPageLink" href="/wiki/contents/articles/2558.upgrade-assistant-tool-for-sql-server-2012-ch-1-of-14.aspx" title="Click to view the page titled: Upgrade Assistant Tool for SQL Server 2012">Upgrade Assistant Tool for SQL Server 2012</a> (UAFS) para realizar testes de AppCompat para aplicativos que são essenciais para as operações de negócios. UAFS permite que você capture a interação entre o aplicativo e o
+ SQL Server e salve-o como uma carga de trabalho de teste. A ferramenta então orienta a repetição da carga de trabalho de teste contra a versão original do SQL Server para estabelecer uma base execução e então novamente contra o SQL Server 2012.<br />
+<br />
+A saída destas repetições de carga de dois trabalho sistemicamente é analisado em seguida as diferenças. Em alguns casos, as diferenças podem ser o resultado de um bloqueador de atualização que deve ser abordado no código de origem do aplicativo. Testes de
+ AppCompat com UAFS é tão boa como a carga de trabalho de teste. Se sua carga de trabalho cobre a maior parte dos diferentes tipos de interação que seu aplicativo tem com o SQL Server, ele deve ser bastante abrangente. Mas se você apenas testar uma carga de
+ trabalho de &quot;hello world&quot;, você não vai ficar com muita informação útil do mesmo.&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<br />
+Para obter instruções sobre como criar uma configuração de máquina virtual para testes de AppCompat, consulte&nbsp; <a class="ExistingPageLink" href="/wiki/contents/articles/7496.how-to-build-a-vm-for-application-compatibility-testing-for-sql-server-2012-weka-build.aspx" title="Click to view the page titled: How to Build a VM for Application Compatibility Testing for SQL Server 2012 (WEKA build)">How to Build a VM for Application Compatibility Testing for SQL Server 2012 (WEKA build)</a>.<br />
+<br />
+<strong><span style="background-color:#ffff00;">Importante:</span></strong>&nbsp;Para manter compatibilidade com versões anteriores, a instalação preservará o nível de compatibilidade existente de cada banco de dados durante uma atualização. O objetivo final dos
+ testes AppCompat é garantir que suas funções de aplicativo utilizem corretamente o nível de compatibilidade do banco de dados para SQL Server 2012 (110), por isso verifique se você está testando suas cargas de trabalho contra esse nível de compatibilidade.
+ Certifique-se de configurar seus bancos de dados de aplicativo para este novo post-upgrade nível de compatibilidade. Isso vai facilitar futuras migrações após SQL Server 2012, garantindo que você não está usando recursos descontinuados. Consulte&nbsp;<a href="http://msdn.microsoft.com/en-us/library/ms143532(v=sql.110).aspx">este
+ artigo</a>&nbsp;no SQL Server Books Online para uma discussão abrangente de compatibilidade com versões anteriores incluindo funcionalidades descontinuadas e substituídas no SQL Server 2012.&nbsp;</p>
+<hr />
+<h2><a name="Escolha_Uma_Estrat_eacute_gia_de_Atualiza_ccedil_atilde_o"></a>Escolha Uma Estratégia de Atualização</h2>
+<p>Há tão muitas estratégias de atualização ao longo do dia, e não é nossa intenção enumerar todas elas aqui, mas parações de aplicativo utilizem corretamente o nível de compatibilidade do banco de dados para SQL Server 2012 (110), por isso verifique se você está testando suas cargas de trabalho contra esse nível de compatibilidade.
+ Certifique-se de configurar seus bancos de dados de aplicativo para este novo post-upgrade nível de compatibilidade. Isso vai facilitar futuras migrações após SQL Server 2012, garantindo que você não está usando recursos descontinuados. Consulte&nbsp;<a href="http://msdn.microsoft.com/en-us/library/ms143532(v=sql.110).aspx">este
+ artigo</a>&nbsp;no SQL Server Books Online para uma discussão abrangente de compatibilidade com versões anteriores incluindo funcionalidades descontinuadas e substituídas no SQL Server 2012.&nbsp;</p>
+<hr />
+<h2><a name="Es dar-lhe um resumo de alto nível de algumas das abordagens mais comuns. Uma coisa que é comum a todas essas abordagens é a necessidade de executar
+ a instalação do SQL Server 2012 para instalar novos bits. Vale a pena mencionar que a instalação agora suporta download atualizações do produto durante a instalação para que você não ternha que gastar ciclos extras para fazer o download e instalar os service
+ packs depois de terminar sua atualização.&nbsp;&nbsp; <br />
+<br />
+É uma boa idéia ir através de uma ou mais execuções de teste de sua atualização antes de fazer a coisa real desde que você tenha o hardware e recursos para fazê-lo.<br />
+<br />
+<strong><span style="background-color:#ffff00;">Importante:&nbsp;</span></strong> Fazer backup de todos seus bancos de dados antes de iniciar sua atualização! Fazer uma restauração de teste de backups para certificar-se de que eles são válidos!</p>
+<h3><a name="In-Place_Upgrade"></a>In-Place Upgrade</h3>
+<p>Este é provavelmente o mais fácil de todas as estratégias de atualização. Contanto que o computador atende aos requisitos mínimos de sistema, instalação permitirá que você atualize um SQL Server realizando uma instalação no local do SQL Server 2012. O nome
+ da instância é preservado, assim você não precisa atualizar as seqüências de conexão de aplicativos dependentes. Você só pode atualizar para a edição de mesma ou superior do SQL Server usando essa abordagem.&nbsp;&nbsp;
+<br />
+<br />
+In-place upgrade é suportado somente para as seguintes versões do SQL Server (note&nbsp;o service pack mínimo exigido):
+</p>
+<ul>
+<li>SQL Server 2005 (SP4) </li><li>SQL Server 2008 (SP2) </li><li>SQL Server 2008 R2 </li></ul>
+<p>Se você estiver executando o SQL Server 2000, você precisará atualizar para SQL Server 2008 R2 antes de tentar atualizar para SQL Server 2012.<br />
+<br />
+Observe que você não pode alterar a plataforma como parte do in-place upgrade. Por exemplo, se você estiver executando SQL Server 2008 R2 (x86) no Windows Server 2008 R2 (x64), você não pode executar uma atualização in-loco para SQL Server 2012 (x64). Você
+ pode atualizar para SQL Server 2012 (x 86).<br />
+<br />
+A desvantagem dessa abordagem é que não há nenhuma volta a não ser desinstalar o SQL Server 2012 e reinstalar a edição anterior e restaurar todo o servidor de um backup, então isso provavelmente só é adequado para servidores que não afetam as operações de negócios
+ de forma substancial.</p>
+<h3><a name="Side-By-Side_Upgrade"></a>Atualização Side-By-Side</h3>
+<p>Esta abordagem também é bastante fácil. A idéia é instalar uma nova instância do SQL Server 2012 lado a lado com sua instância antiga no mesmo computador. Uma vez que sua Nova instância está em execução, você pode simplesmente desanexar os bancos de dados
+ de usuário da instância antiga, anexá-los na nova instância e conectar seus aplicativos no novo nome de instância.&nbsp;
+<br />
+<br />
+Se você encontrou algum problema, você pode simplesmente restaurar backups os bancos de dados na instância antiga e reconectar os aplicativos. Depois que tiver certeza de que está tudo bem, você pode desinstalar a instância antiga.</p>
+<h3><a name="Upgrade_By_Migration"></a>Atualizar por Migração</h3>
+<p>Esta é a maneira ideal de fazer um upgrade se você tem os recursos para executá-lo. Basicamente você provisiona um novo computador e instala uma cópia nova do SQL Server 2012 nele, restaura os backups de bancos de dados do aplicativo e reconectar os aplicativos
+ na nova instância. Se encontrar problemas, você sempre pode voltar a utilizar o servidor antigo até que você tenha resolvido as coisas.<br />
+<br />
+Esta abordagem é muito mais limpa, garantindo que somente os bits mais recentes estão em uso no servidor novo o que reduz a manutenção ja que você não precisa se preocupar sobre como manter os velho e novo bits. Há todos os tipos de truques que você pode jogar
+ para fazer o failover para o novo servidor tão rápido quanto possível para minimizar o tempo de inatividade resultante do upgrade.&nbsp;&nbsp;<br />
+<br />
+Muitas empresas de TI preferem esse modelo para que possam atualizar o hardware e o software na mesma proposta e possivelmente consolidar servidores ao mesmo tempo.</p>
+<hr />
+<h2><a name="Perform_Your_Upgrade"></a>Realize sua Atualização</h2>
+<p>Quando tiver concluído todas as etapas de pré-atualização planejamento e teste, é hora de executar! Esperamos que as ferramentas e estratégias constidas neste wiki garanta que você está preparados para quaisquer questões ou problemas que possam surgir. Assim
+ que terminar sua atualização, não se esqueça de aumentar o nível de compatibilidade do banco de dados dos bancos de dados usuário para SQL Server 2012 (110). Também é uma boa idéia para monitorar o desempenho e o comportamento de seus aplicativos mais estreitamente
+ do que o normal por um tempo depois da atualização. Até mesmo o melhor upgrade planejado pode perder algumas coisas sutis que podêm afetar o desempenho do aplicativo ou funcionalidade.</p>
+<hr />
+<p>Retornar ao <a class="ExistingPageLink" href="/wiki/contents/articles/6967.sql-server-2012-early-adoption-cook-book.aspx" title="Click to view the page titled: SQL Server 2012 Early Adoption Cook Book">SQL Server 2012 Early Adoption Cook Book</a>.<br />
+<br />
+<br />
+&nbsp;</p>
+<hr />
+<h2><a name="Other_Languages"></a>Outros Idiomas</h2>
+<p><span style="line-height:16px;background-color:#ffffff;color:#2a2a2a;">Este artigo está igualmente disponível nos seguintes idiomas</span>:</p>
+<h3><a name="Ingles"></a>Inglês (en-US)</h3>
+<ul>
+<li><a class="ExistingPageLink" href="/wiki/contents/articles/7009.sql-server-2012-upgrade-and-application-compatibility.aspx" title="Click to view the page titled: SQL Server 2012 Upgrade and Application Compatibility (en-US)">SQL Server 2012 Upgrade and Application Compatibility (en-US)</a> </li></ul>
+
+</div>
+    
+    

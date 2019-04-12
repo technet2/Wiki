@@ -1,0 +1,127 @@
+---
+layout: default
+title: Smartlist Builder Example – Sub Query Restriction Prototype - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+This post explains how to create custom smartlists with subquery restrictions using Smartlist Builder, without using SQL queries (i.e.) using Dynamics GP Tables and Joins inside Smartlist Builder</p>
+<p style="line-height:21px;font-fami<div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div claly:arial;font-size:14px;margin-top:12px;">
+Smartlist Builder is a great tool to create custom smartlists. We can create smartlists using Dynamics GP tables (or) using SQL objects. However, there have been many requests from customers and partners to retrieve the data from Smartlist using a sub query
+ filter. An example of such a request is to pull out all Payables transactions with the complete distributions, where specific expense accounts are used. Assuming a voucher has the following distributions.</p>
+<table border="1" cellspacing="0" cellpadding="0" style="line-height:21px;font-family:arial;font-size:14px;margin-left:0px;">
+<tbody>
+<tr>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;"><strong>Account Number</strong></p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;"><strong>Description</strong></p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;"><strong>Debit</strong></p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;"><strong>Credit</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">000-2100-00</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">Accounts Payable</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">$0.00</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">$1500.00</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">000-6010-00</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">Advertising Expenses</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">$1400.00</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">$0.00</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">000-6630-00</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">Suspense Expenses</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">$100.00</p>
+</td>
+<td valign="top" style="width:160px;">
+<p style="margin-top:12px;">$0.00</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+The request is to extract the specific voucher and all its distribution lines if the miscellaneous expenses account was used. This is ideally to analyze the complete distribution in the voucher so that the need for the suspense account can be analyzed.</p>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+Ideally, for such scenarios, a SQL query would be the best option. The SQL query typically looks as what is shown below.</p>
+<blockquote style="line-height:21px;font-family:arial;font-size:14px;">
+<p style="margin-top:12px;">SELECT * FROM dbo.PM30600</p>
+<p style="margin-top:12px;">WHERE VCHRNMBR IN ( SELECT VCHRNMBR</p>
+<p style="margin-top:12px;">FROM dbo.PM30600</p>
+<p style="margin-top:12px;">WHERE DSTINDX IN ( 167, 256 ) )</p>
+<p style="margin-top:12px;">AND dbo.PM30600.DOCTYPE = 1</p>
+<p style="margin-top:12px;">ORDER BY dbo.PM30600.VCHRNMBR</p>
+</blockquote>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+We can make use of the “Is Equal To One of List” option and provide a subset of vouchers which need to be returned, but it is not the efficient method of achieving the same, since the filter in the SLB definition needs to be changed every time we run the query
+ to get the appropriate results, which does not make sense. This article explores more into how this functionality can be achieved using Smartlist Builder.</p>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+First create an Equals JOIN (there is not Inner Join option in SLB, use Equals) between the PM Distribution History File and the PM Paid Transaction History File with the Voucher Number and Document Type. Then add a restriction on the Distribution Account to
+ be one of the following accounts as seen in the screen shot below.</p>
+<ul style="line-height:21px;font-family:arial;font-size:14px;">
+<li>000-6630-00 </li><li>300-6530-00 </li></ul>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7674.1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7674.1.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0576.2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0576.2.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+<strong><em>Note:</em></strong><em>&nbsp;The restriction has to be applied on the distribution table which has an inner join with the transaction history table and NOT on the one which has the left outer join with the transaction history table.</em></p>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+Now create a LEFT OUTER JOIN between the PM Transaction History File and the PM Distribution History File with the Voucher Number and the Document Type. Display the distribution details (Account Number, Debit Amount and Credit Amount) from this distribution
+ table. Click on Options and select the option Summary Smartlist and change the Summary Type for the following fields as explained below.</p>
+<ul style="line-height:21px;font-family:arial;font-size:14px;">
+<li>PM Paid Transaction History File – Voucher Number – Group By </li><li>PM Paid Transaction History File – Vendor ID – Group By </li><li>PM Paid Transaction History File – Document Type – Group By </li><li>PM Paid Transaction History File – Document Date – Group By </li><li>PM Paid Transaction History File – Document Number – Group By </li><li>PM Transaction Distribution History (3rd table shown above) – Voucher Number – Group By
+</li><li>PM Transaction Distribution History (3rd table shown above) – Distribution Sequence Number – Group By
+</li><li>PM Transaction Distribution History (3rd table shown above) – Distribution Account Index – Group By
+</li><li>PM Transaction Distribution History (3rd table shown above) – Distribution Type – Group By
+</li><li>PM Paid Transaction Histtable. Click on Options and select the option Summary Smartlist and change the Summary Type for the following fields as explained below.</p>
+<ul style="line-height:21px;font-family:arial;font-size:14px;">
+<li>PM Paid Transaction History File – Voory File – Document Amount – Average </li><li>PM Transaction Distribution History (3rd table shown above) – Debit Amount – Average
+</li><li>PM Transaction Distribution History (3rd table shown above) – Originating Debit Amount – Average
+</li><li>PM Transaction Distribution History (3rd table shown above) – Credit Amount – Average
+</li><li>PM Transaction Distribution History (3rd table shown above) – Originating Credit Amount – Average
+</li></ul>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1212.3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1212.3.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="line-height:21px;font-family:arial;font-size:14px;margin-top:12px;">
+This provides the same results that we would have obtained using the SQL query provided above.</p>
+
+</div>
+    
+    

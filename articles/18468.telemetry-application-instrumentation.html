@@ -1,0 +1,514 @@
+---
+layout: default
+title: Telemetry – Application Instrumentation - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:12pt 0in 0pt;">Written by <a href="http://social.msdn.microsoft.com/profile/ewan%20fairweather%20(azure%20cat)/?ws=usercard-hover">
+Ewan Fairweather </a>- Azure CAT<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Application_Instrumentation_Best_Practices">Application Instrumentation Best Practices</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Everything_fails_eventually"gment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Telemetry – Application Instrumentation</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p style="margin:12pt 0in 0pt;">Written by <a href="http://social.msdn.microsoft.com/profile/ewan%20fairweather%20(azure%20cat)/?ws=usercard-hover">
+Ewan Fairweather </a>- Azure CAT<br />>Everything fails eventually</a></li><li class="hierarchy-item"><a href="#Application_Practices_That_Can_Help">Application Practices That Can Help</a></li><li class="hierarchy-item"><a href="#Define_what_types_of_actions_you_want_to_take">Define what types of actions you want to take</a></li><li class="hierarchy-item"><a href="#Managing_the_amount_of_information">Managing the amount of information</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#CSF_Application_Instrumentation_What_you_need_to_build_or_use">CSF Application Instrumentation – “What you need to build or use”</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Wiring_Up_WAD_Custom_Configuration_in_CSF">Wiring Up WAD Custom Configuration in CSF</a></li><li class="hierarchy-item"><a href="#CSF_Logging_Configuration">CSF Logging Configuration</a></li><li class="hierarchy-item"><a href="#Underlying_CSF_Nlog_Instrumentation_Implementation">Underlying CSF Nlog Instrumentation Implementation</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#CSF_Application_Instrumentation">CSF Application Instrumentation</a></li><li class="hierarchy-item"><a href="#Summary">Summary</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<p style="margin:12pt 0in 0pt;"><span style="font-family:&#39;Calibri Light&#39;;font-size:24px;color:#2e74b5;">Introduction
+</span></p>
+<p style="margin:0in 0in 8pt;"><span><span style="font-family:Calibri;">This week we are publishing the second entry about the design and implementation of Telemetry in Cloud Service Fundamentals (CSF) on Windows Azure.&nbsp;&nbsp; In the previous entry of the CSF blog
+ series, </span><a href="http://blogs.msdn.com/b/windowsazure/archive/2013/06/28/telemetry-basics-and-troubleshooting.aspx"><span style="font-family:Calibri;color:#0000ff;">Telemetry Basics and Troubleshooting</span></a><span style="font-family:Calibri;"> we
+ described the basic principles around monitoring and application health. This included an introduction to the fundamental tools, information sources, and scripts that you can use to gain information about your deployed Windows Azure solutions.&nbsp; For many systems
+ these standard tools and techniques are sufficient.&nbsp; However, for large-scale systems, collecting, correlating, and analyzing performance and health data requires a considerable effort. Telemetry planning starts during the early stages of application design
+ and continues for the entire application lifecycle (test, deployment, and operations).
+</span></span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">This article focuses on
+<em>application</em> instrumentation, because our applications are the greatest sources of information when it comes to monitoring. No matter what tool or approach you take to consume this information, you must first properly instrument your application. Without
+ making instrumentation a high priority design task, you cannot achieve your manageability goals after the application goes into production.&nbsp; Effective application instrumentation is the first step toward providing yourself with the ability to identify and
+ resolve issues in your distributed system.&nbsp; All aspects of your telemetry should be designed to scale with your application.&nbsp; This allows you to provide a high quality user experience, and identify upcoming problems before your users do; a task that becomes
+ increasingly harder as your system grows without proper planning.&nbsp; </span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">As you read this, you might feel that you are just too busy growing your user base and deploying new code features.&nbsp; You might think that you just don’t have the time to spare for telemetry planning.
+ Be careful--there are many companies of yester-year who had a hot product or service, that at a certain point couldn’t scale and experienced one or more extended outages. Users often have little fidelity to any system that is unreliable. They might choose
+ to just move elsewhere, perhaps to the upstart that is chasing on your heels and ready to capture your market.&nbsp;
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">CSF provides a number of components that will enable you to quickly instrument your application and build an effective telemetry system:
+</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A data access layer that implements retry logic and provides retry policies designed for scale.
+</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A logging framework built on top of NLOG.</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A set of logging wrappers and sample configuration for WAD that allows you to scale.</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A data pipeline that collects this information into a queryable operational store.
+</span></p>
+<p style="margin:0in 0in 8pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A sample set of operational reports you can use to monitor your application.</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">By adopting these practices and utilizing theses re-usable components and configurations, your system can better scale. You can also gain insight into your application, which allows you to be targeted
+ with your development effort and improve your operational efficiency. This ultimately makes your customers happier. Specifically in this post we will cover:
+</span></p>
+<p><span><span an></span><span style="font-family:Calibri;">A data pipeline that collects this information into a queryable operational store.
+</span></p>style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Application instrumentation best practices.</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Implementation of the CSF instrumentation components.</span></p>
+<p style="margin:0in 0in 8pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Practical examples of instrumentation scenarios.
+</span></p>
+<h1 style="margin:12pt 0in 0pt;"><a name="Application_Instrumentation_Best_Practices"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:24px;color:#2e74b5;">Application Instrumentation Best Practices
+</span></h1>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">In a future post we will cover the application development practices that have been used.&nbsp; However, it is important to recap a number of underlying general principles of large-scale distributed
+ systems and the corresponding best practices for development.</span></p>
+<h3 style="margin:2pt 0in 0pt;"><a name="Everything_fails_eventually"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:16px;color:#1f4d78;">Everything fails eventually
+</span></h3>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Given enough time and pressure everything fails.&nbsp; There are various failure scopes in a large distributed system. Failures can be at the individual node, service, or entire region.&nbsp; It is really
+ important to consider how you want your application to behave in this scenario during the failure and how you will identify the root cause and apply remedial action—either automatically through application logic or manually via operational process.&nbsp; Effective
+ application instrumentation allows you to react quicker and more effectively.&nbsp; You will be able to determine if the failure is transient or enduring, which requires intervention.</span></p>
+<h3 style="margin:2pt 0in 0pt;"><a name="Application_Practices_That_Can_Help"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:16px;color:#1f4d78;">Application Practices That Can Help
+</span></h3>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">This is a non-trivial task in a multi-component distributed system.&nbsp; A developer writing an application using the Windows Azure platform can automate the resolution of transient error conditions
+ in a number of ways. These include: </span></p>
+<ul>
+<li>Add retry logic for connects for some transient errors. </li><li>Deal with the unavailability (for example, if the database is down for a long time, by using an appropriate back-off policy).
+</li><li>Add retry logic for command execution for some set of errors. </li><li>Make intelligent decisions on whether to retry failures based on the command and error.
+</li><li>Ensure that all external component and service calls are bounded to avoid thread exhaustion.
+</li><li>Leverage asynchronous I/O and APIs where appropriate. </li><li>Be mindful of convoy effects on failure recovery. Handle this appropriately in the data access layer (for example, by slowly increasing requests to a newly recovered service to avoid overwhelming it).
+</li><li>Build a logging mechanism for all of this stuff to be able to track down failures to escalate resolution.
+</li></ul>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">CSF provides re-usable components and a sample implementation for all of the above.&nbsp; In this entry we will focus on the instrumentation mechanism that CSF utilizes.&nbsp;
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;"><strong>Note: </strong>
+For more information on application practices for the design of large-scale services see:
+</span><a href="http://msdn.microsoft.com/en-us/library/windowsazure/jj717232.aspx"><span style="font-family:Calibri;color:#0000ff;">Best Practices for the Design of Large-Scale Services on Windows Azure Cloud Services</span></a>
+</p>
+<h2 style="margin:2pt 0in 0pt;"><a name="Define_what_types_of_actions_you_want_to_take"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:18px;color:#2e74b5;">Define what types of actions you want to take
+</span></h2>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The logical place to start is to define what you want to get out of your instrumentation; think action orientated.&nbsp; It might help to write four or five “I can” statements to determine the type
+ of insight you require.&nbsp; This is exactly what we did when we built the CSF telemetry solution.&nbsp; Some examples might be:
+</span></p>
+<ul>
+<li>I can see the full exception details including any inner exceptions. </li><li>I can see all retry attempts. </li><li>I can quickly see all failures to connect to an external data source or service.
+</li><li>I can monitor the current and average response times for all cross-component calls.
+</li><li>I can determine the root component causing any failure condition without remote connecting to an instance.
+</li></ul>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;"><strong>Note:</strong> we do not recommend using exception.ToString(), because this does not typically provide all inner exceptions.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Then define what actions you need to take in order to satisfy these requirements:</span></p>
+<ul>
+<li>Every component must be instrumented. </li><li>All cross-component and service-boundary communications must be logged for monitoring and alerting.
+</li><li>All retry attempts and failures must be logged. </li><li>All instrumentation must be configurable for production and test environments.
+</li></ul>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">There are two typical categories of information you need. First, there is the information you need to know, such as month-on-month trending for capacity planning.&nbsp; Typically this comes from batch
+ sources that you might need to process, such as IIS logs.&nbsp; The second category is action orientated information that you need to know about immediately, such as response times for service interaction; if this increases from 50 to 500 ms, you need to be notified
+ so you can validate that the automated response in your data access layer is appropriate.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">There are different types of questions you can ask of the data, some are well-defined, such as how many users were on my system during peak periods in the last month.&nbsp; Some might be exploratory
+ in nature, such as what trends can be observed in graphs of key performance indicators (KPIs).&nbsp;
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">For some information you will need to have a historical average view of a window of data.&nbsp; For example, to determine weekly or monthly user growth, you need months of data; to detect service response
+ time spikes, you only need a few seconds or minutes. </span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Ideally your instrumentation should allow you to catch deviations from normal behavior before they escalate to poor user experience or service degradation.&nbsp; A typical pattern with overloaded external
+ resources, such as a database that is overwhelmed with too many concurrent threads, is that response times will increase before the problem escalates to complete unavailability.&nbsp; Consider how to avoid overwhelming systems which are in a recovery state.&nbsp; For
+ example, if a system response time increases, has an outage, and then begins responding, your application should gradually ramp-up requests in line with response rates; this avoids a continual cascading failure condition. Break apart action-orientated information
+ which needs to be queryable from things you need for reporting purposes.&nbsp; Filtering your action-orientated information is the key to keeping the size of it manageable. For this purpose you should have different categories of instrumentation. We use the term
+<em>channels</em> throughout the rest of the document to describe this. </span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The framework below from
+</span><a href="http://channel9.msdn.com/Events/Build/2012/3-030"><span style="font-family:Calibri;color:#0000ff;">this presentation</span></a><span style="font-family:Calibri;"> can be used to characterize the types of insight you require for your application.&nbsp;<br />
+&nbsp; <a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0777.Figure-1-_2D00_-Insights-Framework.jpg">
+<img alt=" " src="http://social.technet.microsoft.ccondition. Break apart action-orientated information
+ which needs to be queryable from things you need for reporting purposes.&nbsp; Filtering your action-orientated information is the key to keeping the size of it manageable. For this purpose you should have different categories of instrumentation. We use the term
+<em>channels</em> throughout the rest of the document to describe this. </span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The framework below from/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0777.Figure-1-_2D00_-Insights-Framework.jpg" style="border-width:0px;border-style:solid;" /></a>&nbsp;
+</span></p>
+<p><span style="font-family:&#39;Calibri Light&#39;;">Figure 1: insights framework</span></p>
+<h2 style="margin:2pt 0in 0pt;"><span style="font-family:&#39;Calibri Light&#39;;font-size:18px;color:#2e74b5;">&nbsp;</span></h2>
+<h2 style="margin:2pt 0in 0pt;"><a name="Managing_the_amount_of_information"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:18px;color:#2e74b5;">Managing the amount of information
+</span></h2>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Large distributed systems collect huge volumes of instrumentation information.&nbsp; As described in the previous section, it is important to determine what information you need to know quickly in order
+ to validate whether automated resolution functionality is working or whether you should take remedial action. Conceptually there are two types of channel of data,
+<em>high-value</em> and <em>high-volume</em>. High-value channel data must be quickly communicated, which involves filtering, aggregating, and publishing into a queryable repository.&nbsp; Other information is high-volume, such as IIS logs. This information is logged
+ locally and then batched to Windows Azure Blob Storage on a periodic basis.&nbsp; The diagram below illustrates this.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7128.Figure-2-_2D00_-High-Value-and-High-Volume.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7128.Figure-2-_2D00_-High-Value-and-High-Volume.jpg" style="border-width:0px;border-style:solid;" /></a></span>
+</p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 2: High Value and High Volume</span></p>
+<h1 style="margin:12pt 0in 0pt;"><a name="CSF_Application_Instrumentation_What_you_need_to_build_or_use"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:24px;color:#2e74b5;">CSF Application Instrumentation – “What you need to build or use”
+</span></h1>
+<p style="margin:2pt 0in 0pt;"><span style="font-family:Calibri;">The baseline technology component for gathering and understanding telemetry on Windows Azure is
+</span><a href="http://msdn.microsoft.com/en-us/library/windowsazure/hh411552.aspx"><span style="font-family:Calibri;color:#0000ff;">Windows Azure Diagnostics (WAD)</span></a><span style="font-family:Calibri;">. WAD consists of an agent that gathers data from
+ individual instances and forwards them to a central collection point (storage account) as well as a set of standard structures and conventions for storing and accessing data.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">For more information on enabling diagnostics in Windows Azure see
+</span><a href="http://www.windowsazure.com/en-us/develop/net/common-tasks/diagnostics"><span style="font-family:Calibri;color:#0000ff;">Enabling Diagnostics in Windows Azure</span></a><span style="font-family:Calibri;">.</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">While the default Windows Azure diagnostics experience for .NET applications (System.Diagnostics &#43; Windows Azure Diagnostics) is an excellent starting point, the default configuration needs to
+ be modified in order to work well in a large-scale application.&nbsp; The CSFundamentals application includes a reference instrumentation implementation using NLog together with a scale-appropriate configuration of Windows Azure Diagnostics which we will walk through
+ in this section.&nbsp; As we discussed earlier, in order for our instrumentation system to scale, we separate the bulky batch high-volume data from the high-value data which we want to query fairly quickly.&nbsp; The approach that we have implemented in CSF consists
+ of three core components:</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">An NLog implementation of the generic ILogger interface (allowing other logging implementations such as log4net to be plugged in without rippling through the code base).</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">The NLog configuration, shared amongst all of the deployed services, and updatable at runtime.</span></p>
+<p style="margin:0in 0in 8pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">The Windows Azure Diagnostics (WAD) configuration, stored in diagnostics.wadcfg (one per deployed role).</span></p>
+<h2 style="margin:2pt 0in 0pt;"><a name="Wiring_Up_WAD_Custom_Configuration_in_CSF"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:18px;color:#2e74b5;">Wiring Up WAD Custom Configuration in CSF
+</span></h2>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">WAD configuration is driven by the Diagnostics.wadcfg file which is in each role project.&nbsp; This provides the ability to configure the items which you want WAD to copy on a periodic basis to a custom
+ container in BLOB storage.&nbsp; The excerpt below shows the CSF Service Web role configuration, we have configured it to copy data from the “archive” folder in the “LogStorage” local resource, this will go to the “telemetry-logs” container in the storage account
+ which WAD is configured to use in the cloud service configuration: </span></p>
+<p style="margin:0in 0in 8pt;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0726.Figure-3-_2D00_-WAD-Customer-Configuration.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0726.Figure-3-_2D00_-WAD-Customer-Configuration.png" style="border-widly:Calibri;">WAD configuration is driven by the Diagnostics.wadcfg file which is in each role project.&nbsp; This provides the ability to configure the items which you want WAD to copy on a periodic basis to a custom
+ container in BLOB storageth:0px;border-style:solid;" /></a></span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 3: WAD Custom Configuration</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">In order to have reserved local storage, the cloud service definition file (ServiceDefinition.csdef) for each role in the CSF services is configured with a “LogStorage” local resource.&nbsp; As the
+ excerpt below shows we have also increased the size of the default “DiagnosticsStore” to 8192 MB to allow for the capture of all WAD items we have configured.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1460.Figure-4-_2D00_-Diagnostics-Store.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1460.Figure-4-_2D00_-Diagnostics-Store.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 4: DiagnosticsStore</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">You can also examine this on the Local Storage tab of the properties for any role in Visual Studio
+</span></p>
+<p style="margin:0in 0in 8pt;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1106.diagnosticsstore.jpg"><img alt=" " width="548" height="127" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1106.diagnosticsstore.jpg" style="border-width:0px;border-style:solid;width:353px;height:81px;" /></a></span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">To view the local storage log into one of the CSF Service roles by remote desktop, and browse to C:\Resources\Directory you will see two additional folders that have been created in the instance
+ during deployment and creation.&nbsp; The image below shows this. &nbsp;</span></p>
+<p style="margin:0in 0in 8pt;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4846.Figure-5-_2D00_-Storage-Log.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4846.Figure-5-_2D00_-Storage-Log.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 5: Storage log</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Note: for more information on Local Storage Resources see:
+</span></p>
+<p style="margin:0in 0in 8pt;"><a href="http://msdn.microsoft.com/en-us/library/windowsazure/ee758708.aspx"><span style="font-family:Calibri;color:#0000ff;">Configure Local Storage Resources</span></a>
+</p>
+<h2 style="margin:2pt 0in 0pt;"><a name="CSF_Logging_Configuration"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:18px;color:#2e74b5;">CSF Logging Configuration</span></h2>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">At this point we have shown you how to create a local resource and configure WAD to collect this on a periodic basis and move it to BLOB storage.&nbsp; The default CSF configuration specifies “</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">PT5M</span><span style="font-family:Calibri;">”
+ which means that we will copy the configured item and the custom local resource every 5 minutes.&nbsp; Each role project (e.g. CSFundamentalsService.WebRole) also contains an Nlog.config.&nbsp; The configuration that CSF provides serves to do a number of things.&nbsp; Firstly
+ we register the custom extensions which are contained in the Microsoft.AzureCat.Patterns.Common assembly which is part of CSF.&nbsp; This contains a number of re-usable components including NLog implementation of the generic ILogger, which we’ll examine later.&nbsp;
+ We define three asynchronous targets; App, Error, and API trace.&nbsp; As the excerpt shows below each of these asynchronous targets are configured to log to the logs location in the “LogStorage” local resource that we created earlier; it is then configured to
+ move these to the archive location which we configured WAD to monitor every hour.&nbsp; For brevity the full file has not been included only these excerpts. &nbsp;<strong></strong></span></p>
+<p style="margin:0in 0in 8pt;"><strong><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1207.Figure-6-_2D00_-LogStorage.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1207.Figure-6-_2D00_-LogStorage.png" style="border-width:0px;border-style:solid;" /></a></span></strong></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 6: LogStorage</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The fourth target which we specify is “trace” as can be seen this targets “azure_trace”, which has a type of “AzureEventLog”.&nbsp; This is a pass through to WAD table storage using System.Diagnostics.Trace.
+ The configuration file then defines a number of logical associations for log channels (ApiTrace, Database, Cache, and Scheduler) all of which have configurable targets.&nbsp; This can be easily extended to add additional named loggers.
+<strong></strong></span></p>
+<p style="margin:0in 0in 8pt;"><strong><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4657.Figure-7-_2D00_-Azure-Trace.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4657.Figure-7-_2D00_-Azure-Trace.png" style="border-width:0px;border-style:solid;" /></a></span></strong></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 7: Azure Trace</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The NlogTargetAzureTrace is the wrapper class which the CSF Nlog implementation uses to route “trace” events to System.Diagnostics.Trace, which is in turn routed to the WAD listener and written
+ to Windows Azure table storage.&nbsp; This class has the attribute target set to “AzureEventLog”.&nbsp; This is and the custom WAD directory monitoring configuration are a key part of the logging implementation; it allows us to leverage WAD for the underlying agent
+ based configuration, network transfer, integrates with and provides a separation of channels across Windows Azure table and blob storage as appropriate.&nbsp;
+</span></p>
+<p style="margin:0in 0in 8pt;"><strong><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8867.Figure-8-_2D00_-nlogtargetazuretrace.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8867.Figure-8-_2D00_-nlogtargetazuretrace.png" style="border-width:0px;border-style:solid;" /></a></span></strong></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 8: NlogTargetAzureTrace</span></p>
+<h2 style="margin:2pt 0in 0pt;"><a name="Underlying_CSF_Nlog_Instrumentation_Implementation"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:18px;color:#2e74b5;">Underlying CSF Nlog Instrumentation Implementation
+</span></h2>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">As we have shown you, CSF heavily relies on a custom WAD configuration for the underlying plumbing; to collect diagnostics information from all compute roles included in the solution and to consolidate
+ them into a single Storage Account. This has the advantage that it is configurable and can be changed for different deployments based on your individual environment needs.&nbsp; The next recommended stage is to have a common logging framework, which abstracts that
+ layer of difficulty from each developer.&nbsp; Most serious systems already do this with a data access layer for SQL or cache calls, to provide consistency and appropriate retry policies, because, over time, this means that our code base has a consistent approach
+ for interacting with data sources.&nbsp; By building or leveraging a common logging framework, you can achieve a consistent instrumentation experience; this allows you to build on it over time and leverage this information in a full telemetry system.&nbsp; In this section
+ we’ll walk through the CSF Nlog implementation, then we’ll show you some examples of how it is used throughout the application.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The generic </span>
+<span class="CodeChar"><em><span style="font-family:Consolas;">ILogger</span></em></span><span style="font-family:Calibri;"> interface (defined in
+</span><span class="CodeChar"><em><span style="font-family:Consolas;">ILogger.cs</span></em></span><span style="font-family:Calibri;">) provides a generic interface for employing tracing in your application.&nbsp; It also has overloads for directly accepting Exception
+ objects (removing the responsibility of correctly unrolling an exception from the developer) and a specific channel for tracing API calls.</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;"><strong>Note</strong>: this additional
+</span><span class="CodeChar"><em><span style="font-family:Consolas;">TraceApi()</span></em></span><span style="font-family:Calibri;"> overload is designed to streamline the experience of logging all external service or component calls with timing information
+ and context.&nbsp; </span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Each level (Debug, Info, Warning, Error) has three or four overloads:</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">void</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> Warning(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">object</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ message);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">void</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> Warning(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Exception</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ exception, </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">object</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> message);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">void</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> Warning(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ fmt, </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">params</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">
+object</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">[] vars);</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">void</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;"> Warning(</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Exception</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">
+ exception, </span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;"> fmt,
+</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">params</span>
+<span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">
+object</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">[] vars);</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The NLogWrapper class (defined in NlogWrapper.cs) provides an NLog implementation of the ILogger interface.&nbsp; This approach is taken to allow other logging implementations to be easily added.&nbsp; A
+ Nlog Logger object is defined: </span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">private</span>
+<span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:#2b91af;">
+Logger</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;"> _log;</span>
+</p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">This is used throughout to route the interface calls to underlying NLog calls:
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">public</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">
+void</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> Warning(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Exception</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ exception, </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">object</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> message)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _log.WarnException(message.ToString(), exception);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p style="margin:0in 0in 8pt;">&nbsp;</p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">To allow streamlined logging messages, the ILogger interface is used by requesting an ILogger from a logger factory, the CSF project provides an NLog implementation of this NLoggerFactory which
+ is in NLogFactory.cs.&nbsp; This includes the InitializeForCloud() method which is used to extract Windows Azure specific configuration; and locates the Nlog.config file which must be included in the project for each role.&nbsp; The named log channels we examined earlier
+ (Database, Caching, etc) are configured at this point, and the factory is used to access them and execute logging methods. As shown below the “LogStorage” local resource which we defined earlier is used by this factory as the default path for logging data;
+ this is done by utilizing the appropriate method from the </span><a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.serviceruntime.roleenvironment.getlocalresource.aspx"><span style="font-family:Calibri;color:#0000ff;">Windows Azure Service
+ RunTime API</span></a><span style="font-family:Calibri;">:&nbsp; </span></p>
+<p style="margin:0in 0in 8pt;"><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5531.Figure-9-_2D00_-Nloggerfactory.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5531.Figure-9-_2D00_-Nloggerfactory.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;color:#5a5a5a;">Figure 9: NLoggerFactory</span></p>
+<h1 style="margin:12pt 0in 0pt;"><a name="CSF_Application_Instrumentation"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:24px;color:#2e74b5;">CSF Application Instrumentation
+</span></h1>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">We will now examine a number of use cases where CSF utilizes the instrumentation framework we have described.&nbsp; The abstract class, MethodRunner, in MethodRunner.cs is the base class used by the
+ data access layer and the scheduler service.&nbsp; As shown below a logger object is lazy initialized using the LoggerFactory we discussed earlier:&nbsp;
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;summary&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:green;"> Instantiate the underlying policies and logging logging
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;/summary&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;param name=&quot;logName&quot;&gt;&lt;/param&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">protected</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> MethodRunner(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ componentName, </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> logName =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#a31515;">&quot;Log&quot;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">bool</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> timeMethods =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">true</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LoggerLazy =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">new</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">
+Lazy</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&lt;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">ILogger</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&gt;(()
+ =&gt; { </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">return</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">
+LoggerFactory</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.GetLogger(logName); });</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _timeMethods = timeMethods;</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _componentName = componentName;</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _logName = logName;</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span>
+</p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">The MethodRunner abstract class contains generic methods, such as Execute, which provides the underlying calls to the NLogWrapper.cs ILogger implementation via the factory object:
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;summary&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:green;"> Given a method which does not return any data, time and trace
+ the execution of the method </span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;/summary&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;param name=&quot;func&quot;&gt;&lt;/param&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;param name=&quot;methodName&quot;&gt;&lt;/param&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">///</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:gray;">
+&lt;param name=&quot;vars&quot;&gt;&lt;/param&gt;</span> </p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">protected</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">
+virtual</span> <span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">
+void</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> Execute(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Action</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ func, </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color;">
+&lt;param name=&quot;vars&quot;&gt;&lt;/param&g:black;"> methodName,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">params</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">
+object</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">[] vars)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">try</span>
+</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Stopwatch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> stopWatch =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">;</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">if</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (_timeMethods &amp;&amp; !</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">String</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.IsNullOrEmpty(methodName))</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stopWatch =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Stopwatch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.StartNew();</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; func();</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">if</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (stopWatch !=
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stopWatch.Stop();</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Logger.TraceApi(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">String</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.Format(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#a31515;">&quot;{0}.{1}&quot;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">,
+ _componentName, methodName), stopWatch.Elapsed);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p>&nbsp;</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">catch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Exception</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ ex)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Logger.Warning(ex,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#a31515;">&quot;Error in {0}:{1}&quot;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">, _componentName, methodName);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:b-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Exception</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ ex)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nlack;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">throw</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp; }</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">}</span><strong></strong></p>
+<p style="margin:0in 0in 8pt;"><strong><span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.Exception.png"><img alt=" " width="548" height="123" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.Exception.png" style="border-width:0px;border-style:solid;width:449px;height:96px;" /></a></span></strong></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">A number of the CSF classes implement the MethodRunner abstract class, for example SQLAzureDalBase in SqlAzureDalBase.cs.&nbsp; As can be seen in the constructor it specifies the “Database” log channel
+ which we saw defined earlier in the Nlog.config.&nbsp; This can easily be adjusted to your own custom log channel:
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">public</span>
+<span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">
+abstract</span> <span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:blue;">
+class</span> <span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:#2b91af;">
+SqlAzureDalBase</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;"> :
+</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:#2b91af;">MethodRunner</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:green;">//Omitted code for brevity</span>
+</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">public</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> SqlAzureDalBase(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ componentName, </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">RetryPolicy</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> policy,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">bool</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> logRetries =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">false</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">bool</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> timeMethods =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">false</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; :
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">base</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">(componentName,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#a31515;">&quot;Database&quot;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">, timeMethods)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _logRetries = logRetries;</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _policy = policy;</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">These CSF classes encapsulate the best practices of logging all exception details, capturing all retry attempts and component execution information.&nbsp; We will now walk through a couple of examples.&nbsp;
+ The first technique we will cover is the stopwatch example, this is useful for logging the execution times when querying external services or databases.&nbsp; The ExecuteSql method in the SQLAzureDalBase class demonstrates how you can instantiate a new Stopwatch
+ object and use this to time and log to the Logger object the elapsed time.&nbsp; If an exception occurs the helper class method
+</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:#2b91af;">AzureSqlDatabaseError</span><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">.LogSqlError</span>
+<span style="font-family:Calibri;">is called to log this to the appropriate logger.&nbsp; This helper class is used because it provides additional logic to determine if the Azure SQL database exception is a transient or enduring error.&nbsp;
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">protected</span>
+<span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">
+void</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> ExecuteSql(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Action</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ action, </span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> connectionString =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">string</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> methodName =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Stopwatch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> stopWatch =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">;</span></p>
+<p>&nbsp;</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">try</span>
+</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;fonttch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> stopWatch =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;-size:9.5pt;font-family:Consolas;color:blue;">if</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (TimeMethods &amp;&amp; !</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">String</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.IsNullOrEmpty(methodName))</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stopWatch =
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Stopwatch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.StartNew();</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p>&nbsp;</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; _policy.Execute(() =&gt;</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; action();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;});</span></p>
+<p>&nbsp;</p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">if</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (stopWatch !=
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stopWatch.Stop();</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Logger.TraceApi(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">String</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.Format(</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#a31515;">&quot;{0}.{1}&quot;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">,
+ ComponentName, methodName), stopWatch.Elapsed);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">catch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">SqlException</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ ex0)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; System.</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Nullable</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&lt;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">TimeSpan</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&gt;
+ elasped = (stopWatch == </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">) ?</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> :
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">new</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> System.</span><span styl:9.5pt;font-family:Consolas;color:#2b91af;">TimeSpan</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&gt;
+ elasped = (stopWatch == </span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">null</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">) ?</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbse="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Nullable</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&lt;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">TimeSpan</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&gt;(stopWatch.Elapsed);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">AzureSqlDatabaseError</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">.LogSqlError(Logger, ex0, connectionString,
+ elasped, methodName);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">catch</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;"> (</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#2b91af;">Exception</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">
+ ex1)</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Logger.Warning(ex1,
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:#a31515;">&quot;Error in {0}:{1}&quot;</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">, ComponentName, methodName);</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:blue;">throw</span><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">;</span></p>
+<p><span style="background-color:white;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p style="margin:0in 0in 8pt;"><span style="background-color:white;line-height:107%;font-size:9.5pt;font-family:Consolas;color:black;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">&nbsp;</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">By building the base data access classes on MethodRunner, which in turn uses the ILogger interface and underlying factor we covered earlier, it means that we have a consistent instrumentation experience
+ across CSF. &nbsp;As the excerpt above shows the full exception is always logged, not exception.ToString () which can sometimes miss inner exception details.&nbsp;
+</span></p>
+<h1 style="margin:12pt 0in 0pt;"><a name="Summary"></a><span style="font-family:&#39;Calibri Light&#39;;font-size:24px;color:#2e74b5;">Summary
+</span></h1>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">This article has provided you with an understanding of the CSF instrumentation framework, and provided examples which you can use in order to adopt these practices in your application. By providing
+ a consistent instrumentation for all error handling including component information and contextual tracing it will enable you to quickly get an understanding of error events, root causes, and resolutions.&nbsp; Using the CSF instrumentation framework will provide
+ you and your developers with a cheap, consistent way to implement extensible logging across your application.&nbsp; This will provide the ability to quickly correlate events, and give you a greater understanding of your users’ experience.
+</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Some of the key things to remember as you implement instrumentation in your application:
+</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Log all API calls to external services with context, destination, method, timing information (latency), and result (success/failure/retries). Use the chunky logging channel to avoid overwhelming the diagnostics
+ system with telemetry information.</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Log the full exception details, do not use exception.ToString().</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Data written into table storage (performance counters, event logs, trace events) are written in a temporal partition that is 60 seconds wide. Attempting to write too much data (too many point sources, too low
+ a collection interval) can overwhelm this partition. Ensure that error spikes do not trigger a high volume insert attempt into table storage, as this might trigger a throttling event.</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Capture and log retry logic information.</span></p>
+<p><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Collect database and other service response times using the stopwatch approach.</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Use common logging libraries, such as the Enterprise Application Framework Library, log4net or NLog, to implement bulk logging to local files. Use a custom data source in the diagnostic monitor configuration to
+ copy this information periodically to blob storage. </span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Create <strong><span style="font-family:Calibri,sans-serif;">separate channels</span></strong> for chunky (high-volume, high-latency, granular data) and chatty (low-volume, low-latency, high-value data) telemetry.
+</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Use standard Windows Azure Diagnostics sources, such as performance counters and traces, for chatty information.
+</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Do not publish live site data and telemetry into the same storage account. Use a dedicated storage account for diagnostics.
+</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Choose an appropriate collection interval (5 min – 15 min) to reduce the amount of data that must be transferred and analyzed e.g. “PT5M”.</span></p>
+<p style="margin:0in 0in 12pt 0.5in;"><span><span style="font-family:Calibri;">-</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Ensure that loggingnbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Do not publish live site data and telemetry into configuration can be modified at run-time without forcing instance resets. Also verify that the configuration is sufficiently granular to enable logging for specific aspects of the system,
+ such as database, cache, or other services.</span></p>
+<p style="margin:0in 0in 8pt;"><span style="font-family:Calibri;">Windows Azure Diagnostics does not out of the box provide data collection for dependent services, such as SQL Database or a distributed cache.&nbsp; In the next article in this series we will explore
+ the data pipeline that we have implemented to provide a comprehensive view of the overall CSF application and its performance characteristics; this includes how we capture this information in a relational operational store and provide you with an overall view
+ across the Windows Azure platform.</span></p>
+
+</div>
+    
+    

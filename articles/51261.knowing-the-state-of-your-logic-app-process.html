@@ -1,0 +1,165 @@
+---
+layout: default
+title: Knowing the State of Your Logic App Process - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;color:#3a3e43;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Redis_Cache_Instance">Redis Cache Instance</a></li><li class="hierarchy-item"><a hreper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-frf="#Azure_Function">Azure Function</a></li><li class="hierarchy-item"><a href="#Logic_App">Logic App</a></li><li class="hierarchy-item"><a href="#Testing">Testing</a></li><li class="hierarchy-item"><a href="#Final_Thoughts">Final Thoughts</a></li></ul><div class="hierarchy-list-footer"> </div></div></span></p>
+<hr />
+<h1><a name="Introduction"></a>Introduction</h1>
+<p style="text-align:justify;">Recently in the forums, some Logic App users were asking how to query the state of their Logic Apps.&nbsp; The scenario were not uncommon in that the expected Logic App process time could not be determined and for legitimate reasons
+ can take longer than timeouts or users would accept.</p>
+<p style="text-align:justify;">There is no easy way to do this with existing services to the level of a specific Logic App instance, but it is very easy to do using other Azure services, specifically Azure Functions and Redis Cache.</p>
+<p style="text-align:justify;">For clarity, this post is not about security or performance or cache design.&nbsp; All things you should consider separately and apply patterns necessary to meet requirements or goals.</p>
+<p style="text-align:justify;">Note: These Portal steps are current as of February 2018.</p>
+<h1><a name="Redis_Cache_Instance"></a>Redis Cache Instance</h1>
+<p>The first thing to create is an instance of Azure Redis Cache.&nbsp; That takes only three steps in the Portal.</p>
+<p>1. Create your instance of Azure Redis Cache.&nbsp; This one is MyCompanyLogicAppStatus.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$NewRedisCache3.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6708.NewRedisCache.PNG"><img alt=" " width="345" height="805" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6708.NewRedisCache.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>2. Next, you will need a connection string from the Access Keys section of the newly created cache instance.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$AccessKeys2.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1832.AccessKeys.PNG"><img alt=" " width="176" height="36" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1832.AccessKeys.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>And that’s all we need to do when creating a basic Redis Cache instance.</p>
+<h1><a name="Azure_Function"></a>Azure Function</h1>
+<p>Next, we create an Azure Function that will be the interface to our Azure Redis Cache.</p>
+<p>1. Click Create a resource</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$CreateAResource2.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6355.CreateAResource.PNG"><img alt=" " width="169" height="46" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6355.CreateAResource.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>2. Then click Serverless Function App</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$FuncitonApp2.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0121.FuncitonApp.PNG"><img alt=" " width="234" height="59" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0121.FuncitonApp.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>3. Complete the details for your Function.&nbsp; Be sure to correctly set the <strong>
+Resource Group</strong> and <strong>Storage</strong>.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$CreateFunctionApp3.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2262.CreateFunctionApp.PNG"><img alt=" " width="313" height="687" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2262.CreateFunctionApp.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>4. Select Application Settings and add the connection string for your Redis Cache to the<strong> Connection strings</strong> list.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$ApplicatinSettings2.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3660.ApplicatinSettings.PNG"><img alt=" " width="183" height="46" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3660.ApplicatinSettings.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p>5. Modify or create project.json to include the reference to StackExchange.Redis.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;frameworks&quot;: {</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;net46&quot;:{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;dependencies&quot;: {</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;StackExchange.Redis&quot;: &quot;1.2.1&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;<span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;frameworks&quot;: {</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;net46&quot;:{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="c">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>6. Modify function.json to support the PUT and GET methods.&nbsp; Basically, change POST to PUT.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;bindings&quot;: [</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;authLevel&quot;: &quot;function&quot;,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;name&quot;: &quot;req&quot;,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;type&quot;: &quot;httpTrigger&quot;,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;direction&quot;: &quot;in&quot;,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;methods&quot;: [</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;get&quot;,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;put&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">},</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;name&quot;: &quot;$return&quot;,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;type&quot;: &quot;http&quot;,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;direction&quot;: &quot;out&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">],</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&quot;disabled&quot;: false</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p style="text-align:justify;">For simplicity, the function will use either PUT or GET with 3 or 2 parameters.&nbsp; This is merely a sample so feel free to use fewer or more parameters in any composition you need.</p>
+<p style="text-align:justify;">The PUT code will be called by the Logic App to set it’s current state.&nbsp; In this case, we’re going to use a combination key of [LogicApp Name] &#43; [OrderNumber], ProcessOrder&#43;12345 for example, as the cache key with any text as the
+ value.</p>
+<p style="text-align:justify;">The GET code will be called by any client interested in the state of it’s process using the key as it’s parameter.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Net;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">StackExchange.Redis;</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#000000;">
+async Task&lt;HttpResponseMessage&gt; Run(HttpRequestMessage req, TraceWriter log)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">log.Info(</code><code style="color:blue;">&quot;C# HTTP trigger function processed a request.&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">cstring = System.Configuration.ConfigurationManager.ConnectionStrings[</code><code style="color:blue;">&quot;SampleLogicAppState&quot;</code><code style="color:#000000;">].ConnectionString;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ConnectionMultiplexer LogicAppStatusConnection = ConnectionMultiplexer.Connect(cstring);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">System.Net.Http.Headers.HttpRequestHeaders reqHeaders = req.Headers;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">LogicApp = reqHeaders.Contains(</code><code style="color:blue;">&quot;LogicApp&quot;</code><code style="color:#000000;">) ? reqHeaders.GetValues(</code><code style="color:blue;">&quot;LogicApp&quot;</code><code style="color:#000000;">).First() :
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">ID = reqHeaders.Contains(</code><code style="color:blue;">&quot;ID&quot;</code><code style="color:#000000;">) ? reqHeaders.GetValues(</code><code style="color:blue;">&quot;ID&quot;</code><code style="color:#000000;">).First() :
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">Status = reqHeaders.Contains(</code><code style="color:blue;">&quot;Status&quot;</code><code style="color:#000000;">) ? reqHeaders.GetValues(</code><code style="color:blue;">&quot;Status&quot;</code><code style="color:#000000;">).First() :
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">cacheKey = LogicApp &#43; </code><code style="color:blue;">&quot;&#43;&quot;</code>
+<code style="color:#000000;">&#43; ID;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IDatabase LogicAppStatusCache = LogicAppStatusConnection.GetDatabase();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code><code style="color:#000000;">(req.Method == HttpMethod.Put)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogicAppStatusCache.StringSet(cacheKey, Status);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbspn></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IDatabase LogicAppStatusCache = LogicAppStatusConnection.GetDatabase(;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">req.CreateResponse(HttpStatusCode.OK, cacheKey);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code><code style="color:#000000;">(req.Method == HttpMethod.Get)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">cacheStatus = (</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">)LogicAppStatusCache.StringGet(cacheKey) ??
+</code><code style="color:blue;">&quot;Unknown&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">req.CreateResponse(HttpStatusCode.OK, cacheStatus);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">req.CreateResponse(HttpStatusCode.MethodNotAllowed);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<h1><a name="Logic_App"></a>Logic App</h1>
+<p style="text-align:justify;">Finally, we need a Logic App to to write some state to our status interface.&nbsp; In this case, all we need is a fake order process which sets our status.</p>
+<p style="text-align:justify;">The Logic App here consists most of calls to our Function to set the status, and a delay.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$LogicAppActions3.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1031.LogicAppActions.PNG"><img alt=" " width="435" height="457" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1031.LogicAppActions.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="text-align:justify;">In more detail, we can see that Azure Function Action calls our status function with the details necessary to cache the current status.&nbsp; The Delay Action is merely to allow us to see the changing status over time.&nbsp; Note, once you
+ select the Function when adding the Action, the function name is no longer displayed.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$SetAndDelayActions3.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2161.SetAndDelayActions.PNG"><img alt=" " width="458" height="359" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2161.SetAndDelayActions.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<h1><a name="Testing"></a>Testing</h1>
+<p>The process is very easy to test with Postman.</p>
+<p>First, we submit an Order we need to track the status of during processing.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$PostmanSubOrder3.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0474.PostmanSubOrder.png"><img alt=" " width="406" height="316" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0474.PostmanSubOrder.png" style="border-width:0px;border-style:solid;" /></a></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;OrderNumber&quot;</code>
+<code style="color:#000000;">: </code><code style="color:blue;">&quot;34567&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;OrderDate&quot;</code>
+<code style="color:#000000;">: </code><code style="color:blue;">&quot;20180211&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;OrderItem&quot;</code>
+<code style="color:#000000;">: </code><code style="color:blue;">&quot;Send me a fun LogicApp Demo!&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>Next, we can use the GET method with the LogicAppName and ID to get the current status of our running LogicApp.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/$PostmanGetStatus3.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/c/span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;OrderDate&quot;</code>
+<code style="color:#000000;">: </code><code style="color:blue;">&quot;20180211&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;OrderItem&quot;</code>
+<code style="color:#000000;">: </code><communityserver-wikis-components-files/00-00-00-00-05/5516.PostmanGetStatus.png"><img alt=" " width="406" height="465" src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5516.PostmanGetStatus.png" style="border-width:0px;border-style:solid;" /></a></p>
+<h1><a name="Final_Thoughts"></a>Final Thoughts</h1>
+<p>Here are some things you should consider when knowing the state of a process is important:</p>
+<hr />
+
+</div>
+    
+    

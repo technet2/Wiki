@@ -1,0 +1,85 @@
+---
+layout: default
+title: CRM 2011&#58; How to Enable Verbose Windows Identity Foundation (WIF) Tracing for Claims-Based Authentication - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="font-size:18px;"><strong>Overview<br />
+</strong></span><br />
+When CRM 2011 is configured for claims-based authentication (CBA), Windows Identity Foundation (WIF) is utilized. When troubleshooting CBA, it may be necessary to gather tracing data&nbsp;from the CRM 2011 server. This article details the steps needed in order to
+ create verbose WIF traces from CRM 2011, and how to view those traces in a tool named SvcTraceViewer.<br />
+<br />
+<br />
+<span style="font-size:18px;"><strong>Steps<br />
+</strong></span><br />
+<strong>*Note: These steps should be performed after hours due to the temporary service outage that will result.</strong><br />
+<ol>
+<li>Download&nbsp;<a href="http://msdn.microsoft.com/en-us/library/ms732023.aspx" title="SvcTraceViewer" target="_blank">SvcTraceViewer.exe</a> from the .NET SDK
+</li><li>Create a directory to house the log files. In this example, we will be using <strong>
+C:\logs</strong>. </li><li>In <strong>Windows Explorer</strong>, open <strong>&quot;%ProgramFiles%\Microsoft Dynamics CRM\CRMWeb&quot;</strong>
+</li><li>Edit <strong>web.config</strong> in <strong>Notepad</strong> </li><li>Find the <strong>&lt;system.diagnostics&gt;</strong> section </li><li>Scroll within &lt;system.diagnostics&gt; and find <strong>&lt;source name=&quot;Microsoft.IdentityModel&quot;</strong>
+</li><li>Change <strong>switchValue=&quot;Error&quot;</strong> to <strong>switchValue=&quot;Verbose&quot; </strong>
+<ol>
+<li><strong>*Note: The V on Verbose must be capitalized!</strong> </li></ol>
+</li><li>Copy the following lines of text from here to your clipboard:
+<ol>
+<li><span style="line-height:115%;font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><em>&lt;listeners&gt;<br />
+&lt;add name=&quot;xml&quot; type=&quot;System.Diagnostics.XmlWriterTraceListener&quot;<br />
+initializeData=&quot;C:\logs\WIF.svclog&quot; /&gt;<br />
+&lt;/listeners&gt;</em></span> </li></ol>
+</li><li>Remove the following lines from under <strong>&lt;source name=&quot;Microsoft.IdentityModel&quot; switchValue=&quot;Verbose&quot;&gt;</strong>:
+<ol>
+<li><span style="line-height:115%;font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><em>&lt;listeners&gt;<br />
+&lt;add name=&quot;ServiceModelRedirect&quot; /&gt;<br />
+&lt;/listeners&gt;</em></span> </li></ol>
+</li><li>Paste the text from your clipboard directly under<strong> &lt;source name=&quot;Microsoft.IdentityModel&quot; switchValue=&quot;Verbose&quot;&gt;</strong>
+</li><li>Your diagnostics source and listener for Microsoft.IdentityModel should now look like this:
+<ol>
+<li><span style="line-height:115%;font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><em>&lt;source name=&quot;Microsoft.IdentityModel&quot; switchValue=&quot;Verbose&quot;&gt;<br />
+&lt;listeners&gt;<br />
+&lt;add name=&quot;xml&quot; type=&quot;System.Diagnostics.XmlWriterTraceListener&quot;<br />
+initializeData=&quot;C:\logs\WIF.svclog&quot; /&gt;<br />
+&lt;/listeners&gt;<br />
+&lt;/source&gt;</em></span> </li></ol>
+</li><li><strong>Save</strong> and<strong> Close</strong> <strong>web.config</strong> </li><li>Reproduce your issue </li><li>Stop IIS (or stop the CRM website and application pool). This is required so the handle to the WIF.svclog file is released and we can gather the trace data.
+</li><li>Copy the <strong>WIF.svclog</strong> file&nbsp;to an alternate location for review.
+</li><li>Start IIS (or start the CRM website and application pool). </li><li>Open <strong>SvcTraceViewer.exe</strong> </li><li>From the <strong>File &gt; Open</strong> menu, open <strong>WIF.svclog</strong> </li></ol>
+<br />
+The data in the log is broken out by <strong>Activity</strong> ID. Each Activity ID can contain multiple events. Work your way down through each Activity ID and each event contained. In this view, you will be able to walk the flow of CBA conversation for the
+ CRM 2011 application.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7418.SvcTraceViewer_2D00_Snip.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/7418.SvcTraceViewer_2D00_Snip.JPG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<span style="font-size:18px;"><strong>Steps to revert these changes</strong></span>
+<ol>
+<li>In <strong>Windows Explorer</strong>, open <strong>&quot;%ProgramFiles%\Microsoft Dynamics CRM\CRMWeb&quot;</strong>
+</li><li>Edit <strong>web.config</strong> in <strong>Notepad</strong> </li><li>Find the <strong>&lt;system.diagnostics&gt;</strong> section </li><li>Scroll winthin &lt;system.diagnostics&gt; and find <strong>&lt;source name=&quot;Microsoft.IdentityModel&quot;</strong>
+</li><li>Change <strong>switchValue=&quot;Verbose&quot;</strong> to <strong>switchValue=&quot;Error&quot;</strong>
+</li><li>Copy the default listener from the lines of text below:
+<ol>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em> &lt;listeners&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;add name=&quot;ServiceModelRedirect&quot; /&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/listeners&gt;</em> </li></ol>
+</li><li>Remove the following lines from under <strong>&lt;source name=&quot;Microsoft.IdentityModel&quot; switchValue=&quot;Error&quot;&gt;</strong>:
+<ol>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>&lt;listeners&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;add name=&quot;xml&quot; type=&quot;System.Diagnostics.XmlWriterTraceListener&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; initializeData=&quot;C:\logs\WIF.svclog&quot; /&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/listeners&gt;</em> </li></ol>
+</li><li>Paste the text from your clipboard directly under<strong> &lt;source name=&quot;Microsoft.IdentityModel&quot; switchValue=&quot;Error&quot;&gt;</strong>
+</li><li>Your diagnostics source and listener for Microsoft.IdentityModel should now look like this:
+<ol>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <em>&lt;source name=&quot;Microsoft.IdentityModel&quot; switchValue=&quot;Error&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;listeners&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;add name=&quot;ServiceModelRedirect&quot; /&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/listeners&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/source&gt;</em> </li></ol>
+</li><li><strong>Save</strong> and<strong> Close</strong> <strong>web.config</strong> </li></ol>
+<br />
+
+</div>
+    
+    

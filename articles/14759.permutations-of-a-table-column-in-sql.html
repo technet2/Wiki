@@ -1,0 +1,133 @@
+---
+layout: default
+title: Permutations of a Table Column in SQL - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+The permutation of a set comprises all the unique orderings of the elements of the set. Naive implementation of&nbsp;a permutation generator in SQL&nbsp;requires performing a&nbsp;N-ary self-join of the set, where N is the number of elements in the set. This is inconvenient,
+ as the code must be reworked whenever the set size changes. By taking advantage of features in SQL Server 2005 and later, the implementation below generates the permutations of a column in an input table using&nbsp;completely static&nbsp;SQL.The output is in lexicographic
+ (ie dictionary) order with each permutation identified by it&#39;s ent-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Permutations of a Table Column in SQL</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+The permutation of a set comprises all the unique orderings of the elements of the set. Naive implementation of&nbsp;a permutation generator in SQL&nbsp;requires performing a&nbsp;N-ary self-join of the set, where N is the number of lexicographic sequence number.<br />
+<br />
+The variable @delim can be set to the desired delimiter character in the output permutations, and defaults to comma (&#39;,&#39;) in the code below. Proper inclusion of one element within another, as &#39;Ann&#39; in &#39;JoAnne&#39;, is properly handled.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">* </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">into</code>
+<code style="color:#000000;">#data</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">(</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">values</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:blue;">&#39;Ann&#39;</code><code style="color:#000000;">),</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:blue;">&#39;John&#39;</code><code style="color:#000000;">),</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:blue;">&#39;Mark&#39;</code><code style="color:#000000;">),</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:blue;">&#39;Fred&#39;</code><code style="color:#000000;">),</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:blue;">&#39;JoAnne&#39;</code><code style="color:#000000;">),</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code><code style="color:blue;">&#39;George&#39;</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">) T(</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">@num&nbsp;&nbsp;&nbsp; </code><code style="color:#006699;font-weight:bold;">as</code>
+<code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">@delim&nbsp; </code><code style="color:#006699;font-weight:bold;">as</code>
+<code style="color:#006699;font-weight:bold;">char</code><code style="color:#000000;">(1);</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@num&nbsp;&nbsp;&nbsp; = (</code><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#ff1493;">count</code><code style="color:#000000;">(*) </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">#data);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@delim&nbsp; = </code><code style="color:blue;">&#39;,&#39;</code><code style="color:#000000;">;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">-- Permutations of #t</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">with</code>
+<code style="color:#000000;">T (</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">level</code><code style="color:#000000;">)
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+(</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#ff1493;">convert</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">),
+ @delim&#43;</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">&#43;@delim),
+</code><code style="color:#006699;font-weight:bold;">level</code><code style="color:#000000;">=1
+</code><code style="color:#006699;font-weight:bold;">from</code> <code style="color:#000000;">
+#data</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">union</code>
+<code style="color:#808080;">all</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><c><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+ode style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#ff1493;">convert</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">),T.</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">&#43;#data.</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">&#43;@delim),</code><code style="color:#006699;font-weight:bold;">level</code><code style="color:#000000;">&#43;1
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">#data,T</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#006699;font-weight:bold;">level</code> <code style="color:#000000;">
+&lt; @num</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">and</code>
+<code style="color:#000000;">charindex(@delim&#43;#data.</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">&#43;@delim,T.</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">) = 0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">select</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">RowNo = Row_Number() over (</code><code style="color:#006699;font-weight:bold;">order</code>
+<code style="color:#006699;font-weight:bold;">by</code> <code style="color:#006699;font-weight:bold;">
+name</code><code style="color:#000000;">),</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#ff1493;">substring</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">,2,len(</code><code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">)-2)
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+permutation</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">T</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#006699;font-weight:bold;">level</code> <code style="color:#000000;">
+= @num</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">order</code>
+<code style="color:#006699;font-weight:bold;">by</code> <code style="color:#006699;font-weight:bold;">
+name</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">drop</code>
+<code style="color:#006699;font-weight:bold;">table</code> <code style="color:#000000;">
+#data</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">;</code></span></div>
+</div>
+<br />
+------------------------------------------------------<br />
+RowNo name <br />
+-------------------- ------------------------------ <br />
+1 Ann,Fred,John,Mark <br />
+2 Ann,Fred,Mark,John <br />
+3 Ann,John,Fred,Mark <br />
+4 Ann,John,Mark,Fred <br />
+5 Ann,Mark,Fred,John <br />
+6 Ann,Mark,John,Fred <br />
+7 Fred,Ann,John,Mark <br />
+8 Fred,Ann,Mark,John <br />
+9 Fred,John,Ann,Mark <br />
+10 Fred,John,Mark,Ann <br />
+11 Fred,Mark,Ann,John <br />
+12 Fred,Mark,John,Ann <br />
+13 John,Ann,Fred,Mark <br />
+14 John,Ann,Mark,Fred <br />
+15 John,Fred,Ann,Mark <br />
+16 John,Fred,Mark,Ann <br />
+17 John,Mark,Ann,Fred <br />
+18 John,Mark,Fred,Ann <br />
+19 Mark,Ann,Fred,John <br />
+20 Mark,Ann,John,Fred <br />
+21 Mark,Fred,Ann,John <br />
+22 Mark,Fred,John,Ann <br />
+23 Mark,John,Ann,Fred <br />
+24 Mark,John,Fred,Ann <br />
+<br />
+(24 row(s) affected) <br />
+
+</div>
+    
+    

@@ -1,0 +1,269 @@
+---
+layout: windowsazurestorage
+title: Nagle’s Algorithm is Not Friendly towards Small Requests
+weight: 3
+---
+
+<div id="site-content" class="site-content row">
+
+	<div id="primary" class="content-area col-sm-9">
+		<div id="single-content" class="div-content">
+
+			
+				
+<article id="post-33" class="post-33 post type-post status-publish format-standard hentry category-uncategorized tag-performance tag-windows-azure-blobs tag-windows-azure-queues tag-windows-azure-tables">
+
+	<header class="entry-header single">
+		<h1 class="entry-title">Nagle&rsquo;s Algorithm is Not Friendly towards Small Requests</h1>		<div class="rating-wrap">
+		<div id="star-rating-33" class="wds-ratings" data-rating="5" data-userrating="0" data-postid="33" data-container="body" data-toggle="tooltip" title="1 user(s) rated">
+			<div class="wds-ratings-inner-wrap">
+				<div>
+					<div aria-label="Select 5 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="5"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span><span aria-hidden="true" class="star-5"><span>&#x2605;</span></span></div><div aria-label="Select 4 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="4"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span></div><div aria-label="Select 3 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="3"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span></div><div aria-label="Select 2 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="2"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span></div><div aria-label="Select 1 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="1"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span></div>
+				</div>
+			</div>
+		</div>
+		</div>		<div class="clear-both"></div>
+		<div class="entry-meta">
+			<img alt="avatar of windows-azure-storage" src="https://i1.social.s-msft.com/profile/u/avatar.jpg?displayname=Windows+Azure+Storage&amp;size=extralarge&amp;version=00000000-0000-0000-0000-000000000000" class="avatar avatar-22 photo" height="22" width="22"/><span class="byline"><span class="author vcard"><a class="url fn n profile-usercard-hover" data-profile-userid="59e1aedafa2d4428b7004b2c2fac4adc" href="https://social.msdn.microsoft.com/profile/Windows+Azure+Storage">Windows Azure Storage</a></span></span><span class="posted-on posted-on-margin"><span class="screen-reader-text"></span><time class="entry-date published updated" datetime="2010-06-25T15:10:00+00:00">June 25, 2010</time></span><span class="comments-link"><span class="glyphicon glyphicon-comment" aria-hidden="true"></span><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comments">6</a></span>				<span class="social-icons-wrap">
+		<ul class="social-icons">
+			<li><div class="fb-share-button" data-href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/" data-layout="button_count" data-size="large" data-mobile-iframe="true"><a class="fb-xfbml-parse-ignore" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/&amp;src=sdkpreparse">Share</a></div></li>
+			<div id="fb-root" style="display:none"></div>
+
+			<li class="social-icon twitter"><a data-social="{&quot;type&quot;:&quot;twitter&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/&quot;, &quot;text&quot;: &quot;Nagle’s Algorithm is Not Friendly towards Small Requests&quot;}" href="#" id="post_tweet_count">0</a></li>
+			<li class="social-icon linkedin"><a data-social="{&quot;type&quot;:&quot;linkedin&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/&quot;, &quot;text&quot;: &quot;Nagle’s Algorithm is Not Friendly towards Small Requests&quot;}" href="#" id="get_post_linkedin_count">0</a></li>
+		</ul>
+	</span><!-- .social-icons-wrap -->
+	<script type="text/javascript">
+		// Get social counts
+		jQuery( window ).load(function () {
+			jQuery.getScript('https://blogs.msdn.microsoft.com/windowsazurestorage/wp-content/themes/microsoft/js/social-counts.js?ver=02092017')
+				.done(function(script,textStatus) {
+					window.msdnsocial.ajax('https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/');
+				});
+		});
+	</script>
+		</div>
+		<hr>
+	</header><!-- .entry-header -->
+
+	<div class="entry-content single">
+		<p>We had recommended in a <a href="http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/d84ba34b-b0e0-4961-a167-bbe7618beb83">forum post</a> about how turning off Nagling can greatly improve throughput for Table Inserts and Updates. We have also been seeing a lot of improvement when application deals with small sized messages (http message size &lt; 1460 bytes). So what is Nagling?&nbsp; Nagling is a TCP optimization on the sender and it is designed to reduce network congestion by coalescing small send requests into larger TCP segments. This is achieved by holding back small segments either until TCP has enough data to transmit a full sized segment or until all outstanding data has been acknowledged by the receiver</p>
+<p>However Nagling interacts poorly with TCP Delayed ACKs, which is a TCP optimization on the receiver. It is designed to reduce the number of acknowledgement packets by delaying the ACK for a short time. <a href="http://www.ietf.org/rfc/rfc1122.txt">RFC 1122</a> states that the delay should not be more than 500ms and there should be an ACK for every second segment. Since the receiver delays the ACK and the sender waits for the ACK before transmitting a small segment, the data transfer can get stalled until the delayed ACK arrives.</p>
+<p>Since a picture speaks a thousand words, we have provided a graph of Queue PUT latencies with Nagling ON and OFF. The test was written by Shuitao, an Engineer in Storage team. The test is run as a worker role accessing our storage account in the same geo location. It inserts messages which are 480 bytes in length. The results show that the average latency improves by more than 600% with Nagling turned off. </p>
+<p><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/1145.image_629B7CA8.png" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-36-55-metablogapi/1145.image_5F00_629B7CA8.png"><img height="283" width="723" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/1651.image_thumb_20B4975A.png" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-36-55-metablogapi/1651.image_5F00_thumb_5F00_20B4975A.png" alt="image" border="0" title="image" style="border-bottom: 0px; border-left: 0px; display: inline; border-top: 0px; border-right: 0px"/></a> </p>
+<p>Figure 1 &ndash; Nagling ON (Default).&nbsp; The x-axis shows the queue requests over time for the time period sampled.&nbsp; The y-axis shows the end to end time from the client in milliseconds to process the queue request.</p>
+<p><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/8407.image_20486465.png" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-36-55-metablogapi/8407.image_5F00_20486465.png"><img height="280" width="724" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/3223.image_thumb_26FB6DE8.png" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-01-36-55-metablogapi/3223.image_5F00_thumb_5F00_26FB6DE8.png" alt="image" border="0" title="image" style="border-bottom: 0px; border-left: 0px; display: inline; border-top: 0px; border-right: 0px"/></a> </p>
+<p>Figure 2 - Nagling OFF. The x-axis shows the queue requests over time for the time period sampled.&nbsp; The y-axis shows the end to end time from the client in milliseconds to process the queue request.</p>
+<h4>Compare Nagling on/off using Wireshark </h4>
+<p>Let us now look at a Wireshark/Netmon trace to clearly see the delay in transmitting small packets. For a Put Message, which is transmitted as a POST request, the following packets are exchanged with Nagling on and off.</p>
+<p><strong>Nagling turned ON:</strong></p>
+<pre class="code">Frame 25 (349 bytes on wire, 349 bytes captured)
+Hypertext Transfer Protocol
+Time                          2010-06-14 14:19:27.160472 
+Source                      192.168.100.1          
+Destination               94.245.114.15         
+Protocol Info    POST <a href="http://storagetest.queue.core.windows.net/container/messages?timeout=90">http:<span style="color: green">//storagetest.queue.core.windows.net/container/messages?timeout=90</span></a><br/>Description: Packet 1 from client to server. 
+             The initial packet <span style="color: blue"><span style="color: #404040;">is</span> </span>349 bytes and it contains just the request URI and 
+             headers that needs to be <span style="color: #000000;">sent </span><span style="color: blue"><span style="color: #000000;">for</span><span style="color: #000000;"><span style="color: #000000;"> the POST request. 
+             The message content (of length 737 bytes) </span><span style="color: blue"><span style="color: #000000;">is</span> </span>not part of </span></span><span style="color: blue"><span style="color: #000000;">this</span> </span>segment.
+ 
+Frame 26 (60 bytes on wire, 60 bytes captured)
+Time                           2010-06-14 14:19:27.323342 
+Source                        94.245.114.15         
+Destination               192.168.100.1          
+Protocol Info     http &gt; 53806 [ACK] Seq=296 Ack=653 Win=64883 Len=0
+Description: Response from server to client.  
+             Note the delayed <span style="color: #000000;">ACK </span><span style="color: blue"><span style="color: #000000;">is</span> </span>received after 163ms. 
+
+Frame 27 (791 bytes on wire, 791 bytes captured)
+Time                          2010-06-14 14:19:27.323389         
+Source                      192.168.100.1          
+Destination               94.245.114.15         
+Protocol Info     Continuation or non-HTTP traffic
+Description: Packet 2 from client to server. 
+             This segment contains the <span style="color: #000000;">payload <span style="color: blue"><span style="color: #000000;">for</span> </span>the Put Message HTTP request and 
+             it was initially held back waiting <span style="color: blue"><span style="color: #000000;">for</span> </span>the server side ACK, 
+             because Nagling was enabled and the payload size was less than 
+             a full sized TCP segment (1460 bytes). However, once the delayed ACK </span><span style="color: blue"><span style="color: #000000;">is</span><span style="color: #000000;"> received above, 
+             the segment </span></span><span style="color: blue"><span style="color: #000000;">is</span> </span>then transmitted. 
+
+Frame 28 (360 bytes on wire, 360 bytes captured)
+Hypertext Transfer Protocol
+Time                        2010-06-14 14:19:27.365973
+Source                    94.245.114.15         
+Destination            192.168.100.1          
+Protocol Info     HTTP/1.1 201 Created
+Description: Response from server to client. 
+             We receive success from the server <span style="color: blue"><span style="color: #000000;">for </span></span>the POST request. HTTP/1.1 
+<br/>             </pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<p><strong>Now the same request is sent with Nagling turned off.</strong></p>
+<pre class="code">Frame 9 (349 bytes on wire, 349 bytes captured)
+Hypertext Transfer Protocol
+Time                           2010-06-14 14:24:12.346146
+Source                       192.168.100.1          
+Destination               94.245.114.15         
+Protocol Info    POST <a href="http://storagetest.queue.core.windows.net/container/messages?timeout=90">http:<span style="color: green">//storagetest.queue.core.windows.net/container/messages?timeout=90</span></a><br/>Description: Packet 1 from client to server. 
+             The initial <span style="color: #000000;">segment <span style="color: blue"><span style="color: #000000;">is</span> </span>349 bytes and it contains just the request URI and 
+             headers that need to be sent <span style="color: blue"><span style="color: #000000;">for</span> </span>the POST request. 
+             The message content (of length 737 bytes) <span style="color: blue"><span style="color: #000000;">is</span> </span>not part of </span><span style="color: blue"><span style="color: #000000;">this</span> </span>segment.
+
+Frame 10 (791 bytes on wire, 791 bytes captured)
+Time                           2010-06-14 14:24:12.348661 
+Source                       192.168.100.1          
+Destination               94.245.114.15         
+Protocol Info     Continuation or non-HTTP traffic
+Description:  Packet 2 from client to server. 
+              This segment contains the payload <span style="color: blue"><span style="color: #000000;">for</span> </span>the PUT Message HTTP request and 
+              it <span style="color: blue"><span style="color: #000000;">is</span> </span>sent immediately despite the size being less than a full segment (&lt; 1460 bytes) 
+              since Nagling <span style="color: blue"><span style="color: #000000;">is </span></span>turned off. Since Nagling is off it does not have to wait for the delayed ACK. 
+
+Frame 11 (60 bytes on wire, 60 bytes captured)
+Time                           2010-06-14 14:24:12.349052
+Source                        94.245.114.15         
+Destination               192.168.100.1          
+Protocol Info    http &gt; 53811 [ACK] Seq=296 Ack=1390 Win=65535 Len=0
+Description:  Response from server to client.  
+              ACK <span style="color: blue"><span style="color: #000000;">is</span> </span>sent by the server <span style="color: blue"><span style="color: #000000;">for</span> </span>frame 9 and 10 (packet 1 and 2). 
+
+Frame 12 (360 bytes on wire, 360 bytes captured)
+Hypertext Transfer Protocol
+Time                           2010-06-14 14:24:12.395271
+Source                       94.245.114.15         
+Destination               192.168.100.1          
+Protocol Info     HTTP/1.1 201 Created
+Description: Response from server to client.  
+             We receive success from the server <span style="color: blue"><span style="color: #000000;">for</span> </span>the POST request. HTTP/1.1 
+<br/>             </pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<h4>How to turn off Nagling?</h4>
+<p>Since Nagling is on by default, the way to turn this off is by resetting the flag in <a href="http://msdn.microsoft.com/en-us/library/system.net.servicepointmanager.aspx">ServicePointManager</a>. The ServicePointManager is a .NET class that allows you to manage <a href="http://msdn.microsoft.com/en-us/library/system.net.servicepoint.aspx">ServicePoint</a> where each ServicePoint provides HTTP connection management. ServicePointManager also allows you to control settings like maximum connections, Expect 100, and Nagle for all ServicePoint instances. Therefore, if you want to turn Nagle off for just tables or just queues or just blobs in your application, you need to turn it off for the specific ServicePoint object in the ServicePointManager. Here is a code example for turning Nagle off for just the Queue and Table ServicePoints, but not Blob:</p>
+<pre class="code"><span style="color: green">// cxnString = "DefaultEndpointsProtocol=http;AccountName=myaccount;AccountKey=mykey"
+</span><span style="color: #2b91af">CloudStorageAccount </span>account = <span style="color: #2b91af">CloudStorageAccount</span>.Parse(cxnString);
+<span style="color: #2b91af">ServicePoint </span>tableServicePoint = <span style="color: #2b91af">ServicePointManager</span>.FindServicePoint(account.TableEndpoint);
+tableServicePoint.UseNagleAlgorithm = <span style="color: blue">false</span>;
+<span style="color: #2b91af">ServicePoint </span>queueServicePoint = <span style="color: #2b91af">ServicePointManager</span>.FindServicePoint(account.QueueEndpoint);
+queueServicePoint.UseNagleAlgorithm = <span style="color: blue">false</span>;</pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<p>If you instead want to set it for all of the service points on a given role (all blob, table and queue requests) you can just reset it at the very start of your application process by executing the following:&nbsp;</p>
+<pre class="code"><span style="color: green">// This sets it globally for all new ServicePoints
+</span><span style="color: #2b91af">ServicePointManager</span>.UseNagleAlgorithm = <span style="color: blue">false</span>;  </pre>
+<p>Note, this has to be set for the role (process) before any calls to blob, table and queue are done for the setting to be applied.&nbsp; In addition, this setting will only be applied to the process that executes it (it does not affect other processes) running inside the same VM instance.</p>
+<p>Turning Nagle off should be considered for Table and Queue (and any protocol that deals with small sized messages). For large packet segments, Nagling does not have an impact since the segments will form a full packet and will not be withheld. But as always, we suggest that you test it for your data before turning Nagle off in production.</p>
+<p>Jai Haridas</p>
+	</div><!-- .entry-content -->
+
+
+	<footer class="entry-footer single">
+					<div class="tags">
+				<span>Tags </span>
+				<span>
+					<a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/performance/" rel="tag">Performance</a> <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-blobs/" rel="tag">Windows Azure Blobs</a> <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-queues/" rel="tag">Windows Azure Queues</a> <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-tables/" rel="tag">Windows Azure Tables</a>				</span>
+			</div>
+				<hr>
+	</footer><!-- .entry-footer -->
+
+</article><!-- #post-## -->
+
+			
+		</div><!-- #single-content -->
+
+		
+<div id="comments" class="comments-area">
+	<div class="comments-title">
+		Comments (6)	</div>
+
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title"> <small><a rel="nofollow" id="cancel-comment-reply-link" href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#respond" style="display:none;">Cancel reply</a></small></h3><p class="must-log-in">You must be <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">logged in</a> to post a comment.</p>	</div><!-- #respond -->
+	
+			<div class="navigation pagination clear-both">
+					</div>
+
+		<ol class="comment-list">
+					<li class="comment even thread-even depth-1" id="comment-36">
+				<div id="div-comment-36" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">vbori</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comment-36">
+			June 25, 2010 at 6:01 pm</a>		</div>
+
+		<p>Great information. I assume turning Nagle off works from configuration settings as well, as you suggested in the original post. Is that still the case, since you don&#39;t mention it here?</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-37">
+				<div id="div-comment-37" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Jai Haridas (MSFT)</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comment-37">
+			June 25, 2010 at 11:09 pm</a>		</div>
+
+		<p>Yes, nagling can be turned off using the config setting as described in <a rel="nofollow" target="_new" href="http://social.msdn.microsoft.com/Forums/en-US/windowsazure/thread/d84ba34b-b0e0-4961-a167-bbe7618beb83">social.msdn.microsoft.com/&#8230;/d84ba34b-b0e0-4961-a167-bbe7618beb83</a>. However, the above code allows you to turn it off per ServicePoint.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-38">
+				<div id="div-comment-38" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Roman</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comment-38">
+			June 28, 2010 at 3:50 am</a>		</div>
+
+		<p>Does turning off Nagling improve throughput for Selects?</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-39">
+				<div id="div-comment-39" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/7baef01f55b96f7ef6e7d2270e0b7ec6?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/7baef01f55b96f7ef6e7d2270e0b7ec6?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">jaidevh1@hotmail.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comment-39">
+			June 28, 2010 at 8:29 pm</a>		</div>
+
+		<p>Hi Roman, A query if issued as a batch (which is sent as POST HTTP request), will have a payload and impacted by delayed ACK. However, a simple query which is sent as GET HTTP request, will not be impacted since it will not have a payload.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-40">
+				<div id="div-comment-40" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Roman</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comment-40">
+			June 29, 2010 at 12:52 am</a>		</div>
+
+		<p>If both Nagle and Delayed ACK work on TCP level, how they can differentiate GET and POST requests?</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-41">
+				<div id="div-comment-41" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Roman</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/06/25/nagles-algorithm-is-not-friendly-towards-small-requests/#comment-41">
+			June 29, 2010 at 12:57 am</a>		</div>
+
+		<p>Got it. With GET server sends result after recieving the first packet; with POST server waits for the second packet, but client doesn&#39;t send it until ACK is recieved.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F06%2F25%2Fnagles-algorithm-is-not-friendly-towards-small-requests%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		</ol><!-- .comment-list -->
+
+		<div class="navigation pagination">
+					</div>
+
+	
+	
+</div><!-- .comments-area -->
+	</div><!-- #primary -->

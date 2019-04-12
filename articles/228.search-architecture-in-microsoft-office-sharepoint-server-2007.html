@@ -1,0 +1,276 @@
+---
+layout: default
+title: Search Architecture in Microsoft Office SharePoint Server 2007 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Indexing_and_Search_Architecture">Indexing and Search Architecture</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Index_Engine">Index Engine</a></li><li class="hierarchy-item"><a href="#Query_Engine">Query Engine</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Server_Roles">Server Roles</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Indexer_Role">Indexer Role</a></li><li class="hierarchy-item"><a href="#Query_Server_Role">Query Server Role</a></li><li class="hierarchy-item"><a href="#Web_Server_Role">Web Server Role</a></li><li class="hierarchy-item"><a href="#Database_Server_Role">Database Server Role</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Indexing_Processes">Indexing Processes</a></li><li class="hierarchy-item"><a href="#Protocol_Handlers">Protocol Handlers</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Protocol_Handlers">Protocol Handlers</a></li><li class="hierarchy-item"><a href="#Protocol_Handler_Characteristics">Protocol Handler Characteristics</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#iFilters">iFilters</a></li><li class="hierarchy-item"><a href="#Word_Breakers_and_Stemmers">Word Breakers and Stemmers</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Word_Breakers_in_the_Indexing_Process">Word Breakers in the Indexing Process</a></li><li class="hierarchy-item"><a href="#Word_Breakers_at_Query_Time">Word Breakers at Query Time</a></li><li class="hierarchy-item"><a href="#Stemmers">Stemmers</a></li><li class="hierarchy-item"><a href="#Stemmers_in_the_Indexing_Process">Stemmers in the Indexing Process</a></li><li class="hierarchy-item"><a href="#Stemmers_at_Query_Time">Stemmers at Query Time</a></li><li class="hierarchy-item"><a href="#Enabling_Language-Specific_Stemmers">Enabling Language-Specific Stemmers</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Bit_and_64-Bit_Architectures">32-Bit and 64-Bit Architectures</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Query_Servers_and_Web_Servers">Query Servers and Web Servers</a></li><li class="hierarchy-item"><a href="#Indexers">Indexers</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Index_Management_and_Propagation">Index Management and Propagation</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Master_and_Shadow_Indexes">Master and Shadow Indexes</a></li><li class="hierarchy-item"><a href="#Continuous_Propagation_from_Indexer_to_Query_Servers">Continuous Propagation from Indexer to Query Servers</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Query_Processes">Query Processes</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+This&nbsp;article describes or explains the following:</span></div>
+<ul>
+<li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexing and search components that comprise the overall search architecture in Office SharePoint Server 2007.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The purpose and capabilities of the different search roles in an Office SharePoint Server 2007 farm.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexing processes used by Office SharePoint Server 2007.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">How protocol handlers and iFilters fit into the Office SharePoint Server 2007 search architecture.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The use of word breakers and stemmers.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The possible dependencies on 32-bit architecture in specific scenarios.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">How Office SharePoint Server 2007 manages and propagates indexes from indexers to query servers.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The query processes in an enterprise search solution based on Office SharePoint Server 2007.</span></div>
+</li></ul>
+<h2 style="margin:12pt 0in 0pt;"><a name="Indexing_and_Search_Architecture"></a>Indexing and Search Architecture</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">A search solution based on Office SharePoint Server 2007 is comprised of two main components, namely the indexing engine and the query engine. In brief, the indexing engine is
+ responsible for crawling and indexing content that may be stored in a variety of formats and locations in your corpus, while the query engine provides the capability to search the indexed information.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Index_Engine"></a><span style="font-size:small;">Index Engine</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexing engine provided by Office SharePoint Server 2007 is capable of crawling a variety of content sources, such as Web sites, SharePoint sites, Exchange Server Public
+ Folders, line-of-business data, and file shares. The indexing engine retrieves the definitions of the content sources from the search configuration data. You have control over defining the content sources to be crawled.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexing engine provides the base logic for the indexing process, and loads specific components called protocol handlers to connect to and crawl the different types of content
+ sources. Protocol handlers, in turn, load additional components called iFilters to read the contents of specific file types.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexing engine maintains a file-based index, which contains the indexed content. Furthermore, the indexing engine also maintains managed properties (in what is called as
+ the <em>property store</em> or <em>search schema</em>) and scope definitions in the search and configuration databases managed by SQL Server.</span>&nbsp;</div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Query_Engine"></a><span style="font-size:small;">Query Engine</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Put simply, a Web server initiates each query by collecting terms from the user, and then contacts the query engine to search the full-text index for items that contain the searched-for
+ terms. The results are supplemented with keywords, best-bets, and managed properties from the search configuration database, managed by SQL Server. If the query consists of only a property filter, the Web server needs only to contact the database server, and
+ does not contact the query engine.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Queries are initiated through the Search object model or the Search Web service on Web servers.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Additional components, such as word breaks and stemmers are used throughout the entire process. These components will be discussed in detail later in this paper.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">You can physically separate the indexing engine from the query engine by implementing specific roles in your server farm. You can also physically separate the indexing and query
+ engines from the Web servers that expose the search object model and the search Web service.</span></div>
+<h2 style="margin:12pt 0in 0pt;"><a name="Server_Roles"></a>Server Roles</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">When you create solutions with SharePoint technologies, you must be aware of the roles that servers can take within your server farm. For search, the roles that you should be
+ aware of are the indexer role, the query server role, the Web server role, and the database server role.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Indexer_Role"></a><span style="font-size:small;">Indexer Role</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexer role provides the indexing services, such as crawling content, managing crawl schedules, and defining crawl rules. One of the main tasks assigned to the indexer is
+ to crawl content sources and index the information that is stored there. A content source is simply a specification of the type of system and location to be crawled, along with at least one start address. In Office SharePoint Server 2007, you can specify up
+ to 500 start addresses per content source and, furthermore, a Shared Service Provider can define up to 500 content sources.
+</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">An indexer is characterized by the following requirements:</span></div>
+<ul>
+<li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Processor</strong>. An indexer typically requires a large amount of processor power. Processor utilization on an indexer will most likely be the highest for the indexing process
+ than any other process that occurs in your farm. You should ensure that you have adequate processing power for your indexer; typically, you will require multiple multi-cored processors.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Disk access</strong>. An indexer has two typical disk access patterns. While content is being crawled and indexed, the Index Server will exhibit write-intensive characteristics,
+ and if indexes are propagated to Query Servers, then the disk will be read in small fragments. The disk-write operations are the most intensive, so you should optimize your disk configuration for write-access. To achieve this, the recommended disk configuration
+ is physical RAID 10 (disk striping, with mirroring for fault-tolerance).</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Memory</strong>. Indexing content is not typically a memory-intensive operation, although documents are read into memory for indexing. You can control how much memory is required
+ for indexing purposes to some extent by controlling:</span></div>
+</li><li>
+<div class="Lb2"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The maximum size of the documents to be indexed.</span></div>
+</li><li>
+<div class="Lb2"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The degree to which documents are indexed in parallel.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Network</strong>. An Index Server makes use of the network primarily at indexing time. It connects to content sources and reads document contents over the network, and it
+ propagates small index fragments to query servers during the indexing process (if propagation occurs).</span></div>
+</li></ul>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The processor is most commonly the first bottleneck for an indexer, especially if sufficiently high processor power has not been provided. You should monitor processor utilization
+ at indexing time to determine whether you need to add more processing power to an indexer. However, if you have provided a high processor power, you are most likely to experience network latency problems between the indexer and the content.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Query_Server_Role"></a><span style="font-size:small;">Query Server Role</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The query server role runs queries over the full-text index. Query servers are managed at the farm level.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">If you physically separate the query server role from the indexer onto one or more servers, then the full-text index is propagated from the indexer to all query servers in the
+ farm. Propagation occurs continuously while content is being added to the index on the indexer and you are not required to configure or administer the propagation. Most queries will require results to be returned from the Query Server; the only exception is
+ when the user has issued a query that only consists of a property filter. In that case, the query can be satisfied by the database server role alone.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">A query server is characterized by the following requirements:</span></div>
+<ul>
+<li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Processor</strong>. Apart from normal processor instructions for reading from disks and managing memory, a query server’s processor requirements vary depending on the size
+ of the index being searched.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Disk access</strong>. A query server has two typical disk access patterns. While queries are being satisfied, a query server may exhibit read-intensive characteristics if
+ the data it requires is not held in memory. If index propagation occurs from an Index Server, then the disk will be written to in small fragments and the query server must perform a master merge. Of these two patterns, the disk-read operations are the most
+ intensive, so you should optimize your disk configuration for read-access. You can do this by implementing physical disk striping across multiple hard disks, each with their own physical controller. The recommended disk configuration is physical RAID 10 (disk
+ striping, with mirroring for fault-tolerance).</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Memory</strong>. Memory is the most intensively used physical resource by a query server. A query server caches the results from recent queries, and will only remove those
+ cached data when either:</span></div>
+</li><li>
+<div class="Lb2"><span style="font-family:&#39;times new roman&#39;;font-size:small;">It has run out of physical memory and new results must be read into the cache to satisfy a query.</span></div>
+</li><li>
+<div class="Lb2"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Data in the cache have been invalidated because a crawl has discovered updated information.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Network</strong>. A query server makes use of the network primarily at query time. It receives search requests from Web servers, and sends results back over the network. Network
+ resources are also used at indexing time when an Index Server propagates small index fragments to query servers.</span></div>
+</li></ul>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Web_Server_Role"></a><span style="font-size:small;">Web Server Role</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The Web server role responds to search queries for users and applications. The Web server collects query terms from the user, either through built-in Web Parts, custom Web Parts,
+ or from custom applications. Based on the information collected, the Web server is responsible for formulating een invalidated because a crawl has discovered updated information.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Network</strong>. A query server makes use of the network primarily at query time. It receives search requests from Web servers, and sends results back over the network. Network
+ resources are also used at indexing time when an Index Server propagates small index fragments to query servers.</span></div>
+</li></ul>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Web_Server_Role"></a><span style="font-size:small;">Web Server Role</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The Web server role responds to search queries for users and applications. The Web server collects query terms from the user, either through built-in Web Parts, custom Web Parts,
+ or from cuthe specific query. Depending on the contents of the query the Web server will contact query servers and the database server to retrieve the required
+ results and access control lists. For example, if the query consists of only a property filter, the Web server needs only to contact the database server, and does not contact the query engine, whereas if the query contains keywords to be searched for, then
+ both the query server and database server will be contacted.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">When all of the results and access control lists have been returned to the Web server, it security trims the results, based on the identity of the user who issued the query and
+ the access control lists returned by the database server. After security trimming has taken place, the Web server presents the results, either by rendering them on Web pages or by returning the results to a calling application.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Database_Server_Role"></a><span style="font-size:small;">Database Server Role</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The database server role performs search-specific actions that apply at configuration, indexing, and query time. All of the administrative search configuration settings are stored
+ by the database server; these settings include content source definitions, crawl rules, and scope definitions.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">In addition to storing configuration data in the search configuration database, the database server also stores data that is retrieved from the crawl processes. Specifically,
+ when managed property values and access control lists are retrieved from content sources, their values are stored in the search database. In addition, when a query is issued by a user, the Web server contacts the database server to retrieve managed property
+ values and access control lists, based on the data returned from the query server.</span></div>
+<h2 style="margin:12pt 0in 0pt;"><a name="Indexing_Processes"></a>Indexing Processes</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexing process consists of the following general steps:</span></div>
+<ol>
+<li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexer retrieves the start addresses of content sources.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The indexer invokes a protocol handler to connect to and traverse the content source.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The protocol handler identifies content nodes, such as files and Web pages.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The protocol handler retrieves system-level metadata and access control lists (if access control lists are available).</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The protocol handler invokes the iFilter associated with the content node type.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The iFilter retrieves content and metadata from the content node.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Content and metadata are parsed by the word breaker and are added to the full-text index.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Metadata and access control lists are added to the search database.</span></div>
+</li></ol>
+<h2 style="margin:12pt 0in 0pt;"><a name="Protocol_Handlers"></a>Protocol Handlers</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The crawl process requires protocol handlers to connect to content sources and iFilters to access the data stored within files that are located at the content source.&nbsp;
+</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Protocol_Handlers"></a><span style="font-size:small;">Protocol Handlers</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">In general, protocol handlers are responsible for:</span></div>
+<ul>
+<li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Connecting to source systems over a given protocol, such as HTTP://.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Traversing the source system.
+</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Identifying content nodes, such as files or Web pages.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Invoking iFilters to read those content nodes.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Retrieving any system-level metadata, such as permissions, and default properties such as
+<strong>Title</strong>.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Returning streams of content and metadata to the indexing engine.</span></div>
+</li></ul>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Protocol_Handler_Characteristics"></a><span style="font-size:small;">Protocol Handler Characteristics</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The various protocol handlers necessarily exhibit different characteristics and behaviors because the corresponding source systems are very different:
+</span></div>
+<ul>
+<li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Web protocol handler</strong>. The Web protocol handler makes HTTP requests of the start addresses in a content source. It then traverses Web sites by following hyperlinks
+ on Web pages. The Web protocol handler does not retrieve access control lists, so any content that indexed will not be security-trimmed at query time.</span></div>
+</li><li>
+<div class="Lb1"><span style="ffont-size:small;">Returning streams of content and metadata to the indexing engine.</span></div>
+</li></ul>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Protocol_Handler_Characteristics"></a><span style="font-size:small;">Protocol Handler Characteristics</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The various protocol handlers necessarily exhibit different characteristics and behaviors because the corresponding source systems are very different:
+</span></div>
+<ul>
+<li>
+<dont-family:&#39;times new roman&#39;;font-size:small;"><strong>SharePoint protocol handler</strong>. The SharePoint protocol handler enumerates the content to index by invoking the SiteData.asmx Web service. The Web service returns a
+ list that contains content nodes. The SharePoint protocol handler then makes HTTP requests for each node. Access control lists are also returned, so full security trimming can occur for SharePoint-based content.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>File protocol handler</strong>. The File protocol handler connects to and traverses file shares over the FILE:// protocol. The handler can traverse sub folders, and enumerates
+ files for indexing. It then indexes those files over the FILE:// protocol. For security-trimming purposes, the File protocol handler retrieves NTFS access control lists, not file-share permissions</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Exchange Public Folder protocol handler</strong>. Exchange Public Folders are crawled over the HTTP protocol by using Microsoft® Outlook® Web Access. Therefore, you must ensure
+ that the Exchange Server administrator has enabled Office Outlook Web Access.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>Business Data Catalog protocol handler</strong>. The Business Data Catalog (BDC) enables data from relational databases and Web services to be used in Microsoft Office SharePoint
+ Server 2007 solutions. The BDC protocol handler simply indexes the BDC application that is managed by Microsoft Office SharePoint Server 2007 by using an internal communication mechanism. The BDC application fetches the actual content to be indexed, by using
+ either ADO.NET or Web services. The Business Data Catalog protocol handler supports full security trimming through a custom security trimmer.
+</span><span style="font-family:&#39;times new roman&#39;;font-size:small;">The BDC protocol handler does not load iFilters to read and index binary data. Therefore, you cannot index the contents of binary files by using the BDC.</span></div>
+</li><li>
+<div class="Lb1"><span style="font-family:&#39;times new roman&#39;;font-size:small;"><strong>The Lotus Notes protocol handler</strong>. The Lotus Notes protocol handler supports full security trimming. However, access control lists are retrieved through a one-to-one
+ mapping of Windows user accounts to Lotus Notes users, by using a Lotus Notes View. Therefore, there is an administrative overhead involved in maintaining this mapping. Note that for your deployment to crawl a Lotus Notes database you must install the Lotus
+ Notes client, which is used with the Lotus C&#43;&#43; API Toolkit to enable the protocol handler to access the Lotus Notes database. For a complete view of how to configure the crawl of Lotus Notes, see
+<span class="MsoHyperlink"><a href="http://go.microsoft.com/fwlink/?LinkId=109151&amp;clcid=0x409"><span>Configure Office SharePoint Server Search to crawl Lotus Notes</span></a></span> (http://go.microsoft.com/fwlink/?LinkId=109151&amp;clcid=0x409).</span></div>
+</li></ul>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">You can install custom protocol handlers for your deployment that provide access to new content over different protocols.</span>&nbsp;</div>
+<h2 style="margin:12pt 0in 0pt;"><a name="iFilters"></a>iFilters</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The crawl process uses iFilters to open documents and other content source items in their native formats. The role of the iFilter is to filter out embedded formatting and retrieve
+ information and properties from the documents. When the iFilter has performed the filtering action the information and properties that it has gathered are then stored in the content index.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">When you deploy your Office SharePoint Server 2007 environment, you are provided with a set of iFilters out-of-the-box. You can expand this set to include other file types such
+ as Portable Document Format (PDF) files. Files such as these are common within an organization, and you can install custom iFilters for your deployment to provide access to these files through Search.</span></div>
+<h2 style="margin:12pt 0in 0pt;"><a name="Word_Breakers_and_Stemmers"></a>Word Breakers and Stemmers</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">When content has been streamed from iFilters and protocol handlers back to the indexer, the Office SharePoint Server 2007 indexing engine loads additional components to help with
+ the indexing process for that stream of data.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Word_Breakers_in_the_Indexing_Process"></a><span style="font-size:small;">Word Breakers in the Indexing Process</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Word breakers are used at indexing time to break the stream of data into words that can be indexed. Core word breakers identify characters such as spaces and punctuation marks
+ to demarcate the words to be indexed. For example, the simple phrase <em>enterprise search</em> would be broken into two separate words, and the hyphenated word of
+<em>security-trim</em> would be broken into <em>security</em> and <em>trim</em>.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Additional word breakers may also be used, based on the detected language of the content being indexed, to break compound words into discrete words. For example, if the language
+ of the content is detected as English, and the content contains the compound word
+<em>nonfunctional</em>, then the English language word breaker will identify both
+<em>non</em> and <em>functional</em> as words to be indexed, and will store them along with the compound word.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Word breakers also identify noise words, and ensure that they are not indexed. You can add noise words that are specific to your organization to the noise word files. The files
+ are stored in the <em>\Program Files\Microsoft Office Servers\12.0\Data\Config</em> folder.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Word_Breakers_at_Query_Time"></a><span style="font-size:small;">Word Breakers at Query Time</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Word breakers are also used at query time to break the search terms supplied by the user into searchable words. The language-specific word breakers to be loaded are identified
+ by the language of the user’s Web browser.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Stemmers"></a><span style="font-size:small;">Stemmers</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Stemmers perform a different function to word breakers. In general, stemmers deal with the different inflectional forms that a word can take while retaining essentially the same
+ meaning. Stemmers generally deal with verbs and nouns. For example, a stemmer can analyze a verb such as
+<em>run</em>, and can recognize that <em>runs</em>, <em>running</em>, and <em>ran</em> are all essentially the same word. Similarly, a stemmer can analyze the noun
+<em>cat</em>, and can determine that the singular, plural, singular possessive and plural possessive forms are equivalent, such as
+<em>cat</em>, <em>cats</em>, <em>cat’s</em>, and <em>cats’</em>.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Stemmers_in_the_Indexing_Process"></a><span style="font-size:small;">Stemmers in the Indexing Process</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Stemming does not typically take place during the indexing process for most languages. However, some language-specific word breakers, such as Arabic and Hebrew, do perform stemming
+ at indexing time. Where stemming takes place at indexing time, multiple forms of the word being stemmed are added to the index. Where this happens, more space is used to store multiple word forms, but that can be used efficiently at query time. The two languages
+ where stemming does actually occur at indexing time are Arabic and Hebrew. This is because both of those languages have a relatively small base of stem terms, each of which can have hundreds, or even thousands of inflectional forms. Consequently, it makes
+ good sense to apply stemming at indexing time for these languages, so that the query process can run efficiently.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Stemmers_at_Query_Time"></a><span style="font-size:small;">Stemmers at Query Time</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">For all languages other than Arabic and Hebrew, if stemming is required then it is generally preferable to do so at query time. Because most languages have a wide base of stem
+ terms, with only a small number of inflectional forms for each stem, it is relatively efficient to perform searches for stemmed words.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Enabling_Language-Specific_Stemmers"></a><span style="font-size:small;">Enabling Language-Specific Stemmers</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">For a small number of languages, such as Czech, Danish, Finnish, Greek, Hungarian, Polish, and Turkish, language stemmers are not actually enabled at the server level. To enable
+ these stemmers, you must edit the registry. ="margin:9pt 0in 0pt 0.5in;"><a name="Stemmers_at_Query_Time"></a><span style="font-size:small;">You should refer to the Microsoft Knowledge Base (http://support.microsoft.com/kb/929912/en-us) for instructions on how to enable stemmers for these specific languages.</span></div>
+<h2 style="margin:12pt 0in 0pt;"><a name="Bit_and_64-Bit_Architectures"></a>32-Bit and 64-Bit Architectures</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Office SharePoint Server 2007 is available in 32-bit and 64-bit versions. Typically, you will observe much better performance, stability, and scalability if you implement your
+ entire solution on a 64-bit architecture, but some scenarios may prevent you from doing so.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Query_Servers_and_Web_Servers"></a><span style="font-size:small;">Query Servers and Web Servers</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">In general, you can use a mix of architectures for different servers in your farm. For example, you can use 32-bit Web servers and 64-bit query servers. However, we recommend
+ that you do not mix architectures for multiple servers that perform the same role. For example, you should not implement one 32-bit Web server and one 64-bit Web server.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Indexers"></a><span style="font-size:small;">Indexers</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Perhaps the most important decision about architecture affects the indexer. In general, the indexer will benefit from 64-bit architecture, but you must be aware that protocol
+ handlers and iFilters are architecture-dependent. For example, if you install the 64-bit version of Office SharePoint Server 2007 for your indexer, you must ensure that you can obtain 64-bit versions of third-party iFilters and protocol handlers.</span></div>
+<h2 style="margin:12pt 0in 0pt;"><a name="Index_Management_and_Propagation"></a>Index Management and Propagation</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Office SharePoint Server 2007 implements a completely new index management scheme, compared to previous versions of SharePoint Products and Technologies.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Master_and_Shadow_Indexes"></a><span style="font-size:small;">Master and Shadow Indexes</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Although you should view the full-text catalog file as a single logical file, it is actually managed as a main master index file and a series of shadow index files. This scheme
+ enables indexing operations to occur efficiently because small shadow files are created and written to, instead of having to update the potentially large master index file when new content is indexed. When about 10% of the content has been updated, the shadow
+ indexes are all merged into the master, and then new shadow index files are created. This process is called a
+<em>master merge</em> and can occur more than once during the crawl process on the indexer.</span></div>
+<h3 style="margin:9pt 0in 0pt 0.5in;"><a name="Continuous_Propagation_from_Indexer_to_Query_Servers"></a><span style="font-size:small;">Continuous Propagation from Indexer to Query Servers</span></h3>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">If you have physically separated the query server role from the indexer, then the full-text index that is built and maintained by the indexer is propagated to the query server.
+ You may implement multiple query servers in your farm, in which case the index is propagated to all query servers. The propagated index can then be used query servers to satisfy searches performed by users and applications.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The full text index is propagated to the query server(s) throughout the indexing process in small fragments (shadow index files). The propagation is efficient and continuous,
+ so you are not required to administer the process. In most scenarios, a piece of data that has been crawled by the indexer will be searchable on a query server within a few seconds.</span></div>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">Query servers perform similar index management processes as indexers, such as merging master and shadow indexes, but you are not required to administer this process. Furthermore,
+ it does not matter whether a piece of data that has been indexed resides in the master index or a shadow index — it is still searchable.</span></div>
+<h2 style="margin:12pt 0in 0pt;"><a name="Query_Processes"></a>Query Processes</h2>
+<div><span style="font-family:&#39;times new roman&#39;;font-size:small;">The query process consists of the following general steps:</span></div>
+<ol>
+<li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Query terms are collected by a Web server.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">Query terms are supplemented with contextual information, such as the identity of the user and from which site collection they are performing the search.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The Web server initiates the query by contacting a query server to run the query on the full-text index. Stemmers and thesaurus expansion are used (if activated).
+</span><span style="font-family:&#39;times new roman&#39;;font-size:small;">The Web server also contacts the search database for managed properties and access control lists.</span></div>
+</li><li>
+<div class="Ln1"><span style="font-family:&#39;times new roman&#39;;font-size:small;">The Web server security-trims the results based on the identity of the user and the access control lists, and the Web server then returns the trimmed results to the caller.</span></div>
+</li></ol>
+
+</div>
+    
+    

@@ -1,0 +1,137 @@
+---
+layout: default
+title: Demo Transcript&#58; Developing and Monitoring a SQL Server 2012 Integration Services Solution - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong>SQL11UPD05-TSCRIPT-02</strong></p>
+<p>This wiki 
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fis a transcript of a previously recorded video.</p>
+<p>Related content assets:</p>
+<ul>
+<li>Demo: Developing and Monitoring a SQL Server 2012 Integration Services Solution&nbsp;(<a title="Demo" href="http://www.contentinstaller.net/Install/Content/DEMO_SQL11UPD05-DEMO-01" target="_blank">SQL11UPD05-DEMO-01</a>)
+</li><li>Video: Developing and Monitoring a SQL Server 2012 Integration Services Solution&nbsp;(<a title="Video" href="http://channel9.msdn.com/posts/SQL11UPD05-REC-02" target="_blank">SQL11UPD05-REC-02</a>)
+</li></ul>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Configuring_AlwaysOn_Availability_Groups">Developing and Monitoring a SQL Server 2012 Integration Services Solution</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<hr />
+<p>&nbsp;</p>
+<h3 style="line-height:22px;"><a name="Configuring_AlwaysOn_Availability_Groups"></a><strong>Developing and Monitoring a SQL Server 2012 Integration Services Solution</strong></h3>
+<p><span style="font-family:calibri,sans-serif;">Welcome to this demonstration, Developing and Monitoring a SQL Server 2012 Integration Services Solution. My name is
+<a href="http://www.linkedin.com/in/peterjsmyers" target="_blank">Peter Myers</a>; I am a SQL Server MVP and a Mentor with SolidQ.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">The purpose of this demonstration is to convert a SQL Server 2008 R2 project to SQL Server 2012, to deploy this to the SSIS catalog, and then to manage and monitor the solution on the server. So the starting point
+ for the demonstration is to go ahead and launch SQL Server Data Tools (SSDT), whereupon I open an existing project that was developed by using SQL Server 2008 R2. This project consists of a series of packages as we see here in Solution Explorer. So the master
+ package orchestrates the execution of a series of packages that load dimension and fact tables in the Adventure Works data warehouse. So let’s start by exploring the project itself. Let’s take note here that the deployment model is actually the package deployment
+ model which is referred to as the legacy deployment model in prior versions. I open up the
+<em>Master</em> package and the purpose of this package is to execute all the dimension packages. First we see a sequence container here to do this – upon success of all of the dimension tables being loaded, I have a sequence container to then load the fact
+ tables. </span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">So it is of interest to note here if I right-click in a blank area and open up the Variables pane, there is a variable defined in this package named
+<em>AdminEmail</em>. It’s of type <em>String</em>, and it’s defaults to the value of the
+<em>dba@adventureworks.com</em>. Now the requirement in this project is that when the
+<em>Master</em> package executes, the e-mail address should propagate down to the children packages so that any notifications that need to happen, will happen consistently to that one e-mail address. Let me point out, also, that in the Connection Managers tray,
+ there are connection managers to each of the packages that are being referenced through the execute package tasks in the
+<em>Master</em> package itself. We’ll explore also the <em>LoadDimEmployee</em> package.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">In this package, an event handler has been configured in order to notify the administrator, or whoever, that there has been an error. So we see this is using the OnError event handler at package level. Now a new
+ feature here is that in the top left corner, we see this adorner telling me that there are expressions assigned to this task, so when I edit it, we take a look at the expressions, we see that dynamically the
+<em>MessageSource</em> and <em>Subject</em> properties ares being built by expressions. So how currently is that e-mail address being passed through? The conventional way to do that in the previous release was with package configurations. And so here we see
+ a parent package variable that will take the <em>AdminEmail</em> from the parent, being the
+<em>Master</em> package, and will then pass it down to the <em>ToLine</em> property of that Notify Admin task in the event handler.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">So with this understanding, what we are going to do is convert this project to the new project deployment model and take a look at what the new parameterization does to support configurations. So it’s really a
+ simple process of right-clicking the project and then we go ahead and convert to the Project Deployment Model. It’s wizard driven, so step one, it’s a matter of selecting what packages will be converted, and by default all packages in my project will be converted.
+ Next, what is the project name? I’ll accept the default and then here in step three, update the Execute Package tasks that it found in the
+<em>Master</em> package. So I want all of these Execute Package tasks to update, so I’ll accept the default. And then to select the configurations that we want to convert. So it notes in the child packages, those
+<em>LoadDimEmployee</em> and <em>LoadDimCustomer</em> packages here, that there is this parent variable configuration. And so it’s asking, do I want to convert these to become parameters? Indeed I do, so I leave them selected. Next it then says then what will
+ be the properties that will be converted and what will become the name of the parameter, what will become the scope, is it a parameter- or package-level or will it be applicable to the entire project? There is also the ability on the next step to go ahead
+ and configure those parameters by providing a value, or by right-clicking the ellipsis here. I can also specify that this parameter is required and therefore must be passed in at execution time. I don’t need to configure that here in this demonstration.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">Here we have on the last step of the wizard a review of what is about to happen, and then I simply click Convert to convert the entire project – so take note of this message but then says it hasn’t been saved.
+ It does require me to save to actually implement that change as persisted. And thant to convert these to become parameters? Indeed I do, so I leave them selected. Next it then says then what will
+ be the properties that will be converted and what will become the name of the parameter, what will become the scope, is it a parameter- or package-level or will it be applicable to the entire project? There is also the ability on the next step to go ahead
+ and configure those parameters by providing a value, or by right-clicking the ellipsis here. I can also specify that this paren we notice that we do not have that package deployment model anymore and by default this is project deployment model.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">So now let’s explore what has happened with our packages. So starting with the
+<em>Master</em> package, what we find is the first thing that I want to do is add a parameter to this package itself. So I come to the Parameters tab of the package designer and I click here to add a new parameter that will be named the
+<em>AdminE-mail</em> of type String. And I could specify a default value but I won’t in this case, but I will configure that this parameter is required which means that whenever the
+<em>Master</em> package is executed, it is a requirement that a value is passed to this parameter. Now what I can do is delete this variable as it is no longer required. In a sense parameters behave as variables and we’ll see why. So I select my variable here
+ and I delete it, and now I can close the Variable pane. </span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">Next let’s explore the Execute Package task in the
+<em>Master</em> package. So starting with the <em>DimEmployee</em> package, I right click the Execute Package task, and what we discover then for the package configuration is there is this new reference type, which is a project reference, which allows us to
+ reference a package within the same project itself. So this was updated automatically by the conversion wizard. Parameter bindings then – we can see here that the
+<em>NotifyAdmin_ToLine</em> – so that new parameter that was added to children packages during conversion – the value that will be passed to it was the
+<em>AdminEmail</em> variable, but I’ve since deleted it and so what I’m going to select is this, which is is the package parameter that is named
+<em>AdminEmail</em>. This is the parameter I just created. </span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">I only have one enabled Execute Package task for simplification in this demonstration so I’ll only update the one. The next thing to point out is those connection managers are no longer required. Because this
+ is a project reference for those packages, I can go ahead and delete these references to the file system used to lookup up the package. And now I can save those changes for the
+<em>Master</em> package. </span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">Moving on to the <em>LoadDimEmployee</em> package. So on its Parameters tab we see the parameter that was created during the conversion process. Switching across to the Event Handlers and here in the OnError event
+ handler, a right-click edit and an interrogation on the expressions we have here shows now that the
+<em>ToLine</em> is configured to be an expression based on the package parameter that is the
+<em>NotifyAdmin_ToLine</em>. Nothing we need to do here. So in effect, the conversion has happened, we can now exploit the new capabilities of the parameterization for the configuration.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">One other thing that I would like to demonstrate is that at project level now we can define connection managers. A connection manager defined at project level is then available to all packages in the project.
+ So what I can do is take an existing connection manager like the <em>AdventureWorksDWDenali</em> connection manager, I can right click and I can go ahead and convert this to a Project Connection. So let’s point out, first of all, in the connection managers
+ tray a project-level connection is denoted with this project word. And we see here in Solution Explorer that this connection manager will now be available to all packages within the project.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">So I go ahead and save everything and now I am ready to take this project and deploy it to the new SSIS Catalog. In order to do this I am going to have to launch SQL Server Management Studio and the SSIS catalog
+ has a direct relationship with the relational database engine instance itself. So I go ahead and I connect to the database instance and when I expand the Integration Services Catalogs we discover that there are in fact no catalogs yet. So it does require this
+ step for the administrator to come in here, in Object Explorer, right-click Integration Services Catalogs and select Create a Catalog. The database will be named SSISDB and this will be a database that will be hosted on the same instance that I just connected
+ to. We need to provide a password to protect the sensitive information that will be cataloged in this database. It does help if you get the right passwords so let’s just try again. When I expand the databases on the server now, we discover that we have the
+ SSISDB database. And a quick look inside this database, we see it consists of tables in a schema here for internal, so be aware anything that lives in the
+<em>internal</em> schema is really for internal use by the service itself. But ultimately, this is where our package definitions will be deployed. When we explore the views, we see a second schema here being the
+<em>catalog</em> schema and this is the public API. So in order to interrogate metadata, log information, operation information, we’ll find a series of views that facilitate accessing this information, creating queries to effectively create our own reports.
+ On top of this and under Programmability and Installed Procedures, we’ll see that all of the functionality of the service is now exposed in this public API in the catalog schema.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">So now I can switch back to SQL Server Developer Tools. I can right-click my project and I can go ahead and deploy. This goes ahead and launches the deployment wizard. And so the first step simply validates that
+ the project is ready to be deployed. We can then connect to a server instance that hosts the SSIS catalog and then we go ahead and connect to a path. Now effectively that means we need a folder of which I can create one here. So this is going to be the
+<em>AdventureWorksBI</em> folder. Our project will then be deployed to this folder on the catalog. Clicking Next, it simply reviews what’s about to take place. I’m happy with that. I click deploy and now deployment is taking place from SQL Server Data Tools
+ direct to the SSIS catalog. So now, switching back to SQL Server Management Studio, and expanding the SSISDB node here in the catalogs, we see the folder,
+<em>AdventureWorksBI</em>. Expanding it, we get to see that it defines Projects and Environments. Within the Projects node is the project that I just deployed and, expanding it, it consists of the Packages node, and here they are.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">And so from a management point of view, I can right-click on the package that I wish to execute like the
+<em>Master</em> package. That brings up the window to execute the package and here first of all we see that there are parameters defined. Here is the
+<em>AdminEmail</em> parameter. Note that there is a requirement icon. This is a required parameter so we cannot execute until we have passed in a value. So I can click the ellipsis and then I can pass in that this is going to be me@adventureworks.com. And so
+ with the way that we have configured the packages in this project, this required parameter is then going to pass this down through the Execute Package task to then be received by the parameters defined at package level for the
+<em>LoadDimEmployee</em>, <em>LoadDimCustomer</em> and so on. And then we see that dynamic assignment across to the Execute SQL tasks sitting inside the event handler.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">I’ll then point out also that connection managers can be updated here. On the Advanced tab we can override any configuration within the package providing we know its path. We can configure logging levels, of which
+ Basic by default will log automatically; there&#39;s not even a requirement in our packages in SQL Server 2012 to configure logging. So to launch the execution I click OK and we see this message coming back telling us that an operation with this unique ID of number
+ 2 has taken place. Do I want to go ahead and open up the <em>Overview Report</em>? So a great new feature when it comes to monitoring the SSIS catalog is that there are these built-in reports that allow us then to view what is taking place for package executions
+ and so on. </span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">So we can see here that for operation 2, for the
+<em>Master</em> package execution, these are the log results that then we can review, and there’s lots of great drill-through experiences to go in and explore what’s happened. So another example here is I can right-click the catalog itself and here under reports,
+ under Standard Reports, there’s this dashboard that provides us an overview of what’s taken place within the catalog. We can see overall that for the past 24 hours, there has been one package that successfully executed and then we can drill down to take a
+ look at those executions. So here we see it, an execution of the <em>Master</em> package, we can take a look at all of the messages and so this is extremely helpful in allowing us to understand what is going on in our environment.
+</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri,sans-serif;">And so that pretty much brings me to the conclusion of this demonstration helping us understand what the new featf;">So we can see here that for operation 2, for the
+<em>Master</em> package execution, these are the log results that then we can review, and there’s lots of great drill-through experienures are in SQL Server Integration Services 2012. Thank you very much for watching.</span></p>
+<hr />
+<p>Return to <a class="ExistingPageLink" href="/wiki/contents/articles/6982.sql-server-2012-developer-training-kit-bom.aspx" title="Click to view the page titled: SQL Server 2012 Developer Training Kit BOM (en-US)">SQL Server 2012 Developer Training Kit BOM (en-US)</a></p>
+
+</div>
+    
+    

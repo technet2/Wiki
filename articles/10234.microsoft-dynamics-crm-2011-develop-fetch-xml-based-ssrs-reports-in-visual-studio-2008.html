@@ -1,0 +1,667 @@
+---
+layout: default
+title: Microsoft Dynamics CRM 2011 - Develop Fetch XML Based SSRS Reports In Visual Studio 2008 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><div style="clear:both;text-align:center;" class="separator">
+</div>
+<br />
+<div class="MsoNormal">
+Microsoft Dynamics CRM 2011 supports two kinds of custom
+SSRS reports. One is the old way, using filtered views. Other is the new way,
+using Fetch XML. The previous version, Microsoft Dynamics CRM 4.0 only
+supported reports based on filtered views. These filtered views were directly
+accessed writing TSQL.</div>
+<br />
+<br />
+<div class="MsoNormal">
+Microsoft Dynamics CRM 2011 Online has few differences from
+its on-premises cousin. One of the differences is we cannot have filtered views
+based SSRS reports. Microsoft Dynamics CRM 2011 Online only supports Fetch XML
+based SSRS reports. The reason being you don&#39;t have direct access to SQL Server
+on CRM 2011 Online. This is totally opposite to the on-premises version where you
+have total control and visibility over your CRM databases. So CRM 2011
+on-premises support both filtered views and Fetch XML based SSRS reports, but
+CRM 2011 Online supports only Fetch based SSRS reports.</div>
+<br />
+<div class="MsoNormal">
+Fetch is a proprietary query language that is used in
+Microsoft Dynamics CRM. It is based on a schema that describes the capabilities
+of the language. The Fetch XML language supports similar query capabilities as
+query expression.</div>
+<br />
+<div class="MsoNormal">
+The Fetch XML based reports are created the same way, using
+SQL Server 2008 R2 BIDS (Business Intelligence Development Studio) or Visual
+Studio 2008. BIDS is an IDE (integrated development environment) having only SSRS
+report templates, whereas Visual Studio 2008 has all the project templates
+including SSRS project templates. You also need an additional component for
+creating Fetch XML based SSRS reports. Microsoft Dynamics CRM 2011 Report
+Authoring Extension is required to author custom Fetch-based reports for
+Microsoft Dynamics CRM by using Business Intelligence Development Studio.</div>
+<br />
+Download this component from: <a target="_blank" href="http://www.microsoft.com/download/en/details.aspx?id=27823">Microsoft Dynamics CRM 2011 Report Authoring Extension</a><br />
+<br />
+<div class="MsoNormal">
+In this blog I will create a simple Fetch XML based SSRS report
+in Visual Studio 2008. I am assuming you know how to upload the report file
+(*.rdl) into CRM 2011 and run the report in CRM.</div>
+<br />
+<strong>1)</strong> I will develop a report on two custom entities. One custom entity is Movie and the other is Genre. The report will output the list of movies based on the genre selection. Genre records will be listed as a pick list (option set) report parameter. <br />
+<br />
+<br />
+<div class="MsoNormal">
+The movies will be shown which belong to the selected Genre in
+the pick list report parameter.</div>
+<br />
+<br />
+<div class="MsoNormal">
+Shown below is the screen shot of movie records in CRM.</div>
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-YLDV_gkjPUY/T4JjSyFt16I/AAAAAAAAAVU/Q_TnkD7f7RU/s1600/Movie+Records.JPG"><img alt=" " src="http://2.bp.blogspot.com/-YLDV_gkjPUY/T4JjSyFt16I/AAAAAAAAAVU/Q_TnkD7f7RU/s1600/Movie+Records.JPG" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Movie Records</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<strong>2)</strong> Below is the screen shot for genre records. The genre is to categorise movies. For example a movie can belong to a &#39;Family&#39; genre or &#39;Thriller&#39; genre, based on the story and content. Movies have N:1 relationship with Genres.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-K9dFCMgvLBg/T4Jnco8Y4rI/AAAAAAAAAVs/U5NU2wCARZg/s1600/Genre+Records.JPG"><img alt=" " src="http://2.bp.blogspot.com/-K9dFCMgvLBg/T4Jnco8Y4rI/AAAAAAAAAVs/U5NU2wCARZg/s1600/Genre+Records.JPG" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Genre Records</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>3)</strong> I will use Visual Studio 2008, to create a SSRS reports solution. I will then create a fetch based report in this solution.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-l6PsRhbjQLk/T4J9cdHFW2I/AAAAAAAAAV0/AL-w4eOBa5Q/s1600/Visual+Studio+2008.jpg"><img alt=" " width="640" height="292" src="http://1.bp.blogspot.com/-l6PsRhbjQLk/T4J9cdHFW2I/AAAAAAAAAV0/AL-w4eOBa5Q/s640/Visual+Studio+2008.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Visual Studio 2008</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>4)</strong> In Visual Studio, click on File &gt; New &gt; Project. This will open a new project window.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-9vAc4rr0vuk/T4VI9TDxo8I/AAAAAAAAAV8/FdjbndLvckE/s1600/Create+a+New+Project.jpg"><img alt=" " src="http://4.bp.blogspot.com/-9vAc4rr0vuk/T4VI9TDxo8I/AAAAAAAAAV8/FdjbndLvckE/s1600/Create+a+New+Project.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Create a New Project</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>5)</strong> In the new project window, go to section &quot;Business Intelligence Projects&quot;. Select the project type as &quot;Report Server Project&quot;. This SSRS project type will create a blank solution. I can then add a new report with data sources, datasets and queries.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="float:left;margin-right:1em;text-align:left;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-SuWv15H508o/T4VJVdeYTTI/AAAAAAAAAWE/zUKBz0v5-3s/s1600/Report+Server+Project.jpg"><img alt=" " src="http://2.bp.blogspot.com/Dxo8I/AAAAAAAAAV8/FdjbndLvckE/s1600/Create+a+New+Project.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Create a New Project</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>5)</strong> In the new project window, go to section &quot;Business Intelligence Projects&quot;. Select the project type as &quot;Report Server Project&quot;. This SSRS project type will create a blank solution. I can then add a new report with data sources, datasets and queries.<br />
+<br />-SuWv15H508o/T4VJVdeYTTI/AAAAAAAAAWE/zUKBz0v5-3s/s1600/Report+Server+Project.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Report Server Project</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<strong>6) </strong>After the project is created add the first item, a Report. Click on Reports &gt; Add &gt; New Item. This will open an &quot;Add New Item&quot; window.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-tR5SUkjlbb4/T4V6mNlx0nI/AAAAAAAAAWU/nNylARPi4iM/s1600/Adding+a+New+Report.jpg"><img alt=" " src="http://4.bp.blogspot.com/-tR5SUkjlbb4/T4V6mNlx0nI/AAAAAAAAAWU/nNylARPi4iM/s1600/Adding+a+New+Report.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Add a New Report</td>
+        </tr>
+    </tbody>
+</table>
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<br />
+<strong>7)</strong> In the &quot;Add New Item&quot; window, select a file of type Report. I will give this report a name &quot;Movies by Genre&quot;.<br />
+<br />
+This option will create an empty report file with the extension of rdl (report definition language).&nbsp; <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-NHj0WHRDIiQ/T4V7PUB0OUI/AAAAAAAAAWc/FS07yoXf9S0/s1600/Selecting+the+type+of+Report.jpg"><img alt=" " src="http://1.bp.blogspot.com/-NHj0WHRDIiQ/T4V7PUB0OUI/AAAAAAAAAWc/FS07yoXf9S0/s1600/Selecting+the+type+of+Report.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Selecting a type of Report</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>8)</strong> In the screenshot below, you can see the report &quot;Movies by Genre.rdl&quot; has been created.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-Qoywk5Yte6g/T4gjEqYmOKI/AAAAAAAAAWk/ykdPNMStyTo/s1600/Movies+by+Genre+Report.jpg"><img alt=" " src="http://3.bp.blogspot.com/-Qoywk5Yte6g/T4gjEqYmOKI/AAAAAAAAAWk/ykdPNMStyTo/s1600/Movies+by+Genre+Report.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Movies by Genre Report</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>9)&nbsp; </strong>In the report, I will add a data source. This is a connection to my SQL Server CRM database.<br />
+<br />
+Click on Data Sources &gt; Add Data Source. This will open a &quot;Data Source Properties&quot; window.&nbsp; <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-mmqz2rzjErE/T4ldxys9PBI/AAAAAAAAAWs/WeJpFVXlnvM/s1600/Add+a+Data+Source.jpg"><img alt=" " src="http://3.bp.blogspot.com/-mmqz2rzjErE/T4ldxys9PBI/AAAAAAAAAWs/WeJpFVXlnvM/s1600/Add+a+Data+Source.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Add a Data Source</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>10)</strong> Shown below is the &quot;Data Source Properties&quot; window. Give a name and define a connection to the SQL Server CRM database.<br />
+<br />
+I have named my data source as &quot;SQLConnection&quot;. In the embedded connection, select the type as &quot;Microsoft Dynamics CRM Fetch&quot;.<br />
+<br />
+In the connection string, I cannot specify a direct connection to my SQL Server CRM database. I have to specify the CRM Organization for which this report will be running. Click OK and a data source is created by the name &quot;SQLConnection&quot;.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-OmTAAmTWPVk/T4lfplk-hfI/AAAAAAAAAW0/4_1vF819OMo/s1600/Data+Source+Properties.jpg"><img alt=" " width="640" height="627" src="http://1.bp.blogspot.com/-OmTAAmTWPVk/T4lfplk-hfI/AAAAAAAAAW0/4_1vF819OMo/s640/Data+Source+Properties.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Data Source Properties</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>11) </strong>I will create a dataset for Genres. Since it is a Fetch XML based report, the query to get genres will be a Fetch XML. It cannot be a TSQL using filtered views.<br />
+<br />
+As I mentioned above, I will have Genre records as a pick list report parameter. Based on the Genre selection, the movie records belonging to that Genre will be shown.<br />
+<br />
+For my blog I will simply download the Fetch XML created automatically by advanced find. In that way I can also show you how to get Fetch XML from advanced find. You don&#39;t have to create Fetch XML from scratch. You can have Fetch XML automatically created from advanced find, and then modify if needed as per your needs.<br />
+<br />
+I will go my CRM interface in Microsoft Internet Explorer. I will go to Genres records. I will click &quot;Advanced Find&quot; ribbon button on top right corner. This will open the Advanced Find window.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-0d11LYRd2aA/T4lhzXB9NxI/AAAAAAAAAW8/9waFt-aD_ZI/s1600/Genre+Fetch+XML.jpg"><img alt=" " width="640" height="342" src="http://4.bp.blogspot.com/-0d11LYRd2aA/T4lhzXB9NxI/AAAAAAAAAW8/9waFt-aD_ZI/s640/Genre+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Fetch XML for Genre</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>&nbsp;12)</strong> In the Advanced Find window by default there is a condition of status equals active. We can add more conditions. For my report this condition is enough. I will click Download Fetch XML ribbon button on the top right corner.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-013XbznJiwg/T4li7L49MDI/AAAAAAAAAXE/NYKKjMaD7sE/s1600/Download+Genre+Fetch+XML.jpg"><img alt=" " width="640" height="322" src="http://2.bp.blogspot.com/-013XbznJiwg/T4li7L49MDI/AAAAAAAAAXE/NYKKjMaD7sE/s640/Download+Genre+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Download Fetch XML for Genre</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>13)</strong> This will give me an option to either open or save the file. I will select Save As, to save this file on my desktop. I will save this file with the name  &quot;GenreFetchXML.xml&quot;. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-66G53PxR9X4/T4llCCAv-YI/AAAAAAAAAXM/hOd7ElD2xzE/s1600/Save+As+Genre+Fetch+XML.jpg"><img alt=" " width="640" height="96" src="http://4.bp.blogspot.com/-66G53PxR9X4/T4llCCAv-YI/AAAAAAAAAXM/hOd7ElD2xzE/s640/Save+As+Genre640/Download+Genre+Fetch+XML+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">&quot;Save As&quot; Fetch XML for Genre</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>14)</strong> I will go to my desktop and open the file &quot;GenreFetchXML.xml&quot; in notepad.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-s6MMgY14i1g/T4loHppcLxI/AAAAAAAAAXU/InGgtWLPeek/s1600/Genre+Fetch+XML+File.jpg"><img alt=" " src="http://2.bp.blogspot.com/-s6MMgY14i1g/T4loHppcLxI/AAAAAAAAAXU/InGgtWLPeek/s1600/Genre+Fetch+XML+File.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Fetch XML File for Genre</td>
+        </tr>
+    </tbody>
+</table>
+&nbsp;<strong>&nbsp;</strong><br />
+<strong>15)</strong> As we can see the Fetch XML is there and ready to be used. If we need to modify the query, we can simply do it in notepad or use any text-based editor.<br />
+<br />
+I want the Genre query to retrieve only Name and the GUID, so that I can create a report parameter with a pick list of all Genres. The Fetch XML has 2 additional fields &quot;createdon&quot; and &quot;createdby&quot;.&nbsp; I will remove these 2 fields.<br />
+<br />
+Just on the side note, as seen in the Fetch XML, the field names are logical names and not schema names. Logical names are equal to schema names, but always in lowercase. For more information on logical names and schema names please read my blog:<br />
+<a target="_blank" href="http://ashishmahajancrm.wordpress.com/2012/03/15/microsoft-dynamics-crm-2011-entity-logical-name-and-entity-schema-name">http://ashishmahajancrm.wordpress.com/2012/03/15/microsoft-dynamics-crm-2011-entity-logical-name-and-entity-schema-name</a><br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-oLG-919xzT0/T4qpmyrGIwI/AAAAAAAAAXc/JSonLgqww3k/s1600/Genre+Fetch+XML+in+Notepad.jpg"><img alt=" " width="640" height="354" src="http://3.bp.blogspot.com/-oLG-919xzT0/T4qpmyrGIwI/AAAAAAAAAXc/JSonLgqww3k/s640/Genre+Fetch+XML+in+Notepad.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Fetch XML File for Genre, in Notepad</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+After removing &quot;createdon&quot; and &quot;createdby&quot;, the final Fetch XML is shown as below. I will copy this Fetch XML and paste it in the Genre data set, which I am creating next.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-Ye6uxb0KogA/T41EG2c-8qI/AAAAAAAAAa0/PLdNIhha5Hw/s1600/Final+Genre+Fetch+XML+in+Notepad.jpg"><img alt=" " width="640" height="410" src="http://2.bp.blogspot.com/-Ye6uxb0KogA/T41EG2c-8qI/AAAAAAAAAa0/PLdNIhha5Hw/s640/Final+Genre+Fetch+XML+in+Notepad.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Final Genre Fetch XML </td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>16)</strong> I will go to my reports project in visual studio. I will select Datasets and right click. I will select &quot;Add Dataset&quot; to create a new dataset.<br />
+<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-Ct0CK_zWqkg/T4qq_jrtNfI/AAAAAAAAAXk/1OQoY7JqTO4/s1600/Add+a+Dataset+for+Genres.jpg"><img alt=" " src="http://3.bp.blogspot.com/-Ct0CK_zWqkg/T4qq_jrtNfI/AAAAAAAAAXk/1OQoY7JqTO4/s1600/Add+a+Dataset+for+Genres.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Add a New Dataset for Genres</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>17)</strong> This will open a &quot;Dataset Properties&quot; window. I will name my Genre dataset as &quot;GetGenres&quot;. I will select option of embedded dataset. I will select the data source as &quot;SQLConnection&quot;. <br />
+<br />
+I will paste the copied Genre Fetch XML in the query field. This query is of type Text. Select OK to create this dataset.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-1mN0QaJbTgI/T41GnA3s21I/AAAAAAAAAa8/RJCcrVK3j-U/s1600/Dataset+Properties+for+Genres.jpg"><img alt=" " width="624" height="640" src="http://4.bp.blogspot.com/-1mN0QaJbTgI/T41GnA3s21I/AAAAAAAAAa8/RJCcrVK3j-U/s640/Dataset+Properties+for+Genres.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Dataset Properties for Genres</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<strong>18)</strong> As seen below the Genres dataset is created with the name &quot;GetGenres&quot;.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-L73SURobNWI/T4snQOrM6XI/AAAAAAAAAX0/gfXJd2Y50CY/s1600/GetGenres+Dataset.png"><img alt=" " width="640" height="631" src="http://3.bp.blogspot.com/-L73SURobNWI/T4snQOrM6XI/AAAAAAAAAX0/gfXJd2Y50CY/s640/GetGenres+Dataset.png" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">GetGenres Dataset</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>19) </strong>Now I will create a report parameter, based on the Genres dataset. Select Parameters and right click to add a new parameter. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;ma
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-L73SURobNWI/T4snQOrM6XI/AAAAAAAAAX0/gfXJd2Y50CY/s1600/GetGenres+Dataset.png"><img alt=" " width="640" height="631" src="http://3.bp.blogspot.com/-L73SURobNWI/T4snQOrM6XI/AAAAAAAAAX0/gfXJd2Y50CY/s640/GetGenres+Dataset.png" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">GetGenres Dataset</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>19) </strong>Now I will create a report parameter, based on the Genres dataset. Selergin-right:auto;" href="http://3.bp.blogspot.com/-38-eaqG6dAk/T4sn_EQddMI/AAAAAAAAAX8/q-6OOns_wJU/s1600/Add+a+Parameter+for+Genre.jpg"><img alt=" " src="http://3.bp.blogspot.com/-38-eaqG6dAk/T4sn_EQddMI/AAAAAAAAAX8/q-6OOns_wJU/s1600/Add+a+Parameter+for+Genre.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Add a Parameter for Genre</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>20)</strong> This will open a &quot;Report Parameter Properties&quot; window. I will name the parameter as &quot;Genre&quot;. I will give the prompt as &quot;Select Genre&quot;. The data type is text.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-JfTnyo19tM0/T4spHkFP9kI/AAAAAAAAAYM/TEJ9iCSgYb8/s1600/Genre+Report+Parameter+Properties.jpg"><img alt=" " width="640" height="626" src="http://1.bp.blogspot.com/-JfTnyo19tM0/T4spHkFP9kI/AAAAAAAAAYM/TEJ9iCSgYb8/s640/Genre+Report+Parameter+Properties.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Genre Report Parameter Properties - General</td>
+        </tr>
+    </tbody>
+</table>
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<br />
+<br />
+<strong>21)</strong> In the &quot;Available Values&quot;, select the option &quot;Get values from a query&quot;. We will define the source of this report parameter, which in my case is the Genres dataset. I will put &quot;GetGenres&quot; in dataset. The report parameter value will be the genre GUID and the label will be the genre name.<br />
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-VUdi1k6q38w/T41Q02jPMzI/AAAAAAAAAbM/CVHfpvs3fpI/s1600/Dataset+Properties+for+Genres+-+Available+Values.jpg"><img alt=" " width="640" height="626" src="http://1.bp.blogspot.com/-VUdi1k6q38w/T41Q02jPMzI/AAAAAAAAAbM/CVHfpvs3fpI/s640/Dataset+Properties+for+Genres+-+Available+Values.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Genre Report Parameter Properties - Available Values</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<strong>22)</strong> In the &quot;Default Values&quot; select the option of &quot;No default value&quot;. I don&#39;t want the report to have any pre-selected default genre. Click OK to save the report parameter.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-cGN3o9ghOzw/T41TG3bAAyI/AAAAAAAAAbU/apCjARADvh0/s1600/Genre+Report+Parameter+Properties+-+Default+Values.jpg"><img alt=" " width="640" height="620" src="http://3.bp.blogspot.com/-cGN3o9ghOzw/T41TG3bAAyI/AAAAAAAAAbU/apCjARADvh0/s640/Genre+Report+Parameter+Properties+-+Default+Values.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Genre Report Parameter Properties - Default Values</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>23)</strong> As seen below a report parameter by the name &quot;Genre&quot; is created. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-OD2emHPoADs/T41Ul-sI77I/AAAAAAAAAbc/XZ64vtgsMrs/s1600/Parameter+Created.jpg"><img alt=" " width="640" height="578" src="http://3.bp.blogspot.com/-OD2emHPoADs/T41Ul-sI77I/AAAAAAAAAbc/XZ64vtgsMrs/s640/Parameter+Created.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Genre Parameter Created</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<strong>24)</strong> I will create my second dataset which is for Movies. This dataset will feed the display for the report. Again I will take the same approach of creating a Fetch XML for movies through advanced find.<br />
+<br />
+I will go to my CRM Movies records. I will click on Advanced Find ribbon button on top right.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-dRANcPjwLos/T41WNWF2tPI/AAAAAAAAAbs/guZdLmICVBw/s1600/Movie+Fetch+XML.jpg"><img alt=" " width="640" height="308" src="http://1.bp.blogspot.com/-dRANcPjwLos/T41WNWF2tPI/AAAAAAAAAbs/guZdLmICVBw/s640/Movie+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Fetch XML for Movie </td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>25)</strong> This will open the Advanced Find window. I will remove the non-required fields. This I can achieve by clicking on &quot;Edit Columns&quot;.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-upo9UE0yHzg/T41gEcZ2sJI/AAAAAAAAAb0/Euw1gCkRz4c/s1600/Edit+Columns+for+Movie+Fetch+XML.jpg"><img alt=" " width="640" height="472" src="http://3.bp.blogspot.com/-upo9UE0yHzg/T41gEcZ2sJI/AAAAAAAAAb0/Euw1gCkRz4c/s640/Edit+Columns+for+Movie+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Edit Columns for Movie Fetch XML</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>26)</strong> This will open the &quot;Edit Columns&quot; window. I will remove the last three columns &quot;Number in Series&quot;, &quot;Created On&quot; and &quot;Created By&quot;, as I don&#39;t need them. Select each one of the three columns and click &quot;Remove&quot; button. Click OK.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-j8UtIC1qymw/T41iAqlxEGI/AAAAAAAAAb8/K4BYlXE2qKQ/s1600/Remove+Columns+from+Movie+Advanced+Find.jpg"><img alt=" " width="640" height="412" src="http://2.bp.blogspot.com/-j8UtIC1qymw/T41iAqlxEGI/AAAAAAAAAb8/K4BYlXE2qKQ/s640/Remove+Columns+from+Movie+Advanced+Find.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Remove non-required Columns for Movie Fetch XML</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>27)</strong> After I have removed the non-required columns, I will download the Fetch XML. I will click &quot;Download Fetch XML&quot; ribbon button on top right.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-rq15Y9GqlhU/T41i9Y_Ju2I/AAAAAAAAAcE/U5MI2aIDJLQ/s1600/Download+Movie+Fetch+XML.jpg"><img alt=" " width="640" height="300" src="http://3.bp.blogspot.com/-rq15Y9GqlhU/T41i9Y_Ju2I/AAAAAAAAAcE/U5MI2aIDJLQ/s640/Download+Movie+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Download Movie Fetch XML</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>28)</strong> This will give me an option to either open or save the file. I will select Save As, to save this file on my desktop. I will save this file with the name &quot;MovieFetchXML.xml&quot;. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-5VXkFw64VUk/T4_vq3_t45I/AAAAAAAAAcM/xMXPANhmi_8/s1600/Save+As+Movie+Fetch+XML.jpg"><img alt=" " width="640" height="44" src="http://1.bp.blogspot.com/-5VXkFw64VUk/T4_vq3_t45I/AAAAAAAAAcM/xMXPANhmi_8/s640/Save+As+Movie+Fetch+XML.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">&quot;Save As&quot; Fetch XML for Movie </td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<strong>29)</strong> I will go to my desktop and open the file &quot;MovieFetchXML.xml&quot; in notepad.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-ivm0JuaZfrw/T4_w_AeTYbI/AAAAAAAAAcU/qTnLUCfczwY/s1600/Movie+Fetch+XML+File.jpg"><img alt=" " width="628" height="640" src="http://2.bp.blogspot.com/-ivm0JuaZfrw/T4_w_AeTYbI/AAAAAAAAAcU/qTnLUCfczwY/s640/Movie+Fetch+XML+File.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Movie Fetch XML File</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>30)</strong> As you can see the Movie Fetch XML has the columns which I selected. I will copy this Movie Fetch XML and use it in the Movie dataset.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-ucS9PO4YuWw/T4_x_OfourI/AAAAAAAAAcc/Eip7fFGXDSk/s1600/Movie+Fetch+XML+in+Notepad.jpg"><img alt=" " width="640" height="410" src="http://3.bp.blogspot.com/-ucS9PO4YuWw/T4_x_OfourI/AAAAAAAAAcc/Eip7fFGXDSk/s640/Movie+Fetch+XML+in+Notepad.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Movie Fetch XML in Notepad</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>31)</strong> Go to Datasets and right click to add a new Dataset. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-Ct0CK_zWqkg/T4qq_jrtNfI/AAAAAAAAAXk/1OQoY7JqTO4/s1600/Add+a+Dataset+for+Genres.jpg"><img alt=" " src="http://3.bp.blogspot.com/-Ct0CK_zWqkg/T4qq_jrtNfI/AAAAAAAAAXk/1OQoY7JqTO4/s1600/Add+a+Dataset+for+Genres.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Add a New Dataset for Movies</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>32)</strong> This will open a &quot;Dataset Properties&quot; window. This is the same way we created Genre dataset. I will name the new dataset as &quot;GetMovies&quot;. I will select the data source as &quot;SQLConnection&quot;. In Query I will paste the Movie Fetch XML, which I had copied earlier. Click OK.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-v7U_U-fK45Y/T4_0NbzgcgI/AAAAAAAAAck/hSnyy4GFKNg/s1600/Dataset+Properties+for+Movies+-+Query.jpg"><img alt=" " width="624" height="640" src="http://4.bp.blogspot.com/-v7U_U-fK45Y/T4_0NbzgcgI/AAAAAAAAAck/hSnyy4GFKNg/s640/Dataset+Properties+for+Movies+-+Query.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Dataset Properties for Movies </td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>33) </strong>As seen below, &quot;GetMovies&quot; dataset is created. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-RTm_aVy92Dk/T4_14I5BXOI/AAAAAAAAAcs/Sal2gF8jrBw/s1600/GetGenres+and+GetMovies.JPG"><img alt=" " width="640" height="620" src="http://4.bp.blogspot.com/-RTm_aVy92Dk/T4_14I5BXOI/AAAAAAAAAcs/Sal2gF8jrBw/s640/GetGenres+and+GetMovies.JPG" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">GetGenres and GetMovies</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>34)</strong> I will add a table to my report. This table is a layout where my movie records will be displayed.<br />
+<br />
+I will click Toolbox, on the left side, to expand it. I will select a table, drag and drop on to the report&#39;s designer. <br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-Bv9ZyLhwwV8/T4_3CNkzj1I/AAAAAAAAAc0/SsJTGEzG6Ok/s1600/Add+a+Table.jpg"><img alt=" " width="456" height="640" src="http://4.bp.blogspot.com/-Bv9ZyLhwwV8/T4_3CNkzj1I/AAAAAAAAAc0/SsJTGEzG6Ok/s640/Add+a+Table.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Add a Table</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>35)</strong> As seen below a table is created. The table has 2 rows (header and data) and 3 columns by default. I can add or delete data rows and columns.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://2.bp.blogspot.com/-LxZfTo--RHk/T5AT4E4vDTI/AAAAAAAAAc8/X2VHe3QXqsU/s1600/Table.jpg"><img alt=" " width="640" height="540" src="http://2.bp.blogspot.com/-LxZfTo--RHk/T5AT4E4vDTI/AAAAAAAAAc8/X2VHe3QXqsU/s640/Table.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Table</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>36)</strong> I will add the dataset &quot;GetMovies&quot; to the &quot;DataSetName&quot; property of the table. This will bind the &quot;GetMovies&quot; dataset to the table so that the data rows can display the records from FetchXML.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://4.bp.blogspot.com/-Y6j8mCa4A34/T5AUQSU5VmI/AAAAAAAAAdE/OfAv5jmw-aU/s1600/Select+a+DataSet+for+the+Table.jpg"><img alt=" " width="640" height="310" src="http://4.bp.blogspot.com/-Y6j8mCa4A34/T5AUQSU5VmI/AAAAAAAAAdE/OfAv5jmw-aU/s640/Select+a+DataSet+for+the+Table.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Select a DataSet for the Table</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<strong>37)</strong> I will finalise designing my table. For simplicity, I will display only two columns, the Movie GUID and the Movie Name. I have removed the third column. I have formatted the table header with a yellow background and aligned header to the center.<br />
+<br />
+In the table data row, for first column I will click on upper right corner and select new_movieid. I will do the same for second column (as shown below) and select new_name. These field options appear automatically as I have already set the DataSetName property of the table equal to &quot;GetMovies&quot; dataset.<br />
+<br />
+I have completed designing my report. I can go ahead and test it.<br />
+<br />
+<div style="clear:both;text-align:center;" class="separator">
+</div>
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-Sbs7Mva5KNQ/T5VC7zG1pgI/AAAAAAAAAdU/kD3GahlFtPU/s1600/Table+Display.jpg"><img alt=" " width="640" height="180" src="http://1.bp.blogspot.com/-Sbs7Mva5KNQ/T5VC7zG1pgI/AAAAAAAAAdU/kD3GahlFtPU/s640/Table+Display.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Configure Table for Display</td>
+        </tr>
+    </tbody>
+</table>
+&nbsp; <br />
+<strong>38)</strong> Select the Preview tab in Visual Studio. This tab is used to run a SSRS report created in Visual Studio. We should always test the report before we upload it to CRM. This way we can remove any issues before uploading the report to CRM.<br />
+<br />
+In the preview tab, as shown below, I can see a parameter labelled &quot;Select Genre&quot;. The parameter lists all the Genres. I will select Family genre and click &quot;View Report&quot; button.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://3.bp.blogspot.com/-cIYBnvVcmws/T5VDhmOmb8I/AAAAAAAAAdc/f7B0JwoAhnA/s1600/Running+Report.jpg"><img alt=" " width="640" height="210" src="http://3.bp.blogspot.com/-cIYBnvVcmws/T5VDhmOmb8I/AAAAAAAAAdc/f7B0JwoAhnA/s640/Running+Report.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Testing the Report</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br />
+<strong>39)</strong> As seen below the report has produced output. It shows all the movies whose genre is family.<br />
+<br />
+You can format your Fetch XML based report as per your requirements. You can upload this Fetch XML based report the usual way into your CRM 2011 environment.<br />
+<br />
+<table cellspacing="0" cellpadding="0" align="center" style="margin-left:auto;margin-right:auto;text-align:center;" class="tr-caption-container">
+    <tbody>
+        <tr>
+            <td style="text-align:center;"><a style="margin-left:auto;margin-right:auto;" href="http://1.bp.blogspot.com/-z5raQX4S6Bs/T5VKqJZg40I/AAAAAAAAAdk/Ty-3L_Tu_Q8/s1600/Report+Output.jpg"><img alt=" " width="640" height="254" src="http://1.bp.blogspot.com/-z5raQX4S6Bs/T5VKqJZg40I/AAAAAAAAAdk/Ty-3L_Tu_Q8/s640/Report+Output.jpg" style="border-width:0px;border-style:solid;" /></a></td>
+        </tr>
+        <tr>
+            <td style="text-align:center;" class="tr-caption">Report Output</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+In this blog we saw how easy it is to design a Fetch XML based SSRS report in Visual Studio 2008. You can create a report on a simple Fetch XML as I did above or you can use as complex Fetch XML as you like.<br />
+<br />
+Remember, there is a Download Fetch XML button provided so that we can have ready-made queries. Microsoft has done a great job in giving us this option of downloading Fetch XML and saving us a lot of time.<br />
+<br />
+I hope this blog about &#39;Microsoft Dynamics CRM 2011 - Develop Fetch XML Based SSRS Reports In Visual Studio 2008&#39; was informative. Please feel free to
+leave your comments.</div>
+    
+    

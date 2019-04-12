@@ -1,0 +1,646 @@
+---
+layout: default
+title: Microsoft Surface 1.0 SP1&#58; SDK - Tagged Objects - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Overview">Overview</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#How_to_Use_Tagged_Objects">How to Use Tagged Objects</a></li><li class="hierarchy-item"><a href="#Security_Considerations_for_Tagged_Objects">Security Considerations for Tagged Objects</a></li></ul><divv class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Microsoft Surface 1.0 SP1: SDK - Tagged Objects</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 cla class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Byte_Tags">Byte Tags</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Byte_Tag_Geometry">Byte Tag Geometry</a></li><li class="hierarchy-item"><a href="#Byte_Tag_Values">Byte Tag Values</a></li><li class="hierarchy-item"><a href="#Printing_Byte_Tags">Printing Byte Tags</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Identity_Tags">Identity Tags</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Creating_Identity_Tags">Creating Identity Tags</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Designing_Applications_for_Tagged_Objects">Designing Applications for Tagged Objects</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Choosing_a_Tag_Type">Choosing a Tag Type</a></li><li class="hierarchy-item"><a href="#Reacting_to_Tagged_Objects">Reacting to Tagged Objects</a></li><li class="hierarchy-item"><a href="#Starting_Applications_with_Tagged_Objects">Starting Applications with Tagged Objects</a></li><li class="hierarchy-item"><a href="#About_Printing">About Printing</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Printing_Tagged_Objects">Printing Tagged Objects</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Reflectance">Reflectance</a></li><li class="hierarchy-item"><a href="#Materials_and_Placement">Materials and Placement</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#High_IR-Reflective_White">High IR-Reflective/White</a></li><li class="hierarchy-item"><a href="#Low_IR-Reflectance_Black">Low IR-Reflectance/Black</a></li><li class="hierarchy-item"><a href="#Top_coats_and_protective_layers">Top coats and protective layers</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Printers">Printers</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Using_Object_Routing_with_Tagged_Objects">Using Object Routing with Tagged Objects</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Tagged_Objects_and_Applications">Tagged Objects and Applications</a></li><li class="hierarchy-item"><a href="#Object_Routing_UI">Object Routing UI</a></li><li class="hierarchy-item"><a href="#Setting_Up_Object_Routing">Setting Up Object Routing</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Specifying_Physical_Attributes_of_Tagged_Objects">Specifying Physical Attributes of Tagged Objects</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Bounding_Box">Bounding Box</a></li><li class="hierarchy-item"><a href="#Horizontal_and_Vertical_Offsets">Horizontal and Vertical Offsets</a></li><li class="hierarchy-item"><a href="#Orientation_Offset">Orientation Offset</a></li><li class="hierarchy-item"><a href="#Installation_Considerations">Installation Considerations</a></li><li class="hierarchy-item"><a href="#Automatically_Registered_Applications">Automatically Registered Applications</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<hr />
+<h1><a name="Overview"></a>Overview</h1>
+The <a href="http://social.technet.microsoft.com/wiki/contents/articles/5503.surface.aspx">
+Microsoft Surface </a>Vision System captures and processes raw images of a Microsoft Surface screen and can &quot;see&quot; the actual outlines of physical objects that are placed on the screen by using cameras that operate in the near infrared light (specifically, 850
+ nm). <br />
+<br />
+(For an example of how to see object outlines, see <a href="http://msdn.microsoft.com/en-us/library/ee804751(v=surface.10).aspx">
+Capturing and Rendering a Raw Image</a>.)
+<p>However, if you want your Microsoft Surface application to be driven by objects, the Microsoft Surface Vision System also recognizes special
+<em>tagged objects</em> that are marked with a special pattern of dots called <em>
+tags</em>. A tag consists of a geometric arrangement of infrared reflective and absorbing areas. Tagged objects give your application several advantages over processing raw images:</p>
+<ul>
+<li>Tagged objects are more computation-efficient. The tags are small and well-defined, so specialized code in the Vision System can locate and track them quickly, accurately, and efficiently.<br />
+<br />
+</li><li>The Microsoft Surface platform inherently recognizes tags, so it is easy to write an application that uses tags. (In contrast, an application that uses raw images must include its own image-recognition algorithms.)<br />
+<br />
+</li><li>Each tag stores a distinct binary code value, so an application can distinguish one object from another.
+</li></ul>
+<p>Microsoft Surface supports two types of tags:</p>
+<ul>
+<li><em>Byte tags</em> store 8 bits of data (1 byte), so there are 256 unique tag values. The value of a byte tag is represented in code by a
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.bytetag(v=surface.10).aspx">
+ByteTag</a> structure. <br />
+<br />
+</li><li><em>Identity tags</em> store 128 bits of data (two 64-bit values), so there is an effectively unlimited range of unique tag values. The value of an identity tag is represented in code by an IdentityTag structure.
+<br />
+<br />
+<img src="http://i.msdn.microsoft.com/dyn
+<br />
+</li><li>The Microsoft Surface platform inherently recognizes tags, so it is easy to write an application that uses tags. (In contrast, an application that uses raw imagesimg/IC353790.jpg" alt="An example identity tag" id="610ff124-3366-41e3-afdd-978903e3a019" title="An example identity tag" />
+</li></ul>
+<p>Your application&#39;s needs determine which type of tag that you should use.&nbsp; </p>
+<p>When you use tagged objects, you can use as many instances of the same tag as an application requires. However, if a user moves a tagged object too fast, the Microsoft Surface Vision System cannot track the object successfully. If you&#39;re writing a
+<a href="http://msdn.microsoft.com/en-us/library/ee804808(v=surface.10).aspx">Microsoft Windows Presentation Foundation (WPF) application</a>, you can create an on-screen visual object that tracks the tag motion by using the
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.presentation.controls.tagvisualizer(v=surface.10).aspx">
+TagVisualizer</a> control.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="How_to_Use_Tagged_Objects"></a>How to Use Tagged Objects</h2>
+<p>A Microsoft Surface application can use tagged objects in several ways:</p>
+<ul>
+<li><strong>Recognize objects</strong>: An application can use tags to recognize an object or distinguish among a collection of objects. For example, a board game might use different tags to represent the players and trace their positions on the Microsoft Surface
+ screen. Similarly, a chess application might use eight instances of one tag to represent the white pawns, two instances of another tag for the two rooks, two instances of another tag for the knights, two instances of another tag for the bishops, one tag for
+ the queen, and another tag for the king. Therefore, the application would use six unique tags for the white pieces, and another set of six unique tags for the black pieces.<br />
+<br />
+</li><li><strong>Start a command</strong>: An application might use a tag to start a command or action. For example, placing a tagged object on the Microsoft Surface screen might open a menu or start a video.<br />
+<br />
+</li><li><strong>Start or display an application</strong>: Applications can register a particular byte tag value or identity tag series. When a user places the relevant tag on the Microsoft Surface screen, it displays a menu that enables the user to start or display
+ any application that has registered the tag. If a user selects an application by using a tagged object, the application designer can use that tag contact as the starting point for the user&#39;s experience with that application. This feature is called
+<a href="http://msdn.microsoft.com/en-us/library/ee804795(v=surface.10).aspx">object routing</a>.<br />
+<br />
+</li><li><strong>Point and orient applications</strong>: An application might require precise movement with absolute orientation. For example, an application might enable a user to move in sequence through a series of video clips, turn the pages in a virtual book,
+ or adjust the volume of a video or audio clip. To adjust the volume, the application might enable the user to turn a tagged object in a circular motion, like the dial on a radio or television. (Microsoft Surface applications enable users to move and rotate
+ an object with their fingers. But tags provide a more precise absolute location than fingers, so applications can use tagged objects as pointing devices.)<br />
+<br />
+</li></ul>
+<p>Because identity tags have a greater range of possible values, they also enable additional scenarios:</p>
+<ul>
+<li>Casino rewards promotions: A casino marketing department produces an offer for $100 in free slot play. The printed offer includes the identity tag with the customer ID and a unique offer code, such as a casino chip. The customer brings this offer to the
+ venue and places it on a Microsoft Surface screen. The customer code and offer are validated, and a $100 credit is associated with the customer account as downloadable credits. The next time the customer inserts their loyalty card into a slot machine, they
+ receive the $100 credit to the machine.<br />
+<br />
+</li><li>Theme park photo pass: Passes are issued to guests of the park each day. The pass has an identity tag ID on it. As photos are taken throughout their visit to the park, the digital pictures are associated with the ID on the photo pass. The guests then place
+ the pass on a Microsoft Surface screen and all the photos that are associated with the pass appear on the screen for the guests to view, manipulate, and purchase.<br />
+<br />
+</li><li>Hotel loyalty cards: Identity tags are placed on loyalty cards to identify customers. Premier customers have access to more services and applications on a Microsoft Surface unit than typical customers or those without a loyalty card.<br />
+<br />
+</li><li>Fast food kids&#39; toys: Identity tags are placed on kids&#39; toys. A user places the toy on a Microsoft Surface screen and the application responds to the toy in some way.<br />
+<br />
+</li></ul>
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>Any application that uses tagged objects should register the tags that it uses. For more information, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804847(v=surface.10).aspx">Registering a Microsoft Surface Application</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Security_Considerations_for_Tagged_Objects"></a>Security Considerations for Tagged Objects</h2>
+<p>Do not use tagged objects to access private data. Tags are not sufficiently secure to use as a method of authentication. You can use tagged objects to identify a user, but you should require the user to enter a password, personal identification number (PIN),
+ or other secure data for authentication purposes.</p>
+<p>When you use tags, consider the following important security issues:</p>
+<ul>
+<li>An identity tag does not have enough bits to be cryptographically secure. Do not use an identity tag as a password equivalent.<br />
+<br />
+</li><li>Tag bits are not encrypted when they are in memory. For example, they are not equivalent to the
+<a href="http://msdn.microsoft.com/en-us/library/system.security.securestring.aspx">
+System.Security.SecureString</a> class in the .NET Framework. When you write code that works with tags, imagine that you are working with strings. That is, in your application, is
+<a href="http://msdn.microsoft.com/en-us/library/system.string.aspx">System.String</a> sufficiently secure, or would you need to use
+<strong>SecureString</strong>? If you would use <strong>SecureString</strong>, do
+<em>not</em> use an identity tag for the data.<br />
+<br />
+</li><li>Depending on how tags are printed, photocopiers, digital cameras, and other devices can easily capture the tags so they are easy to duplicate.
+</li></ul>
+<p>Overall, we recommend that you can use tags for identification but you should not use them authentication. An identity tag is simply a way to enter shorthand, intended to save you from having to type something into a text box. It&#39;s the equivalent of having
+ a hyperlink that you can click, instead of forcing you to enter a URL, or the equivalent of pressing CTRL&#43;R to respond to an e-mail, instead of entering the recipient&#39;s address manually. The contents of an identity tag are not more secure than a URL or an
+ e-mail address.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h1><a name="Byte_Tags"></a>Byte Tags</h1>
+<p>Byte tags are one type of tagged objects that Microsoft Surface recognizes. These tags store 8 bits of data (1 byte), so there are 256 unique tag values. (In contrast, identity tags store 128 bits of data.)</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC353789.jpg" alt="An example byte tag" id="1e83228b-486b-435c-b32b-57fc4d59b233" title="An example byte tag" />
+<p>The value of a byte tag is represented in code by a <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.bytetag(v=surface.10).aspx">
+ByteTag</a> structure. The <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.bytetag.value(v=surface.10).aspx">
+Value</a> property represents the value of the tag that your application can use to interpret the physical object. The
+<strong>Contact.Tag.Byte.Value</strong> property stores the value for a given <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.contact(v=surface.10).aspx">
+Contact</a>. </p>
+<p>There are 256 possible byte tags, each with an 8-bit value and orientation markers.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Byte_Tag_Geometry"></a>Byte Tag Geometry</h2>
+<p>Each byte tag that the Microsoft Surface Vision System identifies has an orientation and an 8-bit tag value. The following figure illustrates the basic tag that all other tags are based on.</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357349.jpg" alt="Byte tags - Parts labeled" id="54b3474c-eb77-45d4-a908-f0380866ca31" title="Byte tags - Parts labeled" />
+<ol>
+<li>Infrared-absorbing background<br />
+<br />
+</li><li>One infrared-reflecting circle (0.125-inch radius) in the center of the tag. This circle locates the tag on the Microsoft Surface screen.<br />
+<br />
+</li><li>Three infrared-reflecting circles (0.08-inch radius) located 0.28 inches from the center of the tag in each direction (left, right, and down). These &quot;guide&quot; circles determine the tag orientation.<br />
+<br />
+</li></ourface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Byte_Tag_Geometry"></a>Byte Tag Geometry</h2>
+<p>Each byte tag that the Microsoft Surface Vision System identifies has an orientation and an 8-bit tag value. The following figure illustrates the basic tag that all other tags are based on.</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357349.jpg" alt="Byte l>
+<p>In addition, each tag contains from zero to eight data bits that define the tag value. These data bits are white circles (0.075-inch radius) that are centered in one of the following locations:</p>
+<ul>
+<li>0.3058 inches horizontally and 0.2038 inches vertically (bits 1, 2, 5, and 6) from the center of the tag.<br />
+<br />
+</li><li>0.2038 inches horizontally and 0.3058 inches vertically (bits 0, 3, 4, and 7) from the center of the tag.<br />
+<br />
+</li></ul>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Byte_Tag_Values"></a>Byte Tag Values</h2>
+<p>There are 256 possible unique byte tags that are encoded as a byte. The highest order bit (bit 7) is at the 1 o&#39;clock position when you look at the printed side of the tag. Less significant bits are then read counter-clockwise from the 12 o&#39;clock position.
+ An infrared-reflective circle in a bit location represents 1. The absence of a circle represents 0 (zero).</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357350.jpg" alt="Byte tags - Bit locations" id="6b8384c3-ce62-41df-a0f8-4160925b077e" title="Byte tags - Bit locations" />
+<p>&nbsp;</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357351.jpg" alt="Tagged objects - 0x00 / 0xFF / 0xC1 / 0xC6 values" id="b2d19bf5-3a0e-43ee-b844-13a83bad7bf6" title="Tagged objects - 0x00 / 0xFF / 0xC1 / 0xC6 values" />
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Printing_Byte_Tags"></a>Printing Byte Tags</h2>
+<p>Microsoft Surface units include two full sets of byte tags (256 tags in each set). You can also create and print your own tags, according to the specifications in this article, up to the maximum of 256 unique patterns.</p>
+<p>If you want to create and print your own byte tags, you have some freedom when you design and work with the physical tags. The following illustration shows the dimensions of a physical tag.</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357355.jpg" alt="Byte tags - Dimensions" id="f83f61fc-729b-483a-ad43-6463544b5e40" title="Byte tags - Dimensions" />
+<p>The <em>undefined region</em> indicates where you can extend the geometry of the tag, if you need to.</p>
+<p>The <em>tag region</em> is the opaque black-and-white patterned area of the actual tag. You can remove or cut a 0.125 × 0.125 inch triangle from each corner of the 0.75 × 0.75 inch square tag without affecting performance, if you need to affix the tag to
+ a smaller circular object. However, the entire tag region must touch the Microsoft Surface screen.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h1><a name="Identity_Tags"></a>Identity Tags</h1>
+<p><em>Identity tags</em> are one type of tagged objects that Microsoft Surface recognizes. These tags store 128 bits of data (two 64-bit values), so there is an effectively unlimited range of unique tag values. (In contrast, byte tags store 8 bits [1 byte]
+ of data.)</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC353790.jpg" alt="An example identity tag" id="610ff124-3366-41e3-afdd-978903e3a019" title="An example identity tag" />
+<p>The value of an identity tag is represented in code by an <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.identitytag(v=surface.10).aspx">
+IdentityTag</a> structure. The <strong>IdentityTag</strong> structure consists of two properties,
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.identitytag.series(v=surface.10).aspx">
+Series</a> and <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.core.identitytag.value(v=surface.10).aspx">
+Value</a>, which are 64-bit numbers.</p>
+<p>An identity tag can represent a much greater range of values that an byte tag. This greater range of possible values enables the following possible scenarios:</p>
+<ul>
+<li>Casino rewards promotions: A casino marketing department produces an offer for $100 in free slot play. The printed offer includes the identity tag with the customer ID and a unique offer code, such as a casino chip. The customer brings this offer to the
+ venue and places it on a Microsoft Surface screen. The customer code and offer are validated, and a $100 credit is associated with the customer account as downloadable credits. The next time the customer inserts their loyalty card into a slot machine, they
+ receive the $100 credit to the machine.<br />
+<br />
+</li><li>Theme park photo pass: Passes are issued to guests of the park each day. The pass has an identity tag ID on it. As photos are taken throughout their visit to the park, the digital pictures are associated with the ID on the photo pass. The guests then place
+ the pass on a Microsoft Surface screen and all the photos that are associated with the pass appear on the screen for the guests to view, manipulate, and purchase.<br />
+<br />
+</li><li>Hotel loyalty cards: Identity tags are placed on loyalty cards to identify customers. Premier customers have access to more services and applications on a Microsoft Surface unit than typhip. The customer brings this offer to the
+ venue and places it on a Microsoft Surface screen. The customer code and offer are validated, and a $100 credit is associated with the customer account as downloadable credits. The next time the customer inserts their loyalty card into a slical customers or those without a loyalty card.<br />
+<br />
+</li><li>Fast food kids&#39; toys: Identity tags are placed on kids&#39; toys. A user places the toy on a Microsoft Surface screen and the application responds to the toy in some way.<br />
+<br />
+</li></ul>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Creating_Identity_Tags"></a>Creating Identity Tags</h2>
+<p>The Printing Tagged Objects section describes general requirements for creating and printing tagged objects.</p>
+<p>If you want to create and print your own identity tags, you can use the <a href="http://msdn.microsoft.com/en-us/library/ee804803(v=surface.10).aspx">
+Identity Tag Printing Tool</a> (GenTagUI.exe) to create identity tags by using a regular printer. You can also create identity tags by using the
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.tools.identitytaggenerator(v=surface.10).aspx">
+IdentityTagGenerator</a> class in your own application.</p>
+<p>After you create an identity tag, attach it to something solid, like a plastic card or heavy cardboard, because the tag must be perfectly flat for the Microsoft Surface Vision System to detect it. The black ink that is printed on an identity tag must be
+ as dark as possible for the correct contrast between the white dots and the black background.</p>
+<p>The identity tag printing tool enables you to generate a new series (<strong>Series</strong>) and values (<strong>Value</strong>) within that series. For example, consider a scenario like a promotion where Series represents a code for the promotion itself
+ and <strong>Value</strong> represents individual offerings or even individual customers that the promotion targets.</p>
+<p>After you create the <strong>Series</strong> and <strong>Value</strong> value, you can copy and paste them into your database or application code in XAML or C# format. You can also print the actual tag graphic to a black-and-white printer.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h1><a name="Designing_Applications_for_Tagged_Objects"></a>Designing Applications for Tagged Objects</h1>
+<p>Tagged objects provide many new scenarios for Microsoft Surface applications. However, when you create an application that is driven by tagged objects, there are unique design considerations to remember.</p>
+<p>For an example of an application that is designed for tagged objects, see the <a href="http://msdn.microsoft.com/en-us/library/ee804850(v=surface.10).aspx">
+Item Compare</a> sample application. For a tutorial about how Item Compare is designed as a tag-driven application, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804965(v=surface.10).aspx">Designing Tag-Driven Applications for Microsoft Surface</a>.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Choosing_a_Tag_Type"></a>Choosing a Tag Type</h2>
+<p>Microsoft Surface supports two types of tags: byte tags and identity tags. Your application&#39;s needs determine which type of tag that you should use.</p>
+<ul>
+<li>Byte tags store 8 bits of data (1 byte), so there are 256 unique tag values. Byte tags measure ¾ inch on each side, and the Vision System can reliably track them at relatively high speeds (over 4 inches per second) as they move across a Microsoft Surface
+ screen.<br />
+<br />
+</li><li>Identity tags store 128 bits of data (two 64-bit values), so there is an effectively unlimited range of unique tag values. Identity tags measure 1 inch on each side, and they function best when they are stationary or nearly stationary. The Vision System
+ can track identity tags at a maximum speed that is considerably lower than the maximum speed for byte tags.<br />
+<br />
+</li></ul>
+<p>Because byte tags are more compact and are faster for the Vision System to recognize, they represent the best choice for an object-driven application if the number of unique tag values that you need is relatively small (for example, identifying pieces in
+ a board game). However, byte tags have only 256 possible values, so they may not be appropriate for some applications.</p>
+<p>If your application must distinguish among a large number of unique values (for example, if the tag represent a unique customer ID from a large database), identity tags are the best choice.</p>
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="Important" id="Important" class="cl_IC160177" title="Important" />Important
+</th>
+</tr>
+<tr>
+<td>Although you can use identity tags to provide logon credentials, you should not use them as the only means of authentication because malicious users can copy or guess tags. Any authentication scheme that is based on tag values should also require another
+ form of information, such as a PIN or password.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Reacting_to_Tagged_Objects"></a>Reacting to Tagged Objects</h2>
+<p>If you are creating an application based on the <a href="http://msdn.microsoft.com/en-us/library/ee804840(v=surface.10).aspx">
+Presentation layer</a>, your application can respond to tagged objects most easily by using the
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.presentation.controls.tagvisualizer(v=surface.10).aspx">
+TagVisualizer</a> control. This control can recognize, track, and show user interface (UI) elements for tags that are placed on the control.</p>
+<p>If you want to use custom processing (or if you are writing an application based on the
+<a href="http://msdn.microsoft.com/en-us/library/ee804882(v=surface.10).aspx">Core layer</a>), your application can respond to tagged objects by watching for
+<strong>Contact</strong> objects whose <strong>IsTagRecognized</strong> property is set to
+<strong>true</strong>. When that property is <strong>true</strong>, you can use the
+<strong>Tag</strong> property on the contact to get information about the type and value of tag that has been recognized.
+<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Starting_Applications_with_Tagged_Objects"></a>Starting Applications with Tagged Objects</h2>
+<p>A user&#39;s first experience with your application is how to start it. If your application is designed to be driven primarily by tagged objects, consider integrating it with the
+<em>object routing</em> feature. Object routing enables users to start your application without going through Launcher. Ideally, after a user opens your application by using a tagged object, the application will use the tag value in some way.&nbsp;&nbsp;<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="About_Printing"></a>About Printing </h2>
+<p>A Microsoft Surface application relies solely on the orientation and position of a tag (instead of the physical object that the tag is attached to), so the Microsoft Surface platform needs to know where the tag is located on the physical object the tag is
+ placed. The location enables the platform to infer the location of the object based on the location of the tag. Depending on the physical requirements of your tagged object, you might need to place the tag somewhere other than its center. In such a case, you
+ should correct for the location of the tag so your application can show the UI for the tag in the appropriate position.</p>
+<p>If you use the <strong>TagVisualizer</strong> control, you can use the <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.presentation.controls.tagvisualization.physicalcenteroffsetfromtag(v=surface.10).aspx">
+PhysicalCenterOffsetFromTag</a> and <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.presentation.controls.tagvisualization.orientationoffsetfromtag(v=surface.10).aspx">
+OrientationOffsetFromTag</a> properties of the <a href="http://msdn.microsoft.com/en-us/library/microsoft.surface.presentation.controls.tagvisualization(v=surface.10).aspx">
+TagVisualization</a> object to correct for tag placement. </p>
+<p>For more information about how to create and print tags for the physical objects, see Printing Tagged Objects&nbsp;below. For information about how to create and print identity tags, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804803(v=surface.10).aspx">Identity Tag Printing Tool</a>.</p>
+<br />
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h1><a name="Printing_Tagged_Objects"></a>Printing Tagged Objects</h1>
+<p>Microsoft Surface units include two full sets of byte tags (256 tags in each set). You can also create and print your own byte tags and identity tags.</p>
+<p>In addition to the information in this topic, review the specifications for each tag type in the Byte Tags and Identity Tags sections above. If you are printing identity tags, you should also use the
+<a href="http://msdn.microsoft.com/en-us/library/ee804803(v=surface.10).aspx">identity tag printing tool</a>.</p>
+<p stow to create and print identity tags, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804803(v=surface.10).aspx">Identity Tag Printing Tool</a>.</p>
+<br />
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-taggedyle="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Reflectance"></a>Reflectance</h2>
+<p>Make sure that printed tags meet the following requirements:</p>
+<ul>
+<li>The white dots <em>must</em> reflect at least 73% of 850 nanometer (nm) infrared light but not more than 86%. Ultra high reflectivity whites can cause &quot;bloom,&quot; which impairs the vision system&#39;s ability to recognize the tag.<br />
+<br />
+</li><li>The dark region <em>must not</em> reflect any more than 7% of 850 nm infrared light (93% or more should be absorbed).<br />
+<br />
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>Limited tests show that a non-IR reflective or black background that is at least 1 inch larger than the tag itself can improve how tags are recognized, even if they are on a background with reflectance higher than 83%.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+</li></ul>
+<p>A single tag on a physical object with a black or non-IR reflective background provides the best tag recognition performance.</p>
+<p>You can measure reflectance for surfaces with diffuse reflectance by using a reflectometer that has response in the near IR wavelength range (for example, the InspectIR-Vis instrument from
+<a href="http://go.microsoft.com/fwlink/?LinkId=144362">Surface Optics Corp</a>).
+<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Materials_and_Placement"></a>Materials and Placement</h2>
+<p>Whenever possible, place tags on infrared-absorbent objects. A tag on an object that is infrared-absorbent typically performs better than a tag on a highly infrared-reflective item. If you place a tag on a highly infrared-reflective surface, the Microsoft
+ Surface Vision System might have trouble recognizing the tag.</p>
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>The infrared reflectivity of an object is <em>not</em> necessarily the same as its brightness to the naked eye. For example, some materials that appear dark to the eye can actually be reflective to infrared light.</td>
+</tr>
+</tbody>
+</table>
+<p>You must place tags on a solid, consistent background (for example, with no patterns or stripes). Use a dark-colored or non-IR reflective background instead of a light background.</p>
+<p>Place tags on flat surfaces that help the tag maintain flush contact with the tabletop. Also, tags work better on physical objects that do not easily tip over while they move.</p>
+<p>The following materials and processes have been validated and shown to produce tags that function correctly with Microsoft Surface. If you use these materials, your tags should work properly. However, always test new tag types in their final format before
+ you distribute them.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h3><a name="High_IR-Reflective_White"></a>High IR-Reflective/White</h3>
+<ul>
+<li>White office paper<br />
+<br />
+</li><li>White Mylar<br />
+<br />
+</li><li>White PVC<br />
+<br />
+</li><li>White Styrene<br />
+<br />
+</li><li>White print labels (for example, Brother TZ-261)<br />
+<br />
+</li><li>IR-reflective dielectric coating on PET film </li></ul>
+<p>In general, most white paper works well. However, some are too bright and can cause a blur in the Microsoft Surface Vision System.<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h3><a name="Low_IR-Reflectance_Black"></a>Low IR-Reflectance/Black</h3>
+<ul>
+<li>Laser printer black ink<br />
+<br />
+</li><li>Pantone Black C<br />
+<br />
+</li><li>Epolight 8771 IR absorbing ink<br />
+<br />
+</li></ul>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h3><a name="Top_coats_and_protective_layers"></a>Top coats and protective layers</h3>
+<p>In practice, top coats such as UV print varnish and laminates can successfully improve a tag&#39;s durability and minimally affect the optical properties of the tag. However, many types of protective layers can significantly affect optical performance. You should
+ test any protective layer that you add to a tag to make sure it performs correctly.<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:1ck"></a>Low IR-Reflectance/Black</h3>
+<ul>
+<li>Laser printer black ink<br />
+<br />
+</li><li>Pantone Black C<br />
+<br />
+</li><li>Epolight 8771 IR absorbing ink<br />
+<br />
+</li></ul>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged2px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Printers"></a>Printers</h2>
+<p>Ink jet printers that use a mix of cyan, yellow, and magenta to create black generally do not work. The three-color combination is typically invisible in the infrared spectrum. You should test all printing methods for their appearance in the infrared 850
+ nm wavelength.</p>
+<p>Be careful that the tags cannot be rubbed off. Tags that are printed by using ink jet or laser printers wear off rapidly when they are used. If the tag printing wears off, you cannot use the tag anymore and the tag will smudge the Microsoft Surface screen.
+ The tags that are included with the unit are printed on self-adhesive vinyl to protect them from wearing off.</p>
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>Do not use the Microsoft XPS Document Writer to create an .xps file for later printing of the identity tag. The XPS Document Writer introduces light gray lines that outline the small hexagonal areas of the tag. These lines can prevent the Vision System
+ from detecting the tag.</td>
+</tr>
+</tbody>
+</table>
+<p>For more information about how to print identity tags, see <a href="http://msdn.microsoft.com/en-us/library/ee804803(v=surface.10).aspx">
+Identity Tag Printing Tool</a>.<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h1><a name="Using_Object_Routing_with_Tagged_Objects"></a>Using Object Routing with Tagged Objects</h1>
+<p>Typically, users open Microsoft Surface applications through Launcher. However, Microsoft Surface also includes
+<em>object routing</em>, which enables you to configure tagged objects that open your applications without using Launcher.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Tagged_Objects_and_Applications"></a>Tagged Objects and Applications</h2>
+<p>When a tagged object is placed down on a Microsoft Surface screen, the Microsoft Surface software reads the object&#39;s tag value and checks if the tag is registered with Surface Shell.</p>
+<table>
+<tbody>
+<tr>
+<th align="left">Note </th>
+</tr>
+<tr>
+<td>Even if your application does not use object routing, you should register tags that your application uses to prevent interference from applications that do use object routing.</td>
+</tr>
+</tbody>
+</table>
+<p>The Microsoft Surface software also checks whether any tag is registered for object routing. If a tag is registered for object routing, the Microsoft Surface software displays a menu that includes all of the applications that are registered for object routing
+ with that tag.</p>
+<p>When you design an application that works with object routing, we strongly recommend that your application use the tag value for some clear purpose after users open the application from the object routing menu. Strong designs provide immediate, obvious information
+ to the user based on that tag. Users should instantly see what options are available and how to proceed based on the tag that they placed on the screen. For example, the tag value could correspond to a particular promotion or set of user preferences.</p>
+<p>You can associate tagged objects with your application by using the application&#39;s XML registration file. For more information, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804847(v=surface.10).aspx">Registering a Microsoft Surface Application</a>.
+<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Object_Routing_UI"></a>Object Routing UI</h2>
+<p>If a user places a tagged object that is registered for object routing on a Microsoft Surface screen, the Microsoft Surface software displays the object routing UI, as the following illustration shows.</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC353849.jpg" alt="Object routing - Example" id="0bae1ec2-435f-42ff-a86f-42470656ac78" title="Object routing - Example" />
+<p>The object routing UI displays a menu of applications that users can open because they are registered with the tagged object. If an application does not have an
+<a href="http://msdn.microsoft.com/en-us/library/ee804794(v=surface.10).aspx">icon image</a>, the object routing UI displays a default icon.</p>
+<p>The object routing UI displays on top of all other elements in the experience except the
+<a href="http://msdn.microsoft.com/en-us/library/ee804929(v=surface.10).aspx">access points</a>, but it does not prevent users from interacting with the current application. However, the current application does not interact with the tagged object that is displaying
+ the object routing UI.</p>
+<p>The Microsoft Surface software automatically sizes the object routing UI based on the tagged object&#39;s bounding box. For more information about the bounding box, see the&nbsp;Specifying Physical Attributes of Tagged Objects&nbsp;section below.</p>
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>We recommend that you register up to four applications for object routing with each tag.</td>
+</tr>
+</tbody>
+</table>
+<p>If the object routing UI for two tags appears too close to each other on a Microsoft Surface screen, they repel each other. (This behavior avoids confusion that could occur if the UI elements overlapped.)</p>
+<p>Unlike other UI elements, users cannot push an object routing menu beyond the edge of the screen, so all application icons in the menu are always visible.</p>
+<p>When a user starts an application by using the object routing UI, the orientation of the tagged object determines the orientation for the application.</p>
+<p>The object routing UI disappears when a user opens an application that is associated with the tag. The tagged object then interacts with the newly opened application. The object routing UI also disappears if the tagged object is removed from the unit.<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Setting_Up_Object_Routing"></a>Setting Up Object Routing</h2>
+<p>To configure object routing for an application, you must do the following:</p>
+<ul>
+<li>Enable object routing on the Microsoft Surface Unit. For more information, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804856(v=surface.10).aspx">Configuring Object Routing on a Microsoft Surface Unit</a>.<br />
+<br />
+</li><li>For each tagged object&#39;s value that you want to configure for object routing, define the tagged object in the registry of the unit.
+<br />
+<br />
+</li><li>For each application that is associated with a tagged object, register the application with the associated tagged objects in the application&#39;s XML registration file. For more information, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804847(v=surface.10).aspx">Registering a Microsoft Surface Application</a>.
+</li></ul>
+<br />
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h1><a name="Specifying_Physical_Attributes_of_Tagged_Objects"></a>Specifying Physical Attributes of Tagged Objects</h1>
+<p>When a user places a tagged object on a Microsoft Surface screen to interact with applications by using
+<a href="http://msdn.microsoft.com/en-us/library/ee804956(v=surface.10).aspx">object routing</a>, the Microsoft Surface software displays a shadow for the object, a text label, and icons to start or display applications.</p>
+<p>For each tagged object&#39;s value that you want to configure for object routing, you must define the tagged object in the registry of the Microsoft Surface unit. The values must be in hexadecimal format. Maintain the values for each defined byte tag value and
+ identity tag series in the following registry locations:</p>
+<ul>
+<li><strong>HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Surface\TagInfo\v1.0\ByteTags\</strong><em>&lt;Byte tag value&gt;</em><br />
+<br />
+</li><li><strong>HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Surface\TagInfo\v1.0\IdentityTags\</strong><em>&lt;Identity tag series&gt;</em>
+</li></ul>
+<p>The following table describes the registry settings that you must define to describe the values of the tagged objects.</p>
+<table>
+<tbody>
+<tr>
+<th>Key </th>
+<th>Description </th>
+</tr>
+<tr>
+<td>
+<p><strong>BoundingBoxWidth</strong></p>
+</td>
+<td>
+<p>The width of the bounding box, in inches. (For more information, see the following &quot;Bounding Box&quot; section of this topic.)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>BoundingBoxHeight</strong></p>
+</td>
+<td>
+<p>The height of the bounding box, in inches. (For more information, see the following &quot;Bounding Box&quot; section of this topic.)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>PhysicalCenterOffsetFromTagX</strong></p>
+</td>
+<td>
+<p>The offset of the bounding box center from the tag center, in the x-direction. (For more information, see the following &quot;Horizontal and Vertical Offsets&quot; section of this topic.)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>PhysicalCenterOffsetFromTagY</strong></p>
+</td>
+<td>
+<p>The offset of the bounding box center from the tag center, in the y-direction. (For more information, see the following &quot;Horizontal and Vertical Offsets&quot; section of thi</tr>
+<tr>
+<td>
+<p><strong>BoundingBoxWidth</strong></p>
+</td>
+<td>
+<p>The width of the bounding box, in inches. (For more information, see the following &quot;Bounding Box&quot; section of this topic.)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>Bouns topic.)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>OrientationOffsetFromTag</strong></p>
+</td>
+<td>
+<p>The offset of the bounding box orientation from the tag orientation, in degrees. (For more information, see the following &quot;Orientation Offset&quot; section of this topic.)</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>Text</strong></p>
+</td>
+<td>
+<p>The text to appear under the object.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The following illustration demonstrates the following parts of a tag on a tagged object:</p>
+<ol>
+<li>The offset of the bounding box center from the tag center, in the x-direction (<strong>PhysicalCenterOffsetFromTagX</strong>)<br />
+<br />
+</li><li>The offset of the bounding box center from the tag center, in the Y-direction (<strong>PhysicalCenterOffsetFromTagY</strong>)<br />
+<br />
+</li><li>The center point of the bounding box<br />
+<br />
+</li><li>The center point of the tag<br />
+<br />
+</li><li>The offset of the bounding box orientation from the tag orientation, in degrees (<strong>OrientationOffsetFromTag</strong>)<br />
+<br />
+</li></ol>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357333.jpg" alt="Tagged objects - Physical attributes labeled" id="8f46c142-e6b2-4e85-ab73-cf08c956bc52" title="Tagged objects - Physical attributes labeled" />
+<p>You can translate (localize) the text that appears under a tagged object and include a separate registry key for each locale that you support. For example, the following registry key includes text for France:</p>
+<ul>
+<li><strong>HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Surface\TagInfo\v1.0\IdentityTags\</strong><em>&lt;identity tag series&gt;</em><strong>\fr-FR\Text</strong><br />
+<br />
+</li></ul>
+<p>If you do not specify a localized version for a locale, the default text is displayed.</p>
+<ul>
+<li><strong>HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Surface\TagInfo\v1.0\IdentityTags\</strong><em>&lt;identity tag series&gt;</em><strong>\Text</strong><br />
+<br />
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>Keys that require numeric values do not accept localized values. For example, always use a period (&quot;.&quot;) as the decimal separator.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+</li></ul>
+<p>For more information about how to create the physical tags, see Printing Tagged Objects.
+<br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Bounding_Box"></a>Bounding Box</h2>
+<p>To determine the size of the <a href="http://msdn.microsoft.com/en-us/library/ee804956(v=surface.10).aspx">
+object routing UI</a>, the Microsoft Surface software requires the size of the rectangle around the object, called the
+<em>bounding box</em>. The center point of the bounding box serves as the anchor for the tethers that connect the menu items to the tagged object in the object routing UI.</p>
+<p>The bounding box is represented with values, in inches, for the <strong>BoundingBoxWidth</strong> and
+<strong>BoundingBoxHeight</strong> registry values. <br />
+&nbsp;</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Horizontal_and_Vertical_Offsets"></a>Horizontal and Vertical Offsets</h2>
+<p>You can place a tag anywhere on the relevant surface of a tagged object. It does not have to be centered within the bounding box. For the Microsoft Surface screen to accurately reflect the position of the object, you must calculate the offset from the center
+ of the tag to the center of the tagged object&#39;s bounding box.</p>
+<img src="http://i.msdn.microsoft.com/dynimg/IC357334.jpg" alt="Tagged objects - Offsets examples" id="6ee2526e-4726-4a95-b124-782a51102dd6" title="Tagged objects - Offsets examples" />
+<p>Offsets are represented in inches from the center of the tag to the center of the X or Y axis of the bounding box.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Orientation_Offset"></a>Orientation Offset</h2>
+<p>You can also place a tag in any orientation with respect to a tagged object. For the Microsoft Surface screen to accurately reflect the position of the object, you must calculate the offset between the
+<em>up</em> orientation of the tag and the <em>up</em> orientation of the object&#39;s bounding box.</p>
+<p>Orientation offsets are represented in degrees from the orientation of the tag.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Installation_Considerations"></a>Installation Co href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<h2><a name="Orientation_Offset"></a>Orientation Offset</h2>
+<p>You can also place a tag in any orientation with respect to a tagged object. For the Microsoft Surface screen to accurately reflect the position of the object, you must calculate the offset between the
+<em>up</em>nsiderations</h2>
+<p>Ideally, when you develop your application, you should also create an installer that installs the application, creates the correct entries in the
+<em>ApplicationName</em>.xml registration file, and creates and sets the appropriate registry keys.</p>
+<p>The installer should also check the registry for registered tagged objects. If the value or series of a tag has been specified in the registry, enable the administrator to overwrite the registry values or cancel the installation.</p>
+<table>
+<tbody>
+<tr>
+<th align="left"><img src="http://i.msdn.microsoft.com/Hash/030c41d9079671d09a62d8e2c1db6973.gif" alt="note" id="note" class="cl_IC101471" title="note" />Note
+</th>
+</tr>
+<tr>
+<td>Because byte tags have fewer available values, the possibility of registry conflicts is greater. The possibility of identity tag collision when the tag values are generated randomly is close to zero.</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h2><a name="Automatically_Registered_Applications"></a>Automatically Registered Applications</h2>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+<p>When you start your application from Microsoft Visual Studio or if start it by running the executable file in administrator mode, the application is automatically registered with Surface Shell. However, applications that you open in this way cannot use object
+ routing unless you have previously registered them with Surface Shell. For more information about how to register an application, see
+<a href="http://msdn.microsoft.com/en-us/library/ee804847(v=surface.10).aspx">Registering a Microsoft Surface Application</a>.</p>
+<p style="color:#262626;font-family:&#39;segoe ui&#39;;font-size:12px;">↑&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/8028.microsoft-surface-1-0-sp1-sdk-tagged-objects/edit.aspx#Top"><span style="color:#0066dd;">Return to Top</span></a></p>
+<hr />
+
+</div>
+    
+    

@@ -1,0 +1,956 @@
+---
+layout: default
+title: WPF&#58; Exporting Data from a DataGrid Control - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#CSV">CSV</a></li><li class="hierarchy-item"><a href="#Sample_code">Sample code</a></li><li class="hierarchy-item"><a href="#Extension_methods">Extension methods</a></li><li class="hierarchy-item"><a href="#IExporter">IExporter</a></li><li class="hierarchy-item"><a href="#DataGrid">DataGrid</a></li><li class="hierarchy-item"><a href="#ICollectionView">ICollectionView</a></li><li class="hierarchy-item"><a href="#Order_and_Sorting">Order and Sorting</a></li><li class="hierarchy-item"><a href="#Reflection">Reflection</a></li><li class="hierarchy-item"><a href="#DataGridBoundColumn">DataGridBoundColumn</a></li><li class="hierarchy-item"><a href="#DataGridComboBoxColumn">DataGridComboBoxColumn</a></li><li class="hierarchy-item"><a href="#DataGridTemplateColumn">DataGridTemplateColumn</a></li><li class="hierarchy-item"><a href="#Attached_properties">Attached properties</a></li><li class="hierarchy-item"><a href="#Dispatcher">Dispatcher</a></li><li class="hierarchy-item"><a href="#ContextMenu">ContextMenu</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Introduction"></a>Introduction</h1>
+The DataGrid control in WPF provides a flexible way to display, sort, group and filter tabular data. A common requirement is the ability to export this data to some physical file that can be imported into Microsoft Excel or some similar software for further
+ processing.
+<p>This post provides an example of how you could create a .csv file out of a data-bound collection of objects of any type by using reflection and extending the functionality of the
+<em>System.Windows.Controls.DataGrid</em> control by implementing an extension method.</p>
+<h1><a name="CSV"></a>CSV</h1>
+<p>CSV stands for “Comma Separated Values” and is a common and widely supported file format for storing tabular data in plain text. A CSV file consists of a number of records, separated by line breaks. Each record consists of columns that are separated by some
+ character, typically a comma (,) or a semicolon (;).</p>
+<h1><a name="Sample_code"></a>Sample code</h1>
+<p>You can download the sample code in this post from the MSDN Samples Code Gallery
+<a href="http://code.msdn.microsoft.com/WPF-Export-data-from-a-98a207a5">here</a>.<br />
+<br />
+The sample application consists of a single window with two public properties that returns collections of
+<em>Product</em> objects and related <em>Category</em> objects respectively, and an event handler for an export button that will call the extension method of the DataGrid that creates the actual export file:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">partial</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">MainWindow : Window</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">MainWindow()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">InitializeComponent();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.DataContext =
+</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* initialize categories */</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Categories =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+List&lt;Category&gt;();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Categories.Add(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Category() { Id = 1, Name = </code><code style="color:blue;">&quot;Category A&quot;</code>
+<code style="color:#000000;">});</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Categories.Add(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Category() { Id = 2, Name = </code><code style="color:blue;">&quot;Category B&quot;</code>
+<code style="color:#000000;">});</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* initialize products */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Products =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+List&lt;Product&gt;();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">for</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">i = 0; i &lt; 100; &#43;&#43;i)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Product item =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Product();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">item.Id = i;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">item.Name =
+</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;Item {0}&quot;</code><code style="color:#000000;">, i);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">b = (i % 2).Equals(0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">item.IsAvailable = b;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">item.Category = b ?
+</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Categories[0] :
+</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Categories[1];</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Products.Add(item);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">IList&lt;Category&gt; Categories</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">IList&lt;Product&gt; Products</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+Export_Click(</code><code style="color:#006699;font-weight:bold;">object</code> <code style="color:#000000;">
+sender, RoutedEventArgs e)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">const</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+path = </code><code style="color:blue;">&quot;test.csv&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IExporter csvExporter =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+CsvExporter(</code><code style="color:blue;">&#39;;&#39;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">dataGrid.ExportUsingRefection(csvExporter, path);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+Product</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">int</code> <code style="color:#000000;">
+Id { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+Name { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">bool</code> <code style="color:#000000;">
+IsAvailable { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">Category Category { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+Category</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">int</code> <code style="color:#000000;">
+Id { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code stylpan><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+Category</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>e="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+Name { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>The XAML markup then defines a DataGrid control that is bound to the Products collection, with a column per property of the
+<em>Product</em> type:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Window</code>
+<code style="color:#808080;">x:Class</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Mm.ExportableDataGrid.Wpf.MainWindow&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml/presentation">http://schemas.microsoft.com/winfx/2006/xaml/presentation</a>&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:x</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml">http://schemas.microsoft.com/winfx/2006/xaml</a>&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">Title</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MainWindow&quot;</code>
+<code style="color:#808080;">Height</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;350&quot;</code>
+<code style="color:#808080;">Width</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;525&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Window.Resources</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">CollectionViewSource</code>
+<code style="color:#808080;">x:Key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;categories&quot;</code>
+<code style="color:#808080;">Source</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Categories}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Window.Resources</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DockPanel</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Button</code>
+<code style="color:#808080;">Content</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Export data&quot;</code>
+<code style="color:#808080;">Click</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Export_Click&quot;</code>
+<code style="color:#808080;">DockPanel.Dock</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Bottom&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;dataGrid&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Products}&quot;</code>
+<code style="color:#808080;">AutoGenerateColumns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;False&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridTextColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Name&quot;</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Name}&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridTextColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Name&quot;</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Name}&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nb&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridTextColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Id&quot;</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Id}&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridCheckBoxColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Checked&quot;</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding IsAvailable}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridComboBoxColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Category&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Source={StaticResource
+ categories}}&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">SelectedValueBinding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding
+ Category}&quot;</code> <code style="color:#808080;">DisplayMemberPath</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Name&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridHyperlinkColumn</code>
+<code style="color:#808080;">ContentBinding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Name}&quot;</code>
+<code style="color:#808080;">Binding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Name}&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DockPanel</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Window</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>Note that the ItemsSource property of the <em>DataGridComboBoxColumn</em> cannot be bound directly to the Categories collection of the DataContext. This is because the columns in the DataGrid don’t inherit the DataContext as they are never added to the visual
+ tree.</p>
+<h1><a name="Extension_methods"></a>Extension methods</h1>
+<p>An extension method is a feature in C# that lets you “add” new methods to an existing type without creating a new derived type or otherwise modifying the original type. To implement an extension method for some type you simply create a static method in a
+ static class. The first parameter of the method specifies the type that the method operates on and it must be preceded with the
+<strong>this</strong> modifier. </p>
+<p>Below is for example how you would create an extension method for the built-in DataGrid control that takes two additional parameters. This method can then be called for any DataGrid provided that it has an
+<a href="http://msdn.microsoft.com/en-us/library/vstudio/ms173121.aspx" target="_blank">
+access modifier</a> that makes it visible to the client code that calls it.</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">DataGridExtensions</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">ExportUsingRefection(</code><code style="color:#006699;font-weight:bold;">this</code>
+<code style="color:#000000;">DataGrid grid, IExporter exporter, </code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">exportPath)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<h1><a name="IExporter"></a>IExporter</h1>
+<p>Besides the string argument that specifies the path where the export file will be saved on the disk, the ExportUsingReflection extension method above also takes a parameter of type
+<em>IExporter</em>. This is a custom interface for creating the rows and columns of the file:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">interface</code> <code style="color:#000000;">
+IExporter</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">void</code>
+<code style="color:#000000;">AddColumn(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">value);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">void</code>
+<code style="color:#000000;">AddLineBreak();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">Export(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">exportPath);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>By letting classes that implement this interface take care of the creation of the file, the application will be able to support additional export formats without requiring any changes to the implementation of the export method itself. This is actually a
+ sample implementation of the builder design pattern where the interface above acts as the builder, the
+<em>CsvExporter</em> class below as a concrete builder and where the export file becomes the final product.</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+CsvExporter : IExporter</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">readonly</code> <code style="color:#000000;">
+StringBuilder sb = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">StringBuilder();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">readonly</code> <code style="color:#006699;font-weight:bold;">
+string</code> <code style="color:#000000;">_delimiter;</code></span></span></div>
+<div style="background-color:#ffffff;"><or:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+CsvExporter : IExporter</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">readonly</code> <code style="color:#000000;">
+StringBuilder sb = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">StringBuilder();</code></span></span></div>
+<div styspan><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">CsvExporter(</code><code style="color:#006699;font-weight:bold;">char</code>
+<code style="color:#000000;">delimiter)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">_delimiter = delimiter.ToString();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">char</code> <code style="color:#000000;">
+Delimiter</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">get</code>
+<code style="color:#000000;">{ </code><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">_delimiter[0]; }</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+AddColumn(</code><code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+value)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sb.Append(value.Replace(_delimiter,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;\&quot;{0}\&quot;&quot;</code><code style="color:#000000;">,
+ _delimiter)));</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sb.Append(_delimiter);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+AddLineBreak()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sb.Remove(sb.Length - 1, 1);
+</code><code style="color:#008200;">//remove trailing delimiter</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sb.AppendLine();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+Export(</code><code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+exportPath)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.IsNullOrEmpty(exportPath))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Random rnd =
+</code><code stylcode><code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;"e="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Random();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exportPath =
+</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;{0}.csv&quot;</code><code style="color:#000000;">, rnd.Next());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">
+(!Path.GetExtension(exportPath).ToLower().Equals(</code><code style="color:blue;">&quot;.csv&quot;</code><code style="color:#000000;">))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+ArgumentException(</code><code style="color:blue;">&quot;Invalid file extension.&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;exportPath&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">File.WriteAllText(exportPath, sb.ToString().Trim());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sb.Clear();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">exportPath;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>If you are not familiar with design patterns, these provide solutions to common software design problems and are all about reusable design and interactions of objects.</p>
+<h1><a name="DataGrid"></a>DataGrid</h1>
+<p>Each row in a DataGrid control is bound to an object in the source collection and each column is bound to a property of an object in the same collection. By default, if you don’t set the AutoGenerateColumns property to false, the DataGrid control generates
+ columns automatically when you set the ItemsSource property.</p>
+<p>The DataGrid control has a Column property that contains all the columns in it. These must be of type
+<em>System.Windows.Controls.DataGridColumn</em> and there are five built-in derived types of this class;
+<em>DataGridCheckBoxColumn</em>, <em>DataGridHyperlinkColumn</em> and <em>DataGridTextColumn</em> which all derives from the
+<em>DataGridBoundColumn</em> base type that adds support for binding, <em>DataGridComboBoxColumn</em> and
+<em>DataGridTemplateColumn</em>. The type of column that is automatically generated when the AutoGenerateColumns is set to true depends on the type of the source property.
+</p>
+<p>Any <em>System.String</em> (string) property of the class that represents the objects in the ItemsSource collection will generate a
+<em>DataGridTextColumn</em>, a <em>System.Boolean</em> (bool) property will generate a
+<em>DataGridCheckBoxColumn</em>, a <em>System.Uri</em> property will generate a <em>
+DataGridHyperlinkColumn</em> and an enumeration type (<em>System.Enum</em>) property will generate a
+<em>DataGridComboBoxColumn</em>. </p>
+<p>The <em>DataGridTemplateColumn</em> is used when you want to define a custom column by specifying templates to be used when displaying and editing values.</p>
+<h1><a name="ICollectionView"></a>ICollectionView</h1>
+<p>Whenever you bind to some collection of data in WPF, you are always binding to an automatically generated view and not to the actual collection itself. A view is a class that implements the
+<em>System.ComponentModel.ICollectionView</em> interface and provides functionality to sort, filter, group and keeping track of the current item in a collection. All collections have a default view which is shared by all bindings to the collection.
+</p>
+<p>The default collection view for a source collection that implements the <em>System.Collections.IList</em> interface is the
+<em>System.Windows.Data.ListCollectionView</em> class. You can get the default view of a collection by using the static CollectionViewSource.GetDefaultView method and this comes in handy when you want to export sorted or grouped data from a DataGrid.</p>
+<h1><a name="Order_and_Sorting"></a>Order and Sorting</h1>
+<p>The user can sort columns in a DataGrid control by clicking the column header, provided that the CanUserSortColumns of the DataGrid is set to its default value of true. Also, the order of columns in the source collection doesn’t necessarily determine the
+ order in which they appear in the DataGrid. If the CanUserReorderColumns property of the DataGrid control is set to true, which it also is by default, the user can change the order by dragging column headers with the mouse. There is a DisplayOrder property
+ of the <em>DataGridColumn</em> class that determines the current position of the column in the grid, by which you can sort the columns before iterating them through in the export method:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">ExportUsingRefection(</code><code style="color:#006699;font-weight:bold;">this</code>
+<code style="color:#000000;">DataGrid grid, IExporter exporter, </code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">exportPath)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(grid.ItemsSource == </code><code style="color:#006699;font-weight:bold;">null</code>
+<code style="color:#000000;">|| grid.Items.Count.Equals(0))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+InvalidOperationException(</code><code style="color:blue;">&quot;You cannot export any data from an empty DataGrid.&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IEnumerable&lt;DataGridColumn&gt; columns = grid.Columns.OrderBy(c =&gt; c.DisplayIndex);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ICollectionView collectionView = CollectionViewSource.GetDefaultView(grid.ItemsSource);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">o </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">collectionView)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(o.Equals(CollectionView.NewItemPlaceholder))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">continue</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(DataGridColumn column </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">columns)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<divnbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">continue</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(DataGridColumn column </code><code style="color:#00 style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exporter.AddLineBreak();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Create and open export file */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Process.Start(exporter.Export(exportPath));</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<h1><a name="Reflection"></a>Reflection</h1>
+<p>To be able to retrieve and export the property values that are displayed in the columns of the DataGrid, you can use reflection. The System.Reflection namespace in C# provides functionality to dynamically create an instance of a type or get the type from
+ an existing object and invoke its methods or access its fields and properties. The latter is exactly what you want do in the above foreach loop. The
+<em>System.Reflection.PropertyInfo</em> class provides access to a property of a type. It has a GetValue method which returns the value of the property for a specified object. To get a
+<em>PropertyInfo</em> instance for a property with a specific name, you simply call the GetProperty (string) method of the type of the object.</p>
+<h1><a name="DataGridBoundColumn"></a>DataGridBoundColumn</h1>
+<p>Below is how you can retrieve and export the property values from any column that derives from the
+<em>DataGridBoundColumn</em> class. Note that you get the name of the bound source property from the Path property of the binding of the
+<em>DataGridBoundColumn</em>. Also note that the below code will export a string value of “-”, rather than an empty string, for a
+<em>DataGridCheckBoxColumn</em> that is bound to a nullable Boolean (null?) property with a value of NULL.</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(DataGridColumn column </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">columns)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(column </code><code style="color:#006699;font-weight:bold;">is</code>
+<code style="color:#000000;">DataGridBoundColumn)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">propertyValue = </code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Empty;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Get the property name from the column&#39;s binding */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">BindingBase bb = (column
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+DataGridBoundColumn).Binding;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(bb != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Binding binding = bb
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+Binding;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(binding != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">boundProe><span><code style="color:#000000;">Binding binding = bb
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+Binding;</code></span></span></div>
+<diperty = binding.Path.Path;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Get the property value using reflection */</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PropertyInfo pi = o.GetType().GetProperty(boundProperty);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(pi != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">value = pi.GetValue(o);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(value != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue = value.ToString();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">
+(column </code><code style="color:#006699;font-weight:bold;">is</code> <code style="color:#000000;">
+DataGridCheckBoxColumn)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue =
+</code><code style="color:blue;">&quot;-&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exporter.AddColumn(propertyValue);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<h1><a name="DataGridComboBoxColumn"></a>DataGridComboBoxColumn</h1>
+<p>The code to export the value that is shown in a <em>DataGridComboBoxColumn</em> looks a bit different. The SelectedValueBinding property of a
+<em>DataGridComboBoxColumn</em> is bound to a property of an object in the DataGrid, i.e. a
+<em>Product</em> object in this case, while the DisplayMemberPath property is used to tell which property value of the currently selected item in the source collection of the ComboBox that should be displayed. It is probably this value that you want to be included
+ in the export file. Note that in this particular example, the SelectedValueBinding property is bound to a property of type
+<em>Category</em> of the <em>Product</em> class. However, there is also a SelectedValuePath property of the
+<em>DataGridComboBoxColumn</em> that could be used to specify which property value of the
+<em>Category</em> object that should be set as the value for the source property of the SelectedValueBinding.</p>
+<p>For example, if the <em>Product</em> class had a CategoryId property of type <em>
+System.Int32</em> (int) rather than a property of <em>Category</em> type, the SelectedValueBinding property of the DataGridComboBoxColumn should be set to CategoryId and the SelectedValuePath property to Id:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridComboBoxColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Category&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Source={StaticResource categories}}&quot;</code>
+<code style="color:#808080;">SelectedValueBinding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding CategoryId}&quot;</code>
+<code style="color:#808080;">SelectedValuePath</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Id&quot;</code><code style="color:#000000;">/&gt;</code></span></div>
+</div>
+<p>The sample export method takes both these scenarios into consideration. If the ItemsSource property of the
+<em>DataGridComboBoxColumn</em> is NULL, which it will be if you set the ItemsSource of the ComboBox using bindings in the ElementStyle and EditingElementStyle styles of the
+<em>DataGridComboBoxColumn</em> rather than binding the ItemsSource of the actual
+<em>DataGridComboBoxColumn</em> to a resource, the value of the property specified by the SelectedValuePath is exported. Otherwise, it will try to export the value of the property of the
+<em>Category</em> class specified by the DisplayMemberPath:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">
+(column </code><code style="color:#006699;font-weight:bold;">is</code> <code style="color:#000000;">
+DataGridComboBoxColumn)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DataGridComboBoxColumn cmbColumn = column
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+DataGridComboBoxColumn;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">propertyValue = </code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Empty;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Get the property name from the column&#39;s binding */</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">BindingBase bb = cmbColumn.SelectedValueBinding;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(bb != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Binding binding = bb
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:#000000;">
+Binding;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(binding != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">boundProperty = binding.Path.Path; </code><code style="color:#008200;">//returns &quot;Category&quot; (or CategoryId)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Get the selected property */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PropertyInfo pi = o.GetType().GetProperty(boundProperty);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(pi != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">boundProperyValue = pi.GetValue(o); </code><code style="color:#008200;">//returns the selected Category object or CategoryId</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(boundProperyValue != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Type propertyType = boundProperyValue.GetType();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(propertyType.IsPrimitive || propertyType.Equals(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">)))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(cmbColumn.ItemsSource != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Find the Category object in the ItemsSource of the ComboBox with</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">* an Id (SelectedValuePath) equal to the selected CategoryId */</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IEnumerable&lt;</code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">&gt;
+ comboBoxSource = cmbColumn.ItemsSource.Cast&lt;</code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">&gt;();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">obj = (from oo </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">comboBoxSource</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">let prop = oo.GetType().GetProperty(cmbColumn.SelectedValuePath)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">where prop !=
+</code><code style="color:#006699;font-weight:bold;">null</code> <code style="color:#000000;">
+&amp;&amp; prop.GetValue(oo).Equals(boundProperyValue)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">select oo).FirstOrDefault();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(obj != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Get the Name (DisplayMemberPath) of the Category object */</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.IsNullOrEmpty(cmbColumn.DisplayMemberPath))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue = obj.GetType().ToString();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PropertyInfo displayNameProperty = obj.GetType()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.GetProperty(cmbColumn.DisplayMemberPath);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(displayNameProperty != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">displayName = displayNameProperty.GetValue(obj);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(displayName != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue = displayName.ToString();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Export the scalar property value of the selected object</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">* specified by the SelectedValuePath property of the DataGridComboBoxColumn */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue = boundProperyValue.ToString();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></d</code></span></span></div>
+<div style="baiv>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">
+(!</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.IsNullOrEmpty(cmbColumn.DisplayMemberPath))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Get the Name (DisplayMemberPath) property of the selected Category object */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PropertyInfo pi2 = boundProperyValue.GetType()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.GetProperty(cmbColumn.DisplayMemberPath);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(pi2 != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">displayName = pi2.GetValue(boundProperyValue);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(displayName != </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue = displayName.ToString();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">propertyValue = o.GetType().ToString();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div stsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exporter.AddColumn(propertyValue);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>As seen in the above code you can determine whether the type of the property specified by the SelectedValueBinding property is one of the primitive types by using the IsPrimitive property of the
+<em>System.Type</em> class. The primitive types in C# are <em>Boolean</em>, <em>Byte</em>,
+<em>SByte</em>, <em>Int16</em>, <em>UInt16</em>, <em>Int32</em>, <em>UInt32</em>,
+<em>Int64</em>, <em>UInt64</em>, <em>IntPtr</em>, <em>UIntPtr</em>, <em>Char</em>,
+<em>Double</em>, and <em>Single</em>.</p>
+<h1><a name="DataGridTemplateColumn"></a>DataGridTemplateColumn</h1>
+<p>When it comes to exporting data from a <em>DataGridTemplateColumn</em> or any other
+<em>DataGridColumn</em> with a custom CellTemplate, you can’t expect the export method to be able to figure out by itself what to write to the export file as the template may contain any FrameworkElement:
+</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridTemplateColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Custom template&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridTemplateColumn.CellTemplate</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataTemplate</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&lt;!-- Any FrameworkElement objects can be added here --&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Rectangle</code>
+<code style="color:#808080;">Fill</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Red&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataTemplate</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGridTemplateColumn.CellTemplate</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGridTemplateColumn</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>&nbsp;</p>
+<h1><a name="Attached_properties"></a>Attached properties</h1>
+<p>You could choose to simply ignore these types of columns in the export or let the XAML developer specify which value to export by setting a custom attached property of the
+<em>DataGridColumn</em>. An attached property in WPF is a special type of dependency property that allows you to define the property in one class and still be able to set and store the value of it in an instance of a completely different class. It is intended
+ to be used as a type of global property that is settable on any object of the same type that you specify when you create the dependency property using the System.Windows.DependencyProperty.RegisterAttached method:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+ExportBehaviour</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+readonly</code> <code style="color:#000000;">DependencyProperty ExportStringProperty =</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DependencyProperty.RegisterAttached(</code><code style="color:blue;">&quot;ExportString&quot;</code><code style="color:#000000;">,
+</code><code style="color:#008200;">//name of attached property</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">),
+</code><code style="color:#008200;">//type of attached property</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(ExportBehaviour),
+</code><code style="color:#008200;">//type of this owner class</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">PropertyMetadata(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Empty));
+</code><code style="color:#008200;">//the default value of the attached property</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+string</code> <code style="color:#000000;">GetExportString(DataGridColumn column)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">)column.GetValue(ExportStringProperty);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">SetExportString(DataGridColumn column, </code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+value)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">column.SetValue(ExportStringProperty, value);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>Setting the value of the custom attached property in XAML is straight forward as shown below. Just remember to import the namespace where the custom class lives.</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;dataGrid&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Products}&quot;</code>
+<code style="color:#808080;">AutoGenerateColumns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;False&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:local</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;clr-namespace:Mm.ExportableDataGrid&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGridTemplateColumn</code>
+<code style="color:#808080;">Header</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Custom template&quot;</code>
+<code style="color:#808080;">local:ExportBehaviour.ExportString</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;string...&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGridTemplateColumn</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>In the extension method you then probably want to check if the column has the attached property set before trying to export the content of it based on its type, assuming that you want the value of the attached property to take precedence over any other binding
+ value:</p>
+<h1><a name="Dispatcher"></a>Dispatcher</h1>
+<p>You might also want to perform the execution of the export method on a background thread to be able to maintain a responsive user interface. This will require you to use the
+<em>System.Windows.Threading.Dispatcher</em> class when accessing some of the properties as trying to access any user interface (UI) object on another thread than on which it was created will cause a runtime exception to be thrown:</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">DataGridExtensions</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">ExportUsingRefection(</code><code style="color:#006699;font-weight:bold;">this</code>
+<code style="color:#000000;">DataGrid grid, IExporter exporter, </code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">exportPath)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">/* Execute the private DoExportUsingRefection method on a background thread by starting a new task */</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Task.Factory.StartNew(() =&gt; { DoExportUsingRefection(grid, exporter, exportPath); });</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">DoExportUsingRefection(</code><code style="color:#006699;font-weight:bold;">this</code>
+<code style="color:#000000;">DataGrid grid, IExporter exporter, </code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">exportPath)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">checkAccess = grid.Dispatcher.CheckAccess();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ICollectionView collectionView =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IList&lt;DataGridColumn&gt; columns =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(checkAccess)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">columns = grid.Columns.OrderBy(c =&gt; c.DisplayIndex).ToList();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">collectionView = CollectionViewSource.GetDefaultView(grid.ItemsSource);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">grid.Dispatcher.Invoke(() =&gt; { columns = grid.Columns.OrderBy(c =&gt; c.DisplayIndex).ToList(); });</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">grid.Dispatcher.Invoke(() =&gt; { collectionView = CollectionViewSource.GetDefaultView(grid.ItemsSource); });</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">o </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">collectionView)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(DataGridColumn column </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">columns)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">exportString = </code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Empty;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(checkAccess)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exportString = ExportBehaviour.GetExportString(column);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">grid.Dispatcher.Invoke(() =&gt; { exportString = ExportBehaviour.GetExportString(column); });</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(!</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.IsNullOrEmpty(exportString))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">
+(column </code><code style="color:#006699;font-weight:bold;">is</code> <code style="color:#000000;">
+DataGridBoundColumn)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code>
+<code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">
+(column </code><code style="color:#006699;font-weight:bold;">is</code> <code style="color:#000000;">
+DataGridComboBoxColumn)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">displayMemberPath = </code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Empty;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(checkAccess)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">displayMemberPath = cmbColumn.DisplayMemberPath;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&n>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(checkAccess)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">displayMemberPath = cmbColumn.DisplayMemberPath;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="babsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">grid.Dispatcher.Invoke(() =&gt; { displayMemberPath = cmbColumn.DisplayMemberPath; });</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>Just like most other classes in WPF, the DataGrid derives, through other classes, from the
+<em>System.Windows.Threading.DispatcherObject</em> class. This class has a Dispatcher property that gets the Dispatcher that the object is tied to and it also provides two methods to check and verify that the current thread has access to the control. The difference
+ between the CheckAccess and VerifyAccess methods is that the former returns a Boolean value to indicate whether the current thread can access the object while the latter throws an exception if the executing thread doesn’t have access to the object.</p>
+<p>The <em>Dispatcher</em> class is used to send worker items to the UI thread (or dispatcher thread) for processing. Since the UI thread will be blocked during the time it takes for these actions to be executed, you should always try to keep the work that
+ the Dispatcher does small and quick in order for your application to be able to quickly respond to UI events such as mouse clicks and key presses at any time.</p>
+<h1><a name="ContextMenu"></a>ContextMenu</h1>
+<p>If you want to provide the users of your application a convenient way to export the data through the extension method, you could implement a custom control that derives from the DataGrid control and adds an option to its context menu. If the custom control
+ is part of some control library that may be used in a lot of different projects and application modules, you should keep in mind that the ItemsSource property of the ContextMenu of the DataGrid in some cases may be bound to some source collection. If it is
+ not, you can simply add a <em>System.Windows.Controls.MenuItem</em> object to the Items collection of the
+<em>System.Windows.Controls.ContextMenu</em>. Otherwise, you can use a <em>System.Windows.Data.CompositeCollection</em>. A
+<em>CompositeCollection</em> can contain both items of different types as well as other collections.</p>
+<p>Below is an example of a custom DataGrid control that adds an export <em>MenuItem</em> object to its context menu. If the context menu has been bound to some collection by a client side developer, this collection is set as the value for the Collection property
+ of a <em>System.Windows.Data.CollectionContainer</em> which is then added to a <em>
+CompositeCollection</em>. A <em>System.Windows.Controls.Separator</em> and a <em>
+MenuItem</em> is also added to the <em>CompositeCollection</em> through another <em>
+CollectionContainer</em> before the <em>CompositeCollection</em> object is set as the new ItemsSource of the
+<em>ContextMenu</em>. Note that the command associated with the added <em>MenuItem</em> object calls the extension method.</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+ExportableDataGrid : DataGrid</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">readonly</code> <code style="color:#000000;">
+IExporter _exporter = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">CsvExporter(</code><code style="color:blue;">&#39;;&#39;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">readonly</code> <code style="style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+ExportableDataGrid : DataGrid</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">readonly</code> <code style="color:#000000;">
+IExporter _exporter = </code><code stylcolor:#000000;">
+ICommand _exportCommand = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">RoutedCommand();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">ExportableDataGrid()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">:
+</code><code style="color:#006699;font-weight:bold;">base</code><code style="color:#000000;">()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.CommandBindings.Add(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">CommandBinding(_exportCommand, ExecutedExportCommand,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">CanExecuteExportCommand));</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Loaded &#43;= ExportableDataGrid_Loaded;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+ExecutedExportCommand(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">sender, ExecutedRoutedEventArgs e)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ExportUsingRefection(_exporter,
+</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Empty);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+CanExecuteExportCommand(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">sender, CanExecuteRoutedEventArgs e)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">e.CanExecute =
+</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.Items.Count &gt; 0;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+ExportableDataGrid_Loaded(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">sender, RoutedEventArgs e)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu ==
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+ContextMenu();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.Loaded &#43;= ContextMenu_Loaded;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+ContextMenu_Loaded(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">sender, RoutedEventArgs e)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MenuItem mi =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+MenuItem();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">mi.Header =
+</code><code style="color:blue;">&quot;Export to CSV&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">mi.Command = _exportCommand;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.ItemsSource !=
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">CompositeCollection cc =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+CompositeCollection();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">CollectionContainer boundCollection =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+CollectionContainer();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">boundCollection.Collection =
+</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.ItemsSource;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">cc.Add(boundCollection);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">CollectionContainer exportCollection =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+CollectionContainer();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">List&lt;Control&gt; exportMenuItems =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+List&lt;Control&gt;(2);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exportMenuItems.Add(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Separator());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsple="color:#000000;">CollectionContainer exp;</code><span><code style="color:#000000;">exportMenuItems.Add(mi);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">exportCollection.Collection = exportMenuItems;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">cc.Add(exportCollection);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.ItemsSource = cc;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">else</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.HasItems)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.Items.Add(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Separator());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.Items.Add(mi);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.ContextMenu.Loaded -= ContextMenu_Loaded;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>&nbsp;</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Window</code>
+<code style="color:#808080;">x:Class</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Mm.ExportableDataGrid.Wpf.MainWindow&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml/presentation">http://schemas.microsoft.com/winfx/2006/xaml/presentation</a>&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:x</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml">http://schemas.microsoft.com/winfx/2006/xaml</a>&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:local</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;clr-namespace:Mm.ExportableDataGrid&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">Title</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MainWindow&quot;</code>
+<code style="color:#808080;">Height</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;350&quot;</code>
+<code style="color:#808080;">Width</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;525&quot;</code><code style="c00000;">=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/winfx/2006/xaml">http://schemas.microsoft.com/winfx/2006/xaml</a>&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">xmlns:local</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;clr-namespace:Mm.ExportableDataGrid&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">Title</code><code style="color:#000000;">=</olor:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DockPanel</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Button</code>
+<code style="color:#808080;">Content</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Export data&quot;</code>
+<code style="color:#808080;">Click</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Export_Click&quot;</code>
+<code style="color:#808080;">DockPanel.Dock</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Bottom&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">local:ExportableDataGrid</code>
+<code style="color:#808080;">x:Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;dataGrid&quot;</code>
+<code style="color:#808080;">ItemsSource</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;{Binding Products}&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">AutoGenerateColumns</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;False&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataGrid.Columns</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">local:ExportableDataGrid</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DockPanel</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Window</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p><img alt=" " src="http://magnusmontin.files.wordpress.com/2013/09/exportwindow.png" style="margin:0px auto;border:0px currentcolor;display:block;" /></p>
+
+</div>
+    
+    

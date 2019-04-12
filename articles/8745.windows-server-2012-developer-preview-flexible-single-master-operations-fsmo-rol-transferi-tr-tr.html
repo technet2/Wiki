@@ -1,0 +1,79 @@
+---
+layout: default
+title: Windows Server 2012 Developer Preview Flexible Single Master Operations (FSMO) Rol Transferi (tr-TR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Merhaba.Yeni bir Windows Server 8 Active Directory makalesi ile birlikteyiz.Bir önceki makalemizde detaylı olarak incelemiş olduğumuz Operations Master rollerinin, bu bölümde başka bir Domain Controller sunucusu üzerine taşınma işlemlerini anlatacağız.</p>
+<p>Belirli durumlarda Operations Master rollerinin ilk sahiplerini değiştirmek gerekebilir.Bu işlemi, tavsiyelere uymak için yapabileceğimiz gibi, bazen de bir master rolüne sahip olan bilgisayar çöktüğü için zorunlu olarak yaparız.Örneğin, çok domain’li bir
+ forest içerisinde çalışıyorsak, forest root domain’deki ilk Domain Controller üzerinde hem Global Catalog hem de Infrastructure master rolü mevcut durumdadır.Ancak daha önceden söylediğimiz gibi bu iki rolün aynı makinada olması durumunda Infrastructure master
+ yapması gereken nesnelerin domainler arasındaki çeşitli bilgilerinin güncelleme işlemini gerçekleştiremez.Dolayısı ile rolün forest root domain’e kurulan bir diğer Domain Controller’a verilmesi gereklidir.</p>
+<p>Aslında yukarıda bahsettiğimiz bir iyi hal senaryosudur.Her iki Domain Controller’da rol transferinden haberdar.Bir de muhtemelen karşılaşmaktan pek de haz almayacağımız başka bir durum ise, operations master’lardan birisinin bir sorun sebebi ile ortamda
+ olmaması konusudur.Böyle bir durumda ise rollerin eski sahiplerinin doğal olarak haberi olmadan bir başka Domain Controller’a aktarılması gerekecektir.</p>
+<p>Öncelikle iyi hal senaryosundan biraz bahsetmeye çalışalım.Operations master olan Domain Controller’ımız online/açık, yani herhangi bir sorunu olmadan çalışıyor olsun.Fakat biraz sonra bahsedeceğimiz nedenlerden dolayı rollerden birisinin bir başka Domain
+ Controller’a alınması durumu söz konusu oldu.Bu işleme rolü, başka bir sunucuya transfer etmek denir.Yapmamız gereken ilk iş, hangi rol için işlem yapılacaksa aşağıda yer alan ilgili Active Directory yönetim konsolunu açmaktır.</p>
+<p><strong>Schema Master :</strong> Active Directory Schema konsolu</p>
+<p><strong>Domain Naming Master:</strong> Active Directory Domains and Trusts konsolu</p>
+<p><strong>PDC Emulator:</strong> Active Directory Users and Computers konsolu</p>
+<p><strong>RID Master:</strong> Active Directory Users and Computers konsolu</p>
+<p><strong>Infrastructure Master:</strong> Active Directory Users and Computers konsolu</p>
+<p><strong></strong></p>
+<p><strong>Windows Server 8 FSMO Rol Transfer İşlemi</strong></p>
+<p>1)İlk olarak <strong>Netdom</strong> komutu ile Operation Masters rollerinin hangi sunucu üzerinde olduğunu kontrol edelim.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/1.jpg" width="640" height="225" /></p>
+<p>2)Görüldüğü üzere bütün roller Forest Root Domain Controller (W8-DC) üzerindedir.Elbetteki bir diğer önemli nokta da, eğer rol Root Domain Controller’dan Additional Domain Controller’a (W8-ADC) transfer edilecekse, bu işlemi Additional Domain Controller
+ üzerinde yapma gerekliliğinin bulunmasıdır.bir diğer method olarak, Root Domain Controller üzerinden, Additional Domain Controller’a bağlanarak da bu işlem gerçekleştirilebilir.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/2.jpg" width="640" height="368" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/3.jpg" width="636" height="435" /></p>
+<p>3)PDC Emulator, RID Master ve Infrastructure Master rollerini Additional Domain Controller’a transfer ederken Active Directory Users and Computers konsolunda
+<strong>Operation Masters</strong> tabını açtığımızda rolün şimdiki sahibi olarak Root Domain Controller gözükür.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/4.jpg" width="627" height="480" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/5.jpg" width="410" height="460" /></p>
+<p>4)<strong>Change</strong> diyerek rolün artık W8-ADC.smakbuloglu.com isimli Addtional Domain Controller’a transfer edilmesini sağlarız. Active Directory’e yeni operations master’ın kim olduğu bilgisi işlenir. Artık yeni bir PDC Emulator’ımız var.Bu madde
+ de yer alan işlemleri tekrarlayarak, RID Master ve Infrastructure Master rollerini diğer Domain Controller’a transfer edebiliriz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/6.jpg" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/7.jpg" width="408" height="168" /></p>
+<p>5)Sıra geldi, Domain Naming Master rolünü transfer etmeye.<strong>Active Directory Domains and Trust</strong> konsolunu açarak,
+<strong>Change</strong> <strong>Active Directory Domain Controller</strong> seçeneği ile rolün aktarılacağı Domain Controller sunucusuna bağlanıyoruz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/8.jpg" width="640" height="202" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/9.jpg" width="636" height="434" /></p>
+<p>6)İlgili sunucuya bağlandıktan sonra, aynı konsol üzerinden <strong>Operations Master</strong> tabına geliyoruz.<strong>Change</strong> ile online rol transfer işlemini yapıyoruz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/10.jpg" width="390" height="279" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/11.jpg" width="455" height="168" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/12.jpg" width="385" height="167" /></p>
+<p>7)Son olarak, Active Directory Schema konsolu üzerinden Schema Master rolünü taşıyacağız.Öncesinde her zaman ki gibi, Additional Domain Controller’a bağlanıyoruz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/13.jpg" width="640" height="255" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/14.jpg" width="635" height="433" /></p>
+<p>8)Active Directory Schema konsolunda, <strong>Operations Master</strong> rolünün kimde olduğuna bakıyoruz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/15.jpg" width="640" height="313" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/16.jpg" width="359" height="267" /></p>
+<p>9)<strong>Change</strong> butonuna basarak, gerekli değişkliği yapıyoruz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/17.jpg" width="415" height="167" /></p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/18.jpg" width="340" height="166" /></p>
+<p>10)Operations Master rollerimizin son durumu aşağıdaki gibidir.<strong>Netdom </strong>
+komutu ile bu doğrulamayı yapabiliriz.</p>
+<p><img alt=" " src="http://www.serhadmakbuloglu.com/makale/w8/fsmo-transfer/19.jpg" width="640" height="222" /></p>
+<p>&nbsp;</p>
+<p>Bizim yapmış olduğumuz şu ana kadar ki işlemler, Transfer’dir.rolün hem eski sahibi hem de taşıyacağımız Domain Controller sunucuları online durumdadır.Her iki Domain Controller’ın da online olduğu durumlarda data kaybı riskimiz yoktur. Ancak işler operations
+ master olan Domain Controller çalışmıyorsa biraz daha değişir.Doğal olarak eski operations master rolüne sahip olan bilgisayar rolün kendisinden alındığını bilmiyor.Operations master’ın çalışmadığı durumlarda FSMO rolünün aktarılması işlemini grafiksel arayüzden
+ yapamıyoruz.Seize ismi verilen bu işlemi başka bir makalede ayrıca inceleyip, anlatacağız.</p>
+<p><strong>Active Directory FSMO yerleşimi için genel tavsiyeler</strong>:</p>
+<ul>
+<li>FSMO rollerini mümkün olduğu kadar az sayıdaki makinaya verdiğimizde yönetimini kolaylaştırmış oluruz.
+</li><li>RID Master ve PDC Emulator rolleri aynı makinada olsun.Eğer RID ve PDC birbirlerinden ayrılacak ise bu durumda iki makinanın aynı site içinde olmasına ve direk replikasyon partneri olmasına dikkat etmek gerekir.
+</li><li>Infrastrucutre Master ile Global Catalog ayrı Domain Controller’larde bulunsun. Infrastrucutre Master rolüne sahip Domain Controller’ın Global Catalog ile aynı site içerisinde yer alması da tavsiye edilir.Infrastructure Master aynı domain içinde nesne referanslarını
+ her Domain Controller’a replike edilmesinden sorumlu olduğu için sürekli olarak Global Catalog’a sorgu atarak bilgileri alır ve kendi veritabanını güncelleyip Domain Controller’lara gönderir. Elbetteki Global Catalog ile aynı makinada ise güncellenecek bilgi
+ olmadığından o domaindeki çapraz-domain nesne referansları güncellenemez. </li><li>Domain Naming Master ile Schema master aynı Domain Controller üzerinde olsun. Her ikiside çok sıklıkla kullanılmadığından ve forest-wide bazı işleri yönettiklerinden sıkı bir şekilde yönetilmeleri gerekir.Domain Naming Master rolünün aynı zamanda Global
+ Catalog olan bir Domain Controller’da olması gerekliliğini de gözardı etmemek lazım.
+</li></ul>
+<p>&nbsp;</p>
+<p>Windows Server 8 ile ilgili bir makalemizi daha tamamlamış olduk.Bir önceki makalede, detaylı olarak inclemiş olduğumuz Operations Master rollerinin, bu bölümde transfer işlemini gerçekleştirdik.Bir başka Windows Server 8 Active Directory makalesinde görüşmek
+ üzere.<br />
+<br />
+<a href="http://www.serhadmakbuloglu.com/" target="_blank">Serhad MAKBULOGLU</a></p>
+
+</div>
+    
+    

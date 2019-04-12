@@ -1,0 +1,135 @@
+---
+layout: default
+title: Read Only Domain Controller (RODC)&#58; Installation and Configuration - Part1 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"></span></p>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"></span></p>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">RODC, a great new feature of windows server 2008, is mainly used for branch location, a location where less number of user and security and where there is no specific IT
+ staff for managing the domain. RODC is domain controller which has a read only directory database which can never talk back to R-W domain controller. It only gets update from R/W domain controller. In RODC only password are omitted for security reason and
+ updates are only replication from server 2008. RODC verified the credentials, not forward and also by default admin account of domain is not cached at RODC for security reason. We can delegate the administrator role to any user at RODC to manage. Admin user
+ can install updates, drivers and perform admin tasks.</span></p>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">To Install and con</span><span style="font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"><span style="line-height:115%;">figure RODC in domain, we need to check&nbsp;</span><span style="line-height:18px;">below</span><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:12pt;">&nbsp;prerequisites&nbsp;</span></span></p>
+<ul>
+<li>
+<p><span style="font-size:16px;"><span style="line-height:115%;text-indent:-0.25in;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;text-indent:-0.25in;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">PDC emulator operation master should be on Windows server 2008</span>
+</span></p>
+</li><li><span style="font-size:16px;"><span style="line-height:115%;text-indent:-0.25in;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;text-indent:-0.25in;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">Domain Functional Level\Forest Functional Level should be set as Windows Server 2008 or Windows Server 2003.</span>
+</span></li><li><span style="font-size:16px;"><span style="line-height:115%;text-indent:-0.25in;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;text-indent:-0.25in;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">If there is windows server 2003 environment, we need to prepare the domain for RODC installation by “ADPREP\RODCPREP”</span>
+</span></li><li><span style="font-size:16px;"><span style="line-height:115%;text-indent:-0.25in;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;text-indent:-0.25in;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">There should be only one RODC per site</span>
+</span></li><li><span style="font-size:16px;"><span style="line-height:115%;text-indent:-0.25in;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;text-indent:-0.25in;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">If the user outlook is the RODC site , make RODC a global catalog</span>
+</span></li></ul>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">So let’s begin our tutorial how to install and configures RODC in a domain. In our lab we have only one read write domain controller, and we are going to configure a new
+ RODC in this lab. In this first part of article I will show you how to install the RODC at domain. In the next series we will see the configuration and benefit features of RODC.</span></p>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Domain Name- test.lab</span></p>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">Read Write Active Directory – AD.test.lab, 192.168.1.1<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/03878.1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/03878.1.png" style="border-width:0px;border-style:solid;" /></a><br />
+</span></p>
+<p><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">In above pic, we have a one domain controller with FQDN as AD.test.lab. with an IP address as
+<strong>192.168.1.1</strong>. So we are going to create a new RODC in this lab and we used the IP address as
+<strong>192.168.1.3</strong>. We installed a new server 2008 with FQDN as RODC.test.lab with a configured IP address
+<strong>192.168.1.3</strong>. To install RODC, we run “dcpromo” with advantage switch at the server
+<strong>192.168.1.3</strong>.</span></p>
+<p style="text-indent:-0.25in;margin-left:1.5in;"><span style="font-size:16px;"><span style="line-height:115%;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">Run dcpromo and check the box “Use Advanced Mode Installation” and click Next.<br />
+<br />
+</span></span></p>
+<div style="text-align:center;"><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4130.2.png" style="line-height:115%;text-indent:-0.25in;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4130.2.png" style="border-width:0px;border-style:solid;" /></a></span></div>
+<span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"></span>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="line-height:115%;font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;
+</span></span><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;">Now we have operating system compatibility console window. Read fully and click Next.<br />
+<br />
+</span></span></p>
+<div style="text-align:justify;"><span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/45476.3.png" style="line-height:115%;text-indent:-0.25in;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/45476.3.png" style="border-width:0px;border-style:solid;" /></a></span></div>
+<span style="line-height:115%;font-family:&#39;Times New Roman&#39;,serif;font-size:16px;"></span>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Since we have already a domain controller in our lab, we choose existing forest and tick the check box “add a domain controller to an existing domain” in choose e deployment configuration window. Click next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4810.4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4810.4.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Enter the domain name and set the credentials to use to perform the installation. In this example we choose alternate credentials to perform the installation. This is because to show the account role separation between read write domain controller
+ and RODC. You can choose any option.&nbsp; <br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3056.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3056.5.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Since we have only one domain, it shows only one. If there are multiple domains then we have to choose accordingly.&nbsp; Click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4628.6.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4628.6.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Select a site where you want to install RODC, and click next.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5040.7.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5040.7.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Check read only domain controller box also and click Next.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7506.8.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7506.8.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Now we have Password replication Wizard policy box.&nbsp; In this wizard we can specify whose passwords are allowed to replicate to the RODC or whose accounts are denied from replicating to RODC. By default Admin, Server operator, backup operators,
+ account operators have set to deny access.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3678.9.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3678.9.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>If you want to add a account, click Add. Once we click Add we have two option, allow or deny, we are going to check Allow password to replicate\<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.10.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.10.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>We have added the account rodc-admin and set the allow permission<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4442.11.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4442.11.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Enter the group or user for Delegation of RODC installation and administration. The user or group which we enter will get local admin rights on RODC server. In this example we enter the user account “user01”. Click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8054.12.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8054.12.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><span style="font-size:16px;">&nbsp;</span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Now we have install from media wizard window and choose the option depending on whether you want to replication domain data over the network from an existing domain controller or you want to replicate data from some backup media. In this example
+ we choose replicate data over the network<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/86446.13.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/86446.13.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Select a source domain controller for installation partner<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5773.14.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5773.14.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</s-files/00-00-00-00-05/86446.13.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="fonspan></span>Enter the location of database and log file folder<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5315.15.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5315.15.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Enter the password for DCRM (Directory Service Restore Mode)<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0068.16.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0068.16.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Review your setting and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6406.17.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6406.17.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>This will start the installation of RODC server at the domain.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7633.18.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7633.18.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p style="text-indent:-0.25in;margin-left:1in;"><span style="font-size:16px;"><span style="font-family:Symbol;font-size:16px;">®<span style="font-family:&#39;Times New Roman&#39;;font-size:16px;">&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Click Finish to complete the install. You must restart the server.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3302.19.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3302.19.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><span style="font-size:16px;">This completes the installation of RODC at our domain. Once the server has been restart, we will see newly created RODC server entry in Domain controller.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4540.20.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4540.20.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><span style="font-size:16px;">So our new RODC server is&nbsp;available&nbsp;now and since RODC is having read-only database, once logged in server we don&#39;t have option like new user creation or anything like in read-write domain controller<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0513.21.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0513.21.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><span style="font-size:16px;">So in this first part of article we know how to install RODC server in domain. In the next series of rodc article we will see how to configure and use the feature of RODC.</span></p>
+<span style="font-size:16px;"><br />
+</span><span style="font-size:16px;"></span>
+
+</div>
+    
+    

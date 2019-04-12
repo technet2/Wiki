@@ -1,0 +1,291 @@
+---
+layout: default
+title: Potential Side-Effects of Improved Spatial Precision in SQL Server 2012 and the SQL Azure September (Q2) 2011 Service Release - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p style="margin:0in 0in 10pt;"><b><span style="line-height:115%;font-family:calibri;font-size:12pt;">SQL Server Technical Note</span></b></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><b>Writer:</b> Ed Katibah (Microsoft)<b></b></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><b>Technical Reviewers:</b> Michael Kallay (Microsoft), Milan Stojic (Microsoft) and Michael Rys (Microsoft)<b></b></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><b>Published:</b> November 2011<b></b></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><b>Applies to:</b> SQL Server Code-Named &ldquo;Denali&rdquo;, SQL Server 2012, SQL Azure</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:16px;"><strong><span style="color:#365f91;font-family:cambria;"><span class="Heading1Char" style="line-height:115%;font-size:14pt;"><br />
+Introduction</span><br />
+</span></strong><span style="font-family:calibri;font-size:12px;"> In Microsoft SQL Server 2012 (previously known as SQL Server Code-Name &ldquo;Denali&rdquo;), all constructions and relations are now done with 48 bits of precision, compared to 27 bits used in SQL&nbsp;Server 2008 and SQL Server 2008 R2. This can result in differences that range from how individual coordinates (vertices) in spatial objects appear (rounding) to how computational results are produced in different versions of the database server for certain spatial operations.</span></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Recently, SQL Azure has been upgraded in all data centers to incorporate the new SQL Server 2012 spatial library. This upgrade, known as the September 2011 Service Release, thus enables spatial operations in SQL Azure to be the computationally identical with SQL Server 2012.&nbsp; </span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Because of this new feature, results from spatial operations in SQL Azure September Refresh and SQL Server 2012 can differ from results produced in their respective prior versions. For most if not all cases, these changes will not be noticed and will not materially affect output results. There are, however, potential cases where this might matter.&nbsp; </span></p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Coordinate_Rounding"></a><span style="color:#365f91;font-family:cambria;font-size:24px;">Coordinate Rounding</span></h1>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">One side-effect of the precision change is that rounding of floating point coordinates for original vertices (points) not used in internal computation is minimized, in many cases not occurring at all. For example, consider the following vertex coordinates, which were processed using the STUnion() method in SQL Server 2008 but which were not involved in computation of the resulting geometry.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;text-decoration:underline;"><span style="text-decoration:underline;">Vertex Coordinates</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vertex Coordinates After Computation</span></p>
+<p style="margin:0in 0in 10pt;"> <span style="font-family:calibri;">82.33902<span style="color:red;">6</span> 29.66124<span style="color:red;">5</span>&nbsp; <img alt=" " width="34" height="11" style="border-width:0px;border-style:solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/20x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8032.Right-Arrow.png" />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;82.33902<span style="color:red;">5999885052</span> 29.66214<span style="color:red;">4999951124</span></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">In SQL Server 2012, the greater numerical precision assists in the preservation of original coordinates of input vertices,&nbsp;in most cases. Here is the result of the same STUnion() method in SQL Server 2012.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;text-decoration:underline;"><span style="text-decoration:underline;">Vertex Coordinates</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vertex Coordinates After Computation</span></p>
+<p style="margin:0in 0in 10pt;"> <span style="font-family:calibri;">82.33902<span style="color:red;">6</span> 29.66124<span style="color:red;">5&nbsp; <img alt=" " width="34" height="11" style="border-width:0px;border-style:solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/20x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8032.Right-Arrow.png" /></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;82.33902<span style="color:red;">6</span> 29.66214<span style="color:red;">5</span></span></p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Measurement_Values"></a><span style="color:#365f91;font-family:cambria;font-size:24px;">Measurement Values </span></h1>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Length and area measurement value can vary between server versions. In the first case, length measurements for a series of highway routes in the United States, ranging from short to long, are illustrated. The results are shown in Table 1.</span></p>
+<table width="583" style="border:currentcolor;width:583px;height:125px;border-collapse:collapse;" border="1" cellspacing="0" cellpadding="0">
+    <tbody>
+        <tr>
+            <td valign="top" style="background:gray;padding:0in 5.4pt;border:1pt solid windowtext;width:72.9pt;">
+            <p><b><span style="color:white;font-family:calibri;">Route&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;">
+            <p><b><span style="color:white;font-family:calibri;">SQL Server 2008 R2</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;">
+            <p><b><span style="color:white;font-family:calibri;">SQL Server 2012</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-widthh:72.9pt;">
+            <p><b><span style="color:white;font-family:calibri;">Route&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:67.5pt;">
+            <p><b><span style="color:white;font-family:calibri;">Difference</span></b></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:72.9pt;">
+            <p><b><span style="color:white;font-family:calibri;">&nbsp;</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;">
+            <p><span style="color:white;font-family:calibri;">Length in&nbsp; Meters</span></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;">
+            <p><span style="color:white;font-family:calibri;">Length in Meters</span></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:67.5pt;">
+            <p><span style="color:white;font-family:calibri;">Meters</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:72.9pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;font-size:9pt;">&ldquo;short segment&rdquo; </span></p>
+            </td>
+            <td valign="bottom" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">19.1505724768993</span></p>
+            </td>
+            <td valign="bottom" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">19.1505724768993</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:67.5pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">0</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:72.9pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">I-5</span></p>
+            </td>
+            <td valign="bottom" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">2234410.6503514800000</span></p>
+            </td>
+            <td valign="bottom" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">2234410.6503514700000</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:67.5pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">0.00000001</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:72.9pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">I-80</span></p>
+            </td>
+            <td valign="bottom" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">4688453.0050976100000</span></p>
+            </td>
+            <td valign="bottom" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.75in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">4688453.0050976100000</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:67.5pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">0</span></p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p> </p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Table 1. Length measurements for several routes (lines) illustrating differences between server versions, using the STLength() method.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">In the next case, area measurements for U.S. states, ranging from small to large, are illustrated. The results are shown in Table 2.</span></p>
+<table width="585" style="border:currentcolor;width:585px;height:167px;border-collapse:collapse;" border="1" cellspacing="0" cellpadding="0">
+    <tbody>
+        <tr>
+            <td valign="top" style="background:gray;padding:0in 5.4pt;border:1pt solid windowtext;width:68.95pt;">
+            <p><b><span style="color:white;font-family:calibri;">State&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;">
+            <p><b><span style="color:white;font-family:calibri;">SQL Server 2008 R2</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;">
+            <p><b><span style="color:white;font-family:calibri;">SQL Server 2012</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;">
+            <p><b><span style="color:white;font-family:calibri;">Difference</span></b></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:68.95pt;">
+            <p><b><span style="color:white;font-family:calibri;">&nbsp;</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;">
+            <p><span style="color:white;font-family:calibri;">Area in Sq. Meters</span></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;">
+            <p><span style="color:white;font-family:calibri;">Area in Sq. Meters</span></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;">
+            <p><span style="color:white;font-family:calibri;">Sq. Meters</span></p>
+            </td>
+   font-family:calibri;">&nbsp;</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;bo     </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:68.95pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">Rhode Island</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">2838236251.32462</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">2838236251.32471 </span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">-0.000009</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:68.95pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">Hawaii</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">16721561359.33610</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">16721561359.33500 </span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">0.0011</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:68.95pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">Oregon</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">251007880441.41700</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">251007880441.41700 </span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">0</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:68.95pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">California</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">409601712151.16800</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">409601712151.17100 </span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">-0.003</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:68.95pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">Alaska</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:116.45pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">1509048854853.74000</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:117pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">1509048854853.82000 </span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:63pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">-0.08</span></p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"> Table 2. Area measurements for U.S. states (polygons) illustrating differences between server versions, using the STArea() method.<br />
+</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Spatial_Productions"></a><span style="color:#4f81bd;font-family:cambria;font-size:18px;">Spatial Productions</span></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Certain spatial productions, such as unions, can produce new spatial objects that may differ between the server versions in discussion here. If you compare such objects with a discrete measure, such as the number of points (vertices) that the object contains, you can see that their measurements can vary depending on the server ve:0in 5.4pt;width:63pt;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">-0.08</span></p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"> Table 2. Area measurements for U.S. states (polygons) illustrating differences between server versions, using the STArea() method.<br />
+</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Spatial_Productions"></a><span style="color:#4f81bd;font-family:cambria;font-size:18prsion. For instance, consider the following Transact-SQL query.</span></p>
+<p><span style="color:#333333;font-family:courier new;font-size:10pt;">DECLARE @g1 GEOGRAPHY = (SELECT GEOG FROM States WHERE NAME = &#39;California&#39;);<br />
+</span><span style="color:#333333;font-family:courier new;font-size:10pt;">DECLARE @g2 GEOGRAPHY = (SELECT GEOG FROM States WHERE NAME = &#39;Oregon&#39;);<br />
+</span><span style="color:#333333;font-family:courier new;font-size:10pt;">SELECT </span><span style="color:red;font-family:courier new;font-size:10pt;">@g1.STUnion(@g2).STNumPoints()</span><span style="color:#333333;font-family:courier new;font-size:10pt;">;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">This produces a new spatial object, which is the geometric union of the States of California and Oregon spatial objects.</span></p>
+<p style="margin:0in 0in 10pt;"><span>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0216.CA-OR-Union.png"><img alt=" " style="border-width:0px;border-style:solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0216.CA-OR-Union.png" /></a></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The number of vertices is then calculated for the new object (STNumPoints). This produces the following results (Table 3).</span></p>
+<table width="578" style="border:currentcolor;width:578px;height:64px;border-collapse:collapse;" border="1" cellspacing="0" cellpadding="0">
+    <tbody>
+        <tr>
+            <td valign="top" style="background:gray;padding:0in 5.4pt;border:1pt solid windowtext;width:153.9pt;">
+            <p><b><span style="color:white;font-family:calibri;">&nbsp;</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:1.5in;">
+            <p><b><span style="color:white;font-family:calibri;">SQL Server 2008 R2</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:1.5in;">
+            <p><b><span style="color:white;font-family:calibri;">SQL Server 2012</span></b></p>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:153.9pt;">
+            <p><b><span style="color:white;font-family:calibri;">Spatial Object</span></b></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.5in;">
+            <p><span style="color:white;font-family:calibri;">Number of Points</span></p>
+            </td>
+            <td valign="top" style="background:gray;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.5in;">
+            <p><span style="color:white;font-family:calibri;">Number of Points</span></p>
+            </td>
+        </tr>
+        <tr>
+            <td style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:153.9pt;background-color:transparent;">
+            <p><span style="color:black;font-family:calibri;">Union of California and Oregon</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.5in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">14854</span></p>
+            </td>
+            <td style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:1.5in;background-color:transparent;">
+            <p style="text-align:right;"><span style="color:black;font-family:calibri;">15050 </span></p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<p style="margin:0in 0in 10pt;"><span><br />
+<span style="font-family:calibri;"> Table3. Number of vertices defining a unioned object.</span></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The difference between the numbers of vertices used to define the two combined spatial objects is the result of additional artifacts (see next section). Nevertheless, the output of the spatial methods, </span><span style="color:teal;line-height:115%;font-family:consolas;font-size:9.5pt;">@g1</span><span style="color:gray;line-height:115%;font-family:consolas;font-size:9.5pt;">.</span><span style="color:teal;line-height:115%;font-family:consolas;font-size:9.5pt;">STUnion</span><span style="color:gray;line-height:115%;font-family:consolas;font-size:9.5pt;">(</span><span style="color:teal;line-height:115%;font-family:consolas;font-size:9.5pt;">@g2</span><span style="color:gray;line-height:115%;font-family:consolas;font-size:9.5pt;">).</span><span style="color:teal;line-height:115%;font-family:consolas;font-size:9.5pt;">STNumPoints</span><span style="color:gray;line-height:115%;font-family:consolas;font-size:9.5pt;">()</span><span style="font-family:calibri;">, is different between the two versions of SQL Server.</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Artifacts"></a><span style="color:#4f81bd;font-family:cambria;font-size:18px;">Artifacts</span></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The increased precision has also increased the possibility that certain spatial operations will produce spatial artifacts. In the example shown in Table 3 the primary difference between the resultant spatial objects is the number of artifacts produced. The artifacts objects are very thin polygons along the shared California/Oregon border (see Figure 2).&nbsp; </span></p>
+<p style="margin:0in 0in 10pt;"><span>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4174.Union-Artifacts.png"><img alt=" " style="border-width:0px;border-style:solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4174.Union-Artifacts.png" /></a></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Figure 2. Spatial artifacts resulting from a union operation between two adjoining polygons. The spatial objects inside the black box, along the Oregon-California border, illustrate the artifacts.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">In SQL Server 2008, the lower computational precision did not produce as many of these artifacts on the same data. To give you an idea of the nature of these artifacts, 1 artifact polygon was measured at 30 meters long and .186 meters wide. In many cases artifacts can be attributed to differences in coordinates of the shared edge. This, in combination with the increased computational precision of the new server, can exacerbate the artifact issue.</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Persisted_Computed_Columns"></a><span style="color:#4f81bd;font-family:cambria;font-size:18px;">Persisted Computed Columns</span></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Persisted computed columns, created using spatial methods, can also introduce side effects caused by the change in precision models. </span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Consider the following scenario where a persisted computed column is created in SQL Server 2008 (including SQL Server 2008 R2) or in a version of SQL Azure prior to September 2011. Using the spatial production example, in a previous section, the following CREATE TABLE DDL is used.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="color:#333333;line-height:115%;font-family:courier new;font-size:10pt;">CREATE TABLE LOCATION ( <br />
+&nbsp; ID INT PRIMARY KEY, <br />
+&nbsp; GEOM1 GEOMETRY, <br />
+&nbsp; GEOM2 GEOMETRY,<br />
+</span><span style="color:red;line-height:115%;font-family:courier new;font-size:10pt;">&nbsp; NUMPOINTS AS GEOM1.STUnion(GEOM2).STNumPoints() PERSISTED<span style="background:white;"><br />
+</span></span><span style="color:#333333;line-height:115%;font-family:courier new;font-size:10pt;">);</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">This table may now introduce NUMPOINTS column results that are different from the results shown in the Spatial Productions section, earlier. </span></p>
+<p style="margin:0in 0in 10pt;"><strong><span style="color:#365f91;font-family:cambria;"><span class="Heading1Char" style="line-height:115%;font-size:14pt;">Upgrading to SQL Server 2012 and the latest SQL Azure Instances</span><br />
+</span></strong><span style="font-family:calibri;"> In SQL Server 2012, when a table with a potential backward compatibility issue is detected during the upgrade process, such as a computed persisted column using one or more spatial methods, that table is disabled. All disabled tables are clearly identified, allowing the database administrator to rebuild the tables and bring them back online.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">In SQL Azure, because the upgrade process is a continual, ongoing process, the strategy of disabling tables was not considered a viable solution. Hence, it is important to understand when and where such issues can occur. To assist you with this effort, see </span><a href="http://msdn.microsoft.com/en-us/library/hh295798.aspx"><span style="color:#0000ff;font-family:calibri;">Backward Compatibility</span></a><span style="font-family:calibri;"> on MSDN, which provides some strategies, including the new system view, </span><a href="http://msdn.microsoft.com/en-us/library/gg715275.aspx"><span style="color:#0000ff;font-family:calibri;">sys.dm_db_objects_impacted_on_version_change</span></a><span style="font-family:calibri;">.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Another document, </span><a href="http://msdn.microsoft.com/en-us/library/hh352174.aspx"><span style="color:#0000ff;font-family:calibri;">Known Issues in SQL Azure Database</span></a><span style="font-family:calibri;">, may also be useful to review.<b></b></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:16px;"><strong><span style="color:#365f91;font-family:cambria;"><span class="Heading1Char" style="line-height:115%;font-size:14pt;">Conclusion</span><br />
+</span></strong><span style="font-family:calibri;"> Spatial support in SQL Server 2012 and SQL Azure Q2 2011 Service Release now use the same version of the spatial library. Application migration from prior versions of SQL Server and SQL Azure should not be effected by the new library, in most cases. Special attention, however, should be paid to persisted computed columns that are defined using spatial methods.</span></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">&nbsp;</span></p></div>
+    
+    

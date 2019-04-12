@@ -1,0 +1,894 @@
+---
+layout: default
+title: Организация пользовательских счетчиков (генераторов) в Microsoft SQL Server - Статьи TechNet - Россия (Pусский) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>В SQL Server 2012 появилась долгожданная воз&#1084;ожность генерировать числа из последовательности - объект SEQUENCE.<br />
+<br />
+Хорошо, что SEQUENCE-о&#1084; &#1084;ожно пользоваться, как функцией, а не только, как DEFAULT значение&#1084; на поле таблицы и не увязывать &#1084;о&#1084;ент получения значения с &#1084;о&#1084;енто&#1084; физического добавления записи.
+<br />
+Но&nbsp;в реальной жизни довольно популярное требование&nbsp;- дина&#1084;ическое фор&#1084;ирование и&#1084;ени последовательности (или любой другой способ реализации &quot;хочу ну&#1084;ерацию с начала года/&#1084;есяца&quot;). Также часто хотят и&#1084;еть&nbsp;хоть какой-то &#1084;еханиз&#1084; &quot;повторного&quot; получения &quot;пропущенных
+ значений&quot;.<br />
+<br />
+Обычно предлагае&#1084;ые в решения по генерации &quot;бизнес-но&#1084;еров&quot;, написанные на TSQL и базирующиеся на таблицах с текущи&#1084;и значения&#1084;и счетчиков, и&#1084;еют один недостаток - блокировки. Действительно, если &#1084;ы &quot;генерируе&#1084;&quot; новый но&#1084;ер, то на вре&#1084;я генерации &#1084;ы должны
+ заблокировать счетчик, чтобы в друго&#1084; соединении не было получено&nbsp;такое же&nbsp;значение.&nbsp;При это&#1084;&nbsp;зачастую но&#1084;ер на&#1084; нужно получать в ра&#1084;ках уже открытой транзакции, что чревато те&#1084;, что два изначально независи&#1084;ых бизнес-процесса будут в лучше&#1084; случае долго блокировать
+ один другого, а в худше&#1084; - окажутся не настолько независи&#1084;ы&#1084;и, чтобы избежать взаи&#1084;облокировки (deadlock).</p>
+<p>Кро&#1084;е того, генерацию но&#1084;ера на базе таблицы счетчиков нельзя &quot;завернуть&quot; в функцию, чего бы очень хотелось для реализации конструкций вида:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">insert</code>
+<code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+MyTable(DocNum, DocDate, Comment) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">select</code>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Generator.NextValue(</code><code style="color:blue;">&#39;SequenceFor_DocNum&#39;</code><code style="color:#000000;">), IncomeDate, Comment
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">#SomeBuffer</code></span></div>
+</div>
+<p>поскольку в функциях запрещены любые из&#1084;енения данных и &#1084;ы не &#1084;оже&#1084; из&#1084;енить текущее значение.</p>
+<p>Но не совсе&#1084; любые! <br />
+В функциях есть воз&#1084;ожность вызывать расширенные храни&#1084;ые процедуры и CLR процедуры и функции.</p>
+<p>А вот в CLR функции у нас есть воз&#1084;ожность подключиться к то&#1084;у же серверу и базе, но уже в друго&#1084; соединении и вызвать процедуру, генерирующую нужный но&#1084;ер, не накладывая длительных блокировок.
+<br />
+Для этого придется сделать несколько дополнительных действий по&#1084;и&#1084;о написания са&#1084;ой функции:</p>
+<ul>
+<li>сделать unsafe сборку </li><li>передавать из функции в сборку и&#1084;я сервера и базы данных, чтобы &#1084;ожно было без лишних запросов сфор&#1084;ировать строку соединения
+</li><li>указать в строке соединения Enlist=false, чтобы транзакция, в которой будет происходить генерация, не &quot;подключилась&quot; к той транзакции, из которой &#1084;ы пытае&#1084;ся получить новое значение счетчика
+</li><li>убедиться, что учетная запись, под которой запущен SQL Server, и&#1084;еет права на подключение к базе данных, в которой будут использоваться счетчики (по у&#1084;олчанию, у такой учетки есть права sysadmin, но шаловливые руки ад&#1084;инистраторов способны на &#1084;ногое)
+</li><li>сделать set trustworthy on для той же базы данных </li></ul>
+<p>Приче&#1084; сборку &#1084;ы буде&#1084; создавать из са&#1084;ого же SQL Server - не нужен даже VisualStudio, но об это&#1084; позже.</p>
+<p>(Все запросы выполняе&#1084; в той базе, где на&#1084; нужны счетчики)</p>
+<p>Настраивае&#1084; сервер - включае&#1084; CLR:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">if exists (</code><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">* </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">sys.configurations </code><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#006699;font-weight:bold;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&#39;clr enabled&#39;</code>
+<code style="color:#808080;">and</code> <code style="color:#000000;">value_in_use=0)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">begin</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;sp_configure &#39;</code><code style="color:blue;">&#39;show
+ advanced options&#39;</code><code style="color:blue;">&#39;, 1&#39;</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;reconfigure&#39;</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;sp_configure &#39;</code><code style="color:blue;">&#39;clr
+ enabled&#39;</code><code style="color:blue;">&#39;, 1&#39;</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;reconfigure&#39;</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">end</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>Настраивае&#1084; базу - позволяе&#1084; в ней работать unsafe сборка&#1084;:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;"><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">@sql nvarchar(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">)
+</code></span>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@sql = N</code><code style="color:blue;">&#39;alter database &#39;</code><code style="color:#000000;">&#43;DB_NAME()&#43;N</code><code style="color:blue;">&#39; set trustworthy on&#39;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(@sql)</code></span></div>
+</div>
+<p>Создае&#1084; схе&#1084;у _Generator, в которой будут находиться основные объекты, необходи&#1084;ые для &#1084;анипуляции со счетчика&#1084;и:<br />
+if SCHEMA_ID(&#39;_Generator&#39;) is null exec (&#39;create schema _Generator&#39;) </p>
+<p>Создае&#1084; таблицу, в которой будут храниться пара&#1084;етры счетчиков:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">table</code> <code style="color:#000000;">
+_Generator.List </code></span>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">(
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ID uniqueidentifier
+</code><code style="color:#808080;">not</code> <code style="color:#808080;">null</code>
+<code style="color:#006699;font-weight:bold;">default</code> <code style="color:#000000;">
+newid() ,&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Name</code>
+<code style="color:#000000;">sysname </code><code style="color:#808080;">not</code>
+<code style="color:#808080;">null</code><code style="color:#000000;">,&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">StartValue
+</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code> <code style="color:#006699;font-weight:bold;">
+constraint</code> <code style="color:#000000;">DF__Generator_List_StartValue </code>
+<code style="color:#006699;font-weight:bold;">default</code> <code style="color:#000000;">
+0,&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IsWorkWithHoles tinyint,&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">constraint</code>
+<code style="color:#000000;">PK_List_ID </code><code style="color:#006699;font-weight:bold;">primary</code>
+<code style="color:#006699;font-weight:bold;">key</code> <code style="color:#000000;">
+clustered(ID),&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">constraint</code>
+<code style="color:#000000;">AK_List_Name </code><code style="color:#006699;font-weight:bold;">unique</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>Теперь создади&#1084; триггер, который для каждого внесенного в _Generator.List счетчика будет создавать в схе&#1084;е с и&#1084;ене&#1084; G$<em>и&#1084;я_счетчика</em>, функции NextValue и CurrentValue. Приче&#1084; в зависи&#1084;ости от пара&#1084;етра IsWorkWithHoles, реализации функции NextValue
+ несколько различаются.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">trigger</code> <code style="color:#000000;">
+[_Generator].[TR_List_UpdateGenerator] </code><code style="color:#006699;font-weight:bold;">on</code>
+<code style="color:#000000;">[_Generator].[List] </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">with</code>
+<code style="color:#006699;font-weight:bold;">execute</code> <code style="color:#006699;font-weight:bold;">
+as</code> <code style="color:#000000;">owner&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">after</code>
+<code style="color:#006699;font-weight:bold;">insert</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">update</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">delete</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">as</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">begin</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">nocount </code><code style="color:#006699;font-weight:bold;">on</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">ansi_nulls </code><code style="color:#006699;font-weight:bold;">on</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code></code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">declare</code>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Name</code>
+<code style="color:#000000;">nvarchar(128),&nbsp;</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@IsWorkWithHoles tinyint,&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@ID uniqueidentifier,&nbsp;</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@FunctionName nvarchar(128),&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@sql nvarchar(</code><code style="color:#006699;font-weight:bold;">maX</code><code style="color:#000000;">)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">cursd </code><code style="color:#006699;font-weight:bold;">cursor</code>
+<code style="color:#006699;font-weight:bold;">local</code> <code style="color:#006699;font-weight:bold;">
+static</code> <code style="color:#000000;">forward_only </code><code style="color:#006699;font-weight:bold;">for</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">N</code><code style="color:blue;">&#39;G$&#39;</code><code style="color:#000000;">&#43;i.</code><code style="color:#006699;font-weight:bold;">Name</code>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">deleted i&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">open</code>
+<code style="color:#000000;">cursd&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">while 1=1&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">begin</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">fetch</code>
+<code style="color:#006699;font-weight:bold;">next</code> <code style="color:#006699;font-weight:bold;">
+from</code> <code style="color:#000000;">cursd </code><code style="color:#006699;font-weight:bold;">into</code>
+<code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Name</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if @@FETCH_STATUS &lt;&gt; 0 break&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if object_id(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.CurrentValue&#39;</code><code style="color:#000000;">,
+ N</code><code style="color:blue;">&#39;FN&#39;</code><code style="color:#000000;">) </code>
+<code style="color:#006699;font-weight:bold;">is</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(N</code><code style="color:blue;">&#39;drop function &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.CurrentValue&#39;</code><code style="color:#000000;">)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if object_id(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.NextValue&#39;</code><code style="color:#000000;">,
+ N</code><code style="color:blue;">&#39;FN&#39;</code><code style="color:#000000;">) </code>
+<code style="color:#006699;font-weight:bold;">is</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(N</code><code style="color:blue;">&#39;drop function &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.NextValue&#39;</code><code style="color:#000000;">)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if object_id(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.NextValueHole&#39;</code><code style="color:#000000;">,
+ N</code><code style="color:blue;">&#39;FN&#39;</code><code style="color:#000000;">) </code>
+<code style="color:#006699;font-weight:bold;">is</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(N</code><code style="color:blue;">&#39;drop function &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.NextValueHole&#39;</code><code style="color:#000000;">)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if object_id(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.RegisterHole&#39;</code><code style="color:#000000;">,
+ N</code><code style="color:blue;">&#39;P&#39;</code><code style="color:#000000;">) </code>
+<code style="color:#006699;font-weight:bold;">is</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(N</code><code style="color:blue;">&#39;drop procedure &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">&#43;N</code><code style="color:blue;">&#39;.RegisterHole&#39;</code><code style="color:#000000;">)&nbsp;</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">-- If generator&#39;s schema is &quot;empty&quot; (i.e. it was used only by generator)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if
+</code><code style="color:#808080;">not</code> <code style="color:#000000;">exists(</code><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">* </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">sys.all_objects </code><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#000000;">schema_id=schema_id(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">))&nbsp;</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(N&#39;</code><code style="color:#006699;font-weight:bold;">drop</code>
+<code style="color:#006699;font-weight:bold;">schema</code> <code style="color:blue;">
+&#39;&#43;@Name)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">end
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">declare cursi cursor local static forward_only for&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">select i.Name, i.ID, i.IsWorkWithHoles&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">from inserted i&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">open cursi&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">while 1=1&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">begin&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">fetch next from cursi into @Name, @ID, @IsWorkWithHoles&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">if @@FETCH_STATUS &lt;&gt; 0 break&nbsp;</code></span></span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">set @FunctionName = &#39;</code><code style="color:#000000;">NextValue</code><code style="color:blue;">&#39; &#43; case when @IsWorkWithHoles=1
+ then &#39;</code><code style="color:#000000;">Hole</code><code style="color:blue;">&#39; else &#39;</code><code style="color:blue;">&#39; end&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">if SCHEMA_ID(@Name) is null&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">exec(N&#39;</code><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">schema</code> <code style="color:#000000;">
+G$</code><code style="color:blue;">&#39;&#43;@Name) </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">if object_id(@Name&#43;N&#39;</code><code style="color:#000000;">.CurrentValue</code><code style="color:blue;">&#39;) is null&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">begin
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">set @sql = N&#39;</code><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">function</code> <code style="color:#000000;">
+G$</code><code style="color:blue;">&#39;&#43;@Name&#43;N&#39;</code><code style="color:#000000;">.CurrentValue(@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">nvarchar(256)) <br />
+</code><code style="color:#006699;font-weight:bold;">returns</code> <code style="color:#006699;font-weight:bold;">
+int</code> <code style="color:#006699;font-weight:bold;">as</code>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">begin</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;declare</code>
+<code style="color:#000000;">@CV </code><code style="color:#006699;font-weight:bold;">int<br />
+</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;select</code>
+<code style="color:#000000;">@CV=CurrentValue&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.</code><code style="color:#006699;font-weight:bold;">Sequence</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">=</code><code style="color:blue;">&#39;&#39;</code><code style="color:blue;">&#39;&#43;@Name&#43;N&#39;</code><code style="color:#000000;">.</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">&#43;</code><code style="color:#ff1493;">isnull</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">.</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">,
+</code><code style="color:blue;">&#39;&#39;</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">)&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;if @@rowcount = 0&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select</code>&nbsp;</span><span><code style="color:#000000;"> @CV = StartValue&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.List&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#000000;">ID = </code><code style="color:blue;">&#39;&#39;</code><code style="color:blue;">&#39; &#43;convert(varchar(40), @ID)&#43;N&#39;</code><code style="color:blue;">&#39;&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return</code>
+<code style="color:#000000;">@CV </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">end</code><code style="color:blue;">&#39;&nbsp;<br />
+</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">exec(@sql)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">end&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">if object_id(@Name&#43;N&#39;</code><code style="color:#000000;">.NextValue</code><code style="color:blue;">&#39;) is null&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">begin&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">set @sql = N&#39;</code><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">function</code> <code style="color:#000000;">
+G$</code><code style="color:blue;">&#39;&#43;@Name&#43;N&#39;</code><code style="color:#000000;">.NextValue(@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">nvarchar(256)) </code><code style="color:#006699;font-weight:bold;">returns</code>
+<code style="color:#006699;font-weight:bold;">int</code> <code style="color:#006699;font-weight:bold;">
+as</code>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">begin</code>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">(_Generator.</code><code style="color:blue;">&#39;&#43;@FunctionName&#43;N&#39;</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;&#39;</code><code style="color:blue;">&#39;&#43;@Name&#43;&#39;</code><code style="color:#000000;">.</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">&#43;</code><code style="color:#ff1493;">isnull</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">.</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">,
+</code><code style="color:blue;">&#39;&#39;</code><code style="color:blue;">&#39;&#39;</code><code style="color:#000000;">), @@SPID, @@SERVERNAME, DB_NAME()))
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">end</code><code style="color:#000000;">&#39;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code><code style="color:#000000;">(@sql)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">end</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">end</code></span></span><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">end</code></span></div>
+</div>
+<p>Обратите вни&#1084;ание - триггер создан с опцией with execute as owner, что позволяет фактически превратить операции по вставке данных в таблицу в DDL операции, расширяющие синтаксис в нашей базе. При это&#1084; создающий генератор пользователь вовсе не должен и&#1084;еть
+ какие-либо права на &#1084;одификацию структуры БД. <br />
+Кро&#1084;е того, ко&#1084;у-то будет удобнее так отлаживать са&#1084; &#1084;еханиз&#1084;.<br />
+<br />
+Создае&#1084; таблицу, в которую буде&#1084; по&#1084;ещать неиспользованные значения счетчиков:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">table</code> <code style="color:#000000;">
+_Generator.Hole&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">(&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">nvarchar(256) </code><code style="color:#808080;">not</code>
+<code style="color:#808080;">null</code><code style="color:#000000;">,&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">HoleValue
+</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">constraint</code>
+<code style="color:#000000;">PK__Generator_Hole </code><code style="color:#006699;font-weight:bold;">primary</code>
+<code style="color:#006699;font-weight:bold;">key</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">, HoleValue)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>Процедура добавления генератора в таблицу _Generator.List.<br />
+Она в обще&#1084;-то скорее нужна, чтобы проде&#1084;онстрировать, что достаточно дать права напри&#1084;ер на запуск одной процедуры для создания новых генераторов.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">procedure</code> <code style="color:#000000;">
+_Generator.New&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Name</code>
+<code style="color:#000000;">sysname, </code><code style="color:#008200;">-- И&#1084;я генератора&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@StartValue
+</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">,
+</code><code style="color:#008200;">-- Начальное значение&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@IsWorkWithHoles tinyint
+</code><code style="color:#008200;">-- Работа с пропущенны&#1084;и значения&#1084;и&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">as</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">begin</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">nocount </code><code style="color:#006699;font-weight:bold;">on</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if
+</code><code style="color:#808080;">not</code> <code style="color:#000000;">exists(
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">*&nbsp; </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">_Generator.List&nbsp; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#006699;font-weight:bold;">Name</code> <code style="color:#000000;">
+= @</code><code style="color:#006699;font-weight:bold;">Name</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">insert</code>
+<code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+_Generator.List(</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">, StartValue, IsWorkWithHoles)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">values</code><code style="color:#000000;">(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">,
+ @StartValue, @IsWorkWithHoles) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">end</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go&nbsp;
+</code></span></div>
+</div>
+<p>Теперь наконец-то создади&#1084; таблицу с текущи&#1084;и значения&#1084;и счетчиков и процедуру, генерирующую значения.</p>
+<p>Процедур будет 2 - одна для генераторов, для которых укist(</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">, StartValue, IsWorkWithHoles)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">values</code><code style="color:#000000;">(@</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">,
+ @StartValue, @IsWorkWithHoles) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">end</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go&nbsp;
+</code></span></div>
+</div>
+<p>Теперь наконец-то создади&#1084; таблицу с текущи&#1084;и значения&#1084;и счетчиков и процедуру, генерирующую значения.</p>
+<p>Процедур будеазана воз&#1084;ожность работы с пропущенны&#1084;и значения&#1084;и. Можно было об��йтись и одной, но это хуже с точки зрения опти&#1084;изации быстродействия - лишние запросы и/или пара&#1084;етры и проверки для генераторов, у
+ которых пропущенные значения неактуальны:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">table</code> <code style="color:#000000;">
+_Generator.</code><code style="color:#006699;font-weight:bold;">Sequence</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">(&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp; Name</code>
+<code style="color:#000000;">nvarchar(256) </code><code style="color:#808080;">not</code>
+<code style="color:#808080;">null</code><code style="color:#000000;">,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp; CurrentValue
+</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#808080;">
+not</code> <code style="color:#808080;">null</code><code style="color:#000000;">,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp; constraint</code>
+<code style="color:#000000;">PK_Sequence_GenID_Name </code><code style="color:#006699;font-weight:bold;">primary</code>
+<code style="color:#006699;font-weight:bold;">key</code> <code style="color:#000000;">
+clustered(</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">-- Никогда не используйте эту процедуру &quot;напря&#1084;ую&quot;!
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">procedure</code> <code style="color:#000000;">
+_Generator.GenerateValue&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">nvarchar(256)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">as</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">begin</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">nocount </code><code style="color:#006699;font-weight:bold;">on</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;declare</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@TC
+</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value
+</code><code style="color:#006699;font-weight:bold;">int</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;select</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@TC = @@TRANCOUNT,&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value =
+</code><code style="color:#808080;">null</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;begin</code>
+<code style="color:#000000;">try </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code>
+<code style="color:#006699;font-weight:bold;">transaction</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;update</code>
+<code style="color:#000000;">s </code><code style="color:#006699;font-weight:bold;">set</code>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value = CurrentValue = CurrentValue &#43; 1&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">s </code><code style="color:#006699;font-weight:bold;">with</code><code style="color:#000000;">(holdlock)&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#006699;font-weight:bold;">Name</code> <code style="color:#000000;">
+= @</code><code style="color:#006699;font-weight:bold;">Sequence</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if @@ROWCOUNT = 0&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value = l.StartValue
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.List l&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#000000;">l.</code><code style="color:#006699;font-weight:bold;">Name</code>
+<code style="color:#000000;">= </code><code style="color:#ff1493;">SUBSTRING</code><code style="color:#000000;">(@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">, 1,
+</code><code style="color:#ff1493;">isnull</code><code style="color:#000000;">(</code><code style="color:#ff1493;">nullif</code><code style="color:#000000;">(CHARINDEX(</code><code style="color:blue;">&#39;.&#39;</code><code style="color:#000000;">, @</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">),
+ 0), 256)-1)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if @@ROWCOUNT = 0&nbsp;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;raiserror(</code><code style="color:blue;">&#39;Generator not found&#39;</code><code style="color:#000000;">, 16, 1)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; insert</code>
+<code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+_Generator.</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">, CurrentValue)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;values</code><code style="color:#000000;">(@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">,
+ @Value) </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;commit</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;end</code>
+<code style="color:#000000;">try&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;begin</code>
+<code style="color:#000000;">catch </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if @@TRANCOUNT &gt; @TC&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rollback</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;end</code>
+<code style="color:#000000;">catch </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;return</code>
+<code style="color:#000000;">@Value&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">end</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">go
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">-- Никогда не используйте эту процедуру &quot;напря&#1084;ую&quot;!&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">procedure</code> <code style="color:#000000;">
+_Generator.GenerateValueHole&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">nvarchar(256)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">as</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">begin</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">nocount </code><code style="color:#006699;font-weight:bold;">on</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;declare</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@TC
+</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value
+</code><code style="color:#006699;font-weight:bold;">int</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;select</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@TC = @@TRANCOUNT,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value =
+</code><code style="color:#808080;">null</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;declare</code> <code style="color:#000000;">@Hole </code><code style="color:#006699;font-weight:bold;">table</code><code style="color:#000000;">(HoleValue
+</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;begin</code>
+<code style="color:#000000;">try </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code>
+<code style="color:#006699;font-weight:bold;">transaction</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- Попытка найти зарегистрированные ранее пропущенные значения.&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- Можно сделать чуть хитрее, для получения &quot;дырок&quot; в порядке возрастания/убывания.
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;delete</code>
+<code style="color:#006699;font-weight:bold;">top</code><code style="color:#000000;">(1) h
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">output</code>
+<code style="color:#000000;">deleted.HoleValue </code><code style="color:#006699;font-weight:bold;">into</code>
+<code style="color:#000000;">@Hole </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">_Generator.Hole h </code><code style="color:#006699;font-weight:bold;">with</code><code style="color:#000000;">(holdlock)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#006699;font-weight:bold;">Sequence</code> <code style="color:#000000;">
+= @</code><code style="color:#006699;font-weight:bold;">Sequence</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if @@ROWCOUNT = 1&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select</code>
+<code style="color:#006699;font-weight:bold;">top</code><code style="color:#000000;">(1)&nbsp;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value = h.HoleValue&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">@Hole h&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- if there was no any hole...&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;update</code>
+<code style="color:#000000;">s </code><code style="color:#006699;font-weight:bold;">set</code>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value = CurrentValue = CurrentValue &#43; 1&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">s </code><code style="color:#006699;font-weight:bold;">with</code><code style="color:#000000;">(holdlock)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#006699;font-weight:bold;">Name</code> <code style="color:#000000;">
+= @</code><code style="color:#006699;font-weight:bold;">Sequence</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- If there is no Sequence yet
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#000000;">if @@ROWCOUNT = 0&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">select</code>&nbsp;</span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Value = l.StartValue&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</spancolor:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">select</code>&nbsp;</span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.List l&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#000000;">l.</code><code style="color:#006699;font-weight:bold;">Name</code>
+<code style="color:#000000;">= </code><code style="color:#ff1493;">SUBSTRING</code><code style="color:#000000;">(@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">, 1,
+</code><code style="color:#ff1493;">isnull</code><code style="color:#000000;">(</code><code style="color:#ff1493;">nullif</code><code style="color:#000000;">(CHARINDEX(</code><code style="color:blue;">&#39;.&#39;</code><code style="color:#000000;">, @</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">),
+ 0), 256)-1)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if @@ROWCOUNT = 0 raiserror(</code><code style="color:blue;">&#39;Generator not found&#39;</code><code style="color:#000000;">, 16, 1)&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;insert</code>
+<code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+_Generator.</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">Name</code><code style="color:#000000;">, CurrentValue)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;values</code><code style="color:#000000;">(@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">,
+ @Value)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end</code></span><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; end</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;commit</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end</code>
+<code style="color:#000000;">try </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;begin</code>
+<code style="color:#000000;">catch&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if @@TRANCOUNT &gt; @TC&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rollback</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">end</code>
+<code style="color:#000000;">catch </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;return</code>
+<code style="color:#000000;">@Value&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">end</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>Ну и процедура регистрации пропущенных значений:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#006699;font-weight:bold;">procedure</code> <code style="color:#000000;">
+_Generator.RegisterHole&nbsp;</code></span><span><code>&nbsp;</ckground-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></spacode><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">nvarchar(256),&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">@HoleValue
+</code><code style="color:#006699;font-weight:bold;">int</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">as</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">begin</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">nocount </code><code style="color:#006699;font-weight:bold;">on</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;insert</code>
+<code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+_Generator.Hole&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;(&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sequence</code><code style="color:#000000;">,&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HoleValue&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;select</code>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@</code><code style="color:#006699;font-weight:bold;">Sequence</code><code style="color:#000000;">,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@HoleValue&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#808080;">not</code> <code style="color:#000000;">exists(&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;select</code>
+<code style="color:#000000;">*&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;from</code>
+<code style="color:#000000;">_Generator.Hole </code><code style="color:#006699;font-weight:bold;">with</code><code style="color:#000000;">(holdlock)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#006699;font-weight:bold;">Sequence</code> <code style="color:#000000;">
+= @</code><code style="color:#006699;font-weight:bold;">Sequence</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#808080;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and</code>
+<code style="color:#000000;">HoleValue = @HoleValue&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">end</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>Теперь&nbsp;собственно CLR сборка.</p>
+<p>Далеко не&nbsp;все разработчики&nbsp;баз данных&nbsp;в дружеских отношениях с C# и VisualStudio и представляют, как ско&#1084;пилировать сборку.<br />
+Скорее всего также &#1084;ало кто захочет довериться сборке, выложенной в виде dll.</p>
+<p>Поэто&#1084;у ско&#1084;пилируе&#1084; и создади&#1084; сборку пря&#1084;о в T-SQL. Единственное требование - на са&#1084;о&#1084; SQL Server должен быть установлен .NET Framework 3.5:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">declare</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@t
+</code><code style="color:#006699;font-weight:bold;">table</code><code style="color:#000000;">(txt
+</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(255))
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">declare</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">temp</code>
+<code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(255),&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@sql
+</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(8000),&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@cs
+</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">)&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-- Делае&#1084; базу данных trustworthy
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">@sql = </code><code style="color:blue;">&#39;alter database &#39;</code><code style="color:#000000;">&#43;db_name()&#43;</code><code style="color:blue;">&#39; set trustworthy on&#39;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exec</code><code style="color:#000000;">(@sql)
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;insert</code> <code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+@t&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exec</code>
+<code style="color:#000000;">xp_cmdshell </code><code style="color:blue;">&#39;set&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; select</code>
+<code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">temp</code>
+<code style="color:#000000;">= </code><code style="color:#ff1493;">substring</code><code style="color:#000000;">(txt, 6, 255)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; from</code>
+<code style="color:#000000;">@t&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#000000;">txt </code><code style="color:#808080;">like</code> <code style="color:blue;">
+&#39;TEMP%&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span>sp; select</code>
+<code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">temp</code>
+<code style="color:#000000;">= </code><code style="color:#ff1493;">substring</code><code style="color:#000000;">(txt, 6, 255)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; from</code>
+<code style="color:#000000;">@t&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;where</code>
+<code style="color:#000000;">txt </code><code style="color:#808080;">like</code> <code style="color:blue;">
+&#39;TEMP%&#39;</code></span></d<code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">@cs = </code><code style="color:blue;">&#39;using System; </code>
+</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">using System.Data;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">using System.Data.SqlClient;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">using System.Data.SqlTypes;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">using Microsoft.SqlServer.Server;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">namespace DeColores&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">{&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">public partial class PGenerator&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">{&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">[Microsoft.SqlServer.Server.SqlFunction(</code></span><span><code style="color:blue;">DataAccess = DataAccessKind.Read,</code></span><span><code style="color:blue;">Name
+ = &quot;NextValue&quot;)]&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">public static SqlInt32 NextValue(SqlString Sequence, SqlInt32 SPID, SqlString ServerName, SqlString DatabaseName)&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">{
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;using (SqlConnection IsolatedConn&nbsp;</code></span><span><code style="color:blue;">= new SqlConnection(&quot;Integrated Security=true;
+ Initial Catalog=&quot; &#43; DatabaseName.ToString() &#43; &quot;;&nbsp;&nbsp; <br />
+&nbsp;&nbsp;&nbsp; server=&quot; &#43; ServerName.ToString() &#43; &quot;; Application Name=_Generator_for_&quot; &#43; SPID.ToString() &#43; &quot;; Enlist=false&quot;))&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IsolatedConn.Open();&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SqlCommand GenValue = new SqlCommand(&quot;_Generator.GenerateValue&quot;, IsolatedConn);&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.CommandType = CommandType.StoredProcedure;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.Parameters.AddWithValue(&quot;Sequence&quot;, Sequence);&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SqlParameter ret = new SqlParameter();&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.ParameterName = &quot;ReturnValue&quot;;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.DbType = DbType.Int32;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.Direction = ParameterDirection.ReturnValue;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.Parameters.Add(ret);&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</spspan><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.ParameterName = &quotan></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.ExecuteNonQuery();&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SqlInt32 Val = (int)GenValue.Parameters[&quot;ReturnValue&quot;].Value;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Val;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;catch&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return SqlInt32.Null;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">}
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">[Microsoft.SqlServer.Server.SqlFunction(</code></span><span><code style="color:blue;">DataAccess = DataAccessKind.Read,
+</code></span><span><code style="color:blue;">Name = &quot;NextValueHole&quot;)]&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">public static SqlInt32 NextValueHole(SqlString Sequence, SqlInt32 SPID, SqlString ServerName, SqlString DatabaseName)&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">{
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;using (SqlConnection IsolatedConn
+</code></span><span><code style="color:blue;">= new SqlConnection(&quot;Integrated Security=true; Initial Catalog=&quot; &#43; DatabaseName.ToString() &#43; &quot;; server=&quot; &#43; ServerName.ToString() &#43; &quot;; Application Name=_Generator_for_&quot; &#43; SPID.ToString()
+ &#43; &quot;; Enlist=false&quot;))&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">{&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;try&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IsolatedConn.Open();&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SqlCommand GenValue = new SqlCommand(&quot;_Generator.GenerateValueHole&quot;, IsolatedConn);&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.CommandType = CommandType.StoredProcedure;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.Parameters.AddWithValue(&quot;Sequence&quot;, Sequence);&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SqlParameter ret = new SqlParameter();&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.ParameterName = &quot;ReturnValue&quot;;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.DbType = DbType.Int32;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ret.Direction = ParameterDirection.ReturnValue;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.Parameters.Add(ret);&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;GenValue.ExecuteNonQuery();&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SqlInt32 Val = (int)GenValue.Parameters[&quot;ReturnValue&quot;].Value;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Val;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;catch&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return SqlInt32.Null;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">}
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">}
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">};
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">}
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;declare</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@lpos
+</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">,&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@prevpos
+</code><code style="color:#006699;font-weight:bold;">int</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">@prevpos = 1&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">@sql = </code><code style="color:blue;">&#39;if exist &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">temp</code><code style="color:#000000;">&#43;</code><code style="color:blue;">&#39;\generator.cs (
+ del &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">temp</code><code style="color:#000000;">&#43;</code><code style="color:blue;">&#39;\generator.cs)&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="cffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">@prevpos = 1&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;set</code>
+<code style="color:#000000;">@sql = </code><code style="color:blue;">&#39;if exist &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:olor:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;exec</code>
+<code style="color:#000000;">xp_cmdshell @sql, no_output&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;while 1=1&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;begin</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@lpos = charindex(</code><code style="color:#006699;font-weight:bold;">char</code><code style="color:#000000;">(13), @cs, @prevpos)&#43;2&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">if @lpos = 2 break&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@sql = </code><code style="color:blue;">&#39;echo &#39;</code><code style="color:#000000;">&#43;</code><code style="color:#ff1493;">substring</code><code style="color:#000000;">(@cs, @prevpos, @lpos - @prevpos-2)&#43;</code><code style="color:blue;">&#39;
+ &gt;&gt; <a href="mailto:&#39;&#43;@temp&#43;&#39;\generator.cs&#39;">&#39;<code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">temp</code><code style="color:#000000;">&#43;</code><code style="color:blue;">&#39;\generator.cs&#39;</code></a></code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">exec</code>
+<code style="color:#000000;">xp_cmdshell @sql, no_output&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@prevpos = @lpos&nbsp;</code></span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">&nbsp;&nbsp;&nbsp;&nbsp;end</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">@sql = </code><code style="color:blue;">&#39;C:\WINDOWS\Microsoft.NET\Framework\v3.5\csc.exe /out:&#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">temp</code><code style="color:#000000;">&#43;</code><code style="color:blue;">&#39;\generator.dll
+ /target:library /unsafe &#39;</code><code style="color:#000000;">&#43;@</code><code style="color:#006699;font-weight:bold;">temp</code><code style="color:#000000;">&#43;</code><code style="color:blue;">&#39;\generator.cs&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">exec</code>
+<code style="color:#000000;">xp_cmdshell @sql , no_output&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">create</code>
+<code style="color:#000000;">assembly Generator&nbsp;&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">temp</code>
+<code style="color:#000000;">&#43; </code><code style="color:blue;">&#39;\generator.dll&#39;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">with</code>
+<code style="color:#000000;">permission_set = unsafe; </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>Создади&#1084; са&#1084;и CLR функции:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">FUNCTION</code> <code style="color:#000000;">
+[_Generator].[NextValue](@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">[nvarchar](4000), @SPID [</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">], @ServerName [nvarchar](4000), @DatabaseName [nvarchar](4000))&nbsp;</code></span><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weon_set = unsafe; </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">go
+</code></span></div>
+</diight:bold;">RETURNS</code>
+<code style="color:#000000;">[</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">]
+</code><code style="color:#006699;font-weight:bold;">WITH</code> <code style="color:#006699;font-weight:bold;">
+EXECUTE</code> <code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+CALLER&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code>&nbsp;</span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">EXTERNAL
+</code><code style="color:#006699;font-weight:bold;">NAME</code> <code style="color:#000000;">
+[Generator].[DeColores.PGenerator].[NextValue]&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">FUNCTION</code> <code style="color:#000000;">
+[_Generator].[NextValueHole](@</code><code style="color:#006699;font-weight:bold;">Sequence</code>
+<code style="color:#000000;">[nvarchar](4000), @SPID [</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">], @ServerName [nvarchar](4000), @DatabaseName [nvarchar](4000))&nbsp;</code></span><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">RETURNS</code>
+<code style="color:#000000;">[</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">]
+</code><code style="color:#006699;font-weight:bold;">WITH</code> <code style="color:#006699;font-weight:bold;">
+EXECUTE</code> <code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+CALLER </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">EXTERNAL
+</code><code style="color:#006699;font-weight:bold;">NAME</code> <code style="color:#000000;">
+[Generator].[DeColores.PGenerator].[NextValueHole] </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">go
+</code></span></div>
+</div>
+<p>&nbsp;<br />
+Все готово.<br />
+Теперь - при&#1084;еры использования.<br />
+Регистрируе&#1084; генератор Test с начальны&#1084; значение&#1084; последовательностей 0 и воз&#1084;ожностью работать с пропущенны&#1084;и значения&#1084;и:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">exec</code>
+<code style="color:#000000;">_Generator.New </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code></span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@</code><code style="color:#006699;font-weight:bold;">Name</code>
+<code style="color:#000000;">= </code><code style="color:blue;">&#39;Test&#39;</code><code style="color:#000000;">,
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code></span><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@StartValue = 0,
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@IsWorkWithHoles = 1
+</code></span></span></div>
+</div>
+<p>Просто получение значения для последовательности &quot;123&quot;:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">G$Test.NextValue(</code><code style="color:blue;">&#39;123&#39;</code><code style="color:#000000;">)</code></span></div>
+</div>
+<p>&nbsp;Дина&#1084;ическое фор&#1084;ирование и&#1084;ени последовательности:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">sv.number, G$Test.NextValue(</code><code style="color:blue;">&#39;number&#39;</code><code style="color:#000000;">&#43;</code><code style="color:#ff1493;">convert</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(20),
+ sv.number%3)) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">master.dbo.spt_values sv </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#000000;">sv.[type] = </code><code style="color:blue;">&#39;P&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#808080;">and</code>
+<code style="color:#000000;">sv.number &lt; 100&nbsp;</code></span></div>
+</div>
+<p>Убеждае&#1084;ся, что откат транзакции не приводит к &quot;откату&quot; значения счетчика:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">begin</code>
+<code style="color:#000000;">tran </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">G$Test.NextValue(</code><code style="color:blue;">&#39;TestRollback&#39;</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">rollback</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">G$Test.NextValue(</code><code style="color:blue;">&#39;TestRollback&#39;</code><code style="color:#000000;">)
+</code></span></div>
+</div>
+<p>Регистрируе&#1084; пропущенное значение и получае&#1084; его из &quot;стандартной&quot; функции:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">(G$Test.NextValue(</code><code style="color:blue;">&#39;TestHole&#39;</code><code style="color:#000000;">))&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">master.dbo.spt_values sv </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">where</code>
+<code style="color:#000000;">sv.[type] = </code><code style="color:blue;">&#39;P&#39; </code>
+</span><span><code style="color:#808080;">and</code>
+<code style="color:#000000;">sv.number &lt; 100 </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;"><br />
+exec</code> <code style="color:#000000;">_Generator.RegisterHole </code><code style="color:blue;">&#39;Test..TestHole&#39;</code><code style="color:#000000;">, 12
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">G$Test.NextValue(</code><code style="color:blue;">&#39;TestHole&#39;</code><code style="color:#000000;">)
+</code></span></div>
+</div>
+<p>Вот собственно и всё.<br />
+Конечно, данный код приведен исключительно в качестве при&#1084;ера и заготовки. Напри&#1084;ер, в реально&#1084; при&#1084;енении лучше регистрировать пропущенные значения также в изолированной транзакции через CLR. И совсе&#1084; не обязательно создавать функции-генераторы в триггере.
+ Кро&#1084;е того, &#1084;ожно делать различные &#1084;акроподстановки в и&#1084;ени последовательности при генерации значения в са&#1084;ой CLR функции, напри&#1084;ер, за&#1084;енять %YY% на 2 последние разряда текущего года. В наше&#1084; реально&#1084; проекте, напри&#1084;ер, сделано больше десятка подобных &#1084;акро
+ и другие дополнительные воз&#1084;ожности вроде генерации не просто числа, а готовой фор&#1084;атированной строки....
+</p>
+<p>Но это уже на вкус и цве�� коллег по цеху.</p>
+
+</div>
+    
+    

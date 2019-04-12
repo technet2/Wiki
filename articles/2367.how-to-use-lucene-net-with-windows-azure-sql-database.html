@@ -1,0 +1,266 @@
+---
+layout: default
+title: How to Use Lucene.NET with Windows Azure SQL Database - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li c></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">How to Use Lucene.NET with Windows Azure SQL Database</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615__ffffffffb0a2b5ed_ctl00_ctl01" title="Rated Excellent [5 out of 5]."></span><input type="hidden" value="5" id="ctl00_ctl00_content_contentlass="hierarchy-item"><a href="#Summary">Summary</a></li><li class="hierarchy-item"><a href="#Lucene_NET">Lucene.NET</a></li><li class="hierarchy-item"><a href="#The_Azure_Library_for_Lucene_NET">The Azure Library for Lucene.NET</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Using_the_Library">Using the Library</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Using_Lucene_NET_to_index_SQL_Azure">Using Lucene.NET to index SQL Database</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Searching_the_Lucene_NET_catalog">Searching the Lucene.NET catalog</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#References">References</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+&nbsp;<br />
+<h2><a name="Summary"></a>Summary</h2>
+Lucene.NET is a .NET implementation of the Lucene full-text search engine. This article describes how you can use Lucene.NET to index text data stored in Windows Azure SQL Database, and then perform searches against that data.<br />
+<br />
+NOTE: This does not provide an integrated full-text search experience like the full-text search in SQL Server. Lucene.NET is an external process that is queried separately from SQL Database.<br />
+<br />
+NOTE: This article relies on the Azure Library for Lucene.NET (<a href="https://azuredirectory.codeplex.com/">https://azuredirectory.codeplex.com/</a>) to store the Lucene.NET catalog in a Windows Azure storage blob.<br />
+<br />
+<strong>Prerequisites</strong>
+<ul>
+<li>Windows Azure account (offers and purchasing information at <a href="http://www.microsoft.com/windowsazure/offers/default.aspx">
+http://www.microsoft.com/windowsazure/offers/default.aspx</a>) </li><li>Visual Studio 2010 </li><li>Lucene.NET (<a href="http://lucenenet.apache.org/">http://lucenenet.apache.org/</a>, both binary and source project are available)
+</li><li>Azure Library for Lucene.NET (<a href="https://azuredirectory.codeplex.com/">https://azuredirectory.codeplex.com/</a>)
+</li></ul>
+<p>To use the Azure Library for Lucene.NET and Lucene.NET from a Visual Studio project, you must add a reference to both the AzureDirectory project or assembly, and the Lucerne.NET project or assembly.&nbsp; You must also add the following using statements to your
+ project:<br />
+using Lucene.Net;<br />
+using Lucene.Net.Store;<br />
+using Lucene.Net.Index;<br />
+using Lucene.Net.Search;<br />
+using Lucene.Net.Documents;<br />
+using Lucene.Net.Util;<br />
+using Lucene.Net.Analysis;<br />
+using Lucene.Net.Analysis.Standard;<br />
+using Lucene.Net.Search;<br />
+using Lucene.Net.QueryParsers;<br />
+using Lucene.Net.Store.Azure;</p>
+<h2><a name="Lucene_NET"></a>Lucene.NET</h2>
+<p>Lucene.NET is a .NET implementation of Lucene (<a href="http://lucene.apache.org/">http://lucene.apache.org/</a>) and provides full-text indexing and search of documents.&nbsp; Documents are composed of multiple fields and do not have a predefined schema. When
+ performing a query against the index, you can search across multiple fields within a document. Lucene.NET doesn&#39;t directly integrate with SQL Database; instead you must perform a query against a database and construct a Document from the results, which is
+ then cataloged by Lucene.Net.&nbsp; For more information on Lucene.NET, see <a href="http://lucenenet.apache.org/">
+http://lucenenet.apache.org/</a>.</p>
+<h2><a name="The_Azure_Library_for_Lucene_NET"></a>The Azure Library for Lucene.NET</h2>
+<p>This library allows you to expose blob storage as a Lucene.NET.Store.Directory object, which&nbsp;Lucene.NET&nbsp;uses&nbsp;as persistent storage for&nbsp;its catalog.&nbsp;More information on the Azure Library for Lucene.NET, as well as the latest version, can be found on the project
+ homepage at <a href="https://azuredirectory.codeplex.com/">https://azuredirectory.codeplex.com/</a>.<br />
+<br />
+The current version of the&nbsp;Azure Library (as of 22 May 2013) may require modification before&nbsp;using it&nbsp;in your solution. Specifically:</p>
+<ul>
+<li>It may launch a the Visual Studio project conversion wizard when launched. </li><li>The reference to Microsoft.WindowsAzure.Storage may need to be deleted and recreated to point to the most recent version of the assembly.
+</li><li>There are several Debug.WriteLine statements that should be converted to Trace.write or another member of the Trace class&nbsp;as documented at
+<a href="http://msdn.microsoft.com/en-us/library/ff966484.aspx">http://msdn.microsoft.com/en-us/library/ff966484.aspx</a>. If you are not interested in diagnostic output, you can simply remove the Debug.WriteLine statements.
+</li></ul>
+<h3><a name="Using_the_Library"></a>Using the Library</h3>
+<p>The following code creates an AzureDirectory object and uses it as a parameter when creating the IndexWriter:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">AzureDirectory azureDirectory =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+AzureDirectory( </code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">CloudStorageAccount.FromConfigurationSetting(
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString&quot;</code><code style="color:black;">),
+</code><code style="color:blue;">&quot;TestCatalog&quot;</code><code style="color:black;">); </code>
+</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">IndexWriter indexWriter =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+IndexWriter(azureDirectory, </code><code style="color:teal;font-weight:bold;">new</code>
+<code style="color:black;">StandardAnalyzer(), </code><code style="color:teal;font-weight:bold;">true</code><code style="color:black;">);</code></span></div>
+</div>
+<br />
+<h2><a name="Using_Lucene_NET_to_index_SQL_Azure"></a>Using Lucene.NET to index SQL Database</h2>
+<p>As mentioned previously, Lucene.NET is not integrated directly with SQL Database and is based on indexing &#39;documents&#39; that contain multiple fields.&nbsp; In order to index data from SQL Database, you must query the database and create a new Document object for
+ each row. Individual columns can then be added to the Document. The following code illustrates querying a SQL Database that contains information on individual bloggers,&nbsp;and then&nbsp;adding the ID and Bio column information ="color:black;">IndexWriter indexWriter =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+IndexWriter(azureDirectory, </code><code style="color:teal;font-weight:bold;">new</code>
+<code style="color:black;">StandardAnalyzer(), </code><code style="color:teal;font-weight:bold;">true</code><code style="color:black;">);</code></span></div>
+</div>
+<br />
+<h2><a name="Using_Lucene_NET_to_index_SQL_Azure"></a>Using Lucene.NET to index SQL Database</h2>
+<p>As mentioned previously, Lucene.NET is not integrated directly with SQL Database and is based on indexing &#39;documents&#39; that contain multiple fields.&nbsp; In order to index data from SQL Database, you must query the database and create a new Document object for
+ each row. Individual columns can then be added to the Document. The following code illustrates querying a SQL Database that contains information on individual bloggers,&nbsp;and then&nbsp;adding the ID ato the Lucene index using an IndexWriter
+ and Document:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:green;">// Create the AzureDirectory against blob storage and create a catalog named &#39;Catalog&#39;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">AzureDirectory azureDirectory=
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+AzureDirectory(CloudStorageAccount.FromConfigurationSetting(</code><code style="color:blue;">&quot;Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString&quot;</code><code style="color:black;">),
+</code><code style="color:blue;">&quot;Catalog&quot;</code><code style="color:black;">); </code>
+</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">IndexWriter indexWriter =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+IndexWriter(azureDirectory, </code><code style="color:teal;font-weight:bold;">new</code>
+<code style="color:black;">StandardAnalyzer(), </code><code style="color:teal;font-weight:bold;">true</code><code style="color:black;">);
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">indexWriter.SetRAMBufferSizeMB(10.0);
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">indexWriter.SetUseCompoundFile(</code><code style="color:teal;font-weight:bold;">false</code><code style="color:black;">);
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">indexWriter.SetMaxMergeDocs(10000);
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">indexWriter.SetMergeFactor(100);
+</code></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:green;">// Create a DataSet and fill it from SQL Database
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">DataSet ds =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+DataSet(); </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">using</code><code style="color:black;">(SqlConnection sqlCon =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+SqlConnection(sqlConnString)) </code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">sqlCon.Open();&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">SqlCommand sqlCmd =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+SqlCommand();&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">sqlCmd.Connection = sqlCon;&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">sqlCmd.CommandType = CommandType.Text;&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">// Only get the minimum fields we need; Bio to index, Id so search results
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">// can look up the record in SQL Database
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">sqlCmd.CommandText =
+</code><code style="color:blue;">&quot;select Id, Bio from bloggers&quot;</code><code style="color:black;">;&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">SqlDataAdapter sqlAdap =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+SqlDataAdapter(sqlCmd);&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">sqlAdap.Fill(ds);&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(ds.Tables[0] != </code><code style="color:teal;font-weight:bold;">null</code><code style="color:black;">)&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">DataTable dt = ds.Tables[0];&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">if</code>
+<code style="color:black;">(dt.Rows.Count &gt; 0)&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">foreach</code>
+<code style="color:black;">(DataRow dr </code><code style="color:teal;font-weight:bold;">in</code>
+<code style="color:black;">dt.Rows)&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">// Create the Document object
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">Document doc =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+Document();&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:teal;font-weight:bold;">foreach</code>
+<code style="color:black;">(DataColumn dc </code><code style="color:teal;font-weight:bold;">in</code>
+<code style="color:black;">dt.Columns) </code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">{
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">// Populate the document with the column name and value from our query
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">doc.Add(</code><code style="color:teal;font-weight:bold;">new</code>
+<code style="color:black;">Field( </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">dc.ColumnName,&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">dr[dc.ColumnName].ToString(),&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">Field.Store.YES,&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">Field.Index.TOKENIZED));
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">dr[dc.ColumnName].ToString(),&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">Field.Store.YES,&nbsp;
+</code></span></span></div>
+<div style="background-col&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">// Write the Document to the catalog
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">indexWriter.AddDocument(doc);&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">}&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">}&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">// Close the writer
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">indexWriter.Close();</code></span></div>
+</div>
+<p>Note: The above sample returns all rows and adds them to the catalog. In a production application you will most likely only want to add new or updated rows.<br />
+<br />
+</p>
+<h3><a name="Searching_the_Lucene_NET_catalog"></a>Searching the Lucene.NET catalog</h3>
+<p>After you have added documents to the catalog, you can perform a search against them using the IndexSearcher. The following example illustrates how to create perform a search against the catalog for a term contained in the &#39;Bio&#39; field and return the Id of
+ that result:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:green;">// Create the AzureDirectory for blob storage
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">AzureDirectory azureDirectory =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+AzureDirectory(CloudStorageAccount.FromConfigurationSetting(</code><code style="color:blue;">&quot;Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString&quot;</code><code style="color:black;">),
+</code><code style="color:blue;">&quot;Catalog&quot;</code><code style="color:black;">); </code>
+</span></div>
+<div style="background-color:white;"><span><code style="color:green;">// Create the IndexSearcher
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">IndexSearcher indexSearcher =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+IndexSearcher(azureDirectory); </code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">// Create the QueryParser, setting the default search field to &#39;Bio&#39;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">QueryParser parser =
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+QueryParser(</code><code style="color:blue;">&quot;Bio&quot;</code><code style="color:black;">,
+</code><code style="color:teal;font-weight:bold;">new</code> <code style="color:black;">
+StandardAnalyzer()); </code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">// Create a query from the Parser
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">Query query = parser.Parse(searchString);
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">// Retrieve matching hits&nbsp;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">Hits hits = indexSearcher.Search(query);
+</code></span></div>
+<div style="background-color:white;"><span><code style="color:green;">// Loop through the matching hits, retrieving the document
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">for</code>
+<code style="color:black;">(</code><code style="color:teal;font-weight:bold;">int</code>
+<code style="color:black;">i = 0; i &lt; hits.Length(); i&#43;&#43;) </code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">//Retrieve the string value of the &#39;Id&#39; field from the
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:green;">//hits.Doc(i) document.
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:black;">TextBox_Results.Text &#43;=
+</code><code style="color:blue;">&quot;Id: &quot;</code> <code style="color:black;">&#43; hits.Doc(i).GetField(</code><code style="color:blue;">&quot;Id&quot;</code><code style="color:black;">).StringValue()&#43;
+</code><code style="color:blue;">&quot;\n&quot;</code><code style="color:black;">; </code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+<p>Based on the Id, you can perform a query against SQL Database to return additional fields from the matching record.</p>
+<h2><a name="References"></a>References</h2>
+<ul>
+<li><a href="https://azuredirectory.codeplex.com/">https://azuredirectory.codeplex.com/</a>
+</li><li><a href="http://www.logiclabz.com/c/create-lucene-index-in-c-for-given-sql-stored-procedure.aspx">http://www.logiclabz.com/c/create-lucene-index-in-c-for-given-sql-stored-procedure.aspx</a>
+</li><li><a href="http://lucene.apache.org/">http://lucene.apache.org/</a> </li><li><a href="http://lucenenet.apache.org/">http://lucenenet.apache.org/</a> </li><li><a href="http://www.ifdefined.com/blog/post/2009/02/Full-Text-Search-in-ASPNET-using-LuceneNET.aspx">http://www.ifdefined.com/blog/post/2009/02/Full-Text-Search-in-ASPNET-using-LuceneNET.aspx</a>
+</li><li><a href="http://blogs.msdn.com/b/windows-azure-support/archive/2010/11/01/how-to-use-lucene-net-in-windows-azure.aspx">http://blogs.msdn.com/b/windows-azure-support/archive/2010/11/01/how-to-use-lucene-net-in-windows-azure.aspx</a>
+</li></ul>
+
+</div>
+    
+    

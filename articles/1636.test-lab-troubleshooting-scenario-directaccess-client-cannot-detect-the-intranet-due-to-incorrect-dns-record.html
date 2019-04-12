@@ -1,0 +1,122 @@
+---
+layout: default
+title: Test Lab Troubleshooting Scenario&#58; DirectAccess client cannot detect the intranet due to incorrect DNS record - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">This troubleshooting scenario is for the
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/directaccess-test-lab-for-windows-server-2008-r2.aspx">
+DirectAccess test lab for Windows Server 2008 R2</a>. For information about test lab troubleshooting scenarios, click
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/test-lab-guides.aspx">
+here</a>.</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">When connecting to any network, a DirectAccess client attempts to access its network location server, a Web server that is only available on the intranet. If
+ a DirectAccess client cannot successfully access the network location server when connected to its intranet, depending on its configuration, it cannot resolve intranet DNS names.</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">In this troubleshooting scenario, you configure the DNS Host (A) record for the network location server name (nls.corp.contoso.com) to use the wrong IP address,
+ and then troubleshoot the results. </span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">Follow these steps to configure the DirectAccess test lab for this troubleshooting scenario.</span>&nbsp;</div>
+<p class="ProcedureTitle" style="margin:12pt 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;"></span><strong><span style="font-size:small;font-family:calibri;">To configure the A record for the network location server to use the wrong IP
+ address</span></strong></p>
+<table cellpadding="0" cellspacing="0" border="0" class="MsoNormalTable" style="margin:auto auto auto 0.25in;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="background-color:transparent;width:6.15in;border:#d4d0c8;padding:0in;">
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">1.&nbsp;&nbsp;&nbsp; On DC1, click
+<strong>Start</strong>, point to <strong>Administrative Tools</strong>, and then click
+<strong>DNS</strong>.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">2.&nbsp;&nbsp;&nbsp; In the console tree, open
+<strong>Forward Lookup Zones\corp.contoso.com</strong>.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">3. &nbsp;&nbsp; In the details pane, double-click the
+<strong>nls</strong> record.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">4.&nbsp;&nbsp;&nbsp; In
+<strong>nls Properties</strong>, change the IP address to <strong>10.0.0.1</strong>, and then click
+<strong>OK.</strong></span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">5.&nbsp;&nbsp;&nbsp; Connect CLIENT1 to the Corpnet subnet.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">6.&nbsp;&nbsp;&nbsp; On CLIENT1, from a Command Prompt window, run the
+<strong>ping app1</strong> command. This command should display the <strong>Ping request could not find host app1</strong> message.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">7. &nbsp;&nbsp; From the Command Prompt window, run the
+<strong>ipconfig</strong> command. Notice that there are no global IPv6 addresses assigned. CLIENT1 cannot resolve the name ISATAP to reach the intranet ISATAP server and configure the Tunnel adapter isatap.corp.contoso.com interface.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 style="margin:10pt 0in 0pt;">&nbsp;</h3>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">From the previous procedure, it appears that DC1, the intranet DNS server, is not resolving intranet names for CLIENT1 even when it is directly attached to the
+ intranet. The following procedure uses the appropriate steps in </span><a href="http://technet.microsoft.com/en-us/library/ee844105(WS.10).aspx"><span style="line-height:115%;font-size:10pt;font-family:calibri;">DirectAccess Client Determines that it is on
+ the Internet When on the Intranet</span></a><span style="font-size:small;font-family:calibri;"> to determine the root cause of the problem.</span></div>
+<p class="ProcedureTitle" style="margin:12pt 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;"></span><strong><span style="font-size:small;font-family:calibri;">To troubleshoot this scenario</span></strong></p>
+<table cellpadding="0" cellspacing="0" border="0" class="MsoNormalTable" style="margin:auto auto auto 0.25in;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="background-color:transparent;width:5.75in;border:#d4d0c8;padding:0in;">
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">1.&nbsp;&nbsp;&nbsp; On CLIENT1, from the Command Prompt window, run the
+<strong>netsh namespace show effective</strong> command. If intranet detection was successful you would not see the two NRPT rules. However, because intranet detection was not successful, you should see the two NRPT rules.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">2.&nbsp;&nbsp;&nbsp; From the Command Prompt window, run the
+<strong>reg query HKLM\software\policies\microsoft\windows\NetworkConnectivityStatusIndicator\CorporateConnectivity /v DomainLocationDeterminationUrl</strong> command. This command displays the network location URL.
+</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">3.&nbsp;&nbsp;&nbsp; From the display of the
+<strong>netsh namespace show effective</strong> command in step 1, verify that the FQDN in the network location URL appears as an exemption rule in the NRPT (nls.corp.contoso.com).
+</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span stylranet detection was successful you would not see the two NRPT rules. However, because intranet detection was not successful, you should see the two NRPT rules.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pte="font-size:small;font-family:calibri;">4.&nbsp;&nbsp;&nbsp; From the Command Prompt window, ping the FQDN in the network location URL (nls.corp.contoso.com). This command should be successful.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">5.&nbsp;&nbsp;&nbsp; Open Internet Explorer, type the network location URL in the address bar, and press ENTER.
+</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; You should see a “There is a problem with this website’s security certificate.” message. This indicates that CLIENT1 could not perform a successful
+ validation of the SSL certificate used by the application server for HTTPS-based URLs.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">6. &nbsp;&nbsp; On APP1, run the Internet Information Services (IIS) Manager snap-in.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">7.&nbsp;&nbsp;&nbsp; In the console tree, open
+<strong>APP1\Sites</strong>, and then click <strong>NLS</strong>.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">8. &nbsp;&nbsp; In
+<strong>Actions</strong>, click <strong>Bindings</strong>.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">9.&nbsp;&nbsp;&nbsp; In
+<strong>Site Bindings</strong>, click <strong>https</strong>, and then click <strong>
+Edit</strong>. </span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">10.&nbsp; In
+<strong>Edit Site Binding</strong>, in <strong>SSL certificate</strong>, notice the name of the selected certificate.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">11.&nbsp; Click
+<strong>View</strong>, click the <strong>Details</strong> tab, and then click the
+<strong>Subject</strong> field. Notice that the Subject field FQDN (nls.corp.contoso.com) matches the FQDN from the network location URL (nls.corp.contoso.com).
+</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">12.&nbsp; On DC1, from a Command Prompt window, ping app1.corp.contoso.com. Note that the IP address for the name app1.corp.contoso.com (10.0.0.3) is different
+ from the IP address for nls.corp.contoso.com (10.0.0.1, from step 4). Because APP1 is the network location server, the resolved IP address for both of these FQDNs should be 10.0.0.3, the IP address of APP1.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">This is the root cause of the problem. Because nls.corp.contoso.com is resolving to the IP address of EDGE1 (rather than APP1), CLIENT1 is attempting to access
+ the default web page of EDGE1 for network location detection. For SSL-based Web connections, the FQDN in the Subject field of the certificate offered by the web server must match the FQDN of the URL that is being used to access the Web site. Because IIS on
+ EDGE1 is configured to offer the IP-HTTPS certificate with the Subject name of edge1.contoso.com, network location detection fails and CLIENT1 determines that it is connected to the Internet, rather than the intranet.</span></div>
+<h3 style="margin:10pt 0in 0pt;">&nbsp;</h3>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;">Follow these steps to correct the configuration of the DirectAccess test lab for this troubleshooting scenario.</span></div>
+<p class="ProcedureTitle" style="margin:12pt 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;"></span><strong><span style="font-size:small;font-family:calibri;">To configure the A records for the network location server use the correct IP
+ address</span></strong></p>
+<table cellpadding="0" cellspacing="0" border="0" class="MsoNormalTable" style="margin:auto auto auto 0.25in;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="background-color:transparent;width:6.15in;border:#d4d0c8;padding:0in;">
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">1.&nbsp;&nbsp;&nbsp; On DC1, click
+<strong>Start</strong>, point to <strong>Administrative Tools</strong>, and then click
+<strong>DNS</strong>.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">2.&nbsp;&nbsp;&nbsp; In the console tree, open
+<strong>Forward Lookup Zones\corp.contoso.com</strong>.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">3. &nbsp;&nbsp; In the details pane, double-click the
+<strong>nls</strong> record.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">4.&nbsp;&nbsp;&nbsp; In
+<strong>nls Properties</strong>, change the IP address to <strong>10.0.0.3</strong>, and then click
+<strong>OK.</strong></span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">5.&nbsp;&nbsp;&nbsp; Disconnect CLIENT1 from the intranet subnet, wait 30 seconds, and then reconnect it to the intranet subnet.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">6.&nbsp;&nbsp;&nbsp; From the Command Prompt window, run the
+<strong>ping app1</strong> command. This command should be successful.</span></p>
+<p class="NumberedList1" style="margin:0in 0in 10pt 0.25in;"><span style="font-size:small;font-family:calibri;">7. &nbsp;&nbsp; From the Command Prompt window, run the
+<strong>ipconfig</strong> command. Notice that there is now a global IPv6 address assigned to the
+<strong>Tunnel adapter isatap.corp.contoso.com</strong> that begins with 2002:836b:2.</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<h2 style="margin:10pt 0in 0pt;"><span style="font-size:medium;font-family:cambria;color:#4f81bd;">&nbsp;</span>&nbsp;</h2>
+
+</div>
+    
+    

@@ -1,0 +1,142 @@
+---
+layout: default
+title: Setup SharePoint 2013 App Development Environment Using Powershell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="postbody" style="margin:0px 0px 0.7em;padding:0px;border:0px;vertical-align:baseline;font-size:1.2em;overflow:hidden;clear:left;font-family:&#39;Segoe UI&#39;,Segoe,Tahoma,Helvetica,Arial,sans-serif;color:#121112;">
+<div class="xg_user_generatentent-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="d" style="margin:5px 0px;padding:0px;border:0px;vertical-align:baseline;font-size:16px;">
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Note:</strong>&nbsp;You can use this method on sandbox environment where developers don’t want to setup the domain Name in DNS, Visual Studio will modify the host file during
+ debugging to skip the need of creating the Domain name in DNS for App development on Development Environment.</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Assumptions -</strong>&nbsp;You have SharePoint 2013 Installed with web application and root site collection created.</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step 1:</strong>&nbsp;Start App Management Service</p>
+<blockquote style="margin:20px 0px 1.5em;padding:0px 0px 0px 10px;border-width:0px 0px 0px 2px;border-left-style:solid;border-left-color:#e1e1e1;vertical-align:baseline;font-style:italic;overflow:hidden;">
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+$appManagementService = Get-SPServiceInstance | where {$_.TypeName -like “App Management Service”}</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+if($appManagementService.Status -ne “Online”) {<br />
+Write-Host “Starting App Management Service”<br />
+Start-SPServiceInstance $appManagementService | Out-Null<br />
+}<br />
+else{<br />
+Write-Host “App Management Service was already started”<br />
+}</p>
+<p style="margin:0px;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+# wait for App Management Service to start”<br />
+while ($service.Status -ne “Online”) {<br />
+# delay 5 seconds then check to see if service has started sleep 5<br />
+$service = Get-SPServiceInstance | where {$_.TypeName -like “App Management Service”}<br />
+}</p>
+</blockquote>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step2:</strong>&nbsp;Start Subscription Settings Service</p>
+<blockquote style="margin:20px 0px 1.5em;padding:0px 0px 0px 10px;border-width:0px 0px 0px 2px;border-left-style:solid;border-left-color:#e1e1e1;vertical-align:baseline;font-style:italic;overflow:hidden;">
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+$subscriptionSettingsService = Get-SPServiceInstance | where {$_.TypeName -like “Microsoft SharePoint Foundation Subscription Settings Service”}</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+if($subscriptionSettingsService.Status -ne “Online”) {<br />
+Write-Host “Starting Subscription Settings Service”<br />
+Start-SPServiceInstance $subscriptionSettingsService | Out-Null<br />
+}<br />
+else{<br />
+Write-Host “Subscription Settings Service was already started”<br />
+}</p>
+<p style="margin:0px;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+while ($service.Status -ne “Online”) {<br />
+# delay 5 seconds then check to see if service has started sleep 5<br />
+$service = Get-SPServiceInstance | where {$_.TypeName -like “Microsoft SharePoint Foundation Subscription Settings Service”}<br />
+}</p>
+</blockquote>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step 3:</strong>&nbsp;Create Service Application and Proxy for App Management Service</p>
+<blockquote style="margin:20px 0px 1.5em;padding:0px 0px 0px 10px;border-width:0px 0px 0px 2px;border-left-style:solid;border-left-color:#e1e1e1;vertical-align:baseline;font-style:italic;overflow:hidden;">
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+$appManagemetnServiceApplicationName = “App Management Service”<br />
+$appManagementServiceApplication = Get-SPServiceApplication | where {$_.Name -eq $appManagemetnServiceApplicationName}</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+# create an instance App Management Service Application and proxy if they do not exist<br />
+if($appManagementServiceApplication -eq $null) {<br />
+Write-Host “Creating App Management Service Application…”<br />
+$pool = Get-SPServiceApplicationPool “SharePoint Web Services Default”<br />
+$appManagementServiceDB= “Sharepoint_AppManagementServiceDB”<br />
+$appManagementServiceApplication = New-SPAppManagementServiceApplication `<br />
+-ApplicationPool $pool `<br />
+-Name $appManagemetnServiceApplicationName `<br />
+-DatabaseName $appManagementServiceDB</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+Write-Host “Creating App Management Service Application Proxy…”<br />
+$appManagementServicApplicationProxy = New-SPAppManagementServiceApplicationProxy `<br />
+-ServiceApplication $appManagementServiceApplication</p>
+<p style="margin:0px;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+}<br />
+else{<br />
+Write-Host “App Management Service Application already exist…”<br />
+}</p>
+</blockquote>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<stroplication…”<br />
+$pool = Get-SPServiceApplicationPool “SharePoint Web Services Default”<br />
+$appManagementServiceDB= “Sharepoint_AppManagementServiceDB”<br />
+$appManagementServiceApplication = New-SPAppManagementServiceApplication `<br />
+-ApplicationPoolng style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step 4:</strong>&nbsp;Create Service Application and Proxy for Subscription Setting Service</p>
+<blockquote style="margin:20px 0px 1.5em;padding:0px 0px 0px 10px;border-width:0px 0px 0px 2px;border-left-style:solid;border-left-color:#e1e1e1;vertical-align:baseline;font-style:italic;overflow:hidden;">
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+$subscriptionSettingsServiceApplicationName = “Subscription Settings Service Application”<br />
+$subscriptionSettingsServiceApplication = Get-SPServiceApplication | where {$_.Name -eq $subscriptionSettingsServiceApplicationName}</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+# create an instance Subscription Service Application and proxy if they do not exist<br />
+if($subscriptionSettingsServiceApplication -eq $null) {<br />
+Write-Host “Creating Subscription Settings Service Application…”<br />
+$pool = Get-SPServiceApplicationPool “SharePoint Web Services Default”<br />
+$subscriptionSettingsServiceDB= “Sharepoint_SiteSubscriptionSettingsServiceDB”<br />
+$subscriptionSettingsServiceApplication = New-SPSubscriptionSettingsServiceApplication `<br />
+-ApplicationPool $pool `<br />
+-Name $subscriptionSettingsServiceApplicationName `<br />
+-DatabaseName $subscriptionSettingsServiceDB</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+Write-Host “Creating Subscription Settings Service Application Proxy…”<br />
+$subscriptionSettingsServicApplicationProxy = New-SPSubscriptionSettingsServiceApplicationProxy `<br />
+-ServiceApplication $subscriptionSettingsServiceApplication</p>
+<p style="margin:0px;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+}<br />
+else{<br />
+Write-Host “Subscription Settings Service Application already exist…”<br />
+}</p>
+</blockquote>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step 5:</strong>&nbsp;Assign root domain name to configure URL used to access app webs</p>
+<blockquote style="margin:20px 0px 1.5em;padding:0px 0px 0px 10px;border-width:0px 0px 0px 2px;border-left-style:solid;border-left-color:#e1e1e1;vertical-align:baseline;font-style:italic;overflow:hidden;">
+<p style="margin:0px;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+Set-SPAppDomain “apps.com” –confirm:$false</p>
+</blockquote>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step 6:</strong>&nbsp;Assign name to default tenant to configure URL used to access web apps</p>
+<blockquote style="margin:20px 0px 1.5em;padding:0px 0px 0px 10px;border-width:0px 0px 0px 2px;border-left-style:solid;border-left-color:#e1e1e1;vertical-align:baseline;font-style:italic;overflow:hidden;">
+<p style="margin:0px;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+Set-SPAppSiteSubscriptionName -Name “app” -Confirm:$false</p>
+</blockquote>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<strong style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Step 7:</strong>&nbsp;At this point, your environment is ready for app development, Download Visual Studio and&nbsp;<a rel="nofollow" href="http://blogs.msdn.com/b/calvarro/archive/2013/03/04/available-for-download-office-developer-tools-for-vs-2012-rtm.aspx" style="margin:0px;padding:0px;border-top-width:0px;border-right-width:0px;border-left-width:0px;border-bottom-style:none;vertical-align:baseline;color:#0074c6;">Office
+ Developer Tools For VS 2012</a></p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+This setup will work perfect when you debug and deploy your app using Visual Studio by pressing F5, you don’t need to change host file as Visual Studio is smart enough to change host file however if you are trying to setup app catalog to distribute apps within
+ development environment, you would need to change host file for every app instance installed from app catalog however if you want to go through that route, you must setup the domain name in DNS to avoid modifying the host file every time.</p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<span style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">**&nbsp;<em style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">Original Post</em>&nbsp;-</span><span style="margin:0px;padding:0px;border:0px;vertical-align:baseline;">&nbsp;<a rel="nofollow" href="http://spdevstore.com/blogs/2013/08/23/setup-sharepoint-development-environment-powershell/" style="margin:0px;padding:0px;border-top-width:0px;border-right-width:0px;border-left-width:0px;border-bottom-style:none;vertical-align:baseline;color:#0074c6;">http://spdevstore.com/blogs/2013/08/23/setup-sharepoint-development...</a></span></p>
+<p style="margin:0px 0px 1.5em;padding:0px;border:0px;vertical-align:baseline;line-height:18px;">
+<a rel="nofollow" href="http://spdevstore.com/blogs" style="margin:0px;padding:0px;border-top-width:0px;border-right-width:0px;border-left-width:0px;border-bottom-style:none;vertical-align:baseline;color:#bd741b;"><img alt=" " src="http://spdevstore.com/blogs/wp-content/uploads/2013/08/spdevstore_9505.png?width=622" width="622" class="align-center" style="margin:4px 0px;padding:0px;border:0px;vertical-align:baseline;text-align:center;height:auto;" /></a></p>
+</div>
+</div>
+
+</div>
+    
+    

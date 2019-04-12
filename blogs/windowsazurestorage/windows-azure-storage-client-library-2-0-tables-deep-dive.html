@@ -1,0 +1,737 @@
+---
+layout: windowsazurestorage
+title: Windows Azure Storage Client Library 2.0 Tables Deep Dive
+weight: 3
+---
+
+<div id="site-content" class="site-content row">
+
+	<div id="primary" class="content-area col-sm-9">
+		<div id="single-content" class="div-content">
+
+			
+				
+<article id="post-124" class="post-124 post type-post status-publish format-standard hentry category-uncategorized">
+
+	<header class="entry-header single">
+		<h1 class="entry-title">Windows Azure Storage Client Library 2.0 Tables Deep Dive</h1>		<div class="rating-wrap">
+		<div id="star-rating-124" class="wds-ratings" data-rating="4" data-userrating="0" data-postid="124" data-container="body" data-toggle="tooltip" title="3 user(s) rated">
+			<div class="wds-ratings-inner-wrap">
+				<div>
+					<div aria-label="Select 5 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="5"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span><span aria-hidden="true" class="star-5"><span>&#x2605;</span></span></div><div aria-label="Select 4 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="4"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span></div><div aria-label="Select 3 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="3"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span></div><div aria-label="Select 2 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="2"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span></div><div aria-label="Select 1 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="1"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span></div>
+				</div>
+			</div>
+		</div>
+		</div>		<div class="clear-both"></div>
+		<div class="entry-meta">
+			<img alt="avatar of windows-azure-storage" src="https://i1.social.s-msft.com/profile/u/avatar.jpg?displayname=Windows+Azure+Storage&amp;size=extralarge&amp;version=00000000-0000-0000-0000-000000000000" class="avatar avatar-22 photo" height="22" width="22"/><span class="byline"><span class="author vcard"><a class="url fn n profile-usercard-hover" data-profile-userid="59e1aedafa2d4428b7004b2c2fac4adc" href="https://social.msdn.microsoft.com/profile/Windows+Azure+Storage">Windows Azure Storage</a></span></span><span class="posted-on posted-on-margin"><span class="screen-reader-text"></span><time class="entry-date published updated" datetime="2012-11-06T01:00:00+00:00">November 6, 2012</time></span><span class="comments-link"><span class="glyphicon glyphicon-comment" aria-hidden="true"></span><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comments">18</a></span>				<span class="social-icons-wrap">
+		<ul class="social-icons">
+			<li><div class="fb-share-button" data-href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/" data-layout="button_count" data-size="large" data-mobile-iframe="true"><a class="fb-xfbml-parse-ignore" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/&amp;src=sdkpreparse">Share</a></div></li>
+			<div id="fb-root" style="display:none"></div>
+
+			<li class="social-icon twitter"><a data-social="{&quot;type&quot;:&quot;twitter&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/&quot;, &quot;text&quot;: &quot;Windows Azure Storage Client Library 2.0 Tables Deep Dive&quot;}" href="#" id="post_tweet_count">0</a></li>
+			<li class="social-icon linkedin"><a data-social="{&quot;type&quot;:&quot;linkedin&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/&quot;, &quot;text&quot;: &quot;Windows Azure Storage Client Library 2.0 Tables Deep Dive&quot;}" href="#" id="get_post_linkedin_count">0</a></li>
+		</ul>
+	</span><!-- .social-icons-wrap -->
+	<script type="text/javascript">
+		// Get social counts
+		jQuery( window ).load(function () {
+			jQuery.getScript('https://blogs.msdn.microsoft.com/windowsazurestorage/wp-content/themes/microsoft/js/social-counts.js?ver=02092017')
+				.done(function(script,textStatus) {
+					window.msdnsocial.ajax('https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/');
+				});
+		});
+	</script>
+		</div>
+		<hr>
+	</header><!-- .entry-header -->
+
+	<div class="entry-content single">
+		<p>This blog post serves as an overview to the recently released Windows Azure Storage Client for .Net and the Windows Runtime. In addition to the legacy implementation shipped in versions 1.x that is based on DataServiceContext, we have also provided a more streamlined implementation that is optimized for common NoSQL scenarios.</p>
+<p>Note, if you are migrating an existing application from a previous release of the SDK please see the <a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2012/10/29/introducing-windows-azure-storage-client-library-2-0-for-net-and-windows-runtime.aspx">overview</a> and <a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2012/10/29/windows-azure-storage-client-library-2-0-breaking-changes-amp-migration-guide.aspx">migration guide</a> posts.</p>
+<h4>New Table implementation</h4>
+<p>The new table implementation is provided in the <strong>Microsoft.WindowsAzure.Storage.Table</strong><strong> </strong>namespace. There are three key areas we emphasized in the design of the new table implementation: usability, extensibility, and performance. The basic scenarios are simple and &ldquo;just work&rdquo;; in addition, we have also provided two distinct extension points to allow developers to customize the client behaviors to their specific scenario. We have also maintained a degree of consistency with the other storage clients (Blob and Queue) so that moving between them feels seamless.</p>
+<p>With the addition of this new implementation users have effectively three different patterns to choose from when programing against table storage. A high level summary of each and a brief description of the benefits they offer are provided below.</p>
+<ul>
+<li><strong>Table Service Layer via TableEntity &ndash; </strong>This approach offers significant performance and latency improvements over the WCF Data Services, but still offers the ability to define POCO objects in a similar fashion without having to write serialization / deserialization logic. Additionally, the optional <em>EntityResolver</em> provides the ability to easily work with heterogeneous entity types returned via queries without any additional client objects or overhead. Additionally, users can optionally customize the serialization behavior of their entities by overriding the <em>ReadEntity</em> or <em>WriteEntity</em> methods. The Table Service layer does not currently expose an <em>IQueryable</em>, meaning that queries need to be manually constructed (helper functions are exposed via static methods on the <em>TableQuery</em> class, see below for more). For an example see the<strong> NoSQL</strong> scenario below.<strong></strong></li>
+<li><strong>Table Service Layer via DynamicTableEntity &ndash; </strong>This approach is provided to allow user&rsquo;s direct access to a Dictionary key value pairs. This is particularly useful for more advanced scenarios such as defining entities whose property names are dictated at runtime, entities with large amount of properties, server side projections, and bulk updates of heterogeneous data. Since <em>DynamicTableEntity</em> implements the <em>ITableEntity</em> interface all results, including projections, can be persisted back to the server. For an example see the<strong> Heterogeneous Update</strong> scenario below.</li>
+<li><strong>WCF Data Services &ndash; </strong>Similar to the legacy 1.7x implementation, this approach exposes an <em>IQueryable</em> allowing users to construct complex queries via LINQ. This approach is recommended for users with existing code assets as well as non-latency sensitive queries as it utilizes greater system resources. The WCF Data Services based implementation has been migrated to the <strong>Microsoft.WindowsAzure.Storage.Table.DataServices</strong><strong> </strong>namespace. For additional details see the DataServices section below. <br/><strong>Note, a similar table implementation using WCF Data Services is not provided in the recently released Windows 8 library due to limitations when projecting to various supported languages.</strong></li>
+</ul>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<h4>Dependencies<em></em></h4>
+<p>The new table implementation utilizes the OdataLib components to provide the over the wire protocol implementation. These libraries are available via NuGet (See the resources section below). Additionally, to maintain compatibility with previous versions of the SDK, the client library has a dependency on System.Data.Services.Client.dll which is part of the .Net platform. <strong>Please Note, the current WCF Data Services standalone installer contains version 5.0.0 assemblies, referencing these assemblies will result in a runtime failure.</strong></p>
+<p>You can resolve these dependencies as shown below</p>
+<p><strong>NuGet</strong></p>
+<p>To install Windows Azure Storage, run the following command in the <a href="http://docs.nuget.org/docs/start-here/using-the-package-manager-console">Package Manager Console</a>.</p>
+<p><strong>PM&gt;</strong>Install-Package WindowsAzure.Storage</p>
+<p>This will automatically resolve any needed dependencies and add them to your project.</p>
+<p><strong>Windows Azure SDK for .NET - October 2012 release</strong></p>
+<ul>
+<li>Install the SDK (<a href="http://www.windowsazure.com/en-us/develop/net/">http://www.windowsazure.com/en-us/develop/net/</a> click on the &ldquo;install the SDK&rdquo; button)<strong></strong></li>
+<li>Create a project and add a reference to %Program Files%\Microsoft SDKs\Windows Azure\.NET SDK\2012-10\ref\Microsoft.WindowsAzure.Storage.dll</li>
+<li>In Visual Studio go to Tools &gt; Library Package Manager-&gt; Package Manager Console and execute the following command.<strong></strong></li>
+</ul>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<blockquote>
+<p><strong>PM&gt;</strong> Install-Package Microsoft.Data.OData -Version 5.0.2</p>
+</blockquote>
+<p>&nbsp;</p>
+<h4>Performance</h4>
+<p>The new table implementation has shown significant performance improvements over the updated DataServices implementation and the previous versions of the SDK. Depending on the operation latencies have improved by between 25% and 75% while system resource utilization has also decreased significantly. Queries alone are over twice as fast and consume far less memory. We will have more details in a future Performance blog.</p>
+<h4>Object Model</h4>
+<p>A diagram of the table object model is provided below. The core flow of the client is that a user defines an action (<em>TableOperation</em>, <em>TableBatchOperation</em>, or <em>TableQuery</em>) over entities in the Table service and executes these actions via the <em>CloudTableClient</em>. For usability, these classes provide static factory methods to assist in the definition of actions.</p>
+<p>For example, the code below inserts a single entity:</p>
+<pre class="code">CloudTable table = tableClient.GetTableReference([TableName]);
+table.Execute(TableOperation.Insert(entity));</pre>
+<p><strong><em><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/7178.objectmodel_664E9E70.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/7178.objectmodel_5F00_664E9E70.jpg"><img style="background-image: none; display: inline;" title="objectmodel" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/2308.objectmodel_thumb_2CCB8E79.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/2308.objectmodel_5F00_thumb_5F00_2CCB8E79.jpg" alt="objectmodel" width="694" height="401" border="0"/></a></em></strong></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h5>Execution</h5>
+<h6>CloudTableClient</h6>
+<p>Similar to the other Azure Storage clients, the table client provides a logical service client, <em>CloudTableClient</em>, which is responsible for service wide operations and enables execution of other operations. The <em>CloudTableClient</em> class can update the Storage Analytics settings for the Table service, list all tables in the account, and can create references to client side <em>CloudTable</em> objects, among other operations.</p>
+<h6>CloudTable</h6>
+<p>A <em>CloudTable</em> object is used to perform operations directly on a given table (Create, Delete, SetPermissions, etc.), and is also used to execute entity operations against the given table.</p>
+<h6>TableRequestOptions</h6>
+<p>The <em>TableRequestOptions</em> class defines additional parameters which govern how a given operation is executed, specifically the timeouts and <em>RetryPolicy</em> that are applied to each request. The <em>CloudTableClient</em> provides default timeouts and <em>RetryPolicy</em> settings; <em>TableRequestOptions</em> can override them for a particular operation.</p>
+<h6>TableResult</h6>
+<p>The <em>TableResult</em> class encapsulates the result of a single <em>TableOperation</em>. This object includes the <a href="http://en.wikipedia.org/wiki/HTTP_status_code">HTTP status code</a>, the <a href="http://en.wikipedia.org/wiki/HTTP_ETag">ETag</a> and a weak typed reference to the associated entity. For <em>TableBatchOperations</em>, the <em>CloudTable.ExecuteBatch</em> method will return a collection of <em>TableResults</em> whose order corresponds with the order of the <em>TableBatchOperation</em>. For example, the first element returned in the resulting collection will correspond to the first operation defined in the <em>TableBatchOperation</em>.</p>
+<h5>Actions</h5>
+<h6>TableOperation</h6>
+<p>The <em>TableOperation</em> class encapsulates a single operation to be performed against a table. Static factory methods are provided to create a <em>TableOperation</em> that will perform an Insert, Delete, Merge, Replace, Retrieve, InsertOrReplace, and InsertOrMerge operation on the given entity. TableOperations can be reused so long as the associated entity is updated. As an example, a client wishing to use table storage as a heartbeat mechanism could define a merge operation on an entity and execute it to update the entity state to the server periodically.</p>
+<p><strong>Sample &ndash; Inserting an Entity into a Table</strong></p>
+<pre class="code" style="height: 371px; width: 1132px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: green;">// Create the table client. <br/></span>CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+CloudTable peopleTable = tableClient.GetTableReference(<span style="color: #a31515;">"people"</span>);
+peopleTable.CreateIfNotExists();
+
+<span style="color: green;">// Create a new customer entity. <br/></span>CustomerEntity customer1 = <span style="color: blue;">new </span>CustomerEntity(<span style="color: #a31515;">"Harp"</span>, <span style="color: #a31515;">"Walter"</span>);
+customer1.Email = <span style="color: #a31515;">"Walter@contoso.com"</span>;
+customer1.PhoneNumber = <span style="color: #a31515;">"425-555-0101"</span>;
+
+<span style="color: green;">// Create an operation to add the new customer to the people table. <br/></span>TableOperation insertCustomer1 = TableOperation.Insert(customer1);
+
+<span style="color: green;">// Submit the operation to the table service. <br/></span>peopleTable.Execute(insertCustomer1);</pre>
+<h6>TableBatchOperation</h6>
+<p>The <em>TableBatchOperation</em> class represents multiple <em>TableOperation</em> objects which are executed as a single atomic action within the table service. There are a few <a href="http://msdn.microsoft.com/en-us/library/windowsazure/dd894038.aspx">restrictions on batch operations</a> that should be noted:</p>
+<ul>
+<li>You can perform batch updates, deletes, inserts, merge and replace operations.</li>
+<li>A batch operation can have a retrieve operation, if it is the only operation in the batch.</li>
+<li>A single batch operation can include up to 100 table operations.</li>
+<li>All entities in a single batch operation must have the same partition key.</li>
+<li>A batch operation is limited to a 4MB data payload.</li>
+</ul>
+<p>The <em>CloudTable.ExecuteBatch</em> which takes as input a TableBatchOperation will return an <em>IList</em> of <em>TableResults</em> which will correspond in order to the entries in the batch itself. For example, the result of a merge operation that is the first in the batch will be the first entry in the returned <em>IList</em> of <em>TableResults</em>. In the case of an error the server may return a numerical id as part of the error message that corresponds to the sequence number of the failed operation in the batch unless the failure is associated with no specific command such as ServerBusy, in which case -1 is returned. <em>TableBatchOperations</em>, or Entity Group Transactions, are executed atomically meaning that either all operations will succeed or if there is an error caused by one of the individual operations the entire batch will fail.</p>
+<p><strong>Sample &ndash; Insert two entities in a single atomic Batch Operation</strong></p>
+<pre class="code" style="height: 510px; width: 1132px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: green;">// Create the table client. <br/></span>CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+CloudTable peopleTable = tableClient.GetTableReference(<span style="color: #a31515;">"people"</span>);
+peopleTable.CreateIfNotExists();
+
+<span style="color: green;">// Define a batch operation. <br/></span>TableBatchOperation batchOperation = <span style="color: blue;">new </span>TableBatchOperation();
+
+<span style="color: green;">// Create a customer entity and add to the table <br/></span>CustomerEntity customer = <span style="color: blue;">new </span>CustomerEntity(<span style="color: #a31515;">"Smith"</span>, <span style="color: #a31515;">"Jeff"</span>);
+customer.Email = <span style="color: #a31515;">"Jeff@contoso.com"</span>;
+customer.PhoneNumber = <span style="color: #a31515;">"425-555-0104"</span>;
+batchOperation.Insert(customer);
+
+<span style="color: green;">// Create another customer entity and add to the table <br/></span>CustomerEntity customer2 = <span style="color: blue;">new </span>CustomerEntity(<span style="color: #a31515;">"Smith"</span>, <span style="color: #a31515;">"Ben"</span>);
+customer2.Email = <span style="color: #a31515;">"Ben@contoso.com"</span>;
+customer2.PhoneNumber = <span style="color: #a31515;">"425-555-0102"</span>;
+batchOperation.Insert(customer2);
+
+<span style="color: green;">// Submit the operation to the table service. <br/></span>peopleTable.ExecuteBatch(batchOperation);</pre>
+<h6>TableQuery</h6>
+<p>The <em>TableQuery</em> class is a lightweight query mechanism used to define queries to be executed against the table service. See &ldquo;Querying&rdquo; below.</p>
+<h5>Entities</h5>
+<h6>ITableEntity interface</h6>
+<p>The <em>ITableEntity</em> interface is used to define an object that can be serialized and deserialized with the table client. It contains the PartitionKey, RowKey, Timestamp, and Etag properties, as well as methods to read and write the entity. This interface is implemented by the <em>TableEntity</em> and <em>DynamicTableEntity</em> entity types that are included in the library; a client may implement this interface directly to persist different types of objects or objects from 3rd-party libraries. By overriding the <em>ITableEntity</em>.<em>ReadEntity</em> or <em>ITableEntity</em>.<em>WriteEntity</em> methods a client may customize the serialization logic for a given entity type.</p>
+<h6>TableEntity</h6>
+<p>The <em>TableEntity</em> class is an implementation of the <em>ITableEntity</em> interface and contains the RowKey, PartitionKey, and Timestamp properties. The default serialization logic <em>TableEntity</em> uses is based off of reflection where all public properties of a supported type that define both get and set are serialized. This will be discussed in greater detail in the extension points section below. This class is not sealed and may be extended to add additional properties to an entity type.</p>
+<p><strong>Sample &ndash; Define a POCO that extends TableEntity</strong></p>
+<pre class="code" style="height: 143px; width: 1132px;"><span style="color: green;">// This class defines one additional property of integer type, since it derives from <br/>// TableEntity it will be automatically serialized and deserialized. <br/></span><span style="color: blue;">public class </span><span style="color: #2b91af;">SampleEntity </span>: TableEntity
+{
+    <span style="color: blue;">public int </span>SampleProperty { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }  
+} </pre>
+<h6>DynamicTableEntity</h6>
+<p>The <em>DynamicTableEntity</em> class allows clients to update heterogeneous entity types without the need to define base classes or special types. The <em>DynamicTableEntity</em> class defines the required properties for RowKey, PartitionKey, Timestamp, and ETag; all other properties are stored in an <em>IDictionary</em>. Aside from the convenience of not having to define concrete POCO types, this can also provide increased performance by not having to perform serialization or deserialization tasks.</p>
+<p><strong>Sample &ndash; Retrieve a single property on a collection of heterogeneous entities</strong></p>
+<pre class="code" style="height: 470px; width: 1132px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: green;">// Define the query to retrieve the entities, notice in this case we <br/>// only need to retrieve the Count property. <br/></span>TableQuery query = <span style="color: blue;">new </span>TableQuery().Select(<span style="color: blue;">new string</span>[] { <span style="color: #a31515;">"Count" </span>});
+
+<span style="color: green;">// Note the TableQuery is actually executed when we iterate over the <br/>// results. Also, this sample uses the DynamicTableEntity to avoid <br/>// having to worry about various types, as well as avoiding any <br/>// serialization processing. <br/></span><span style="color: blue;">foreach </span>(DynamicTableEntity entity <span style="color: blue;">in </span>myTable.ExecuteQuery(query))
+{ 
+    <span style="color: green;">// Users should always assume property is not there in case another client removed it. <br/></span>    EntityProperty countProp;
+
+    <span style="color: blue;">if </span>(!entity.Properties.TryGetValue(<span style="color: #a31515;">"Count"</span>, <span style="color: blue;">out </span>countProp))    
+    {
+        <span style="color: blue;">throw new </span>ArgumentNullException(<span style="color: #a31515;">"Invalid entity, Count property not found!"</span>);
+    }
+    
+    <span style="color: green;">// Display Count property, however you could modify it here and persist it back to the service. <br/></span>    Console.WriteLine(countProp.Int32Value);
+}</pre>
+<p>Note: an <em>ExecuteQuery</em> equivalent is not provided in the Windows Runtime library in keeping with best practice for the platform. Instead use the <em>ExecuteQuerySegmentedAsync</em> method to execute the query in a segmented fashion.</p>
+<h6>EntityProperty</h6>
+<p>The <em>EntityProperty</em> class encapsulates a single property of an entity for the purposes of serialization and deserialization. The only time the client has to work directly with EntityProperties is when using <em>DynamicTableEntity</em> or implementing the <em>TableEntity.ReadEntity</em> and <em>TableEntity.WriteEntity</em> methods.</p>
+<p>The samples below show two approaches that can be a player&rsquo;s score property. The first approach uses <em>DynamicTableEntity</em> to avoid having to declare a client side object and updates the property directly, whereas the second will deserialize the entity into a POJO and update that object directly.</p>
+<p><strong>Sample &ndash;Update of entity property using EntityProperty</strong></p>
+<pre class="code" style="height: 414px; width: 1132px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: green;">// Retrieve entity <br/></span>TableResult res = gamerTable.Execute(TableOperation.Retrieve(<span style="color: #a31515;">"Smith"</span>, <span style="color: #a31515;">"Jeff"</span>));
+DynamicTableEntity player = (DynamicTableEntity)res.Result;
+
+<span style="color: green;">// Retrieve Score property <br/></span>EntityProperty scoreProp;
+
+<span style="color: green;">// Users should always assume property is not there in case another client removed it. <br/></span><span style="color: blue;">if </span>(!player.Properties.TryGetValue(<span style="color: #a31515;">"Score "</span>, <span style="color: blue;">out </span>scoreProp))    
+{ 
+    <span style="color: blue;">throw new </span>ArgumentNullException(<span style="color: #a31515;">"Invalid entity, Score property not found!"</span>);
+}
+
+scoreProp.Int32Value += 1;
+
+<span style="color: green;">// Store the updated score <br/></span>gamerTable.Execute(TableOperation.Merge(player));</pre>
+<p><strong>Sample &ndash; Update of entity property using POJO</strong></p>
+<pre class="code" style="height: 341px; width: 1132px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: blue;">public class </span><span style="color: #2b91af;">GamerEntity </span>: TableEntity
+{
+    <span style="color: blue;">public int </span>Score { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+}
+<span style="color: green;"><br/>// Retrieve entity <br/></span>TableResult res = gamerTable.Execute(TableOperation.Retrieve&lt;GamerEntity&gt;(<span style="color: #a31515;">"Smith"</span>, <span style="color: #a31515;">"Jeff"</span>));
+GamerEntity player = (GamerEntity)res.Result;
+
+<span style="color: green;">// Update Score <br/></span>player.Score += 1;
+
+<span style="color: green;">// Store the updated score <br/></span>gamerTable.Execute(TableOperation.Merge(player));</pre>
+<h6>EntityResolver</h6>
+<p>The <em>EntityResolver</em> delegate allows client-side projection and processing for each entity during serialization and deserialization. This is designed to provide custom client side projections, query-specific filtering, and so forth. This enables key scenarios such as deserializing a collection of heterogeneous entities from a single query.</p>
+<p><strong>Sample &ndash; Use EntityResolver to perform client side projection</strong></p>
+<pre class="code" style="height: 378px; width: 1469px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: green;">// Define the query to retrieve the entities, notice in this case we only need <br/>// to retrieve the Email property. <br/></span>TableQuery&lt;TableEntity&gt; query = <span style="color: blue;">new </span>TableQuery&lt;TableEntity&gt;().Select(<span style="color: blue;">new string</span>[] { <span style="color: #a31515;">"Email" </span>});
+
+<span style="color: green;">// Define a Entity resolver to mutate the entity payload upon retrieval. <br/>// In this case we will simply return a String representing the customers Email address. <br/></span>EntityResolver&lt;<span style="color: blue;">string</span>&gt; resolver = (pk, rk, ts, props, etag) =&gt; props.ContainsKey(<span style="color: #a31515;">"Email"</span>) ? props[<span style="color: #a31515;">"Email"</span>].StringValue : <span style="color: blue;">null</span>;
+
+
+<span style="color: green;">// Display the results of the query, note that the query now returns <br/>// strings instead of entity types since this is the type of EntityResolver we created. <br/></span><span style="color: blue;">foreach </span>(<span style="color: blue;">string </span>projectedString <span style="color: blue;">in </span>gamerTable.ExecuteQuery(query, resolver, <span style="color: blue;">null </span><span style="color: green;">/* RequestOptions */</span>, <span style="color: blue;">null </span><span style="color: green;">/* OperationContext */</span>))
+{
+    Console.WriteLine(projectedString);
+}</pre>
+<h4>Querying</h4>
+<p>There are two query constructs in the table client: a retrieve <em>TableOperation</em> which addresses a single unique entity and a <em>TableQuery</em> which is a standard query mechanism used against multiple entities in a table. Both querying constructs need to be used in conjunction with either a class type that implements the <em>TableEntity</em> interface or with an <em>EntityResolver</em> which will provide custom deserialization logic.</p>
+<h5>Retrieve</h5>
+<p>A retrieve operation is a query which addresses a single entity in the table by specifying both its PartitionKey and RowKey. This is exposed via <em>TableOperation.Retrieve</em> and <em>TableBatchOperation.Retrieve</em> and executed like a typical operation via the <em>CloudTable</em>.</p>
+<p><strong>Sample &ndash; Retrieve a single entity</strong></p>
+<pre class="code" style="height: 267px; width: 1469px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+<span style="color: green;">// Create the table client. <br/></span>CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+CloudTable peopleTable = tableClient.GetTableReference(<span style="color: #a31515;">"people"</span>);
+
+<span style="color: green;">// Retrieve the entity with partition key of "Smith" and row key of "Jeff" <br/></span>TableOperation retrieveJeffSmith = TableOperation.Retrieve&lt;CustomerEntity&gt;(<span style="color: #a31515;">"Smith"</span>, <span style="color: #a31515;">"Jeff"</span>);
+
+<span style="color: green;">// Retrieve entity <br/></span>CustomerEntity specificEntity = (CustomerEntity)peopleTable.Execute(retrieveJeffSmith).Result;</pre>
+<p>&nbsp;</p>
+<h5>TableQuery</h5>
+<p><em>TableQuery</em> is a lightweight object that represents a query for a given set of entities and encapsulates all query operators currently supported by the Windows Azure Table service. Note, for this release we have not provided an <em>IQueryable</em> implementation, so developers who are migrating applications to the 2.0 release and wish to leverage the new table implementation will need to reconstruct their queries using the provided syntax. The code below produces a query to take the top 5 results from the customers table which have a RowKey greater than 5.</p>
+<p><strong>Sample &ndash; Query top 5 entities with RowKey greater than or equal to 5</strong></p>
+<pre class="code" style="height: 128px; width: 1469px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+TableQuery&lt;TableEntity&gt; query = <span style="color: blue;">new </span>TableQuery&lt;TableEntity&gt;().Where(TableQuery.GenerateFilterCondition(<span style="color: #a31515;">"RowKey"</span>, QueryComparisons.GreaterThanOrEqual, <span style="color: #a31515;">"5"</span>)).Take(5);</pre>
+<p>In order to provide support for JavaScript in the Windows Runtime, the <em>TableQuery</em> can be used via the concrete type <em>TableQuery</em>, or in its generic form <em>TableQuery&lt;EntityType&gt;</em> where the results will be deserialized to the given type. When specifying an entity type to deserialize entities to, the EntityType must implement the <em>ITableEntity</em> interface and provide a parameterless constructor.</p>
+<p>The <em>TableQuery</em> object provides methods for take, select, and where. There are static methods provided such as GenerateFilterCondition, GenerateFilterConditionFor*, and CombineFilters which construct other filter strings. Some examples of constructing queries over various types are shown below</p>
+<pre class="code" style="height: 453px; width: 1469px;"><span style="color: green;">// 1. Filter on String <br/></span>TableQuery.GenerateFilterCondition(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.GreaterThan, <span style="color: #a31515;">"foo"</span>);
+
+<span style="color: green;">// 2. Filter on GUID <br/></span>TableQuery.GenerateFilterConditionForGuid(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.Equal, <span style="color: blue;">new </span>Guid());
+
+<span style="color: green;">// 3. Filter on Long <br/></span>TableQuery.GenerateFilterConditionForLong(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.GreaterThan, 50L);
+
+<span style="color: green;">// 4. Filter on Double <br/></span>TableQuery.GenerateFilterConditionForDouble(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.GreaterThan, 50.50);
+
+<span style="color: green;">// 5. Filter on Integer <br/></span>TableQuery.GenerateFilterConditionForInt(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.GreaterThan, 50);
+
+<span style="color: green;">// 6. Filter on Date <br/></span>TableQuery.GenerateFilterConditionForDate(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.LessThan, DateTime.Now);
+
+<span style="color: green;">// 7. Filter on Boolean <br/></span>TableQuery.GenerateFilterConditionForBool(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.Equal, <span style="color: blue;">true</span>);
+
+<span style="color: green;">// 8. Filter on Binary <br/></span>TableQuery.GenerateFilterConditionForBinary(<span style="color: #a31515;">"Prop"</span>, QueryComparisons.Equal, <span style="color: blue;">new byte</span>[] { 0x01, 0x02, 0x03 });</pre>
+<p><strong>Sample &ndash; Query all entities with a PartitionKey=&rdquo;SamplePK&rdquo; and RowKey greater than or equal to &ldquo;5&rdquo;</strong></p>
+<p>&nbsp;</p>
+<pre class="code" style="height: 305px; width: 1469px;"><span style="color: blue;">string </span>pkFilter = TableQuery.GenerateFilterCondition(<span style="color: #a31515;">"PartitionKey"</span>, QueryComparisons.Equal, <span style="color: #a31515;">"samplePK"</span>);
+
+<span style="color: blue;">string </span>rkLowerFilter = TableQuery.GenerateFilterCondition(<span style="color: #a31515;">"RowKey"</span>, QueryComparisons.GreaterThanOrEqual, <span style="color: #a31515;">"5"</span>);
+
+<span style="color: blue;">string </span>rkUpperFilter = TableQuery.GenerateFilterCondition(<span style="color: #a31515;">"RowKey"</span>, QueryComparisons.LessThan, <span style="color: #a31515;">"10"</span>);
+
+<span style="color: green;">// Note CombineFilters has the effect of &ldquo;([Expression1]) Operator (Expression2]), as such passing in a complex expression will result in a logical grouping. <br/></span><span style="color: blue;">string </span>combinedRowKeyFilter = TableQuery.CombineFilters(rkLowerFilter, TableOperators.And, rkUpperFilter);
+
+<span style="color: blue;">string </span>combinedFilter = TableQuery.CombineFilters(pkFilter, TableOperators.And, combinedRowKeyFilter);
+
+<span style="color: green;">// OR <br/></span><span style="color: blue;">string </span>combinedFilter = <span style="color: blue;">string</span>.Format(&ldquo;({0}) {1} ({2}) {3} ({4})&rdquo;, pkFilter, TableOperators.And, rkLowerFilter, TableOperators.And, rkUpperFilter);
+TableQuery&lt;SampleEntity&gt; query = <span style="color: blue;">new </span>TableQuery&lt;SampleEntity&gt;().Where(combinedFilter);</pre>
+<p>Note: There is no logical expression tree provided in the current release, and as a result repeated calls to the fluent methods on <em>TableQuery</em> overwrite the relevant aspect of the query. Additionally,</p>
+<p>Note the TableOperators and QueryComparisons classes define string constants for all supported operators and comparisons:</p>
+<p>TableOperators</p>
+<ul>
+<li>And</li>
+<li>Or</li>
+<li>Not</li>
+</ul>
+<p>QueryComparisons</p>
+<ul>
+<li>Equal</li>
+<li>NotEqual</li>
+<li>GreaterThan</li>
+<li>GreaterThanOrEqual</li>
+<li>LessThan</li>
+<li>LessThanOrEqual</li>
+</ul>
+<h4>Scenarios</h4>
+<h5><strong>NoSQL</strong></h5>
+<p>A common pattern in a NoSQL datastore is to work with storing related entities with different schema in the same table. In this sample below, we will persist a group of heterogeneous shapes that make up a given drawing. In our case, the PartitionKey for our entities will be a drawing name that will allow us to retrieve and alter a set of shapes together in an atomic manner. The challenge becomes how to work with these heterogeneous entities on the client side in an efficient and usable manner.</p>
+<p>The table client provides an <em>EntityResolver </em>delegate which allows client side logic to execute during deserialization. In the scenario detailed above, let&rsquo;s use a base entity class named <em>ShapeEntity</em> which extends <em>TableEntity</em>. This base shape type will define all common properties to a given shape, such as it Color Fields and X and Y coordinates in the drawing.</p>
+<pre class="code"><span style="color: blue;">public class </span><span style="color: #2b91af;">ShapeEntity </span>: TableEntity
+{
+    <span style="color: blue;">public virtual string </span>ShapeType { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public double </span>PosX { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public double </span>PosY { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public int </span>ColorA { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public int </span>ColorR { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public int </span>ColorG { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public int </span>ColorB { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+}</pre>
+<p>Now we can define some shape types that derive from the base ShapeEntity class. In the sample below we define a rectangle which will have a Width and Height property. Note, this child class also overrides ShapeType for serialization purposes. For brevities sake the Line, and Ellipse entities are omitted here, however you can imagine representing other types of shapes in different child entity type such as triangles, trapezoids etc.</p>
+<pre class="code"><span style="color: blue;">public class </span><span style="color: #2b91af;">RectangleEntity </span>: ShapeEntity
+{
+    <span style="color: blue;">public double </span>Width { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+    <span style="color: blue;">public double </span>Height { <span style="color: blue;">get</span>; <span style="color: blue;">set</span>; }
+
+    <span style="color: blue;">public override string </span>ShapeType
+    {
+        <span style="color: blue;">get </span>{ <span style="color: blue;">return </span><span style="color: #a31515;">"Rectangle"</span>; }
+        <span style="color: blue;">set </span>{<span style="color: green;">/* no op */</span>}
+    }
+}</pre>
+<p>Now we can define a query to load all of the shapes associated with our drawing and an <em>EntityResolver</em> that will resolve each entity to the correct child class. Note, that in this example aside from setting the core properties PartitionKey, RowKey, Timestamp, and ETag, we did not have to write any custom deserialization logic and instead rely on the built in deserialization logic provided by <em>TableEntity.ReadEntity</em>.</p>
+<pre class="code" style="height: 487px; width: 1469px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+TableQuery&lt;ShapeEntity&gt; drawingQuery = <span style="color: blue;">new </span>TableQuery&lt;ShapeEntity&gt;().Where(TableQuery.GenerateFilterCondition(<span style="color: #a31515;">"PartitionKey"</span>, QueryComparisons.Equal, <span style="color: #a31515;">"DrawingName"</span>));
+
+EntityResolver&lt;ShapeEntity&gt; shapeResolver = (pk, rk, ts, props, etag) =&gt;
+{
+    ShapeEntity resolvedEntity = <span style="color: blue;">null</span>;
+    <span style="color: blue;">string </span>shapeType = props[<span style="color: #a31515;">"ShapeType"</span>].StringValue;
+
+    <span style="color: blue;">if </span>(shapeType == <span style="color: #a31515;">"Rectangle"</span>) { resolvedEntity = <span style="color: blue;">new </span>RectangleEntity(); }
+    <span style="color: blue;">else if </span>(shapeType == <span style="color: #a31515;">"Ellipse"</span>) { resolvedEntity = <span style="color: blue;">new </span>EllipseEntity(); }
+    <span style="color: blue;">else if </span>(shapeType == <span style="color: #a31515;">"Line"</span>) { resolvedEntity = <span style="color: blue;">new </span>LineEntity(); }    
+    <span style="color: green;">// Potentially throw here if an unknown shape is detected <br/><br/></span>    resolvedEntity.PartitionKey = pk;
+    resolvedEntity.RowKey = rk;
+    resolvedEntity.Timestamp = ts;
+    resolvedEntity.ETag = etag;
+    resolvedEntity.ReadEntity(props, <span style="color: blue;">null</span>);
+
+    <span style="color: blue;">return </span>resolvedEntity;
+};</pre>
+<p>Now we can execute this query in a segmented Asynchronous manner in order to keep our UI fast and fluid. The code below is written using the Async Methods exposed by the client library for Windows Runtime.</p>
+<pre class="code" style="height: 225px; width: 1469px;">List&lt;ShapeEntity&gt; shapeList = <span style="color: blue;">new </span>List&lt;ShapeEntity&gt;();
+TableQuerySegment&lt;ShapeEntity&gt; currentSegment = <span style="color: blue;">null</span>;
+<span style="color: blue;">while </span>(currentSegment == <span style="color: blue;">null </span>|| currentSegment.ContinuationToken != <span style="color: blue;">null</span>)
+{
+    currentSegment = await drawingTable.ExecuteQuerySegmentedAsync(
+ drawingQuery,
+ shapeResolver,
+ currentSegment != <span style="color: blue;">null </span>? currentSegment.ContinuationToken : <span style="color: blue;">null</span>);
+
+    shapeList.AddRange(currentSegment.Results);
+}</pre>
+<p>Once we execute this we can see the resulting collection of ShapeEntities contains shapes of various entity types.</p>
+<p><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/6428.shapelist_10FB1CFC.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/6428.shapelist_5F00_10FB1CFC.jpg"><img style="background-image: none; display: inline;" title="shapelist" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/0143.shapelist_thumb_108EEA07.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/0143.shapelist_5F00_thumb_5F00_108EEA07.jpg" alt="shapelist" width="615" height="296" border="0"/></a></p>
+<h5><strong>Heterogeneous update</strong></h5>
+<p>In some cases it may be required to update entities regardless of their type or other properties. Let&rsquo;s say we have a table named &ldquo;employees&rdquo;. This table contains entity types for developers, secretaries, contractors, and so forth. The example below shows how to query all entities in a given partition (in our example the state the employee works in is used as the PartitionKey) and update their salaries regardless of job position. Since we are using merge, the only property that is going to be updated is the Salary property, and all other information regarding the employee will remain unchanged.</p>
+<pre class="code" style="height: 700px; width: 1469px;"><span style="color: green;">// You will need the following using statements <br/></span><span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage;
+<span style="color: blue;">using </span>Microsoft.WindowsAzure.Storage.Table;
+
+TableQuery query = <span style="color: blue;">new </span>TableQuery().Where(<span style="color: #a31515;">"PartitionKey eq 'Washington'"</span>).Select(<span style="color: blue;">new string</span>[] { <span style="color: #a31515;">"Salary" </span>});
+
+<span style="color: green;">// Note for brevity sake this sample assumes there are 100 or less employees, however the client should ensure batches are kept to 100 operations or less. <br/></span>TableBatchOperation mergeBatch = <span style="color: blue;">new </span>TableBatchOperation();
+<span style="color: blue;">foreach </span>(DynamicTableEntity ent <span style="color: blue;">in </span>employeeTable.ExecuteQuery(query))
+{
+    EntityProperty salaryProp;
+
+    <span style="color: green;">// Check to see if salary property is present <br/></span><span style="color: blue;"> if </span>(!ent.Properties.TryGetValue(<span style="color: #a31515;">"Salary"</span>, <span style="color: blue;">out </span>salaryProp))
+    {
+        <span style="color: blue;">if </span>(salaryProp.DoubleValue &lt; 50000)
+        {
+            <span style="color: green;">// Give a 10% raise <br/></span>            salaryProp.DoubleValue = 1.1;
+        }
+        <span style="color: blue;">else if </span>(salaryProp.DoubleValue &lt; 100000)
+        {
+            <span style="color: green;">// Give a 5% raise <br/></span>            salaryProp.DoubleValue = *1.05;
+        }
+
+        mergeBatch.Merge(ent);
+    }
+    <span style="color: blue;">else </span>{
+        <span style="color: blue;">throw new </span>ArgumentNullException(<span style="color: #a31515;">"Entity does not contain Salary!"</span>);
+    }
+}
+<span style="color: green;"><br/>// Execute batch to save changes back to the table service <br/></span>employeeTable.ExecuteBatch(mergeBatch);</pre>
+<h5>Persisting 3<sup>rd</sup> party objects</h5>
+<p>In some cases we may need to persist objects exposed by 3rd party libraries, or those which do not fit the requirements of a <em>TableEntity</em> and cannot be modified to do so. In such cases, the recommended best practice is to encapsulate the 3rd party object in a new client object that implements the <em>ITableEntity</em> interface, and provide the custom serialization logic needed to persist the object to the table service via <em>ITableEntity.ReadEntity </em>and <em>ITableEntity.WriteEntity</em>.</p>
+<h4>Continuation Tokens</h4>
+<p>Continuation Tokens can be returned in the segmented execution of a query. One key improvement to the <em>[Blob|Table|Queue]ContinuationTokens</em> in this release is that all properties are now publicly settable and a public default constructor is provided. This, in addition to the <em>IXMLSerializable</em> implementation, allows clients to easily persist a continuation token.</p>
+<h4>DataServices</h4>
+<p>The legacy table service implementation has been migrated to the <strong>Microsoft.WindowsAzure.Storage.Table.DataServices</strong><strong> </strong>namespace and updated to support new features in the 2.0 release such as <em>OperationContext</em>, end to end timeouts, and asynchronous cancellation. In addition to the new features, there have been some breaking changes introduced in this release, for a full list please reference the tables section of the <a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2012/10/29/windows-azure-storage-client-library-2-0-breaking-changes-amp-migration-guide.aspx">Breaking Changes blog post</a>.</p>
+<h4>Developing in Windows Runtime</h4>
+<p>A key driver in this release was expanding platform support, specifically targeting the upcoming releases of Windows 8, Windows RT, and Windows Server 2012. As such, we are releasing the following two Windows Runtime components to support Windows Runtime as Community Technology Preview (CTP):</p>
+<ul>
+<li><strong>Microsoft.WindowsAzure.Storage.winmd</strong> - A fully projectable storage client that supports JavaScript, C++, C#, and VB. This library contains all core objects as well as support for Blobs, Queues, and a base Tables Implementation consumable by JavaScript</li>
+<li><strong>Microsoft.WindowsAzure.Storage.Table.dll </strong>&ndash; A table extension library that provides generic query support and strong type entities. This is used by non-JavaScript applications to provide strong type entities as well as reflection based serialization of POCO objects</li>
+</ul>
+<p>The images below illustrate the Intellisense experience when defining a <em>TableQuery </em>in an application that just reference the core storage component and when the table extension library is used. <em>EntityResolver</em>, and the <em>TableEntity</em> object are also absent in the core storage component, instead all operations are based off of the <em>DynamicTableEntity</em> type.</p>
+<p><strong>Intellisense when defining a TableQuery referencing only the core storage component</strong></p>
+<p><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/8561.intellisense-core_53F6EB69.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/8561.intellisense_2D00_core_5F00_53F6EB69.jpg"><img style="background-image: none; display: inline;" title="intellisense-core" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/3364.intellisense-core_thumb_13C0D1EF.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/3364.intellisense_2D00_core_5F00_thumb_5F00_13C0D1EF.jpg" alt="intellisense-core" width="547" height="135" border="0"/></a></p>
+<p><strong>Intellisense when defining a TableQuery with the table extension library</strong></p>
+<p><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/2781.intellisense-extensionlib_538AB874.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/2781.intellisense_2D00_extensionlib_5F00_538AB874.jpg"><img style="background-image: none; display: inline;" title="intellisense-extensionlib" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/0537.intellisense-extensionlib_thumb_4141F1B2.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/0537.intellisense_2D00_extensionlib_5F00_thumb_5F00_4141F1B2.jpg" alt="intellisense-extensionlib" width="549" height="170" border="0"/></a></p>
+<p>While most table constructs are the same, you will notice that when developing for the Windows Runtime all synchronous methods are absent which is in keeping with the specified best practice. As such, the equivalent of the desktop method <em>CloudTable.ExecuteQuery</em> which would handle continuation for the user has been removed. Instead developers are supposed to handle this segmented execution in their application and utilize the provided <em>ExecuteQuerySegmentedAsync</em> methods in order to keep their apps fast and fluid.</p>
+<h4>Summary</h4>
+<p>This blog post has provided an in depth overview of developing applications that leverage the Windows Azure Table service via the new Storage Client libraries for .Net and the Windows Runtime. Additionally, we have discussed some specific differences when migrating existing applications from a previous 1.x release of the SDK.</p>
+<p>Joe Giardino <br/>Serdar Ozler <br/>Veena Udayabhanu <br/>Justin Yu</p>
+<p>Windows Azure Storage</p>
+<h4>Resources</h4>
+<h5>Get the Windows Azure SDK for .Net</h5>
+<ul>
+<li><a href="http://www.windowsazure.com/en-us/develop/net/">Download the Windows Azure SDK</a></li>
+<li><a href="https://github.com/WindowsAzure/azure-sdk-for-net">Windows Azure SDK for .Net source code on GitHub</a></li>
+<li><a href="http://www.windowsazure.com/en-us/develop/net/how-to-guides/table-services-v17/">How to use the Table Storage Service</a></li>
+<li><a href="http://nuget.org/packages/WindowsAzure.Storage">nuget &ndash; Windows Azure Storage</a></li>
+<li><a href="http://nuget.org/packages/Microsoft.Data.OData/5.0.2">nuget - Microsoft.Data.Edm</a></li>
+<li><a href="http://nuget.org/packages/Microsoft.Data.OData/5.0.2">nuget - Microsoft.Data.OData</a></li>
+<li><a href="http://nuget.org/packages/Microsoft.Data.OData/5.0.2">nuget - System.Spatial</a></li>
+</ul>
+	</div><!-- .entry-content -->
+
+
+	<footer class="entry-footer single">
+				<hr>
+	</footer><!-- .entry-footer -->
+
+</article><!-- #post-## -->
+
+			
+		</div><!-- #single-content -->
+
+		
+<div id="comments" class="comments-area">
+	<div class="comments-title">
+		Comments (18)	</div>
+
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title"> <small><a rel="nofollow" id="cancel-comment-reply-link" href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#respond" style="display:none;">Cancel reply</a></small></h3><p class="must-log-in">You must be <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">logged in</a> to post a comment.</p>	</div><!-- #respond -->
+	
+			<div class="navigation pagination clear-both">
+					</div>
+
+		<ol class="comment-list">
+					<li class="comment even thread-even depth-1" id="comment-191">
+				<div id="div-comment-191" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Gabriel Michaud</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-191">
+			November 6, 2012 at 5:30 pm</a>		</div>
+
+		<p>Hello,</p>
+<p>We&#39;re currently migrating our code base to the new Storage Client library. Everything is going well so far, however during our regression testing we found something important &#8211; any property defined as nullable (ex: int?, DateTime?) in our POCO object is not getting deserialized and always stays NULL.</p>
+<p>This was working previously using the old DataServices library and is very important for us. Is this a known problem, and is there a work-around?</p>
+<p>Gabriel</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-192">
+				<div id="div-comment-192" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Gabriel Michaud</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-192">
+			November 6, 2012 at 5:40 pm</a>		</div>
+
+		<p>Regarding my previous comment with nullable values, I looked at the source code and it seems that TableEntity.ReadEntity only handles nullable DateTime values. The rest is not handled.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-197">
+				<div id="div-comment-197" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Joe Giardino</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-197">
+			November 8, 2012 at 9:27 am</a>		</div>
+
+		<p>You are correct, both DateTime and DateTimeOffset are current supported for nullable types. Unfortunately some primitive types are not currently supported. This issue has been fixed and is currently in testing / signing. Please check github / nuget mid next week for the updated binaries.</p>
+<p>Joe</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-203">
+				<div id="div-comment-203" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/1ade3547a0b3a565c2c1246a5fc74db0?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/1ade3547a0b3a565c2c1246a5fc74db0?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">davidm@vccpsearch.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-203">
+			November 13, 2012 at 8:31 am</a>		</div>
+
+		<p>I&#39;ve just downloaded v2.0.1.0 from nuget today which was released on monday and I have the same problem as Gabriel Michaud. My int? is always null even if it has a value. Do you have an updated fix date? The new library is unusable until this is fixed.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-204">
+				<div id="div-comment-204" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">ChrisL</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-204">
+			November 15, 2012 at 10:28 am</a>		</div>
+
+		<p>How do we use TPL Dataflow with Azure Tables? &nbsp;Specifically I want to process data as continuation tokens are given to me&#8230; rather than wait for the last entity to arrive.</p>
+<p>Will the TPL &quot;async&quot; Task&lt;T&gt; come to the regular Storage Client in .NET?</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-209">
+				<div id="div-comment-209" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Joey Schluchter</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-209">
+			November 20, 2012 at 9:08 am</a>		</div>
+
+		<p>Is it possible to query based on generics for a TableQuery&lt;T&gt;().Where(&#8230;);</p>
+<p>Like so?</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;var exQuery =</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;new TableQuery&lt;T&gt;().Where(TableQuery.GenerateFilterCondition(&quot;PartitionKey&quot;, QueryComparisons.Equal,</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; partitionKey));</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-210">
+				<div id="div-comment-210" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/419b33245887eb453bdf6c8715579628?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/419b33245887eb453bdf6c8715579628?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">serdar.ozler@outlook.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-210">
+			November 20, 2012 at 11:33 am</a>		</div>
+
+		<p>@Joey &#8211; Please make sure T is defined as &quot;where T : TableEntity, new()&quot; in your method. That will enable you to use T as a generic argument in TableQuery.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-213">
+				<div id="div-comment-213" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">ChrisL</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-213">
+			November 30, 2012 at 7:03 pm</a>		</div>
+
+		<p>I figured out how to make TPL work with Azure Storage&#8230; I posted it here github.com/makerofthings7/AzureStorageExtensions</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-231">
+				<div id="div-comment-231" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Roy Herrod</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-231">
+			January 7, 2013 at 7:19 pm</a>		</div>
+
+		<p>TableOperation has a &#39;Merge&#39; option but no &#39;Update&#39; option, am I missing something here or is there no way to perform a conditional update based on the ETag with this new Library and &#39;CloudTable&#39; stuff?</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-241">
+				<div id="div-comment-241" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Arvin</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-241">
+			February 5, 2013 at 1:34 am</a>		</div>
+
+		<p>I have a table that has millions of thousands of entities. &nbsp;I wanted to retrieve items by PartitionKey and limit the number of items by 5. However using the Take(5) doesnt work. &nbsp;Here&#39;s my code. &nbsp;Am I missing something: </p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp;public void GetData(string connectionString, string tableName)</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;var cloudStorageAccount = CloudStorageAccount.Parse(connectionString);</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;var cloudTableClient = cloudStorageAccount.CreateCloudTableClient(); </p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;var cloudTable = cloudTableClient.GetTableReference(tableName);</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;var filter = TableQuery.GenerateFilterCondition(&quot;PartitionKey&quot;, QueryComparisons.Equal, &quot;Test_Service:20121016&quot;);</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;var query = new TableQuery&lt;CustomTableEntity&gt;().Where(filter).Take(5);</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;foreach (var item in cloudTable.ExecuteQuery&lt;CustomTableEntity&gt;(query))</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Trace.TraceInformation(string.Format(&quot;{0} &#8211; {1} &#8211; {2}&quot;, item.PartitionKey, item.RowKey, item.Timestamp));</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp;public class CustomTableEntity : TableEntity</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p> &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p>This code only returns all data where the PartitionKey is &quot;Test_Service:20121016&quot; and doesnt give me the Top 5 or First 5 items.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-243">
+				<div id="div-comment-243" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Joe Giardino [MSFT]</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-243">
+			February 11, 2013 at 10:25 am</a>		</div>
+
+		<p>@Arvin</p>
+<p>There was an issue regarding the correct handling of takecount that was resolved in 2.0.4. You can get the source on github (<a rel="nofollow" target="_new" href="https://github.com/WindowsAzure/azure-sdk-for-net">github.com/&#8230;/azure-sdk-for-net</a>) or the assembly via nugget (<a rel="nofollow" target="_new" href="http://www.nuget.org/packages/WindowsAzure.Storage">http://www.nuget.org/&#8230;/WindowsAzure.Storage</a>). </p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-244">
+				<div id="div-comment-244" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Joe Giardino [MSFT]</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-244">
+			February 11, 2013 at 10:41 am</a>		</div>
+
+		<p>@Roy Herrod </p>
+<p>The nomenclature is slightly different than WCF Data Services which abstracted away much of the protocol and underlying implementation. When you &quot;update&quot; an entity you can either merge the payload with the entity on the server or replace it completely. </p>
+<p>For example, if the entity on the server contains properties A,B,C, and you were to MERGE a entity with properties C&#39;,D,E,F, the resulting entity would contain, &nbsp;A,B,C&#39;,D,E,F. &nbsp;If you were to do the same operation with the REPLACE the resulting entity would contain only C&#39;,D,E,F. </p>
+<p>To accomplish these semantics via WCF data services you would have used</p>
+<p>Merge</p>
+<p>&#8230;</p>
+<p>ctx.UpdateObject(mergeEntity);</p>
+<p>ctx.SaveChangesWithRetries();</p>
+<p>&#8230;</p>
+<p>Replace</p>
+<p>&#8230;</p>
+<p>ctx.UpdateObject(replaceEntity);</p>
+<p>ctx.SaveChangesWithRetries(SaveChangesOptions.ReplaceOnUpdate);</p>
+<p>&#8230;</p>
+<p>As far as the conditional aspect, both the Merge, and Replace TableOperations will send the If-Match header and are therefore conditional. To perform an operation regardless of state you can utilize the InsertOrMerge or InsertOrReplace operations which will not send the etag. This &quot;Upser&quot; semantic will perform the action even if the entity does not exist on the server or is an older version.</p>
+<p>Hope this helps, </p>
+<p>Joe</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-249">
+				<div id="div-comment-249" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Scott</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-249">
+			February 22, 2013 at 10:05 am</a>		</div>
+
+		<p>What is the 2.0 equivalent of the following?</p>
+<p>context.IgnoreMissingProperties = true/false</p>
+<p>In other words, how do I accomplish this using the 2.0 client libraries.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-250">
+				<div id="div-comment-250" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Joe Giardino</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-250">
+			February 23, 2013 at 12:28 pm</a>		</div>
+
+		<p>@ Scott</p>
+<p>Ignore missing properties simply will continue if a given property is not found on the entity. This the default behavior of the new TSL api (i.e. similar to IgnoreMissingProperties=true in WCF data services). In many cases the deserialization is controlled by the user or is consumed by a non poco type (for example DynamicTableEntity or using a EntityResolver). &nbsp;If your requirement is to assert for a given property not found on a POCO type (i.e. IgnoreMissingProperties = false) then you can accomplish this by overriding the ITableEntity.ReadEntity method. </p>
+<p>joe</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-251">
+				<div id="div-comment-251" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Scott</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-251">
+			February 26, 2013 at 12:06 pm</a>		</div>
+
+		<p>Thanks Joe&#8230;That was exactly what I needed!</p>
+<p>That also explains why Partiton/RowKey are no longer virtual &#8211; in TableEntity. Custom (de)serialization of *everything* can now be handled by overriding (Read/Write)Entity.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-507">
+				<div id="div-comment-507" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Nigel</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-507">
+			August 19, 2014 at 6:30 pm</a>		</div>
+
+		<p>Hi,</p>
+<p>I&#39;m not sure what you mean when you are describing the TableEntity and you say &quot;This class is sealed and may be extended to add additional properties to an entity type.&quot; If the class can be extended (which it can), it is not sealed in the reserved C# keyword sense of the word. </p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-508">
+				<div id="div-comment-508" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/62c5e9ef4fbe258becc84f2fd2a9e6f7?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/62c5e9ef4fbe258becc84f2fd2a9e6f7?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">shah.vinay@live.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-508">
+			August 20, 2014 at 6:40 pm</a>		</div>
+
+		<p>@Nigel, TableEntity class is NOT sealed. Post was missing the &#39;NOT&#39; and has been fixed. Thanks for bringing it to our attention.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-580">
+				<div id="div-comment-580" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/4003232b9decb80c120ae133d5e50ab5?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/4003232b9decb80c120ae133d5e50ab5?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">cd_kokje@hotmail.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/11/06/windows-azure-storage-client-library-2-0-tables-deep-dive/#comment-580">
+			December 10, 2014 at 7:52 pm</a>		</div>
+
+		<p>We still don&#39;t have powershell commandlets for managing (reading, writing) data from Azure storage Table. Do we have this C# code converted to Powershell one that we can use as I am not C# developer. I know powershell as I am operations field and perform system admin task though powershell.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F11%2F06%2Fwindows-azure-storage-client-library-2-0-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		</ol><!-- .comment-list -->
+
+		<div class="navigation pagination">
+					</div>
+
+	
+	
+</div><!-- .comments-area -->
+	</div><!-- #primary -->

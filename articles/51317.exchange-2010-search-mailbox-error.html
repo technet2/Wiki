@@ -1,0 +1,42 @@
+---
+layout: default
+title: Exchange 2010 - Search-Mailbox error - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>In Exchange, when running a the search-mailbox command and you have a large user base, you might encounter the following error:</p>
+<blockquote>
+<p>Sending data to a remote command failed with the following error message: The total data received from the remote clien<br />
+t exceeded allowed maximum. Allowed maximum is 524288000. For more information, see the about_Remote_Troubleshooting He<br />
+lp topic.<br />
+&#43; CategoryInfo : OperationStopped: (System.Manageme...pressionSyncJob:PSInvokeExpressionSyncJob) [], PSRe<br />
+motingTransportException<br />
+&#43; FullyQualifiedErrorId : JobFailure</p>
+</blockquote>
+<p><img alt=" " class="aligncenter size-full wp-image-3447" src="https://collaborationpro.com/wp-content/uploads/2018/03/search-error.png" width="996" height="203" /></p>
+<p>The error takes a while to show but unfortunately it has reached a default limit which cannot be changed.</p>
+<p>Don&#39;t worry, there are some workarounds which can get you through this, here are some of them:</p>
+<ul>
+<li>You can add this into a foreach statement to loop through each mailbox at a time
+</li><li>You could run the command against each mailbox server, however if you have hundreds of servers it might not be an option.
+</li><li>You can lastly create a new&nbsp;PSSessionConfiguration on your remote server where you running this, however you might also hit a memory quota error.
+</li><li>Changing your Search Query by shortening the date range. </li></ul>
+<p>To expand on the above, you can use the following command below to create a foreach statement to loop though the mailboxes:</p>
+<p><strong>ForEach Statement:</strong></p>
+<pre class="lang:ps decode:true "><div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">$Users = Get-Content </code><code style="color:blue;">&quot;C:\Users\User\Script\Users.csv&quot;</code></span></div><div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">foreach</code> <code style="color:#000000;">($User </code><code style="color:#006699;font-weight:bold;">in</code> <code style="color:#000000;">$Users)</code></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Get-Mailbox -ResultSize unlimited | Search-Mailbox -SearchQuery </code><code style="color:blue;">&quot;Received:&gt; $(&quot;</code><code style="color:#000000;">2016-06-15 00:00:00</code><code style="color:blue;">&quot;) AND Received:&lt; $(&quot;</code><code style="color:#000000;">2016-07-01 00:00:00</code><code style="color:blue;">&quot;)&quot;</code> <code style="color:#000000;">-targetmailbox domain\mailbox -TargetFolder Search1 -LogLevel full</code></span></span></div><div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div></div>
+</pre>
+<p><strong>vs the standard command to search the mailbox:</strong></p>
+<pre class="lang:ps decode:true">Get-Mailbox -ResultSize unlimited -OrganizationalUnit &#39;domain.local/OU/domain.com&#39; | Search-Mailbox -SearchQuery &quot;Received:&gt; $(&quot;2016-06-15 00:00:00&quot;) AND Received:&lt; $(&quot;2016-07-01 00:00:00&quot;)&quot; -targetmailbox domain\mailbox -TargetFolder Search1 -LogLevel full</pre>
+<p><strong>Using an Individual mailbox server:</strong></p>
+<pre class="lang:ps decode:true ">Get-MailboxServer -Identity Server1 | Get-Mailbox -ResultSize unlimited -OrganizationalUnit &#39;domain.local/OU/domain.com&#39; | Search-Mailbox -SearchQuery &quot;Received:&gt; $(&quot;2016-06-15 00:00:00&quot;) AND Received:&lt; $(&quot;2016-07-01 00:00:00&quot;)&quot; -targetmailbox domain\mailbox -TargetFolder Search1 -LogLevel full</pre>
+<p><strong>Creating a new PSSessionConfiguration, this includes 3 commands:</strong></p>
+<pre class="lang:ps decode:true">Register-PSSessionConfiguration -Name CustomLimits
+Set-PSSessionConfiguration -Name CustomLimits -MaximumReceivedDataSizePerCommandMB 500 -MaximumReceivedObjectSizeMB 500
+$Session = New-PSSession -ComputerName Server2 -ConfigurationName CustomLimits</pre>
+<p>If you still getting errors then try and change your search, shortening the date range.</p>
+
+</div>
+    
+    

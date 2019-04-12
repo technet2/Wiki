@@ -1,0 +1,136 @@
+---
+layout: default
+title: Azure Active Directory Domain Services for Beginners - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#What_is_a_domain">What is a domain?</a></li><li class="hierarchy-item"><a href="#What_is_a_domain_controller">What is a domain controller?</a></li><li class="hierarchy-item"><a href="#What_are_domain_services">What are domain services?</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_AD_and_configure_administrative_group">Create AD and configure administrative group.</a></li><li class="hierarchy-item"><a href="#Create_Azure_Virtual_Network">Create An Azure Virtual Network</a></li><li class="hierarchy-item"><a href="#Configuring_VNET_with_ADDS_DNS">Configuring VNET with ADDS DNS</a></li><li class="hierarchy-item"><a href="#Validating_and_administrating_ADDS">Validating and administrating ADDS</a></li><li class="hierarchy-item"><a href="#Administer_ADDS">Administer ADDS</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Reference">Reference</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<p><span>Since the evolution of Azure active directory, it has become a popular identity management solution on Azure. But note that it is just an identity solution and does not provide all features what Windows Active Directory offers e.g. domain controller
+ services, certificate services etc.</span></p>
+<p><span>Typically, if your organization’s workstations, servers and devices needs to be joined to your domain then you will need to provision your on premises domain controller and then each device will be joined to the domain. But wait, before we move ahead
+ with this let’s dive deep into few core concepts.<br />
+</span></p>
+<h2><a name="What_is_a_domain"></a><span>What is a domain?</span></h2>
+<p><span>Well, existence of each thing has some definite meaning and same applies to the domain. Domain concept was introduced so that individual user can be granted access with set of permissions to multiple computer resources with same credentials. So in
+ a nutshell, domain is a logical grouping of computer resources sharing central directory of users. This directory is known as Active Directory.</span></p>
+<h2><a name="What_is_a_domain_controller"></a>What is a domain controller?&nbsp;</h2>
+<p><span>Domain controller is nothing but a </span><span>Windows-based computer containing central directory of users, best described as the&nbsp;centre-piece of active directory. Since the domain controller is a Windows-based operating system machine so all other
+ computer resources in a domain also need to have a </span><span>Windows-based operating system.</span></p>
+<h2><a name="What_are_domain_services"></a>What are domain services?</h2>
+<p><span>Now as described above, the centerpiece of AD i.e. domain controller is responsible for providing set of services to all the resources within a domain are called as domain services. Now these services could be security policy enforcement, access control,
+ user authentication etc.</span></p>
+<p><span>Now with these basics, let’s go ahead and see what Azure Active Directory Domain Services is.</span></p>
+<p><span>The idea behind having active directory domain services is as simple as having your domain controller in cloud and use its services online. Meaning that, when you create an Azure active directory and provision users in it, all those users have their
+ ‘*.onmicrosoft.com” domain associated with them. Now your computer resources like servers, workstations can be brought into this *.onmicrosoft.com domain and let your Azure AD users sign in to these resources using their Azure AD credentials.</span></p>
+<p><span>Now, if you are not happy with this default *.onmicrosoft.com domain and already have your own custom domain then you can use your domain and bring your resources on your custom domain.</span></p>
+<p><span>Let’s see how we can leverage and configure ADDS.</span></p>
+<p><span>Configuration of ADDS is usually a five-step process.</span></p>
+<ul>
+<li><span style="font-size:12.1px;">Create Azure AD and configure administrative group</span>
+</li><li><span style="font-size:12.1px;">Create Azure VNET</span> </li><li><span style="font-size:12.1px;">Enable and configure ADDS</span> </li><li><span style="font-size:12.1px;">Configure DNS for VNET created in step two.</span>
+</li><li><span style="font-size:12.1px;">Validate Domain Services and Administer your on cloud DC</span>
+</li></ul>
+<p><span>Let’s see each step in details.</span></p>
+<p><span>First things first. </span></p>
+<p><span>The Azure ADDS service is currently in preview and required virtual network should be in the same region where ADDS services are available. Also, the VNET has to be created in classic mode as currently ADDS does not support ARM based VNETs.</span></p>
+<p><span>For this article, we will be creating our AD and classic VNET in east us location where ADDS is available.</span></p>
+<p><span>List of available Azure services by region can be seen here - <a href="https://azure.microsoft.com/en-in/regions/#services">
+Services by region</a>.</span></p>
+<h3><a name="Create_AD_and_configure_administrative_group"></a><span>Create AD and configure administrative group.</span></h3>
+<p><span>Let’s start from scratch and create a brand new Azure AD with name ‘alphacorpinc’. Currently Azure AD management operations are supported only through the classic Azure portal.</span></p>
+<p><span>It opens up a modal dialogue asking to enter metadata for your new AD like domain name. We will give the same domain name as AD name as ‘alphacorpinc’ and will not select the last checkbox for specifying B2C directory.</span></p>
+<p><span>Click OK and it starts provisioning your new AD in Azure.</span></p>
+<p><span>Now once the AD is created, we will need to create a group. Please note that this group creation is a mandate and group only with name “AAD DC Administrators” has to be created. Members of this group will be provided special rights and will be added
+ to administrator group of the domain joined machines automatically. </span></p>
+<p><span>We will create a user in Azure AD in a “User” role and will add the user in group mentioned above.</span></p>
+<p><span>To create a user in AD, navigate to the Azure AD and click on Users tab. Select Add from bottom action bar.</span></p>
+<p><span>Next screen will give you option to generate the temporary password. Copy the generated password and login to azure portal with this user credentials i.e. ADDCAdmin@alphacorpinc.onmicrosoft.com where you will be asked to create new password for this
+ user. Make note of this new password, we will be needing it next steps.</span></p>
+<p><span>Now let’s create a group as mentioned above and add this newly created user in the group.</span></p>
+<p><span>To create a group in Azure AD, click on groups tab and select add group from bottom action bar.</span></p>
+<p><span>Click OK and add user which we just created in the group.</span></p>
+<p><span>And with that, we are done with step 1, let’s proceed with step 2.</span></p>
+<h3><a name="Create_Azure_Virtual_Network"></a><span>Create An Azure Virtual Network</span></h3>
+<p><span>As anyways we would need to create a network while provisioning on premises DC or DC on a VM which acts as a logical boundary for resources i.e. all resources belonging to this network can be brought on to the domain and can establish communication
+ to DC.</span></p>
+<p><span>As mentioned above, this has to be a classic VNET since ADDS currently only supports classic VNET and it has to be in the region where ADDS services are supported.</span></p>
+<p><span>To create a new VNET in azure, click on new and select virtual network. We will name our VNET as ‘AlphaCorpVNet’.</span></p>
+<p><span>Note that we selected the DNS Server option as ‘None’ and we will be updating it later once we enable the ADDS in next step.</span></p>
+<p><span>Enable and configure ADDS in Azure AD</span></p>
+<p><span>Let’s navigate back to the Azure AD created in step 1. Select Configure tab from the top on your AD home page.</span></p>
+<p><span>Find the section Domain Services and select ‘Yes’ option for setting ‘ENABLE DOMAIN SERVICES FOR THIS DIRECTORY’.</span></p>
+<p><span>Once you enable the ADDS option, you will be asked to choose the domain name and VNet. Domain name option lists all the registered i.e. verified and unverified domain names of the Azure AD.
+<br />
+</span></p>
+<p><span>Click Save and it will enable ADDS for Azure AD. </span></p>
+<p><span>Note that the DNS domain name of domain services drop-down contains the default AD domain, you can either keep it or change it to your desired domain name. If you have added your custom domains (verified and unverified both) in the AD then those will
+ be shown in the drop-down too. You will not be able to change this once you click save and once domain services are enabled.</span></p>
+<p><span>After few minutes, you will be able to see the DNS Server addresses coming up on the same page of Azure AD i.e. configuration tab. The reason it takes few minutes to show those IP addresses to you is because in background it provisions and configures
+ domain controller server and once it is ready when it comes back to a DNS address.
+</span></p>
+<p><span>Take a note of these DNS server addresses which we will be updating in ‘AlphaCorpVNet’.</span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8037.8.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8037.8.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<h3><a name="Configuring_VNET_with_ADDS_DNS"></a><span>Configuring VNET with ADDS DNS</span></h3>
+<p><span>Navigate to the AlphaCorpVNet and click on configure tab.</span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/14316.9.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/14316.9.jpg" style="border-width:0px;border-style:solid;" /></a><span><br />
+Add both DNS entries obtained from Azure AD configuration page as DNS server for VNET and Save the VNET settings.</span>
+<h3><a name="Validating_and_administrating_ADDS"></a><span>Validating and administrating ADDS</span></h3>
+<p><span>Once the entire set up is ready, now it is time to validate whether ADDS setup is working or not. Best way to do is by provisioning a domain joined virtual machine in Azure.</span></p>
+<p><span>Let’s create a classic mode i.e. IaaS v1 virtual machine and we will try to bring it on the alphacorpinc domain. Note that we will need to create VM in same Vnet where ADDS DNS is updated i.e. in AlphaCorpVnet.</span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6403.10.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6403.10.jpg" style="border-width:0px;border-style:solid;" /></a><span><br />
+<br />
+Once the VM is created, log in to it using RDP via local administrator account specified during the VM creation.</span>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7506.11.jpg">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7506.11.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<p><span>In Server manager, select local server node from left and click on workgroup name.</span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5543.12.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5543.12.jpg" style="border-width:0px;border-style:solid;" /></a><span><br />
+<br />
+Select Domain and enter domain name, you should be able to get credential prompt after clicking on OK button if VM is able to find the DNS if not then as an alternative you can set preferred DNS address of the VM by modifying network TCP IP properties and set
+ ADDS DNS address as preferred.<br />
+</span>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1108.13.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1108.13.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<p><span>After clicking Ok and close, you will be disconnected from RDP session. </span>
+</p>
+<p><span>Restart the VM from Azure portal and log in to RDP session again.</span></p>
+<p><span>Now repeat the step in order to join VM to domain from workgroup by going to server manager. You will be asked for credentials to join VM to the specified domain.</span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2185.14.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2185.14.jpg" style="border-width:0px;border-style:solid;" /></a><span>Specify
+ the credentials of a user which we created in step 1 and added to the group ‘AAD DC Administrators’.</span>
+<p><span>After successful authentication, VM will be joined to the domain and below message can be seen.</span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.15.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.15.jpg" style="border-width:0px;border-style:solid;" /></a>
+<span>(Please note that if you have recently updated credentials of the authenticating user, then it might take some time to reflect the updated password).</span>
+<p><span>Restart the VM and now you will be able to log on to the VM with your Azure AD user which proves that ADDS setup has been correctly set up and is in place.&nbsp;</span></p>
+<h3><a name="Administer_ADDS"></a><span>Administer ADDS</span></h3>
+<p><span>By now, some of you might be wondering that though I have ADDS set up in place and machines are getting joined to the domain but where can we configure settings of my domain on domain controller which is running on cloud?</span></p>
+<p><span>Well you are right and that’s the valid question. There are two ways to do it.</span></p>
+<ul>
+<li><span style="font-size:12.1px;"><a href="http://social.technet.microsoft.com/wiki/contents/articles/2202.remote-server-administration-tools-rsat-for-windows-client-and-windows-server-dsforum2wiki.aspx" style="font-size:12.1px;">Using Remote Server Administration
+ Tools.</a></span> </li><li><span style="font-size:12.1px;">Using AD Administration tools on domain joined VM.</span>
+</li></ul>
+<p><span>Since we have just joined a VM to the Azure AD domain, so lets see details of the second approach.</span></p>
+<p><span>Log on to the domain joined VM using credentials of a user added in ‘AAD DC Administrators’ group of Azure AD.</span></p>
+<p><span>Open Server Manager and click on Add roles and features. Navigate to the features selection dialogue and select below features</span></p>
+<p><span>Click Next.</span></p>
+<p><span>This basically enables the access to Active Directory Administration Tools.</span></p>
+<p><span>Once the installation is complete, open up AD administration center.</span></p>
+<p><span>Which may look something like this</span></p>
+<p><span>Click the domain name shown on the left and navigate to the AADDC Computers.</span></p>
+<p><span>You will be able to overview and manage all the domain joined VMs from this console.</span></p>
+<p>Like mentioned before, ADDS currently supports only ASM based VNETs i.e. classic VNETs and so only classic mode VMs can be joined to the domain but what is the workaround todomain, so lets see details of the second approach.</span></p>
+<p><span>Log on to the domain joined VM using credentials of a user added in ‘AAD DC Administrators’ group of Azure AD.</span></p>
+<p><span>Open Server Manager and click on Add roles and features. Navigate to the features selection dialogue and select below features</span></p>
+<p><span>Click Next.</span></p>
+<p><span>This basically enables the access to Active Directory Administration Tools.</span></p>
+<p><span>Once the installation is complete, open up AD administration center.</span></p>
+<p><span>Which may look something like this</span></p>
+<p><span>Click the domain name shown on the left and navigate to the AADDC Computers.</span></p>
+<p><span>You will be able to overview and manage all the domain joined VMs from this console.</span></p>
+<p>Lik join ARM based VMs to Azure AD Domain? We will be seeing it in upcoming article
+ by leveraging Peering concept of VNETs.</p>
+<h2><a name="Reference"></a><span>Reference</span></h2>
+This article was originally published at <a href="http://www.c-sharpcorner.com/article/azure-active-directory-domain-services-for-beginners/">
+Azure Active Directory Domain Services For Beginners</a>.&nbsp;This link is external to TechNet Wiki. It will open in a new window. &nbsp;Please feel free to improve this article by adding new missing or important content, fix spell and so on.
+
+</div>
+    
+    

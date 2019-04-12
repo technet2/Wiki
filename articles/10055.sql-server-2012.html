@@ -1,0 +1,363 @@
+---
+layout: default
+title: Оптимизация запросов к пространственным данным в SQL Server 2012 - Статьи TechNet - Россия (Pусский) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1 style="margin:24pt 0in 0pt;"><span style="font-family:&#39;segoe ui&#39;;color:#333333;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1884.SQL_5F00_h_5F00_rgb.png"><img alt=" " width="466" height="110" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1884.SQL_5F00_h_5F00_rgb.png" style="border:0px solid currentcolor;" /></a></span></h1>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><br />
+<br />
+<br />
+<a name="_Toc311816507"><span style="font-family:cambria;font-size:24px;color:#365f91;">Опти&#1084;изация запросов к пространственны&#1084; данны&#1084; в SQL Server</span></a><sv class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Оптимизация запросов к пространственным данным в SQL Server 2012</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<h1 style="margin:24pt 0in 0pt;"><span style="font-family:&#39;segoe ui&#39;;color:#333333;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1884.SQL_5F00_h_5F00_rgb.png"><img alt=" " width="466" height="110" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1884.SQL_5F00_h_5F00_rgb.png" style="border:0px solid currentcolor;" /></a></span></h1>
+<p style="margin:0pan style="font-family:cambria;font-size:24px;color:#365f91;"> 2012</span></span></p>
+<span style="font-family:calibri;">
+<p style="margin:0in 0in 10pt;">Ссылка на оригинальную статью: <a href="http://social.technet.microsoft.com/wiki/contents/articles/9694.tuning-spatial-point-data-queries-in-sql-server-2012.aspx">
+http://social.technet.microsoft.com/wiki/contents/articles/9694.tuning-spatial-point-data-queries-in-sql-server-2012.aspx</a></p>
+<p style="margin:0in 0in 10pt;">Авторы: Ed Katibah, Milan Stojic, Michael Rys, Nicholas Dritsas</p>
+</span>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Технические рецензенты: Chuck Heinzelman</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Введение"></a><a name="Введение"></a><a name="Введение"></a><a name="Введение"></a><a name="Введение"></a><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Введение</span></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Опти&#1084;изация запросов к пространственны&#1084; данны&#1084; требует особого подхода. В SQL Server 2012 был представлен ряд нововведений, по&#1084;огающих в достижении этой цели.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Ниже &#1084;ы расс&#1084;отри&#1084; основные реко&#1084;ендации и подходы к решению этой задачи.</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Optimize_the_primary_key_clustered_index"></a><a name="_Toc311816509"><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Опти&#1084;изируйте кластерный индекс для первичного ключа</span></a></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Для того, чтобы создать индекс на столбец с пространственны&#1084;и данны&#1084;и, в таблице должен присутствовать первичный ключ. SQL Azure в дополнение к это&#1084;у требует, чтобы на первичный ключ был создан
+ кластеризованный индекс.</span></p>
+<h3 style="margin:10pt 0in 0pt;"><a name="Spatial_indexing_basics"></a><span style="font-family:cambria;font-size:16px;color:#4f81bd;">Основы пространственных индексов</span></h3>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Выполнение запроса к пространственны&#1084; данны&#1084; с использование&#1084; индекса происходит в 2 этапа: первичной фильтрации (с использование&#1084; пространственного индекса) и вторичной фильтрации (наложение
+ исходного фильтра). Таки&#1084; образо&#1084;, при выполнении запроса вида “STDistance() &lt; x”, SQL Server выполнит следующие операции:</span></p>
+<ul>
+<li>определит набор ячеек-кандидатов </li><li>произведёт поиск по пространственно&#1084;у индексу (первичная фильтрация) </li><li>объединит полученные значения с базовой таблицей, чтобы получить набор пространственных объектов
+</li><li>отфильтрует все ложно найденные объекты путё&#1084; выполнения первоначальной пространственной операции (вторичный фильтр)
+</li></ul>
+<p>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8132.Figure-1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8132.Figure-1.png" style="border:0px solid currentcolor;" /></a><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></p>
+<p><span style="font-family:calibri;">Избежать вторичной фильтрации &#1084;ожно используя операцию
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;">Filter(@x)=1</span> в&#1084;есто
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;">STIntersects(@x)=1</span>. В это&#1084; случае производительность запроса будет значительно выше, но при это&#1084; в результирующей выборке воз&#1084;ожно наличие ложно выбранных объектов. Если пространственный запрос
+ не очень велик, то для HHHH пространственного индекса, погрешность будет составлять около 100-200 &#1084;етров, при использовании типа Geography.
+</span></p>
+<p><span><span style="font-family:calibri;">Оператор </span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">STDistance(@x) &lt; @range</span><span style="font-family:calibri;"> &#1084;ожет быть за&#1084;енён на
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">Filter(@x.BufferWithTolerance(@range,1,1)) = 1</span></p>
+<p><span style="font-family:calibri;">Если возврат объектов ложно определённых, как удовлетворяющие условию, неприе&#1084;ле&#1084;, то производительность дисковых операций с базовой таблицей всё равно &#1084;ожет быть опти&#1084;изирована.</span></p>
+<p><span style="font-family:calibri;">Любой пространственный индекс уже опи&#1084;изирован для &#1084;ини&#1084;изации дисковых операций. Ячейки расположены в специально&#1084; порядке таки&#1084; образо&#1084;, чтобы пространственно более близкие ячейки, были также и физически близко расположены.
+ Следующая иллюстрация де&#1084;онстрирует порядок расположения ячеек (в SQL Server используется заполнение пространства кривой Гильберта).
+</span></p>
+<p><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8424.Figure-2.png"><img alt=" " width="492" height="386" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8424.Figure-2.png" style="border:0px solid currentcolor;width:476px;height:369px;" /></a></span></p>
+<p><span style="font-family:calibri;">Таки&#1084; образо&#1084;, данные считывае&#1084;ые с диска при выполнении поиска по пространственно&#1084;у индексу &#1084;огут выглядеть следующи&#1084; образо&#1084;:</span></p>
+<p>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3617.Figure-3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3617.Figure-3.png" style="border:0px solid currentcolor;" /></a></p>
+<p><span style="font-family:calibri;">Однако, поскольку для получения са&#1084;их объектов, необходи&#1084;о выполнять объединение с базовой таблицей, операции чтения при выполнения поиска по кластеризованно&#1084;у индекcу для базовой таблицы &#1084;огут выглядеть следующи&#1084; образо&#1084;:</span></p>
+<p>&nbsp;<span> </span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2046.Figure-4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2046.Figure-4.png" style="border:0px solid currentcolor;" /></a>
+</p>
+<p><span style="font-family:calibri;">Это влечёт за собой чтение с диска гораздо большего числа страниц и, как следствие, оказывает негативное влияние на общую производительность пространственного запроса.</span></p>
+<p><span style="font-family:calibri;">Таки&#1084; oбразо&#1084;, для улучшения производительности при поиске по кластерно&#1084;у индексу, необходи&#1084;о чтобы первичный ключ коррелировал с расположение&#1084; ячеек в пространственно&#1084; индексе. Этого воз&#1084;ожно достичь путё&#1084; добавления координат
+ точек к кластеризованно&#1084;у индексу</span></p>
+<p><span style="font-family:calibri;">Для при&#1084;ера, возь&#1084;ё&#1084; следующую таблицу, содержащую столбец с координата&#1084;и точек:</span></p>
+<p><span style="font-size:9.5pt;font-family:consolas;color:blue;">CREATE</span><span style="font-size:9.5pt;font-family:consolas;">
+<span style="color:blue;">TABLE</span> <span style="color:teal;">[dbo]</span><span style="color:gray;">.</span><span style="color:teal;">[Points]</span><span style="color:gray;">(<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[id]</span>&nbsp;&nbsp; <span style="color:teal;">[int]</span> <span style="color:gray;">NOT</span>
+<span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[type]</span> <span style="color:teal;">[int]</span> <span style="color:gray;">NOT</span>
+<span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[geo]</span> <span style="color:teal;">[geography]</span> <span style="color:gray;">
+NULL<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;color:blue;">&nbsp; PRIMARY</span><span style="font-size:9.5pt;font-family:consolas;">
+<span style="color:blue;">KEY</span> <span style="color:blue;">CLUSTERED</span>&nbsp;<br />
+</span><span style="font-size:9.5pt;font-family:consolas;color:gray;">&nbsp;&nbsp;&nbsp; (</span><span>&nbsp;<br />
+</span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[id]</span> <span style="color:blue;">ASC</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[type]</span> <span style="color:blue;">ASC<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;color:gray;">));</span></p>
+<p><span style="font-family:calibri;">Пространственные индексы используют первичный ключ для того, чтобы ссылаться на строки базовой таблицы. Производительность запроса &#1084;ожет быть значительно увеличена путё&#1084; создания кластеризованного индекса, который включает
+ в себя значения координат соответствующих точек. Таки&#1084; образо&#1084; обеспечивается пространственная упорядоченность первичного ключа и, как следствие, у&#1084;еньшается число обращений к диску, необходи&#1084;ое для получения строк базовой таблицы, запрошенных пространственны&#1084;
+ индексо&#1084;.</span></p>
+<p><span style="font-family:calibri;">В некоторых случаях, в базовой таблице, наряду с колонкой, содержащей точки (пространственные данные), присутствуют выделенные столбцы с индивидуальны&#1084;и координата&#1084;и точек.&nbsp;В таких случаях, на идивидуальные координаты точки
+ &#1084;ожно непосредственно ссылаться при определениее кластеризованного первичного ключа. Когда это не так, то схе&#1084;а таблицы &#1084;ожет быть расширена включение&#1084; 2 храни&#1084;ых вычисляе&#1084;ых столбцов, которые содержат индивидуальные координаты соответствующих точек.</span></p>
+<p><span style="font-family:calibri;">Важно от&#1084;етить, что колонки с координата&#1084;и точки должны быть первы&#1084;и дву&#1084;я колонка&#1084;и, входящи&#1084;и в первичный ключ. Для гео&#1084;етрических координат, они должны быть в порядке x, y.&nbsp; Для географических данных они должны быть в
+ порядке широта, долгота.</span></p>
+<p><span style="font-family:calibri;">Для приведённого при&#1084;ера, необходи&#1084;о расширить схе&#1084;у следующи&#1084; образо&#1084;, создав 2 новые вычисляе&#1084;ые храни&#1084;ые колонки, и добавив эти новые колонки в кластеризованный первичный индекс (обратите вни&#1084;ание на использование встроенных
+ &#1084;етодов </span><span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">Lat</span><span style="font-family:calibri;"> и
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">Long</span><span style="font-family:calibri;"> для получения индивидуальных координат):</span></span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">TABLE</span> [dbo]<span style="color:gray;">.</span>[Points]<span style="color:gray;">(<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; [id]&nbsp;&nbsp; [int]
+<span style="color:gray;">NOT</span> <span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; [type] [int]
+<span style="color:gray;">NOT</span> <span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; [geog] [geography] NOT
+<span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="background-color:yellow;">
+[geo_lat]&nbsp; <span style="color:blue;">AS </span><span style="color:gray;">(</span>[geog]<span style="color:gray;">.</span>[Lat]<span style="color:gray;">)</span> &nbsp;<span style="color:blue;">PERSISTED</span>
+<span style="color:gray;">NOT</span> <span style="color:gray;">NULL,</span></span><span style="color:gray;"> -- *<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="background-color:yellow;">
+[geo_lon]&nbsp; <span style="color:blue;">AS </span><span style="color:gray;">(</span>[geog]<span style="color:gray;">.</span>[Long]<span style="color:gray;">)</span>
+<span style="color:blue;">PERSISTED</span> <span style="color:gray;">NOT</span> <span style="color:gray;">
+NULL,</span></span><span style="color:gray;"> -- *<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">&nbsp; PRIMARY</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">KEY</span> <span style="color:blue;">CLUSTERED</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp; (<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color:yellow;">
+[geo_lat] <span style="color:blue;">ASC</span><span style="color:gray;">,</span></span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color:yellow;">
+[geo_lon] <span style="color:blue;">ASC</span><span style="color:gray;">,</span></span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [id] <span style="color:blue;">
+ASC</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [type]
+<span style="color:blue;">ASC<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">));</span><span>
+</span></p>
+<p><span style="font-family:calibri;">* not null для использования в первично&#1084; ключе</span></p>
+<p><span style="font-family:calibri;">ПРИМЕЧАНИЕ: <span style="color:#1f497d;">Сохранение значений x,y / широты,долготы для пространственных объектов в кластеризованно&#1084; ключе добавляет к ключу 16 байт , которые зате&#1084; дублируются как в базовой таблице, так и в
+ са&#1084;о&#1084; пространственно&#1084; индексе, равно как и во всех некластеризованных индексах, добавляе&#1084;ых к таблице. Стандартной практикой для кластеризованных индексов является &#1084;ини&#1084;изация раз&#1084;ера ключа. И хотя это &#1084;ожет потенциально увеличить производительность пространственного
+ индекса, необходи&#1084;о по&#1084;нить о потенциально негативных последствиях. </span></span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Optimize_the_spatial_index"></a><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Опти&#1084;изация пространственного индекса</span></h2>
+<p><span style="font-family:calibri;">По у&#1084;олчанию, основываясь на общих данных, пространственный индекс реко&#1084;ендовалось создавать с раз&#1084;еро&#1084; сетки на уровне MEDIUM.&nbsp; Так выглядело первоначальное определение индекса:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">SPATIAL</span> <span style="color:blue;">INDEX</span> [table_geog_sidx]&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+ON</span> [dbo]<span style="color:gray;">.</span>[table]<span style="color:gray;">(</span>[geog]<span style="color:gray;">)<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">USING</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; GEOGRAPHY_GRID&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WITH
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">GRIDS
+<span style="color:gray;">=(</span>LEVEL_1 <span style="color:gray;">=</span> MEDIUM<span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_2 <span style="color:gray;">
+=</span> MEDIUM<span style="color:gray;">,<br />
+&nbsp;</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_3 <span style="color:gray;">
+=</span> MEDIUM<span style="color:#808080;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_4 <span style="color:gray;">
+=</span> MEDIUM<span style="color:gray;">),</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CELLS_PER_OBJECT
+<span style="color:gray;">=</span> 16; <br />
+<br />
+</span><span style="font-family:calibri;">Производительность запроса к пространственны&#1084; данны&#1084; зачастую &#1084;ожет быть значительно улучшена путё&#1084; выбора для конкретных пространственных фор&#1084; и их распределения настроек пространственного индекса отличающихся от настроек
+ по у&#1084;олчанию.&nbsp;В случае точечных данных, было обнаружено, что в большинстве, если не во всех случаях, производительность сетки, установленной на HIGH на всех уровнях, превосходит все прочие конфигурации. Поскольку &#1084;ы работае&#1084; с точечны&#1084;и данны&#1084;и, то пара&#1084;етр
+ CELLS_PER_OBJECT не играет роли и &#1084;ожет быть установлен в любое допусти&#1084;ое значение (1-8192). Вот пространственный индекс, в которо&#1084; сетка настроена на опти&#1084;альную конфигурацию для точек: все уровни в значении HIGH:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">SPATIAL</span> <span style="color:blue;">INDEX</span> [table_geog_sidx]&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+ON</span> [dbo]<span style="color:gray;">.</span>[table]<span style="color:gray;">(</span>[geog]<span style="color:gray;">)<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">USING</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; GEOGRAPHY_GRID&nbsp;<br />
+</span><span styти&#1084;ое значение (1-8192). Вот пространственный индекс, в которо&#1084; сетка настроена на опти&#1084;альную конфигурацию для точек: все уровни в значении HIGH:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">SPATIAL</span> <span style="color:blue;">INDEX</span> [table_geog_sidx]&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+ON</span> [dbo]<span style="color:gray;">.</span>[table]<span style="color:gray;">(</span>[geog]<span style="color:le="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WITH
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">GRIDS
+<span style="color:gray;">=(</span>LEVEL_1 <span style="color:gray;">=</span> <span style="background-color:yellow;">
+HIGH</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_2 <span style="color:gray;">
+=</span> <span style="background-color:yellow;">HIGH</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_3 <span style="color:gray;">
+=</span> <span style="background-color:yellow;">HIGH</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_4 <span style="color:gray;">
+=</span> <span style="background-color:yellow;">HIGH</span><span style="color:gray;">),</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CELLS_PER_OBJECT
+<span style="color:gray;">=</span> 16; </span></p>
+<p>&nbsp;<br />
+<a name="_Toc311816511"><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Расс&#1084;отрите воз&#1084;ожность использования сферической &#1084;одели зе&#1084;ли для географических данных</span></a>
+</p>
+<p><span style="font-family:calibri;">Если вы используете SQL Azure или SQL Server 2012 и требование точности географических данных не требует обязательного использования эллиптической &#1084;одели зе&#1084;ли, то дополнительное увеличение производительности &#1084;ожно получить,
+ благодаря использованию более простых &#1084;ате&#1084;атических вычислений, для пространственной систе&#1084;ы координат в сферической &#1084;одели. В дополнение к это&#1084;у функции<strong> STDistance</strong>(),
+<strong>STLength</strong>() и <strong>ShortestLineTo</strong>() опти&#1084;изированы таки&#1084; образо&#1084;, что работают на сфере быстрее, че&#1084; на эллипсоиде.</span></p>
+<p><span style="font-family:calibri;">В SQL Server 2012 и SQL Azure в представление
+</span><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">sys.spatial_reference_systems</span><span style="font-family:calibri;"> была добавлена запись для сферической &#1084;одели. Эта запись и&#1084;еет идентификатор пространственной ссылки (SRID)
+ = 104001 и определена как &quot;единичная сфера (unit sphere)&quot;.</span></p>
+<p><span style="font-family:calibri;">&quot;Родны&#1084;и&quot; единица&#1084;и из&#1084;ерения для единичной сферы являются радианы. Для получения значений в единицах из&#1084;ерения физического &#1084;ира, таких как длина и площадь, выраженная в &#1084;етрах, достаточно просто у&#1084;ножить результат на радиус
+ желае&#1084;ой сферы, как показано ниже:</span></p>
+<ul>
+<li>Для линейных величин (длина, расстояние, раз&#1084;ер буферной зоны):&nbsp;&nbsp; длина * (радиус сферы)
+</li><li>Для значений площади:&nbsp;&nbsp;площадь * (радиус сферы) * (радиус сферы) </li></ul>
+<p><span style="font-family:calibri;">В наше&#1084; при&#1084;ере, первоначально, координаты были определены во все&#1084;ирной геодезической систе&#1084;е координат 1984 года (WGS84).&nbsp; В SQL Server и SQL Azure, она определяется индентификаторо&#1084; пространственной ссылки (SRID) 4326.
+ Это наиболее распространённая систе&#1084;а координат, используе&#1084;ая для географических данных (большинство ко&#1084;&#1084;ерческих пространственных данных, также как и GPS-приё&#1084;ники, используют и&#1084;енно эту координатную систе&#1084;у). Для &#1084;ногих картографических приложений в вебе,
+ использующих WGS84 (карты Bing, Google и др.), радиус сферы составляет 6,378,137 &#1084;етров (“Сферическая проекция Меркатора”).</span></p>
+<p><span style="font-family:calibri;">Для того, чтобы обновить SRID для всех точек в таблице с пространственны&#1084;и данны&#1084;и на идентификатор единичной сферы &#1084;ожно использовать следующий оператор T-SQL (обратите вни&#1084;ание на использование &#1084;етода
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">STSrid</span><span style="font-family:calibri;">):
+</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">UPDATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> Points<br />
+</span><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;
+<span style="color:blue;">SET</span> geog<span style="color:gray;">.</span><span style="background-color:yellow;">STSrid
+<span style="color:gray;">=</span> 104001</span></span></p>
+<p>&nbsp;<br />
+<span style="font-family:cambria;font-size:18px;color:#4f81bd;">Тестирование производительности</span></p>
+<p><span style="font-family:calibri;">Для того, чтобы протестировать указанные реко&#1084;ендации, был использован клиентский сценарий и данные.&nbspи на идентификатор единичной сферы &#1084;ожно использовать следующий оператор T-SQL (обратите вни&#1084;ание на использование &#1084;етода
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">STSrid</span><span style="font-family:calibri;">):
+</span></p>
+<p><span style="font-size:10pt;; Чтобы дать пони&#1084;ание объе&#1084;а запросов, в качестве при&#1084;ера приведё&#1084; следующую процедуру:</span></p>
+<p>&nbsp;<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">/****** Object:&nbsp; StoredProcedure [dbo].[TEST]&nbsp;&nbsp;&nbsp; Script Date: 12/13/2011 3:14:50 PM ******/<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SET</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">ANSI_NULLS</span> <span style="color:blue;">ON<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">GO</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SET</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">QUOTED_IDENTIFIER</span> <span style="color:blue;">ON<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">GO</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">ALTER</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">PROCEDURE</span> [dbo]<span style="color:gray;">.</span>[TEST]<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">AS<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">BEGIN<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp; -- SET NOCOUNT ON added to prevent extra result sets from<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp; -- interfering with SELECT statements.<br />
+&nbsp;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp;--set statistics time on<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp; --set statistics IO on</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+SET</span> <span style="color:blue;">NOCOUNT</span> <span style="color:blue;">ON</span><span style="color:gray;">;<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+DECLARE</span> @Location <span style="color:blue;">geography</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; @continent
+<span style="color:blue;">integer<br />
+<br />
+&nbsp;</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;<span style="color:blue;">SELECT</span> @Location
+<span style="color:gray;">=</span> CI<span style="color:gray;">.</span>city_center_coordinates<span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; @continent
+<span style="color:gray;">=</span> CO<span style="color:gray;">.</span>continent_id<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+FROM</span> dbo<span style="color:gray;">.</span>geo2_city <span style="color:blue;">
+AS</span> CI<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">INNER</span>
+<span style="color:gray;">JOIN</span> dbo<span style="color:gray;">.</span>geo2_country
+<span style="color:blue;">AS</span> CO <span style="color:blue;">ON</span> CO<span style="color:gray;">.</span>country_id
+<span style="color:gray;">=</span> CI<span style="color:gray;">.</span>country_id<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> CI<span style="color:gray;">.</span>city_id <span style="color:gray;">
+=</span> 9395<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> CI<span style="color:gray;">.</span>rec_status
+<span style="color:gray;">&gt;</span> <span style="color:gray;">-</span>1<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> CO<span style="color:gray;">.</span>rec_status
+<span style="color:gray;">&gt;</span> <span style="color:gray;">-</span>1&nbsp;<br />
+<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+SET</span> @location <span style="color:gray;">=</span> <span style="color:blue;">geography</span><span style="color:gray;">::</span>Point<span style="color:gray;">(</span>@location<span style="color:gray;">.</span>Lat<span style="color:gray;">,</span> @location<span style="color:gray;">.</span>Long<span style="color:gray;">,</span>
+ 4326<span style="color:gray;">)</span></span></p>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color:yellow;color:blue;">
+SELECT</span><span style="background-color:yellow;"> GI<span style="color:gray;">.</span>geo_id<span style="color:gray;">,</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span>STDistance<span style="color:gray;">(</span>@Location<span style="color:gray;">)<br />
+</span></span></span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;"><span style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FROM
+</span>db_core<span style="color:gray;">.</span>dbo<span style="color:gray;">.</span>geo_informations2
+<span style="color:blue;">AS</span> GI <span style="color:blue;">with</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue;">INDEX</span><span style="color:gray;">(</span>SIndx_geography_informations2<span style="color:gray;">))</span>&nbsp;<br />
+</span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="color:gray;">INNER</span> <span style="color:gray;">JOIN</span>&nbsp; dbo<span style="color:gray;">.</span>product_hotels
+<span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">)</span>
+<span style="color:blue;">AS</span> PH&nbsp;<br />
+</span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="color:blue;">ON </span><span style="color:gray;">(</span>PH<span style="color:gray;">.</span>hotel_id
+<span style="color:gray;">=</span> GI<span style="color:gray;">.</span>geo_id<span style="color:gray;">)</span>&nbsp;<br />
+</span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue;">WHERE</span> GI<span style="color:gray;">.</span>geo_type
+<span style="color:gray;">=</span> 7<br />
+</span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> PH<span style="color:gray;">.</span>rec_status
+<span style="color:gray;">=</span>&nbsp;1<br />
+</span><span style="font-size:10pt;background-color:yellow;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> PH<span style="color:gray;">.</span>region_id
+<span style="color:gray;">=</span> 2</span>&nbsp;</p>
+</span>
+<p><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span>STDistance<span style="color:gray;">(</span>@Location<span style="color:gray;">)</span>
+<span style="color:gray;">&lt;</span> <span style="color:gray;">10000<br />
+</span><span style="color:blue;">END</span>&nbsp;&nbsp;&nbsp;&nbsp; </span></p>
+<p><span style="font-family:calibri;">Для ясности обсуждения, ниже представлен оператор T-SQL до опти&#1084;изации, который получает основные про</span>&nbsp;1<br />
+</span><span style="font-size:10pt;bacстранственные данные, используе&#1084;ые в храни&#1084;ой процедуре (пространственные &#1084;етоды SQL Server выделены). Он соответствует
+ выделенно&#1084;у оператору T-SQL в храни&#1084;ой процедуре.</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> p<span style="color:gray;">.</span>geo_id<span style="color:gray;">,</span> p<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">)<br />
+&nbsp; </span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"><span style="color:blue;">FROM</span> Points
+<span style="color:blue;">AS</span> p <span style="color:blue;">WITH</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,</span>&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+INDEX</span><span style="color:gray;">(</span><span style="background-color:aqua;">SIndx_geography_informations</span><span style="color:gray;">))</span> –- исходный, неопти&#1084;изированный индекс<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">)</span>
+<span style="color:gray;">&lt;</span> <span style="color:gray;">10000</span> -<span style="color:green;">– 10KM (10,000 &#1084;етров)</span>
+</span></p>
+<p><span style="font-family:calibri;">Когда координатная систе&#1084;а была из&#1084;енена с&nbsp; SRID=4326 на SRID=104001, было необходи&#1084;о переписать запрос следующи&#1084; образо&#1084; для того, чтобы учесть из&#1084;енение единиц из&#1084;ерения координатной систе&#1084;ы и обеспечить использование
+ нового опти&#1084;изированного пространственного индекса:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> GI<span style="color:gray;">.</span>geo_id<span style="color:gray;">,</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location)
+<span style="background-color:lime;">* 6378137</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+FROM</span> Points_UnitSphere <span style="color:blue;">AS</span> GI <span style="color:blue;">
+WITH</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,</span>&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+INDEX</span><span style="color:gray;">(</span><span style="background-color:aqua;">geo_info_HHHH_sidx</span><span style="color:gray;">))</span> –- опти&#1084;изированный индекс&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">)</span>
+<span style="background-color:lime;">* 6378137</span> <span style="color:gray;">&lt;</span>
+<span style="color:gray;">10000</span> <span style="color:green;">– 10KM </span></span></p>
+<p><span style="font-family:calibri;">Использование у&#1084;ножения в предикате WHERE, влечёт за собой игнорирование пространственного индекса в плане выполнения (на са&#1084;о&#1084; деле, если написать запрос таки&#1084; образо&#1084;, то ко&#1084;пилятор запроса укажет на то, что указание на
+ использование пространственного индекса некорректно).&nbsp;Для того, чтобы этого избежать, &#1084;ожно переписать запрос следующи&#1084; образо&#1084;:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> p<span style="color:gray;">.</span>id<span style="color:gray;">,</span> p<span style="color:gray;">.</span>info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location)
+<span style="background-color:lime;">* 6378137</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+FROM</span> Points_UnitSphere <span style="color:blue;">AS</span> p <span style="color:blue;">
+WITH</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,</span>&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+INDEX</span><span style="color:gray;">(</span><span style="background-color:aqua;">geo_info_HHHH_sidx</span><span style="color:gray;">))</span>&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">) &lt;</span>
+<span style="background-color:lime;">10000/6378137</span> <span style="color:green;">
+-- 10KM </span></span></p>
+<p>&nbsp;<br />
+<a name="_Toc311816513"><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Заключение</span></a></p>
+<p><span style="font-family:calibri;">Кратко просу&#1084;&#1084;ируе&#1084; &#1084;етоды потенциального увеличения производительности при работе с пространственны&#1084;и данны&#1084;и:
+</span></p>
+<ul>
+<li>Для точечных данных, создайте пространственный индекс со значение&#1084; “HIGH” дn style="background-color:aqua;">geo_info_HHHH_sidx</span><span style="color:gray;">))</span>&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">) &lt;</span>
+<span style="background-color:lime;">10000/6378137</span> <span style="color:green;">
+-- 10KM </span></span></p>
+<p>&nbsp;<br />
+<a name="_Toc311816513"><span style="font-family:cambria;ля всех уровней сетки
+</li><li>Используйте операцию Filter для избежания вторичной фильтрации </li><li>Создайте кластеризованный первичный ключ на таблицу с точечны&#1084;и данны&#1084;и, используя индивидульные ко&#1084;поненты координат точек
+</li><li>Для типа данных Geography, используйте сферическую &#1084;одель Зе&#1084;ли в&#1084;есто эллиптической систе&#1084;ы
+</li><li>Используйте указание spatial_window_max_cells query для более тонкой настройки производительности
+</li></ul>
+<p><span style="font-family:calibri;">До опти&#1084;изации, использование &#1084;етода STDistance в условиях SELECT и WHERE давало среднюю производительность в 30 &#1084;иллисекунд.</span></p>
+<p><span style="font-family:calibri;">После опти&#1084;изации (новая таблица с кластеризованны&#1084; первичны&#1084; ключо&#1084;, базирующи&#1084;ся на координатах точек, новый пространственный индекс, и использование &#1084;етодов, опти&#1084;изированных для работы со сферой), использование STDistance
+ в условиях SELECT and WHERE дало среднюю производительно в 18 milliseconds. </span>
+</p>
+<table border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="padding:0in 5.4pt;border:1pt solid windowtext;width:4.2in;background-color:#d9d9d9;">
+<p><strong><span style="font-family:calibri;">Описание</span></strong></p>
+</td>
+<td valign="top" style="border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:2.25in;background-color:#d9d9d9;">
+<p><strong><span style="font-family:calibri;">Вре&#1084;я исполнения в &#1084;с(среднее*)</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:4.2in;background-color:transparent;">
+<p class="auto-style1">Исходный пространственный запрос</p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:2.25in;background-color:transparent;">
+<p><span style="font-family:calibri;">30</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:4.2in;background-color:transparent;">
+<p><span style="background-color:lime;font-family:calibri;">Опти&#1084;изированный пространственный запрос</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:2.25in;background-color:transparent;">
+<p><span style="background-color:lime;font-family:calibri;">18</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><em><span style="font-family:calibri;">* каждый запрос для этого теста был исполнен 1,000 раз для определения среднего вре&#1084;ени</span></em></p>
+
+</div>
+    
+    

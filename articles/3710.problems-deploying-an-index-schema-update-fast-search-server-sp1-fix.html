@@ -1,0 +1,36 @@
+---
+layout: default
+title: Problems Deploying an Index Schema Update (FAST Search Server SP1 Fix) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>If you try to create a new rank profile that has an illegal name (such as a name that contains angle brackets), the schema update will fail on the FAST Search servers, but you will not receive an error message in the PowerShell console. Subsequent index
+ schema updates might also fail without any error message in the PowerShell console.<br />
+<br />
+After applying SP1, such an index schema update attempt will instead return an error message of the type &quot;Rank-profile &quot;&lt;rankProfileName&gt;&quot; is invalid, rank profile names must be lower-cased&quot;.
+</p>
+<p>Note that the rank profile name must only contain lowercase ascii characters.</p>
+<p>If you have problems with an index schema update, or suspect that an update is not applied consistently on all servers, you can run the following command on the administration server:</p>
+<ul>
+<li>&nbsp;&nbsp; cd &lt;FastSearchInstallFolder&gt;\index-profiles </li><li>&nbsp;&nbsp; bliss -C deployment-ready-index-profile.xml </li></ul>
+<p>The command will re-apply the internal index schema representation to all servers in the FAST Search for SharePoint farm.
+<br />
+In the above error situation, the output may give an indication of the error cause. In the case of an illegal rank profile name (in this case named &quot;&lt;test&gt;&quot;), the output will look something like this:</p>
+<ul>
+<li>[2011-01-18 08:44:26.582] INFO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; systemmsg Compatibility check: Rank-profile &quot;&lt;test&gt;&quot;is added. Reload of configuration files required.
+</li><li>[2011-01-18 08:44:26.582] INFO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; systemmsg Running index-profile update with compatible index-profile
+</li><li>[2011-01-18 08:44:26.645] ERROR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; systemmsg RankConfigBoostTableWriter unable to generate &#39;&#39;: IOError: invalid filename: boost-tables\&lt;test&gt;_anchortext_extnumoccboost.tbl or mode: w
+</li></ul>
+<p>You can resolve the problem by removing the incorrect rank profile (in the example incorrectly named &quot;&lt;test&gt;&quot;:</p>
+<ul>
+<li>$rp = Get-FASTSearchMetadataRankProfile -Name &quot;&lt;test&gt;&quot; </li><li>$rp.Delete() </li></ul>
+<p>Note: Do not modify the internal index schema representation (deployment-ready-index-profile.xml)!</p>
+<ul>
+<li>See also <a href="http://support.microsoft.com/kb/2468431">http://support.microsoft.com/kb/2468431</a>
+</li></ul>
+
+</div>
+    
+    

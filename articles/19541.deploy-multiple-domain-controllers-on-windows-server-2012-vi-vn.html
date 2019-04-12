@@ -1,0 +1,450 @@
+---
+layout: default
+title: Deploy Multiple Domain Controllers on Windows Server 2012 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-c  
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Deploy Multiple Domain Controllers on Windows Server 2012 (vi-VN)</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<olor:#ffffff;">
+<strong style="color:#000000;font-family:verdana,geneva;font-size:small;margin:0px;padding:0px;border:0px;">I- GIỚI THIỆU:</strong></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Trong một hệ thống Active Directory lớn, nếu chỉ có một DC thì Server này có thể bị quá tải khi nhiều user cùng yêu cầu chứng thực. Bên cạnh đó user
+ sẽ không được chứng thực khi DC này bị lỗi.&nbsp;Trong phần này sẽ hướng dẫn bạn triển khai nhiều domain controller chạy song song.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">II- CÁC BƯỚC TRIỂN KHAI:</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/adc_zin.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Mô hình bài lab bao gồm 3 máy ảo: DC2012 (domain MCTHUB.LOCAL), SERVER1 và SERVER3.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">*&nbsp;Quy trình thực hiện:</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">1/ Gỡ bỏ SID cho 2 máy ảo SERVER1 và SERVER3.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">2/ Khảo sát Active Directory</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; a. Khái niệm Additional Domain Controller (ADC)</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; b. Những trường hợp cần xây dựng ADC</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; c. Cài đặt Additional Domain Controller (ADC) cho SERVER1</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; d. Enforce Replication</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; e. Chia site hệ thống</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">III- TRIỂN KHAI CHI TIẾT</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">1/ Gỡ bỏ SID cho 2 máy ảo SERVER1 và SERVER3</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Mô hình của bạn cần nhiều Server sử dụng Windows 2012. Để tiết kiệm thời gian và đỡ phải cài nhiều lần 1 hệ điều hành thì bạn dùng dạng đĩa ảo Differencing
+ Disk (xem bài &quot;<a href="http://www.mcthub.com/index.php/technologies/microsoft/windows-server/156-t-ng-quan-hyper-v-tren-windows-server-2012" style="margin:0px;padding:0px;border:0px;color:#000000;font-family:Tahoma,Geneva,sans-serif;font-weight:bold;line-height:1.5;"><span style="margin:0px;padding:0px;border:0px;color:#000000;">Tổng
+ Quan Hyper-V trên Windows Server 2012</span></a>&quot;). Tuy nhiên bạn sẽ gặp phải vấn đề khi nâng cấp ADC hay domain mới do các máy ảo sẽ bị trùng SID (Security Identifier). Do đó, trong trường hợp này bạn cần phải thay đổi SID cho các máy ảo</span></p>
+<p style="margin:10px 0p:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;linx;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Trên máy&nbsp;<em style="margin:0px;padding:0px;border:0px;">SERVER 1</em>, bạn nhấn tổ hợp phím&nbsp;<em style="margin:0px;padding:0px;border:0px;">ÿ</em><em style="margin:0px;padding:0px;border:0px;">&nbsp;&#43;
+ R</em>, sau đó nhập vào&nbsp;<em style="margin:0px;padding:0px;border:0px;">sysprep.</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image002.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Bạn nhấn double click vào file&nbsp;<em style="margin:0px;padding:0px;border:0px;">sysprep.exe</em>&nbsp;để thực thi file này.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image003.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Trong cửa sổ&nbsp;<em style="margin:0px;padding:0px;border:0px;">System Preparation Tool 3.14</em>, bạn đánh dấu chọn vào ô&nbsp;<em style="margin:0px;padding:0px;border:0px;">Generalize</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image004.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Chương trình sysprep sẽ tiến hành xóa thông tin cài đặt và tạo ra SID mới.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Tương tự bạn thực hiện cho máy SERVER3.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Sau khi gỡ bỏ SID xong, bạn lần lượt đặt lại tên máy, địa chỉ IP của máy dựa theo IP bảng sau:</span></p>
+<table border="1" cellspacing="0" cellpadding="0" style="margin:0px;padding:0px;border:0px;border-collapse:collapse;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<tbody style="margin:0px;padding:0px;border:0px;">
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;</span></td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">DC2012</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">SERVER1</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">SERVER3</strong></span></p>
+</td>
+<td colspan="2" style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">RTM</strong></span></p>
+</td>
+</tr>
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Interface</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Private</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Private</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Private 2</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Private</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Private 2</strong></span></p>
+</td>
+</tr>
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">IP address</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.1.<strong style="margin:0px;padding:0px;border:0px;">10</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.1.<strong style="margin:0px;padding:0px;border:0px;">11</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">10.10.0.<strong style="margin:0px;padding:0px;border:0px;">12</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.0.<strong style="margin:0px;padding:0px;border:0px;">1</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">10.10.0.<strong style="margin:0px;padding:0px;border:0px;">1</strong></span></p>
+</td>
+</tr>
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Subnet mask</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.255.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.255.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.0.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.255.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;fon"margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.255.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.255.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.0.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">255.255.0.0</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="mart-family:verdana,geneva;color:#000000;">255.0.0.0</span></p>
+</td>
+</tr>
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Default gateway</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.1.<strong style="margin:0px;padding:0px;border:0px;">1</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.1.<strong style="margin:0px;padding:0px;border:0px;">1</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">10.10.0.<strong style="margin:0px;padding:0px;border:0px;">1</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;</span></td>
+<td style="margin:0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;</span></td>
+</tr>
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Preferred DNS</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.1.<strong style="margin:0px;padding:0px;border:0px;">10</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.1.<strong style="margin:0px;padding:0px;border:0px;">10</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">172.16.0.<strong style="margin:0px;padding:0px;border:0px;">10</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;</span></td>
+<td style="margin:0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;</span></td>
+</tr>
+</tbody>
+</table>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Join 2 máy&nbsp;<em style="margin:0px;padding:0px;border:0px;">SERVER1</em>&nbsp;và&nbsp;<em style="margin:0px;padding:0px;border:0px;">SERVER3</em>&nbsp;vào domain
+ MCTHUB.LOCAL.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">2/ Khảo sát Active Directory</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">a. Khái niệm Additional Domain Controller (ADC)</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><em style="margin:0px;padding:0px;border:0px;">Active Directory Domain Service (AD DS)</em>&nbsp;là trung tâm quản lý và chứng thực cho các đối tượng như:
+ group, user, computer account… AD DS cung cấp tất cả thông tin của một đối tượng cho các dịch vụ cần thiết, ví dụ cung cấp đầy đủ thông tin cho việc chứng thực khi user truy cập tài nguyên…</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">* Primary Domain Controller (PDC):</strong>&nbsp;Trong một domain có thể có nhiều Domain Controller.
+ Domain Controller đầu tiên gọi là Primary Domain Controller (PDC)</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">* Additional Domain Controller (ADC):</strong>&nbsp;Các Domain Controller thêm vào được gọi là Additional
+ Domain Controller (ADC)</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,gen-color:#ffffff;">
+<speva;color:#000000;">Trong hệ thống doanh nghiệp thì&nbsp;<strong style="margin:0px;padding:0px;border:0px;">bắt buộc phải có PDC và chỉ duy nhất một máy</strong>. ADC là tùy
+ chọn dùng trong các trường hợp sau đây.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">b. Những trường hợp cần xây dựng ADC</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">&#43;&nbsp;Trường Hợp 1: Hệ thống có nhiều site (Site: chỉ khu vực địa lý, vd: Site Sài Gòn – Site Hà Nội).</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><em style="margin:0px;padding:0px;border:0px;">Giải pháp: dựng thêm ADC ở Site Hà Nội nhằm mục đích chứng thực cho các user ở Hà Nội, mục đích để
+ khi log on không phụ thuộc đường truyền WAN và tăng tốc độ.&nbsp;</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">&#43;&nbsp;Trường Hợp 2: Hệ thống chỉ có 1 site Sài Gòn nhưng có số lượng user lớn. Khi log on, DC sẽ bị
+ quá tải và gây ra tình trạng nghẽn mạng.</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><em style="margin:0px;padding:0px;border:0px;">Giải pháp: Nên dựng thêm ADC để chia tải bớt cho hệ thống (Load Balancing), cân bằng tải giúp hệ thống
+ nhanh hơn.</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43;&nbsp;<strong style="margin:0px;padding:0px;border:0px;">Trường Hợp 3:</strong>&nbsp;<strong style="margin:0px;padding:0px;border:0px;">Hệ thống chỉ có 1
+ Site Sài Gòn và chỉ có 1 DC, hệ thống nhỏ. Toàn bộ hệ thống hiện đang chạy ổn định. Nhưng một ngày nào đó DC gặp sự cố, thì hệ thống công ty sẽ bị tê liệt. Thời gian khôi phục sẽ mất khá nhiều thời gian.</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><em style="margin:0px;padding:0px;border:0px;">Giải pháp: Xây dựng ADC để tăng tính sẵn sàng và tính chịu lỗi của hệ thống để hệ thống có tính sẳn
+ sàng cao (High Availability) và tăng tốc độ chứng thực</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Mỗi DC sẽ lưu trữ Database riêng. Nếu xây dựng thêm ADC sẽ có thêm database nữa. Tuy nhiên 2 database này luôn luôn đồng bộ với nhau.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">c. Cài đặt Additional Domain Controller (ADC) cho SERVER1</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Log on máy&nbsp;<em style="margin:0px;padding:0px;border:0px;">SERVER1</em>&nbsp;bằng quyền Domain Admin:&nbsp;<em style="margin:0px;padding:0px;border:0px;">MCTHUB</em>.
+ Mở&nbsp;<em style="margin:0px;padding:0px;border:0px;">Server Manager</em>, ở bên trái chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Local Server</em>. Bạn kiểm tra lại tên&nbsp;<em style="margin:0px;padding:0px;border:0px;">Computer Name</em>&nbsp;và&nbsp;<em style="margin:0px;padding:0px;border:0px;">Domain.</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image005.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Sau khi đã kiểm tra xong, chúng ta sẽ bắt đầu xây dựng ADC. Trước hết bạn cần phải tìm hiểu về quy trình nâng cấp DC.</span></p>
+<table border="1" cellspacing="0" cellpadding="0" style="margin:0px;padding:0px;border:0px;border-collapse:collapse;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<tbody style="margin:0px;padding:0px;border:0px;">
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Nâng cấp DC Windows Server 2008</strong></span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Nâng cấp DC Windows Server 2012</strong></span></p>
+</td>
+</tr>
+<tr style="margin:0px;padding:0px;border:0px;">
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">-&nbsp; Khi xây dựng domain, thì:</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43;&nbsp;<strong style="margin:0px;padding:0px;border:0px;">Tự động</strong>&nbsp;cài ADDS (Active Directory
+ Domain Services)</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43; Sau đó nâng cấp lên DC</span></p>
+</td>
+<td style="margin:0px;padding:0px;border:0px;">
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Khi xây dựng domain, thì</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43; Đầu tiên, bạn phải cài dịch vụ ADDS (Active Directory Domain Services) trước</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;"><span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43; Sau đó nâng cấp lên DC</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<br style="margin:0px;padding:0px;border:0px;" />
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Mở&nbsp;<em style="margin:0px;padding:0px;border:0px;">Server Manager</em>, vào menu&nbsp;<em style="margin:0px;padding:0px;border:0px;">Manage</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Add
+ Roles and Features</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image006.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Bạn cứ nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Next</em>&nbsp;theo mặc định. Ở màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Select
+ Server Roles</em>, bạn đánh dấu chọn vào ô&nbsp;<em style="margin:0px;padding:0px;border:0px;">Active Directory Domain Services</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#0000;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image006.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;bo00;"><img src="http://mcthub.com/images/ContentLab/ADC/image007.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Chương trình sẽ yêu cầu cài thêm các Features, bạn nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Add Features.</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image008.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Các bước còn lại bạn nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Next</em>&nbsp;theo mặc định. Màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Confirm
+ installation selections</em>, bạn đánh dấu chọn vào ô&nbsp;<em style="margin:0px;padding:0px;border:0px;">Restart the destination server automatically if required,&nbsp;</em>sau đó nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Install</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image009.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Bạn kiểm tra&nbsp;<em style="margin:0px;padding:0px;border:0px;">Notification</em>&nbsp;và nhấn vào mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Promote
+ this server to a domain controller</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image010.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Deployment Configuration,&nbsp;</em>chương trình cung cấp cho bạn ba tùy chọn:</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ø&nbsp;<strong style="margin:0px;padding:0px;border:0px;">Add a domain controller to an existing domain:</strong>&nbsp;Thêm một ADC vào domain có sẵn.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong style="margin:0px;padding:0px;border:0px;">Ø</strong><strong style="margin:0px;padding:0px;border:0px;">&nbsp;Add a new domain to an existing
+ forest:</strong>&nbsp;Xây dựng domain mới trong forest có sẵn.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ø&nbsp;<strong style="margin:0px;padding:0px;border:0px;">Add new forest:</strong>&nbsp;xây dựng máy DC đầu tiên của forest.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Bạn chọn vào tùy chọn đầu tiên là&nbsp;<em style="margin:0px;padding:0px;border:0px;">Add a domain controller to an existing domain</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43; Mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Specify the domain information for this operation</em>, chọn lựa domain mà bạn muốn làm ADC</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43; Mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Supply the credentials to perform this operation</em>, bạn phải dùng user Domain Admin thì mới
+ có thể thực hiện việc cài ADC.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:0px;">Add a domain controller to an existing domain</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;lin:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image011.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Domain Controller Options</em>, bạn có thể đánh dấu chọn vào ô&nbsp;<em style="margin:0px;padding:0px;border:0px;">Domain
+ Name System (DNS) server</em>&nbsp;để cài đặt thêm DNS cho ADC. Mục này không bắt buộc. Tuy nhiên bạn nên cài để tăng tính chịu lỗi cho DNS.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Tiếp theo bên dưới là ô Global Catalog (GC). Vậy GC là gì? Trên DC, có AD Database bao gồm: thông tin user, thông tin group, thuộc tính của các user...</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Global Catalog là một bản lưu rút gọn của AD Database được sử dụng để chứng thực khi &nbsp;user log
+ on.</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">&#43; Bên dưới là mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Type the Directory Services Restore Mode (DSRM) password</em>, bạn nhập vào mật khẩu.
+ Mật khẩu này sẽ được dùng để khôi phục AD ở chế độ Restore Mode.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image012.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">DNS Options</em>, bạn nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Next</em>. Tiếp
+ theo ở màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Additional Options</em>, mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Replicate from</em>, bạn lựa chọn Domain mà bạn muốn đồng bộ. Trong bài lab này, bạn chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Any
+ domain controller</em>, sau đó nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Next</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image013.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Paths</em>, bạn trỏ đường dẫn đến nơi cần lưu cơ sở dữ liệu của&nbsp;<em style="margin:0px;padding:0px;border:0px;">AD</em>,&nbsp;<em style="margin:0px;padding:0px;border:0px;">log
+ files</em>&nbsp;và&nbsp;<em style="margin:0px;padding:0px;border:0px;">SYSVOL</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image014.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Các bước còn lại, bạn nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Next</em>&nbsp;theo mặc đ���nh. Màn hình&nbsp;<em style="margin:0px;padding:0px;border:0px;">Prerequisites
+ Check</em>, khi bạn nhận được thông báo&nbsp;<em style="margin:0px;padding:0px;border:0px;">All prerequisites check passed successfully</em>&nbsp;nghĩa là quá trình kiểm tra điều kiện để cài đặt ADC đã thành công. Bạn nhấn nút&nbsp;<em style="margin:0px;padding:0px;border:0px;">Install</em>&nbsp;để
+ bắt đầu cài đặt.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image015.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Sau khi nâng cấp ADC xong, bạn vào DC2012 tạo user&nbsp;<em style="margin:0px;padding:0px;border:0px;">u1</em>. Trên ADC (máy SERVER1), bạn tạo thêm
+ user&nbsp;<em style="margin:0px;padding:0px;border:0px;">u2</em>. Kiểm tra giữa 2 máy đồng bộ.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image016.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Tiếp theo, bạn mở&nbsp;<em style="margin:0px;padding:0px;border:0px;">Active Directory Users and Computers</em>. Ở bên trái bạn bung domain, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Domain
+ Controller</em>. Sau đó bạn nhìn sang cột bên phải, bạn sẽ thấy máy DC2012 và máy SERVER1 đều là&nbsp;<em style="margin:0px;padding:0px;border:0px;">Global Catalog Server</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image017.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">d. Enforce Replication:</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Việc đồng bộ giữa 2 DC có thể sẽ không nhanh như mình mong muốn. Để cho 2 DC có thể đồng bộ với nhau ngay lập tức thì bạn phải dùng tính năng Enforce
+ Replication (trên thực tế thì bạn không cần sử dụng tính năng này).</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Trên máy&nbsp;<em style="margin:0px;padding:0px;border:0px;">Server1</em>, bạn mở&nbsp;<em style="margin:0px;padding:0px;border:0px;">Server Manager</em>,
+ vào menu&nbsp;<em style="margin:0px;padding:0px;border:0px;">Tools</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Active Directory Sites and Services</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image018.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Ở bên trái bạn bung mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Sites&nbsp;</em>Ü<em style="margin:0px;padding:0px;border:0px;">&nbsp;Default-First-Site-Name&nbsp;</em>Ü<em style="margin:0px;padding:0px;border:0px;">&nbsp;Servers</em>,
+ bạn tiools</em>, chọn&nbsp;<emếp tục bung lần lượt các máy DC2012 và SERVER1.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image019.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Muốn thực thi ngay việc đồng bộ hóa, bạn nhấn vào&nbsp;<em style="margin:0px;padding:0px;border:0px;">NTDS Settings</em>&nbsp;của DC2012, sau đó nhấn chuột
+ phải vào&nbsp;<em style="margin:0px;padding:0px;border:0px;">automatically generate</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Replicate now</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image020.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Tương tự bạn làm cho&nbsp;<em style="margin:0px;padding:0px;border:0px;">NTDS Settings</em>&nbsp;của máy&nbsp;<em style="margin:0px;padding:0px;border:0px;">SERVER1</em>.
+ Kiểm tra&nbsp;<em style="margin:0px;padding:0px;border:0px;">AD Users and Computers</em>&nbsp;sẽ thấy đồng bộ.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image021.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">e. Chia site hệ thống</strong></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Công ty có 2 văn phòng: Văn phòng chính ở Sài Gòn và văn phòng chi nhánh ở Hà Nội. Bạn xây dựng hệ thống domain cho công ty. Tuy nhiên khi user ở Hà
+ Nội log on thì có thể phải sang DC ở Sài Gòn chứng thực và ngược lại do cơ chế phân giải Round Robin của DNS. Do đó việc log on nhanh hay chậm phụ thuộc vào kết quả phân giải của DNS Server và chất lượng đường truyền.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><em style="margin:0px;padding:0px;border:0px;">Giải pháp: Xây dựng SERVER 3 ở Hà Nội làm ADC và chia Site theo từng khu vực, Client ở Site nào thì
+ logon ở Site đó.</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Trên&nbsp;<em style="margin:0px;padding:0px;border:0px;">DC2012</em>, mở&nbsp;<em style="margin:0px;padding:0px;border:0px;">Server Manager</em>. Sau đó
+ bạn vào menu&nbsp;<em style="margin:0px;padding:0px;border:0px;">Tools</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Active Directory Sites and Services.</em></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image022.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Chuột phải vào&nbsp;<em style="margin:0px;padding:0px;border:0px;">Default First Site Name</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Rename</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image023.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Bborder:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Chuột phải vào&nbsp;<em style="margin:0px;padding:0px;border:0px;">Default First Site Name</em>, chọn&nbsp;<em styleạn đổi tên thành SaiGon.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image024.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Chuột phải lên&nbsp;<em style="margin:0px;padding:0px;border:0px;">Sites</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">New Site</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image025.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">-&nbsp; Trong cửa sổ&nbsp;<em style="margin:0px;padding:0px;border:0px;">New Object – Site</em>, ở mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Name</em>,
+ bạn đặt tên Site là&nbsp;<em style="margin:0px;padding:0px;border:0px;">HANOI</em>. Chọn Site link có sẵn là DEFAULTIPSITELINK.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image026.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Hộp thoại&nbsp;<em style="margin:0px;padding:0px;border:0px;">Active Directory Domain Services</em>, bạn nhấn&nbsp;<em style="margin:0px;padding:0px;border:0px;">OK</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image027.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Quan sát thấy Site HaNoi đã được tạo.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image028.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Chuột phải vào&nbsp;<em style="margin:0px;padding:0px;border:0px;">Subnets</em>, chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">New Subnet</em>.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image029.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Ở mục&nbsp;<em style="margin:0px;padding:0px;border:0px;">Select a site object for this prefix</em>, bạn chọn&nbsp;<em style="margin:0px;padding:0px;border:0px;">Site
+ SaiGon</em>. Ở mục Prefix đặt tên lớp mạng ở Site SaiGon.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image030.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Tương tự bạn làm cho Site HaNoi.</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/image031.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">- Tiếp theo bạn cài đặt AD DS và nâng cấp SERVER3 thành ADC (lưu ý trong quá trình nâng cấp chọn Site HANOI).</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><img src="http://mcthub.com/images/ContentLab/ADC/adchanoi.jpg" alt="Nguyen Manh Trong" style="margin:0px;padding:0px;border:0px solid;" /></span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;">Khi đó user log on trên 1 Client nào đó, hệ thống sẽ xác định IP của Client để xác định Subnet, từ đó xác định Site. Client sẽ chứng thực tại Global
+ Catalog Server cùng Site</span></p>
+<p style="margin:10px 0px;padding:0px;border:0px;color:#666666;font-family:tahoma;line-height:24px;background-color:#ffffff;text-align:center;">
+<span style="margin:0px;padding:0px;border:0px;font-size:small;font-family:verdana,geneva;color:#000000;"><strong style="margin:0px;padding:0px;border:0px;">Cám ơn bạn dã xem bài viết</strong></span></p>
+<a href="https://plus.google.com/u/0/107315743770028511982?rel=author">By Nguyễn Mạnh Trọng</a>
+
+</div>
+    
+    

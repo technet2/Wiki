@@ -1,0 +1,155 @@
+---
+layout: default
+title: Backup and Restore&#58; Special Considerations - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<table align="center" style="width:90%;">
+<tbody>
+<tr>
+<td></td>
+<td style="width:30%;"><acronym title="There's no best practice that suits all environments. This article presents different options and points of view. If you disagree with some point — do not delete. Add your own thoughts and considerations instead. If they conflict with what was already written by others — mark yours as an “Alternate opinion”.">
+<table align="center" style="background-color:#eeeeee;width:100%;border:1px solid #aaaaaa;">
+<tbody>
+<tr>
+<td style="text-align:center;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer.Wikis.Components.Files/articles/4760.discussion04.png" />
+</td>
+<td><strong>Discussion</strong> </td>
+</tr>
+</tbody>
+</table>
+</acronym></td>
+<td style="width:30%;"><acronym title="Here we discuss theory and general concepts. Do not be too specific. Avoid referencing specific product names or procedures (except as required for examples).">
+<table align="center" style="background-color:#eeeeee;width:100%;border:1px solid #aaaaaa;">
+<tbody>
+<tr>
+<td style="text-align:center;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer.Wikis.Components.Files/articles/1220.highlevel03.png" />
+</td>
+<td><strong>High-Level Overview</strong> </td>
+</tr>
+</tbody>
+</table>
+</acronym></td>
+<td style="width:30%;"><acronym title="Here we talk about theory that applies to any backup and restore application. For specific implementation and technical details please refer to other topics, for example those tagged “Windows Backup”, “Windows Server Backup” and “How To”.">
+<table align="center" style="background-color:#eeeeee;width:100%;border:1px solid #aaaaaa;">
+<tbody>
+<tr>
+<td style="text-align:center;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer.Wikis.Components.Files/articles/3286.vendoragnostic07.png" />
+</td>
+<td><strong>Vendor-agnostic</strong> </td>
+</tr>
+</tbody>
+</table>
+</acronym></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p style="font-size:xx-small;margin-top:0px;text-align:center;"><em><a href="http://social.technet.microsoft.com/wiki/contents/articles/wiki-message-template.aspx">(what are these boxes?)</a></em></p>
+<h3><a name="Top"></a>In this article</h3>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Related-titles">Related titles</a>.
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Transactional-applications">Transactional applications</a>.
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Distributed-applications">Distributed applications</a>.
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Redundant-data">Redundant data</a>.
+</li></ul>
+<h3><a name="Related-titles"></a>Related titles</h3>
+<p>This topic continues the discussion started at <a class="ExistingPageLink" href="/wiki/contents/articles/206.backup-and-restore-classification-of-scenarios.aspx" title="Click to view the page titled: Backup and Restore: Classification of Scenarios">Classification of Scenarios for Backup and Restore</a>. You should understand backup and restore terms and concepts discussed in that topic before proceeding
+ further.</p>
+<p>↑ <a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Top">
+Back to top</a></p>
+<h3><a name="Transactional-applications"></a>Transactional applications</h3>
+<p>Most of database engines&nbsp;are transactional applications. To perform a consistent backup and restore of such an application you need to treat all files that form&nbsp;every single&nbsp;database as a whole. Usually that includes database file(s) and&nbsp;transaction log
+ file(s). And it means that:</p>
+<ul>
+<li>for not-inbox applications you need to use application-aware backup; </li><li>for Windows Server Roles and inbox services System State Backup is usually required.
+</li></ul>
+<p>Restoring full volume(s) with those files&nbsp;could also work but this may be an overkill and could cause problems in case you need to restore only one database and there&#39;s another databases on the same volume(s).</p>
+<p>To ensure you get latest copy of the data you need to request a flush of all transactions before you perform a backup. There are generally two choices to perform a flush.</p>
+<ol>
+<li>Shut down the database application. E.g. stop the service. </li><li>Use <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Volume-Shadow_A000_Service-_2800_VSS_2900_" title="Click to create new page titled: Volume Shadow Service (VSS)">Volume Shadow&nbsp;Service (VSS)</a> infrastructure for backup. That requires that the following three components&nbsp;are VSS-aware:
+<ul>
+<li>Operating System (OS), </li><li>Database application, </li><li>Backup application. </li></ul>
+</li></ol>
+<p>Without doing either (1) or (2) you can end up with internal database structure get incomplete. If you restore such a backup database recovery should be performed after restore. Depending on specific application&nbsp;recovery can be triggered either manually
+ or automatically. During recovery the latest transactions (not committed properly) would be rolled back and you can lose a significant amount of data inside the database.</p>
+<p><strong>Note:</strong> “flush” and “commit” are somewhat interchangeable (or at least often related) terms that&nbsp;are used through a lot of documentation.</p>
+<p>Examples of Transactional applications:</p>
+<ul>
+<li><a class="ExistingPageLink" href="/wiki/contents/articles/306.sql-server-zh-tw.aspx" title="Click to view the page titled: SQL Server">SQL Server</a>, </li><li><a class="ExistingPageLink" href="/wiki/contents/articles/4303.exchange-server.aspx" title="Click to view the page titled: Exchange Server">Exchange Server</a> with <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Mailbox-role-_2800_MBX_2900_" title="Click to create new page titled: Mailbox role (MBX)">Mailbox role (MBX)</a> installed, </li><li><a class="ExistingPageLink" href="/wiki/contents/articles/2591.windows-server-portal.aspx" title="Click to view the page titled: Windows Server">Windows Server</a> roles and features that store&nbsp;internal data in <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Jet-database" title="Click to create new page titled: Jet database">Jet database</a> such as
+<ul>
+<li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Active-Directory-Domain-Services-_2800_AD-DS_2900_" title="Click to create new page titled: Active Directory Domain Services (AD DS)">Active Directory Domain Services (AD DS)</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Active-Directory-Lightweight-Domain-Services-_2800_AD-LDS_2900_" title="Click to create new page titled: Active Directory Lightweight Domain Services (AD LDS)">Active Directory Lightweight Domain Services (AD LDS)</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Active-Directory-Certificate-Services-_2800_AD-CS_2900_" title="Click to create new page titled: Active Directory Certificate Services (AD CS)">Active Directory Certificate Services (AD CS)</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=DHCP-Server" title="Click to create new page titled: DHCP Server">DHCP Server</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=DFS-Replication-_2800_DFS_2D00_R_2900_" title="Click to create new page titled: DFS Replication (DFS-R)">DFS Replication (DFS-R)</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Single-Instance-Storage-_2800_SIS_2900_" title="Click to create new page titled: Single Instance Storage (SIS)">Single Instance Storage (SIS)</a>. </li></ul>
+<strong>Note:</strong> for Windows Server roles and features <strong>System State Backup
+</strong>is application-aware. </li></ul>
+<p>↑ <a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Top">
+Back to top</a></p>
+<h3><a name="Distributed-applications"></a>Distributed applications</h3>
+<p>Distributed application consists of&nbsp;different pieces (or Roles)&nbsp;of software that are usually located on separate servers but act together as a whole to provide a single service to its consumers. An example of Distributed application is Web Front End (WFE)
+ that keeps its data in a database (DB). Usually some part of configuration is stored on the WFE itself (usually in Windows Registry and/or configuration files) and another part of configuration is stored in the database as well as application data.</p>
+<ul>
+<li>In case of disaster or recovery from misconfiguration you need to recover all parts of the distributed application in sync.
+</li><li>In case of data only recovery it may be safe to recover database only. But usually WFE part should be aware&nbsp;that a restore took place.
+</li></ul>
+<p>So it is highly recommended that backup and restore of distributed applications is performed by application-aware backup application. Such backup application may&nbsp;provide additional benefits.&nbsp;E.g.&nbsp;granular item-level restore of objects inside a single database
+ (e.g. mailbox or even individual email) instead of whole database restore only.</p>
+<p>Examples of Distributed applications:</p>
+<ul>
+<li>
+<p><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=SharePoint_A000_Server" title="Click to create new page titled: SharePoint Server">SharePoint&nbsp;Server</a>.</p>
+</li></ul>
+<p>↑ <a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Top">
+Back to top</a></p>
+<h3><a name="Redundant-data"></a>Redundant data</h3>
+<p>There are some applications build with high availability in mind. Such applications usually have built-in data redundancy feature. They support several separate copies (or instances) of application data and&nbsp;keep these copies in sync with processes such as
+ replication or mirroring. </p>
+<ul>
+<li>In case&nbsp;of a <strong>disaster </strong>there may be just one (or several) instances of data that have fault. And you may have other instances up and running. In such cases&nbsp;there is usually no need to perform&nbsp;a restore from backup and you&nbsp;should chose&nbsp;of
+ the following&nbsp;two options.
+<ul>
+<li>It may be quicker and/or easier to create a new instance of application (i.e. reinstall OS and application) and then let the application re-create the redundant copy from existing master sources.
+</li><li>If you still chose to recover a failed instance from a backup and there are more up-to-date instances available on the network then the recovered instance would need to re-sync all the changes it had already synced between when the backup was taken and
+ when the instance failed.
+<ul>
+<li>Failure to trigger that re-sync&nbsp;may break further replication from and to this instance. That would also result in outdated instance that can cause collisions&nbsp;if it tries to provide service to its consumers. Different applications may provide different
+ mechanisms to protect from such inconsistent restore. (See <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=USN-Rollback" title="Click to create new page titled: USN Rollback">USN Rollback</a> for the case of <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Active-Directory-Domain-Services-_2800_AD-DS_2900_" title="Click to create new page titled: Active Directory Domain Services (AD DS)">Active Directory Domain Services (AD DS)</a>).
+</li></ul>
+The requirement to trigger re-sync properly means that:
+<ul>
+<li>either your backup and restore application should be application-aware </li><li>or you need to perform some very complex (and probably unsupported) manual operations.
+</li></ul>
+</li></ul>
+</li><li>In case of <strong>catastrophic failure </strong>when you lost all the instances of data you still need to perform disaster recovery for at least one instance. Then you should follow either of the scenarios described above in this section.
+</li><li>The&nbsp;trickiest thing with such applications is <strong>item-level recovery</strong>. Solutions for these scenarios vary significantly among certain applications.&nbsp;It will nearly definitely require that you restore a full copy of application data (similar
+ to disaster recovery scenario). Then you should:
+<ul>
+<li>either re-create or somewhat transfer necessary object(s) from restored&nbsp;instance into production&nbsp;instances
+</li><li>or somehow mark restored copy as “Authoritative” one and force other instances to replicate changes from the restored one. Please keep in mind that the other instances still “remember” that the object(s) you&#39;re restoring were previously deleted. And these
+ instances are ready to replicate these changes to the restored instance. And that is probably not what you want them do. So you (or your restore mechanism) should prevent replication to the restored instance. And this means that you are going to lose the changes
+ that were made since the backup you restored was taken. </li></ul>
+Both these scenarios&nbsp;mean that:
+<ul>
+<li>either your backup and restore application should be application-aware
+<ul>
+<li>For some applications an application-aware backup and restore&nbsp;software may&nbsp;provide additional&nbsp;features of item-level recovery without performing “Authoritative” restore.
+</li></ul>
+</li><li>or you need to perform some very complex (and probably unsupported) manual operations.
+</li></ul>
+For specific guidance please refer to official vendor documentation. </li></ul>
+<p>Examples of applications that maintain redundant instances of data</p>
+<ul>
+<li><a class="ExistingPageLink" href="/wiki/contents/articles/2591.windows-server-portal.aspx" title="Click to view the page titled: Windows Server">Windows Server</a> roles and features such as
+<ul>
+<li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Active-Directory-Domain-Services-_2800_AD-DS_2900_" title="Click to create new page titled: Active Directory Domain Services (AD DS)">Active Directory Domain Services (AD DS)</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Active-Directory-Lightweithg-Domain-Services-_2800_AD-LDS_2900_" title="Click to create new page titled: Active Directory Lightweithg Domain Services (AD LDS)">Active Directory Lightweithg Domain Services (AD LDS)</a>, </li><li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Domain-Name-Service-_2800_DNS_2900_" title="Click to create new page titled: Domain Name Service (DNS)">Domain Name Service (DNS)</a>. </li></ul>
+<strong>Note:</strong> for Windows Server roles and features <strong>System State Backup
+</strong>is application-aware. </li><li><a class="ExistingPageLink" href="/wiki/contents/articles/306.sql-server-zh-tw.aspx" title="Click to view the page titled: SQL Server">SQL Server</a> using <a class="ExistingPageLink" href="/wiki/contents/articles/28166.pirated-database-mirroring.aspx" title="Click to view the page titled: Database Mirroring">Database Mirroring</a> feature used, </li><li><a class="ExistingPageLink" href="/wiki/contents/articles/4303.exchange-server.aspx" title="Click to view the page titled: Exchange Server">Exchange Server</a> with <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Mailbox-Role-_2800_MBX_2900_" title="Click to create new page titled: Mailbox Role (MBX)">Mailbox Role (MBX)</a> installed a_2900_" title="Click to create new page titled: Domain Name Service (DNS)">Domain Name Service (DNS)</a>. </li></ul>
+<strong>Note:</strong> for Windows Server roles and features <strong>System State Backup
+</strong>is application-aware. </li><li><a class="ExistingPageLink" href="/wiki/contents/articles/306.sql-server-zh-tw.aspx" title="Click to view the page titled: SQL Server">SQL Server</a> using <a class="ExistingPageLink" href="/wiki/contents/articles/28166.pirated-database-mirroring.aspx" title="Click to view the page titled: Database Mirroring">Database Mirroring</a> feature used, </li><li><a class="ExistingPageLink" href="/wiki/contents/articlend <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Cluster-Continuous-Replication-_2800_CCR_2900_" title="Click to create new page titled: Cluster Continuous Replication (CCR)">Cluster Continuous Replication (CCR)</a> or <a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=207&WikiPageKey=Distributed-Availability-Group-_2800_DAG_2900_" title="Click to create new page titled: Distributed Availability Group (DAG)">Distributed Availability Group (DAG)</a> features used.
+</li></ul>
+<p>↑ <a href="http://social.technet.microsoft.com/wiki/contents/articles/207.backup-and-restore-special-considerations/edit.aspx#Top">
+Back to top</a></p>
+
+</div>
+    
+    

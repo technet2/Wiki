@@ -1,0 +1,411 @@
+---
+layout: default
+title: Getting started with a Mocking Framework - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="Mocking_in_general"></a>Mocking in general</h2>
+<p>You might have come across the word “mock” before, when for instance a UI designer for a Windows Phone application on your team puts together a picture of how the application might look when it is finished: Where do the buttons go? What text might be displayed
+ when the button is pressed?</p>
+<p>The word “mock” means to fake somethingass="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class, which is exactly what we want to do here; we want to fake the layout to give the customer an idea of how the application will look or how it will behave. On the rare occasions that I need to do UI mocks I use a tool
+ called <a href="http://www.balsamiq.com/" target="_blank">Balsamiq </a>and the mockups for a phone application can end up looking as simple as this:</p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8228.balsamiq_5F00_thumb.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/314x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8228.balsamiq_5F00_thumb.png" style="border-width:0px;border-style:solid;" /></a><br />
+<p>There are techniques for mocking things in the real world as well, an example of this is when you want to build a house, you might first want to see a small scale model before you decide to go with it; this is mocking!</p>
+<br />
+<h2><a name="How_does_this_apply_to_programming"></a>How does this apply to programming?</h2>
+<p>As we’ve concluded mocking is about faking either a thing or a behavior and in our code it is of course a behavior that we want to fake/impersonate. In the article about
+<a href="http://blog.filipekberg.se/2011/12/20/adapting-to-inversion-of-control-and-dependency-injection/" target="_blank">
+IoC and DI</a> I talked about breaking things apart from each other by using interfaces, this is going to help us out a lot with the mocking as well.</p>
+<p>Let us assume that we have a system that handles payments and our different payment providers use a shared interface called
+<span style="font-family:&#39;courier new&#39;;">IPaymentProvider</span>. Then we have something that handles the processing of all the payments through the different payment providers let us assume that this class is called
+<span style="font-family:&#39;courier new&#39;;">Payment </span>and the constructor of <span style="font-family:&#39;courier new&#39;;">
+Payment </span>takes an <span style="font-family:&#39;courier new&#39;;">IPaymentProvider</span>.
+</p>
+<p>This class has only one purpose and it is to withdraw money from the customers account. This class resides in a Test project using MS Test. Although that it has one purpose only there are some parameters that will affect the result of the payment execution.
+ In our scenario we the <span style="font-family:&#39;courier new&#39;;">IPaymentProvider </span>
+will look like this: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">interface</code> <code style="color:#000000;">
+IPaymentProvider</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">Reserve(</code><code style="color:#006699;font-weight:bold;">decimal</code>
+<code style="color:#000000;">amount);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">Execute(</code><code style="color:#006699;font-weight:bold;">decimal</code>
+<code style="color:#000000;">amount);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>The <span style="font-family:&#39;courier new&#39;;">Payment </span>class takes a payment provider in the constructor and uses Reserve and Execute in a certain way in its own execution method:
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+Payment</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#000000;">IPaymentProvider _provider;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">Payment(IPaymentProvider provider)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">_provider = provider;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">bool</code> <code style="color:#000000;">
+Execute(</code><code style="color:#006699;font-weight:bold;">decimal</code> <code style="color:#000000;">
+amount)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Implementation goes here...</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>The actual execution of a purchase will require us to first Reserve the amount of money we want to withdraw and if that is possible, we can execute the payment and finalize it. This means that our Execute method will end up looking something like0000;">
+Execute(</code><code style="color:#006699;font-weight:bold;">decimal</code> <code style="color:#000000;">
+amount)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Impleme this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">bool</code> <code style="color:#000000;">
+Execute(</code><code style="color:#006699;font-weight:bold;">decimal</code> <code style="color:#000000;">
+amount)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(!_provider.Reserve(amount))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code><code style="color:#000000;">(!_provider.Execute(amount))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>Even though we have the actual code in front of us, it is not important! What is important is that we just understand that we first need to reserve the amount and then if that succeeds we execute the payment which finalizes the process.
+</p>
+<p>We’ve looked almost all parts of the system, but where is the implementations of the
+<span style="font-family:&#39;courier new&#39;;">IPaymentProvider</span>?</p>
+<p><strong>Let’s assume we don’t have it</strong>! Even though we don’t have access to the implementation at this time (maybe we haven’t made it quite yet, we might not even know what payment providers we are implementing the system against) we still want to
+ test the process of the Execute method, we want to assure that no exceptions are thrown and that based on a Reservation that did not go through, we don’t want it to go any further.
+</p>
+<p>In the article on <a href="http://blog.filipekberg.se/2011/12/20/adapting-to-inversion-of-control-and-dependency-injection/" target="_blank">
+IoC and DI</a> we talked about introducing fakes by creating “dumb” implementations that only did what we asked of them. This is indeed one way to go but let us take a look at another approach of this. Let’s look at a Mocking Framework!
+</p>
+<p>There are a lot of mocking frameworks out there for .NET, here are two that are very good (among many many others):</p>
+<ul>
+<li><a href="http://code.google.com/p/moq/" target="_blank">moq</a> </li><li><a href="http://code.google.com/p/fakeiteasy/" target="_blank">FakeItEasy</a>
+</li></ul>
+<p>But I’ve decided to go with Simple.Mocking. We can install this with NuGet, this is how the test-project I’ve created look like before I use NuGet to install Simple.Mocking:
+</p>
+<p><img alt=" " src="http://blog.filipekberg.se/wp-content/uploads/2012/01/Getting-started-with-a-Mocking-Framework-Microsoft-Visual-Studio-Administrator-22.png" />
+</p>
+<p>Now fire up the nuget manager and write:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PM&gt; Install-Package Simple.Mocking</code></span></div>
+</div>
+<p>You should now see something like this:</p>
+<p><img alt=" " src="http://blog.filipekberg.se/wp-content/uploads/2012/01/Getting-started-with-a-Mocking-Framework-Microsoft-Visual-Studio-Administrator-3.png" /></p>
+<h2><a name="Now_we_rsquo_re_ready_to_start_mocking"></a>Now we’re ready to start mocking!
+</h2>
+<p>There are a couple of important parts in Simple.Mocking that we’re going to cover now, the first one is: How do we fake an instance of our
+<span style="font-family:&#39;courier new&#39;;">IPaymentProvider</span>? </p>
+<p>Start off by adding a reference to the framework by adding this to the top of the file:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Simple.Mocking;</code></span></div>
+</div>
+<p>Now, there’s a class we can access called <span style="font-family:&#39;courier new&#39;;">
+Mock </span>here we’ve got two different methods that will let us do two things: </p>
+<ul>
+<li><span style="font-family:&#39;courier new&#39;;">Mock.Interface</span> will let us fake an implementation of our interface as if we had a real implementation.
+</li><li><span style="font-family:&#39;courier new&#39;;">Mock.Delegate</span> will let us fake a delegate, we won’t be looking in to this anything in this article.
+</li></ul>
+<p>Of these two we will only concentrate on<span style="font-family:&#39;courier new&#39;;"> Mock.Interface</span>. You easily fake/mock an implementation by doing this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+</div>
+<p><strong>Is this it? No, it’s not</strong>! We’ve still got a path to wander before we’ve reached our final destination. If we check what methods we have on the variable provider this is what we got:</p>
+<p><img alt=" " src="http://blog.filipekberg.se/wp-content/uploads/2012/01/Getting-started-with-a-Mocking-Framework-Microsoft-Visual-Studio-Administrator-4.png" /></p>
+<p>So what happens if we run the following code:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">provider.Execute(100);</code></span></div>
+</div>
+<p>It does look valid, doesn’t it? The problem here is that the method Execute has not idea of how it should behave so it will raise an exception. Because it expects us to define a behavior for it before we proceed. This brings us to the next interesting object
+ that we are going to take a look at that comes with <span style="font-family:&#39;courier new&#39;;">
+Simple.Mocking;</span> <span style="font-family:&#39;courier new&#39;;">Expect</span>!</p>
+<p>Almost all the methods on the <span style="font-family:&#39;courier new&#39;;">Expect </span>
+type takes an expression of type <span style="font-family:&#39;courier new&#39;;">Action </span>
+or <span style="font-family:&#39;courier new&#39;;">Func</span>, at least the ones we are interested in at the moment. These are the most commonly used methods:</p>
+<ul>
+<li><span style="font-family:&#39;courier new&#39;;">Expect.MethodCall</span> </li><li><span style="font-family:&#39;courier new&#39;;">Expect.PropertyGet</span> </li><li><span style="font-family:&#39;courier new&#39;;">Expect.PropertySet</span> </li><li><span style="font-family:&#39;courier new&#39;;">Expect.AnyInvocationOn</span> </li></ul>
+<p>From their names you should be able to figure out what they do, but we’re going to look closer at
+<span style="font-family:&#39;courier new&#39;;">Expect.MethodCall</span> now. <span style="font-family:&#39;courier new&#39;;">
+Expect.MethodCall</span> is used to define an expected call to a method on a given type. Take a look at this example:
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(10));</code></span></div>
+</div>
+<p>This fakes an implementation of the interface <span style="font-family:&#39;courier new&#39;;">
+IPaymentProvider </span>and says that it expects us to call<span style="font-family:&#39;courier new&#39;;"> provider.Reserve</span> with the amount 10. If we were to invoke it with another value, let’s say 0 like this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(10));</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">provider.Reserve(0);</code></span></div>
+</div>
+<p>We would get an exception because it assumes that we are about to call it with the amount 10:</p>
+<img alt=" " src="http://blog.filipekberg.se/wp-content/uploads/2012/01/Getting-started-with-a-Mocentation of the interface <span style="font-family:&#39;courier new&#39;;">
+IPaymentProvider </span>and says that it expects us to call<span style="font-family:&#39;courier new&#39;;"> provider.Reserve</span> wiking-Framework-Microsoft-Visual-Studio-Administrator-5.png" /><br />
+<p><br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Unexpected invocation ‘paymentProvider.Reserve(0)’, expected:</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">(invoked: 0 of *) paymentProvider.Reserve(10)</code></span></div>
+</div>
+<p>So if we change that to 10, it should be all good, but it’s not always that you want to hard-code a constant value like that, so what you can use is a helper class called
+<span style="font-family:&#39;courier new&#39;;">Any</span>&lt;T&gt;<span style="font-family:&#39;courier new&#39;;">
+</span>which will let us define any type as an in-parameter or as a return value. In order to say that we are expecting a parameter type of decimal we do this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>But that’s not enough, this only defines the type, we need to use the property Value in order to use the actual value that we will use later when we call this method:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value));</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">provider.Reserve(0);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">provider.Reserve(25);</code></span></div>
+</div>
+<p>This means that the first time <span style="font-family:&#39;courier new&#39;;">Reserve
+</span>is called, the value of the decimal sent to the fake method will be 0 and the second time it will be 25. Let’s make it a little interesting, as you might have noticed, you can define a lot of different Expectations for the same method, the parameter
+ values are what defines what mocked invocation to use.</p>
+<p>There’s a method called Matching on the Value parameter that you can use to distinguish between different values. For instance, you might want to make a very specific test where it fails when the amount is less than 10 and succeeds when the value is above.
+ That could look something like this: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value.Matching(amount
+ =&gt; amount &gt; 10)));</code></span></div>
+</div>
+<p>This mocked method call will be used when we call Reserve with an amount greater than 10. But we’re still not returning either true nor false, that’s the next part! This is probably the easiest part so far, right before the semi-colon, just add
+<span style="font-family:&#39;courier new&#39;;">.Returns(true);</span> and you’re all set!</p>
+<p>So this is what the result of this snippet looks like:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value.Matching(amount
+ =&gt; amount &gt; 10)))</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+</div>
+<p>And if we want to add another expectation that returns false if it is less or equal to 10, we can do that as well, the entire code will look something like this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value.Matching(amount
+ =&gt; amount &gt; 10)))</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value.Matching(amount
+ =&gt; amount &lt;= 10)))</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.Returns(</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">provider.Reserve(0);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style=;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value.Matching(amount
+ =&gt; amount &lt;= 10)))</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&"color:#000000;">provider.Reserve(25);</code></span></div>
+</div>
+<p>The first reservation will return false, because amount is less than 10 but the second one will use the first faked method call and return true. Now let’s step back a bit and take a look at our original problem, we want to make sure that we can process a
+ payment and it should fail when the reservation fails and succeed when the reservation succeeds. So let’s remove all the fuss around that and we should be left with a pretty simple looking snippet like this:
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></div>
+</div>
+<p>Now the next steps are pretty straight forward, we need to do the following:</p>
+<ul>
+<li>Create an expectation for the method call Execute </li><li>Create an instance of the Payment type and pass it the mocked interface </li><li>Execute a payment process! </li><li>Validate the results by using tests </li></ul>
+<p>The next expected method call is the Execute method on the payment provider, this will look almost identical to the Reserve method in this case:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Execute(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></div>
+</div>
+<p>The last two things we need to do now is to create an instance of our payment processor and pass it the interface:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Execute(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var payment =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Payment(provider);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">payment.Execute(200);</code></span></div>
+</div>
+<p>This should compile fine and when you run the test it shouldn’t complain anything at all. Now we’ve got everything set up, we need to test the behavior of payment processor and the two scenarios are:</p>
+<ul>
+<li>If reservation fails, execute should never be invoked </li><li>If reservation succeeds, execute should be invoked and the method should return true
+</li></ul>
+<p>There are a couple of more scenarios such as, in the rare occasion if the reservation succeeds but the execution does not, does it throw a proper exception and roll back? But I’ll leave these special scenarios for you to play with.
+</p>
+<p>Let’s continue looking at the first test, we’ve already (partially) finished it, but I’d like to remove the expectation for a method call, since I do not actually expect a method call at all, if the method is called, we will get an exception and this is
+ correct. </p>
+<p>So the first test where we check if the reservation fails looks like this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[TestMethod]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+CannotExecutePaymentWhenReservationFails()</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var payment =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Payment(provider);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var result = payment.Execute(200);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Assert.IsFalse(result);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>If you run this test (ctrl &#43; r &#43; t) it should process fine and you should see a green icon indicating that the test finished without any errors:</p>
+<p><img alt=" " src="http://blog.filipekberg.se/wp-content/uploads/2012/01/Getting-started-with-a-Mocking-Framework-Microsoft-Visual-Studio-Administrator-8.png" /></p>
+<p>Next up we need to create the test that verifies that everything processes OK, so we need to create a test that checks if Execute returns true if Reserves does too. All we need to do here is add the line of code that we removed before that tells Simple.Mocking
+ that we are expecting a method call. The final test that we are going to make here will look like this if we add that expectation and change the reservation to return true:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[TestMethod]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+CanExecutePaymentWhenReservationIsOk()</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Expect.MethodCall(() =&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Expect.MethodCall(() =&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">provider.Execute(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">.Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var payment =
+</code><codetyle="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code  style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Payment(provider);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var result = payment.Execute(200);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Assert.IsTrue(result);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>If we run all the tests in the context (ctrl &#43; r &#43; a) it should gives us all green lights:</p>
+<p><img alt=" " src="http://blog.filipekberg.se/wp-content/uploads/2012/01/Getting-started-with-a-Mocking-Framework-Microsoft-Visual-Studio-Administrator-10.png" /></p>
+<p>We could of course test if the Execution fails if both Reserve and Execute returns false, these are just similar test that you can add. As you can see Simple.Mocking is really powerful and of course you will need to test your real implementations, but before
+ you test your real implementations of your payment providers, you will want to know if your internal stuff is working.
+</p>
+<p>There are actually systems that charge you a certain amount of money for each API call, these can get quite expensive if your build server runs through all tests all night. I hope you’ve seen how powerful Simple.Mocking is and how it can help you test faster
+ and test more. I read once that everything should be simplified to an interface, this would mean that anything can be mocked and anything can be tested in one way or another.
+</p>
+<p>So in short what we’ve accomplished is that you now have a fake implementation of your interface that will allow you to test other things in your system that depends on certain values or methods being called on that implementation. Here is the entire code
+ that we’ve been looking over in this article:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Microsoft.VisualStudio.TestTools.UnitTesting;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Simple.Mocking;</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">namespace</code>
+<code style="color:#000000;">Tests</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[TestClass]</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+PaymentProviderTests</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[TestMethod]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+CannotExecutePaymentWhenReservationFails()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var payment =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Payment(provider);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var result = payment.Execute(200);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Assert.IsFalse(result);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[TestMethod]</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+Can><span><code style="color:#000000;">var result = payment.Execute(200);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Assert.IsFalse(result);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExecutePaymentWhenReservationIsOk()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var provider = Mock.Interface&lt;IPaymentProvider&gt;();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Reserve(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Expect.MethodCall(() =&gt; provider.Execute(Any&lt;</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">&gt;.Value)).Returns(</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var payment =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Payment(provider);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var result = payment.Execute(200);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Assert.IsTrue(result);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+Payment</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#000000;">IPaymentProvider _provider;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">Payment(IPaymentProvider provider)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">_provider = provider;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">bool</code> <code style="color:#000000;">
+Execute(</code><code style="color:#006699;font-weight:bold;">decimal</code> <code style="color:#000000;">
+amount)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(!_provider.Reserve(amount))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code><code style="color:#000000;">(!_provider.Execute(amount))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">interface</code> <code style="color:#000000;">
+IPaymentProvider</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">Reserve(</code><code style="color:#006699;font-weight:bold;">decimal</code>
+<code style="color:#000000;">amount);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">Execute(</code><code style="color:#006699;font-weight:bold;">decimal</code>
+<code style="color:#000000;">amount);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>This article about Mocking was originally posted by Filip Ekberg on <a href="http://blog.filipekberg.se/2012/01/30/getting-started-with-a-mocking-framework/" target="_blank">
+blog.filipekberg.se</a>.</p>
+
+</div>
+    
+    

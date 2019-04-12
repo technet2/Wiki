@@ -1,0 +1,70 @@
+---
+layout: default
+title: Active Directory.Visão Geral de estrutura de permissionamento em alto nível + Estratégia de Grupos - artigos TechNet - Brasil (Português) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4532.02.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4532.02.png" /></a><br />
+<br />
+Segue abaixo uma explicação bem legal sobre estrutura de permissionamento em alto nível.
+<p>Iniciamos pela fórmula: A -&gt; G -&gt; DL &lt;- P </p>
+<ul>
+<li>A – Account: Conta de Usuário (Login); </li><li>G – Grupo: Global (Serve para Organizar objetos do mesmo Domínio); </li><li>DL – Grupo: Domínio Local (Serve para Organizar objetos do mesmo Domínio); </li><li>P – Permissão: Onde o Administrador ou Pessoa delegada insere as permissões devidas a usuários ou grupos;
+</li></ul>
+<p>Portanto, nesse exemplo da imagem acima vimos: </p>
+<ol>
+<li>1. Um usuário do RH, sendo inserido no grupo G_RH, esse grupo é justamente Global, que server para organizar os objetos (usuário, computadores ou outros grupos do&nbsp;mesmo domínio), onde a partir desse momento concentramos todos os usuários do RH em um
+ único grupo específico; </li><li>2. Onde esse mesmo grupo G_RH é inserido dentro do grupo G_ACESSO_OUTROS_RH_RWM ou G_ACESSO_RH_RWM, em um processo que chamamos de aninhamento de grupos, mas porque foram criados dois grupos globais para RH?, essa é uma questão muito importante em Administração
+ de File Server em alto nível, porque quando precisamos agrupar usuários ou grupos, o ideal sempre é criar grupo globais para agrupar os recursos, sendo correspondenTE no seu label (nome), desta forma, estamos preparando o ambiente file server para acesso
+ a sua pasta e todos os usuários, no caso, G_ACESSO_RH_RWM.
+<p>E esse outro grupo G_ACESSO_OUTROS_RH_RWM, é para inserir outros grupos globais de outros departamentos, para acesso a pasta no caso RH, não misturando acessos e administração, assim, facilita inserirmos outros departamentos.</p>
+<p>Entendendo um pouco melhor essa nomenclatura de nomes, primeiro não é dogma o que estamos escrevendo aqui, mas simplesmente definindo um padrão prévio que pode ser utilizado. G_ACESSO_RH_RWM:</p>
+<ol>
+<ul>
+<li>
+<p>G – Grupo Global </p>
+</li><li>
+<p>ACESSO_RH – Acesso a pasta no File Server RH </p>
+</li><li>
+<p>R – Read (Leitura) \ W – Write (Escrita) \ M – Modify (Modificação) </p>
+</li><li>
+<p>Outros (De outros departamentos precisando ter acesso aos recursos de uma área específica)
+</p>
+<p>G – Grupo Global -&gt; Com acesso a pasta RH no file server -&gt; com permissão de Leitura, Escrita e Modificação.&nbsp;</p>
+</li></ul>
+</ol>
+</li><li>3. Em seguida, esse grupo G_ACESSO_RH_RWM é aninhado em outro grupo chamado DL_ACESSO_RH_FS_RWM. Onde depois de finalizado essa parte é realizado o processo de conceder a permissão (P).
+<p>Acima tem maiores informações sobre grupos, mas o grupo DL (Domínio Local), server para aplicar permissões em recursos no mesmo domínio.</p>
+<p>Logo, para não inserirmos diversos grupos globais do mesmo domínio, ou de qualquer outro domínio na mesma ACL dos recursos do domínio, criamos um único DL na ACL dos recursos contido dentro dele diversos grupo globais, sejam eles do mesmo domínio ou
+ de outros domínios.</p>
+<p>É na ACL dos recursos que trabalhamos compartilhamentos (Share), e níveis de Permissionamentos mais refinados (Security – NTFS);</p>
+<p>PONTO IMPORTANTE: SEMPRE QUE FOR UTILIZAR RECURSOS CRIAR GRUPOS COM LABELS ESPECÍFICOS E CONTAS ESPECÍFICAS, ISSO FACILITA EM SUA ADMINISTRAÇÃO, CONTROLE E EVITA PROBLEMAS MAIORES, COMO USAR SUA</p>
+<p>CONTA PARA ISSO E MISTURAR GRUPOS DE RECURSOS.</p>
+<p>Mais abaixo vamos explicar em detalhes uma construção de um File Server em alto nível, mas vamos antecipar do porque desse grupo:</p>
+<p>• DL_USUARIOS_FS</p>
+<p>Esse grupo é um dos grupos mais importantes dentro de um file server, e deve ser protegido pelo administrador, pelo simples motivo desse mesmo grupo estar aninhado com o grupo G_USUARIOS_FS, no qual está contido nesse grupo todos os grupos globais departamentais
+ da empresa que acessam o File Server.</p>
+<p>Está intrínseco na imagem o grupo (G_USUARIOS_FS), mas já sabemos que para organizar recursos usamos o grupo global que é membro de DL_USUARIOS_FS.</p>
+<p>Mas retornando a importância desses Grupos (G_USUARIOS_FS - DL_USUARIOS_FS), o que estamos explicando é que qualquer mudança nesses grupos irão interferir diretamente no backbone principal de acesso dos departamentos da empresa, logo a proteção via
+ ACL no grupo é fundamental e está compliance com as boas práticas de segurança de File Server.</p>
+</li><li>4. Finalmente chegamos a nível de permissionamento (P), onde no qual, aplicamos todos os níveis desejados nas abas: Share e Security, e principalmente somente em um único grupo DL, onde destacamos alguns pontos positivos nesse nível de configuração:
+<ul>
+<li>- Maior performance na leitura tanto na ACL via Sistema, quanto na Comunicação via Active Directory, logo se você tiver um ambiente no compliance, tudo via usuários e não grupos no seu File Server a percepção para os usuários será bem maior de
+ lentidão; </li><li>- Administração mais complicada de gerenciar sem um fluxo de grupos; </li><li>- Boas práticas é usar somente Grupos DL (Domínio Local), para aplicar Permissionamentos de recursos quaisquer;
+</li><li>- Grupos Globais são para organizar usuários ou outros grupos globais; </li></ul>
+</li></ol>
+<h1><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a><a name="Vídeo_Hangout_ao_VIVO_de_Configuração"></a>Vídeo
+ Hangout ao VIVO de Configuração:</h1>
+<p><script src="https://i1.social.s-msft.com/wiki/rrcontent/18839adc85fee1b0971fa3728f8f3979-b1af1b7835ad549c70d465c5efb07b5e-RequestReducedScript.js" type="text/javascript" ></script><div id="video_beebd6c5-dad1-487e-a3da-2db16b30fc03"><noscript><embed src="https://www.youtube.com/v/6Rpxo de grupos; </li><li>- Boas práticas é usar somente Grupos DL (Domínio Local), para aplicar Permissionamentos de recursos quaisquer;
+</li><li>- Grupos Globais são para organizarDcIOZ_QI?fs=1&amp;rel=0" type="application/x-shockwave-flash" wmode="transparent" width="550" height="330" allowfullscreen="true"></embed></noscript></div><script type="text/javascript">
+cs_setInnerHtml('video_beebd6c5-dad1-487e-a3da-2db16b30fc03','<embed src=\"https:\/\/www.youtube.com\/v\/6RpDcIOZ_QI?fs=1&amp;rel=0\" type=\"application\/x-shockwave-flash\" wmode=\"transparent\" width=\"550\" height=\"330\" allowfullscreen=\"true\"><\/embed>');
+</script></p>
+<h1><a name="Link_do_Ebook_completo_e_Gratuito"></a>Link do Ebook completo e Gratuito:</h1>
+<p>Ebook: O Guia de Bolso do Administrador de Rede Microsoft – Implementando e Administrando um File Server – Engenheiro Microsoft</p>
+<p><a href="https://fabiofol.wordpress.com/2017/09/06/e-book-gratis-o-guia-de-bolso-do-administrador-de-rede-microsoft-implementando-e-administrando-um-file-server-engenheiro-microsoft/">https://fabiofol.wordpress.com/2017/09/06/e-book-gratis-o-guia-de-bolso-do-administrador-de-rede-microsoft-implementando-e-administrando-um-file-server-engenheiro-microsoft/</a></p>
+
+</div>
+    
+    

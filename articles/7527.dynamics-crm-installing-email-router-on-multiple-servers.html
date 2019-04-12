@@ -1,0 +1,88 @@
+---
+layout: default
+title: Dynamics CRM Installing Email router on multiple servers - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>This article will show how with a few tweaks the email router can be deployed onto multiple servers across multiple offices and processing emails for specific users/queues or for specific regions.
+</p>
+<div style="color:black;">
+<p><span style="text-decoration:underline;">Consider the following deployment requirement:</span></p>
+</div>
+<ul style="color:#0b5394;">
+<li><span style="background-color:white;">Client network spans multiple offices across multiple countries</span>
+</li><li style="background-color:white;">CRM processes 2000 emails a day. </li><li style="background-color:white;">Lisbon, New-York, London and Toquio generate most of the emails produced by leads and opportunities.
+</li><li style="background-color:white;">The Toquio office wants to have complete control of all outbound emails from CRM
+</li><li style="background-color:white;">A few offices want to be able to control which domains are allowed to relay and block others.
+</li></ul>
+<p><span style="text-decoration:underline;font-size:22px;font-family:arial;color:#0b5394;">Outgoing Email</span><br />
+To improve performance and resilience, configure a local SMTP service using the Windows Simple Mail Transfer protocol, managed via IIS and point your outgoing profile to the local service. The following are the advantages of using a local SMTP service, instead
+ of an external server:</p>
+<ol>
+<li>Performance wise is faster, the E-mail router can send emails locally which are queued for external delivery much faster than going externally.
+</li><li>Granular control for the outbound email. e.g. you can process 3 different domains on your organisation each domain with different amounts of emails processed each day, you can specify 3 different SMTP external servers for each domain, improving performance
+ and scaling your deployment. </li><li>Better resilience by specifying on-the-fly different SMTP servers to relay email to, in case an external SMTP server fails.
+</li><li>E-mail logging, log all incoming and outgoing emails. </li></ol>
+<p>I would strongly recommend setting up a local SMTP service. How to configure a local SMTP server is beyond the scope of this article, you will find online many white papers on how to do this for different versions of windows server.</p>
+<p><span style="text-decoration:underline;font-size:22px;font-family:arial;color:#0b5394;">Scaling CRM E-mail router</span><br />
+A manual configuration is needed in order to make the email router scalable.<br />
+The following configuration file holds the core email router configuration:<span style="color:#990000;"><br />
+C:\Program Files\Microsoft CRM Email\Service\Microsoft.Crm.Tools.EmailAgent.xml</span></p>
+<p>There are two sections on the EmailAgent.xml file that makes scaling possible:</p>
+<p><span style="text-decoration:underline;">System Configuration:</span><span style="color:#990000;"><br />
+&lt;ConfigUpdatePeriod&gt;3600000<span style="color:#990000;">&lt;</span>/ConfigUpdatePeriod&gt;</span></p>
+<p><span style="color:#000000;">&nbsp;This key enables the email router to reload all users and queues from CRM on the scheduled period, by default every 1hour.</span></p>
+<p><span style="text-decoration:underline;color:#000000;">Provider Configuration:</span></p>
+<p><span style="color:#990000;"><span style="color:#990000;"><span style="color:#990000;">&lt;</span>UserId&gt;</span>xxx-xxx<span style="color:#990000;">&lt;</span>UserId&gt;</span></p>
+<p><span style="color:#990000;"><span style="color:#990000;">&lt;</span>QueueId&gt;xxx-xxx&lt;/QueueId&gt;</span></p>
+<p><span style="color:#000000;">This Section holds all the Users System Id&#39;s and Queues Id&#39;s which the email router will process email for.</span></p>
+<p><span style="color:#000000;">To allow the email router to be deployed to multiple servers we need to make sure they don&#39;t overlap each other and end-up processing the same emails. To avoid the overlapping we need to change the &lt;SystemConfiguration&gt; &lt;ConfigUpdatePeriod&gt;
+ and set it to <strong>0</strong>, this will make sure that the email router will not pick up any new users or queues apart form the manually specified on the configuration file.</span></p>
+<p><span style="color:#000000;"></span><span style="color:#990000;">&lt;</span><span style="color:#990000;">ConfigUpdatePeriod&gt;0<span style="color:#990000;">&lt;</span>/ConfigUpdatePeriod&gt;</span><span style="color:#000000;"></span></p>
+<p><span style="color:#000000;">The second part, will be to manually specify which users or queues we want each email router to process email for. We do this by adding the&lt;UserId&gt; &lt;QueueId&gt; entries below the &lt;EmailAuthMode&gt; tag, below is an example how this
+ would look like</span></p>
+<p><span style="color:#000000;"></span></p>
+<div style="color:#990000;">
+<p><span style="color:#990000;">&lt;</span>EmailAuthMode&gt;Anonymous<span style="color:#990000;">&lt;</span>/EmailAuthMode&gt;<br />
+<span style="color:#990000;">&lt;</span>UserId&gt;xxxxxxxx-13d8-e011-9077-xxxxxxxx<span style="color:#990000;">&lt;</span>/UserId&gt;<br />
+<span style="color:#990000;">&lt;</span>UserId&gt;xxxxxxxx-19d8-e011-9077-xxxxxxxx<span style="color:#990000;">&lt;</span>/UserId&gt;<br />
+<span style="color:#990000;">&lt;</span>QueueId&gt;xxxxxxxx-19d8-e011-9077-xxxxxxxx<span style="color:#990000;">&lt;</span>/QueueId&gt;</p>
+</div>
+<p>By manually specifying the users or queues we want the email router to process, we make sure no other email routers overlap the same users. Also specifying the configuration update period to 0 we force the email router to never check for new users in CRM,
+ making sure one email router does not suddenly download all users and queues in the system and ends up overlapping with other email routers.</p>
+<div style="color:#0b5394;">
+<p><span style="font-size:22px;text-decoration:underline;font-family:arial;color:#1f497d;">Deployment Scenarios</span><span style="font-size:14px;"><br />
+<span style="color:#000000;">We have covered how to make the email router resilient, how to gain granular control over the domains allowed to send emails using a local SMTP server, how to manually configure the email router to process emails for specific users
+ or queues, and how to stop overlapping with other email routers.</span><br />
+</span></p>
+</div>
+<div style="color:#0b5394;">
+<p><span style="font-size:14px;font-family:&#39;times new roman&#39;;color:#000000;">The below diagrams illustrate possible scenarios for our requirements:</span></p>
+<div style="font-family:inherit;">
+<p><span style="font-size:14px;font-family:&#39;times new roman&#39;;color:#000000;"><strong><span style="text-decoration:underline;font-size:14px;color:#000000;">Scenario 1</span></strong><span style="font-size:14px;"><br />
+New york and London only process emails sent from their queue, if their users send an email will be routed via the Lisbon Email router, Toquio has been given full control, and processes emails for their own queue and all their users.</span></span></p>
+</div>
+</div>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7142.emailrouter1.png"></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2063.emailrouter1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2063.emailrouter1.png" style="border-width:0px;border-style:solid;" /></a><br />
+<p><span style="text-decoration:underline;"><strong>Scenario 2</strong></span><br />
+On this scenario the approach is to give each office full control over which users are allowed to send emails from CRM. The only disadvantage from the Scenario 1 is the
+<br />
+time spent on managing the configuration file if your company have multiple users joining and leaving the company, but this would be decentralised and managed locally by the IT team in each office.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8883.scalingemailrouter23.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8883.scalingemailrouter23.png" style="border-width:0px;border-style:solid;" /></a></p>
+<div style="color:black;font-family:inherit;"></div>
+<div style="color:black;font-family:inherit;">
+<p>There are a few other scenarios which could be considered. e.g. we could have designed a scenario where we only use queues, this would be much easier to manage and the only drawback would be to create a workflow to re-write every single email leaving CRM
+ changing the From field to include the CRM queue responsible for the user region, increasing the workload on the asynchronous services.</p>
+</div>
+<div style="color:black;font-family:inherit;">
+<p><span style="text-decoration:underline;"><strong>Conclusion</strong></span><br />
+With a few configuration changes the email router can be deployed on complex environments and scale to meet enterprise requirements. Configuring a local SMTP server improves performance and resilience giving admins the flexibility and granular control over
+ all inbound/outbound emails. Hope this post was helpful.</p>
+</div>
+
+</div>
+    
+    

@@ -1,0 +1,85 @@
+---
+layout: default
+title: Part 2&#58; 10GB GraySort - Terasort (video) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/6985.how-to-upload-data-and-use-the-wordcount-sample-with-hadoop-services-for-windows-azure-video/edit.aspx#transcript" target="_self"><strong><span style="color:#0066dd;"><br />
+<script src="https://i1.social.s-msft.com/wiki/rrcontent/18839adc85fee1b0971fa3728f8f3979-b1af1b7835ad549c70d465c5efb07b5e-RequestReducedScript.js" type="text/javascript" ></script><div id="video_11217d19-2e58-43b2-b4b8-cd817a2d6257"><noscript><embed src="https://www.youtube.com/v/B3lEs_5kQbw?fs=1&amp;rel=0" type="application/x-shockwave-flash" wmode="t-top fiji-content-fragment-top"><divransparent" width="550" height="330" allowfullscreen="true"></embed></noscript></div><script type="text/javascript">
+cs_setInnerHtml('video_11217d19-2e58-43b2-b4b8-cd817a2d6257','<embed src=\"https:\/\/www.youtube.com\/v\/B3lEs_5kQbw?fs=1&amp;rel=0\" type=\"application\/x-shockwave-flash\" wmode=\"transparent\" width=\"550\" height=\"330\" allowfullscreen=\"true\"><\/embed>');
+</script>Transcript</span></strong></a><br />
+<hr />
+<p><span style="font-size:14px;">Hadoop-based Services for Windows Azure includes several samples you can use for learning and testing. One sample is the 10GB GraySort which is a scaled-down version of the Hadoop Terasort benchmark. There are three jobs to run
+ and in this video, Developer Brad Sarsfield walks you through Terasort.</span></p>
+<h2>See Also<a name="See_Also"></a></h2>
+<ul><li><span style="font-size:14px;color:#0066dd;"><a href="http://social.technet.microsoft.com/wiki/contents/articles/6204.apache-hadoop-on-windows.aspx#videos"><span style="font-size:14px;color:#0066dd;"><strong>More Videos</strong> about Hadoop Services on
+ Windows and Windows Azure </span></a></span></li><li><span style="font-size:14px;"><a href="http://social.technet.microsoft.com/wiki/contents/articles/6204.apache-hadoop-on-windows.aspx"><span style="color:#0066dd;">Apache Hadoop Services on Windows -
+<strong>wiki</strong> <strong>Homepage</strong></span></a></span><a href="http://social.technet.microsoft.com/wiki/contents/articles/6204.apache-hadoop-on-windows.aspx"></a>
+</li><li><a href="http://www.youtube.com/playlist?list=PLD471EE01A293CC34&amp;feature=plcp"><span style="font-size:14px;color:#0066dd;">Microsoft&#39;s
+<strong>Big Data channel</strong> on YouTube</span></a>
+<p><span style="color:#0066dd;"></span></p>
+<span style="color:#0066dd;">
+<hr />
+</span>
+<h2><a name="Transcript"></a><a name="transcript"><span style="color:#0066dd;">Transcript</span></a></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Hi, my name is Brad Sarsfield and I’m a Developer on the Hadoop Services for Windows and Windows Azure team.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">In video one in this series, I generated 10GB of data using the teragen example.&nbsp; In this video I’ll run terasort to sort that data. Terasort has 2 phases:&nbsp; the map phase and then the reduce phase.&nbsp;
+ The map tasks partition the data into 25 ranges and the reduce tasks sort the data and write it to HDFS.</span></p>
+Just like with teragen, I run terasort from the hadoop-examples JAR.&nbsp;&nbsp;&nbsp;<br />
+<ol>
+<li>To begin I select 10GB GraySort from the Samples page and then click to Deploy it to my cluster.
+</li><li>On the <strong>Create Job</strong> page, the fields are pre-populated for me, but I need to make a few changes.
+<ol>
+<li>First, I name the job &nbsp;<strong><em>Terasort Example</em></strong> &nbsp;.&nbsp; </li><li>The first parameter I change to <strong>terasort</strong> – this is the name of the program that will be run from the hadoop-examples JAR.
+</li><li>The 2<sup><span style="font-size:13px;">nd</span></sup> parameter specifies the number of map tasks and reduce tasks to be executed. Here I will introduce a new parameter called mapred.reduce.tasks and set it to 25.&nbsp; I start out with a 2-to-1 ratio of map
+ to reduce tasks and from there I can do further optimization.&nbsp; &nbsp;This ratio matches the configuration of my nodes -- each of my nodes has 2 map slots and 1 reduce slot.&nbsp; If I had a bigger machine with 8 cores, I might configure it to use 6 map tasks and 3 reduce
+ tasks. </li><li>The 3<sup><span style="font-size:13px;">rd</span></sup> parameter identifies the input and output files.&nbsp; The terasort sample takes &nbsp;input from the previously-created 10GB-sort-input file and will write the output to a file named 10G-sort-output.
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The command </span>
+line content I added to the parameters is translated into the<span style="color:#000000;">
+</span><a><span style="font-family:calibri;color:#000000;">Final Command below</span></a><span style="color:#000000;"><span style="line-height:115%;font-size:8pt;font-family:calibri;">&nbsp;</span><span style="font-family:calibri;">.</span></span></p>
+</li></ol>
+</li><li>Execute the Job.
+<p style="margin:0in 0in 10pt;"><a><span style="font-family:calibri;color:#000000;">Each map takes a file, and, based on the contents of that file, creates 25 buckets or data range partitions.&nbsp; It doesn’t sort the data yet – just partitions the data.&nbsp; It samples
+ and figures out how to partition it into the appropriate data ranges.</span></a><span style="font-family:calibri;">&nbsp; Then that map task internally sorts the data it is responsible for – only the data in that one file.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">After the map tasks have completed, the reduce tasks start up. The first reduce task is put in charge of one of those buckets. It reaches out to each node and asks for any data that fits into
+ its bucket.&nbsp; For example, if my bucket is the numbers 60 through 88, I collect those numbers from each map task. That is my piece of the job. Once all of the data from the cluster is read, the Reduce task brings that all in and sorts it and writes its part
+ of the final output.&nbsp; In parallel, all of the other 24 Reduce tasks are doing the same thing.
+</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The map task results are stored in temporary files – they are not saved in HDFS and are not persisted past the life of the job.&nbsp;
+</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">It’s reducing now, going through the reduces.&nbsp;
+</span><span style="font-family:calibri;">I <strong>could</strong> configure my cluster to do this work faster.&nbsp; For instance, if I had more nodes, it would run faster.&nbsp; But for this video I have only 4 worker nodes dividing up the work.&nbsp;
+</span></p>
+<p style="margin:0in 0in 10pt;">&nbsp;<span style="font-family:calibri;">When I submit the job and tell it to use 50 maps and 25
+</span><a><span style="font-family:calibri;color:the data from the cluster is read, the Reduce task brings that all in and sorts it and writes its part
+ of the final output.&nbsp; In parallel, all of the other 24 Reduce tasks are doing the same thing.
+</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The map task results are stored in temporary files – they are not saved in HDFS and are not persisted past the life of the job.&nbsp;
+</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">It’s reducing now, going through the reduces.&nbsp;
+</span><span style="font-family:calibri;">I <strong>could</strong> configure my cluster to do this work faster.&nbsp; For instance, if I ha#000000;">Reduces</span></a><span style="line-height:115%;font-size:8pt;font-family:calibri;">&nbsp;</span><span style="font-family:calibri;">, jobscheduler decides on placement and execution of tasks based on the
+ available slots.&nbsp; Once a task finishes, the next task in the queue begins.&nbsp;&nbsp; </span>
+</p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Each of my medium VM nodes is set to accept 2 map tasks and 1 reduce task each.&nbsp;</span><span style="line-height:115%;font-size:8pt;font-family:calibri;">&nbsp;</span><span style="font-family:calibri;">So
+ in this case, 4 workernodes each with 2 slots available for map tasks means I am running 8 tasks at a time</span>.&nbsp;
+</p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">The jobscheduler tries to affinitize the task to the placement of the data.&nbsp; It places the task close to the location of the data, if not on the same machine.</span></p>
+</li><li>Once terasort completes, I see all the statistics that were written out.&nbsp; &nbsp;I scroll down and see that all maps and reduces completed.&nbsp;
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Now it’s time to validate the &nbsp;sort.&nbsp; Validating the data output is covered in the next video in this series.&nbsp;
+</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Thank you for watching, I hope you found it helpful.&nbsp;&nbsp;
+</span></p>
+<div>
+<div>
+<div id="_com_4">
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;font-size:13px;">&nbsp;</span></p>
+</div>
+</div>
+</div>
+</li></ol>
+</li></ul>
+</div>
+    
+    

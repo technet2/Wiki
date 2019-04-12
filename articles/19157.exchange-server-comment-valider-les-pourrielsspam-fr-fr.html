@@ -1,0 +1,114 @@
+---
+layout: default
+title: Exchange Server&#58; Comment valider les pourriels/spam (fr-FR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Cet article est un &quot;comment faire&quot; pour analyser les courriels indésirables que notre serveur Exchange reçois.</p>
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#T></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></divask_1_Investigate_to_be_sure_it_s_at_our_door_we_stop_him">Étape 1: Vérifier si c&#39;est notre serveur qui bloque la réception.</a></li><li class="hierarchy-item"><a href="#Task_2_Get_to_know_the_AntiSpam_filter_rules">Étape 2: Connaître les règles antipourriel utilisées.</a></li><li class="hierarchy-item"><a href="#Task_3_With_the_rule_we_check_start_to_investigate_the_issue_deeper">Étape 3: Ont regarde plus loin dans les &quot;logs&quot;.</a></li><li class="hierarchy-item"><a href="#T_ask_4_Reporting_script">Étape 4: Les scripts utile.</a></li><li class="hierarchy-item"><a href="#Apply_to">S&#39;applique à</a></li></ul><div class="hierarchy-list-footer"> </div></div> </p>
+<p><span style="text-decoration:underline;"><strong>Scenario: Un usager appel et un fournisseur ne peut lui envoyer un courriel.</strong></span></p>
+<p>&nbsp;</p>
+<h3><a name="Task_1_Investigate_to_be_sure_it_s_at_our_door_we_stop_him"></a>Étape 1: Vérifier si c&#39;est notre serveur qui bloque la réception.
+</h3>
+<p style="text-indent:-0.25in;"><span>-<span style="font:7pt Times New Roman;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+</span></span>A regarder le courriel d&#39;erreur.</p>
+<ul>
+<li>A regarder si le refus vient de nous.
+<ul>
+<li>OUI: <strong><em>Aller à l&#39;étape 2</em></strong> </li><li>NON:
+<ul>
+<li>Est-ce que le fournisseur utiliser son fournisseur internet comme &quot;smarthost&quot; ou &quot;relay&quot; ?
+<ul>
+<li>OUI
+<ul>
+<li>Est-ce que c&#39;est eux qui bloque le courriel ? </li><li>Ce cas arrive quand le fournisseur internet valide avec des RBL l&#39;IP source du courriel. Un refus dans de tel cas veut dire dans la plupart des cas une infection du site du fournisseur par un virus ou malware qui envoi beaucoup de pourriels. A regarder
+ l&#39;IP dans le courriel de refus, et à aller valider dans les RBL si elle est inscrite.
+<strong><em>Le fournisseur doit ce faire de-lister dans ce cas, et surtout régler le problème qui la fait ce faire lister.</em></strong>
+</li></ul>
+</li><li>NON
+<ul>
+<li>Utilisez-vous un service antipolluriel externe ?
+<ul>
+<li>OUI
+<ul>
+<li>A regarder les évènements sur l&#39;appareil. </li></ul>
+</li><li>NON
+<ul>
+<li>Une erreure DNS chez le fournisseur ? Une mauvaise entrée MX du serveur DNS du fournisseur peut causer un problème d&#39;envoi.
+</li></ul>
+</li></ul>
+</li></ul>
+</li></ul>
+</li></ul>
+</li></ul>
+</li></ul>
+<p>&nbsp;</p>
+<h3><a name="Task_2_Get_to_know_the_AntiSpam_filter_rules"></a>Étape 2: Connaître les règles antipourriel utilisées.</h3>
+<p style="text-indent:-0.25in;"><span>-<span style="font:7pt Times New Roman;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span>A regarder le courriel d&#39;erreur.</p>
+<ul>
+<li>A regardé l&#39;erreur retournée.
+<ul>
+<li>Si l&#39;erreur vous semble justifiée, alors il faut aviser l&#39;utilisateur que l&#39;usager externe doit modifier quelque chose. (Il est dans une liste RBL, il a un mauvais score de courriel car il a mal écrit le courriel, etc..)
+</li><li>Si vous ete pas sure que le refus est justifié il faut aller voir un peu plus loin.
+<strong><em>Aller a l&#39;étape 3</em></strong> </li></ul>
+</li></ul>
+<p style="text-indent:-0.25in;"><span>-<span style="font:7pt Times New Roman;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Un exemple dans Exchange 2010:</p>
+<p style="text-indent:-0.25in;"><span>-<span style="font:7pt Times New Roman;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5543.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/257x220/__key/communityserver-wikis-components-files/00-00-00-00-05/5543.5.png" style="border-width:0px;border-style:solid;" /></a></span></span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h3><a name="Task_3_With_the_rule_we_check_start_to_investigate_the_issue_deeper"></a>Étape 3: Ont regarde plus loin dans les &quot;logs&quot;.</h3>
+<p style="text-indent:-0.25in;"><span>-<span style="font:7pt Times New Roman;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span>Ont regarde notre AgentLog pour voir la vrai raison du refus:</p>
+<ul>
+<li>A faire cette comme powershell: Get-AgentLog |?{ ($_.p1fromaddress -match &quot;contoso.com&quot; –or $_.p2fromaddresses -match &quot; contoso.com &quot;) -and $_.action –eq &quot;RejectMessage&quot;} (Je suggère de rediriger la commande vers un fichier texte (avec&nbsp; &gt; log.txt en exemple))
+<ul>
+<li>Dans le fichier vous allez voir des ligne comme celle-ci: </li></ul>
+<ul>
+<ul>
+<li><em>Timestamp&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : XXXX-XX-XX XX:XX:XX<br />
+SessionId&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : XXXXXXXXXXXXXXXX<br />
+IPAddress&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : X.X.X.X<br />
+MessageId&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : <br />
+P1FromAddress&nbsp;&nbsp; : test@contoso.com <br />
+P2FromAddresses : {test@contoso.com}<br />
+Recipients&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : {test@contoso.com}<br />
+Agent&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : Sender Id Agent<br />
+Event&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : OnEndOfHeaders<br />
+Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : RejectMessage<br />
+SmtpResponse&nbsp;&nbsp;&nbsp; : 550 5.7.1 Missing purported responsible address<br />
+Reason&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : MissingPRA<br />
+ReasonData&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : No valid PRA<br />
+Diagnostics&nbsp;&nbsp;&nbsp;&nbsp; :</em> </li></ul>
+</ul>
+</li><li>A partir d&#39;ici il faut diagnostiquer l&#39;erreur et voir si ont peut changer nos règle d&#39;antipourriel.
+</li></ul>
+<p>&nbsp;</p>
+<h3><a name="T_ask_4_Reporting_script"></a>Étape 4: Les scripts utile.</h3>
+<br />
+<p><strong>Get-AntispamFilteringReport.ps1</strong> : Pour avoir un état général de l&#39;antipourriel.</p>
+<p><strong>Get-AntispamSCLHistogram.ps1</strong> : Pour avoir un tableau des valeur SCL des pourriels reçus.</p>
+<p><strong>Get-AntispamTopBlockedSenderDomains.ps1</strong> : Pour avoir une listes des addresse source le plus souvent bloquée. A ne pas oublier que ces domaines peuvent etre manipuler, donc l&#39;option SenderID nous permet de mieux géré cela.</p>
+<p><strong>Get-AntispamTopBlockedSenderIPs.ps1</strong> : Pour avoir une liste des IP qui nous envoi le plus de pourriels. A ne pas oublier que l&#39;ont peut bloquer au niveau du routeur ces IP par après (ou a mettre dans les IP bloquer dans l&#39;antipourriel d&#39;Exchange).
+ Ceci va éviter du traffic de validation vers les RBL.</p>
+<p><strong>Get-AntispamTopBlockedSenders.ps1</strong> : Pour avoir celui qui nous envoi le plus de pourriels.</p>
+<p><strong>Get-AntispamTopRBLProviders.ps1</strong> : Pour avoir une liste des RBL et combien de pourriels il ont bloqué. Enlever un RBL si un fournisseur ne peut pas nous envoyé un courriel peut etre dangereux si le RBL bloque beaucoups de pourriels. Donc
+ a juger de la situation quand ont valide les RBL utilisé.</p>
+<p><strong>Get-AntispamTopRecipients.ps1</strong> : Les usagers qui reçoive le plus de pourriels.</p>
+<br />
+<br />
+<br />
+<br />
+<h3><a name="Apply_to"></a>S&#39;applique à</h3>
+<br />
+Exchange 2007 <br />
+Exchange 2010<br />
+Exchange 2013
+
+</div>
+    
+    

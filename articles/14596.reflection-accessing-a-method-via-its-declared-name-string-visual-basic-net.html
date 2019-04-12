@@ -1,0 +1,210 @@
+---
+layout: default
+title: Reflection - Accessing A Method Via Its Declared Name String - Visual Basic.Net - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="How_to_add_access_a_method_via_its_declaration_name_using_reflection"></a><span style=
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment"font-size:20px;">How to access a method via its declaration name using reflection&nbsp;</span></h2>
+<p><em>I could spend a million words explaining it, or you could look at the code.</em></p>
+<p>I encountered an interesting forum post where the person was storing the&nbsp;event-handler-name&nbsp;in a database as a string,for certain events. They needed a way of identifying(from a string) which method to assign to&nbsp;their&nbsp;object&#39;s events.</p>
+<h2><a name="I_created_the_following_example_that_uses_reflection_to_identify_the_correct_routine_by_accessing_its_MethodInfo_Name_property_later_it_converts_this_methodinfo_into_a_delegate_and_then_into_an_eventhandler_It_then_can_be_dynamically_added_as_the_event_handler_for_a_controls_event"></a><span style="font-size:13px;">I
+ created the following example that uses reflection to identify the correct routine by accessing its MethodInfo.Name property, later it converts this methodinfo into a delegate, and then into an eventhandler. It then can be dynamically added as the event handler
+ for a controls event.</span></h2>
+<p>Keep in mind, as with coding always, if not used right, you will of course get errors.</p>
+<ul>
+<li>Create a new test project </li><li>Double-Click Form1 </li><li>Delete all code you see there. </li><li>Paste the following code into form1 </li></ul>
+<div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;Option Strict is always recommended</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Option</code>
+<code style="color:#000000;">Strict </code><code style="color:#006699;font-weight:bold;">On</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;Import Reflection</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Imports</code>
+<code style="color:#000000;">System.Reflection</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Class</code> <code style="color:#000000;">
+Form1</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a menustrip for the form</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">WithEvents</code>
+<code style="color:#000000;">MenuStrip1 </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+MenuStrip </code><code style="color:#006699;font-weight:bold;">With</code> <code style="color:#000000;">
+{.Parent = </code><code style="color:#006699;font-weight:bold;">Me</code><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;create a button to test our adder</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">WithEvents</code>
+<code style="color:#000000;">Button1 </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+Button </code><code style="color:#006699;font-weight:bold;">With</code> <code style="color:#000000;">
+{.Parent = </code><code style="color:#006699;font-weight:bold;">Me</code><code style="color:#000000;">, .Top = 100}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a new instance of the MyMethods Class</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">ObjectAdder </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+MyMethods</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Be sure to create a matching button for this button event</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Private</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+Button1_Click(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+sender </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+System.</code><code style="color:#006699;font-weight:bold;">Object</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+e </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+System.EventArgs) </code><code style="color:#006699;font-weight:bold;">Handles</code>
+<code style="color:#000000;">Button1.Click</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Call the AddMenuItem sub from your instan style="color:#006699;font-weight:bold;">Private</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+Button1_Click(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+sender </code><code style="ce of MyMethods</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Tell the AddMenuItem method the name of your menustrip, the caption of the menuitem, and the name of the sub
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;in the MyMethods class that you want to become its event handler</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ObjectAdder.AddMenuItem(</code><code style="color:#006699;font-weight:bold;">Me</code><code style="color:#000000;">.MenuStrip1,
+</code><code style="color:blue;">&quot;Are You Out There???&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;SubC&quot;</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Class</code></span></div>
+</div>
+</div>
+<ul>
+<li>Add a new class to your project. </li><li>Delete the default code from the new class </li><li>Paste the following code into the new class </li></ul>
+<div>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Option</code>
+<code style="color:#000000;">Strict </code><code style="color:#006699;font-weight:bold;">On</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Class</code> <code style="color:#000000;">
+MyMethods</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Pre-Defined Subs</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+SubA(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+sender </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+Object</code><code style="color:#000000;">, </code><code style="color:#006699;font-weight:bold;">ByVal</code>
+<code style="color:#000000;">e </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">EventArgs)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MsgBox(</code><code style="color:blue;">&quot;Hello, I am SubA, and I am your dynamic event handler.&quot;</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+SubB(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+sender </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+Object</code><code style="color:#000000;">, </code><code style="color:#006699;font-weight:bold;">ByVal</code>
+<code style="color:#000000;">e </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">EventArgs)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MsgBox(</code><code style="color:blue;">&quot;Hello, I am SubB, and I am your dynamic event handler.&quot;</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+SubC(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+sender </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+Object</code><code style="color:#000000;">, </code><code style="color:#006699;font-weight:bold;">ByVal</code>
+<code style="color:#000000;">e </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">EventArgs)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MsgBox(</code><code style="color:blue;">&quot;Hello, I am SubC, and I am your dynamic event handler.&quot;</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+SubD(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+sender </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+Object</code><code style="color:#000000;">, </code><code style="color:#006699;font-weight:bold;">ByVal</code>
+<code style="color:#000000;">e </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">EventArgs)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MsgBox(</code><code style="color:blue;">&quot;Hello, I am SubD, and I am your dynamic event handler.&quot;</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Sub</code> <code style="color:#000000;">
+AddMenuItem(</code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+Menu </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+MenuStrip, </code><code style="color:#006699;font-weight:bold;">ByVal</code> <code style="color:#000000;">
+MenuText </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+String</code><code style="color:#000000;">, </code><code style="color:#006699;font-weight:bold;">ByVal</code>
+<code style="color:#000000;">MethodName </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create the new toolstripbutton</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">ToolStripButton </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+ToolStripButton</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Set the toolstrip button&#39;s caption</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ToolStripButton.Text = MenuText</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Iterate through a collection of each methodinfo in the MyMethods class, using reflection</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+Method </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+MethodInfo </code><code style="color:#006699;font-weight:bold;">In</code> <code style="color:#006699;font-weight:bold;">
+GetType</code><code style="color:#000000;">(MyMethods).GetMethods</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If we find one with a name that matches the ssp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Iterate through a collection of each methodinfo in the MyMethods class, using reflection</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style=pecified name</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;then we create an event handler from the methodinfo</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#000000;">Method.Name = MethodName </code><code style="color:#006699;font-weight:bold;">Then</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Add that handler to the toolstripbutton click event</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">AddHandler</code>
+<code style="color:#000000;">ToolStripButton.Click, EventHandlerFromMI(Method)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;end iteration</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Exit</code>
+<code style="color:#006699;font-weight:bold;">For</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">If</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;add the toolstrip item to the specified menu</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Menu.Items.Add(ToolStripButton)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#006699;font-weight:bold;">Function</code> <code style="color:#000000;">
+EventHandlerFromMI(</code><code style="color:#006699;font-weight:bold;">ByVal</code>
+<code style="color:#000000;">MethodInfo </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">System.Reflection.MethodInfo) </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">EventHandler</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a delegate from the methodinfo</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">ConvertThisDelegate </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">System.</code><code style="color:#006699;font-weight:bold;">Delegate</code>
+<code style="color:#000000;">= _</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">System.</code><code style="color:#006699;font-weight:bold;">Delegate</code><code style="color:#000000;">.CreateDelegate(</code><code style="color:#006699;font-weight:bold;">GetType</code><code style="color:#000000;">(eventhandler),
+</code><code style="color:#006699;font-weight:bold;">Nothing</code><code style="color:#000000;">, MethodInfo,
+</code><code style="color:#006699;font-weight:bold;">False</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;convert the delegate into an eventhandler, and output it from the function</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Return</code>
+<code style="color:#006699;font-weight:bold;">DirectCast</code><code style="color:#000000;">(ConvertThisDelegate, EventHandler)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Function</code></span></span></div>
+ght:bold;">Nothing</code><code style="color:#000000;">, MethodInfo,
+</code><code style="color:#006699;font-weight:bold;">False</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;convert the delegate into an eventhandle<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Class</code></span></div>
+</div>
+<br />
+</div>
+<ul>
+<li>Run the project and see the results speak for themself! </li></ul>
+<h2><a name="References"></a>References</h2>
+<p>Special thanks to John.</p>
+<ul>
+<li>I was able to derive this neat trick using some information taught to me by&nbsp;<a href="http://social.msdn.microsoft.com/profile/john%20anthony%20oliver/">John Anthony Oliver</a>
+</li><li><a href="http://msdn.microsoft.com/en-us/library/system.reflection.aspx">MSDN Library - System.Reflection Namespace</a>
+</li><li><a href="http://msdn.microsoft.com/en-US/">MSDN</a> </li><li><a href="http://social.msdn.microsoft.com/Forums/en-US/categories">MSDN Forums</a>
+</li></ul>
+<p><a href="http://www.hitwebcounter.com/" target="_blank"><img alt=" " src="http://hitwebcounter.com/counter/counter.php?page=4632690&amp;style=0007&amp;nbdigits=9&amp;type=page&amp;initCount=10" style="border-width:0px;border-style:solid;" />
+</a><br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/14665.visual-basic-articles-by-paul-ishak.aspx">Please check out my other Technet Wiki articles!</a></p>
+
+</div>
+    
+    

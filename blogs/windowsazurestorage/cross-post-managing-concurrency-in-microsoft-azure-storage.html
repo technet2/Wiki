@@ -1,0 +1,758 @@
+---
+layout: windowsazurestorage
+title: (Cross-Post) Managing Concurrency in Microsoft Azure Storage
+weight: 3
+---
+
+<div id="site-content" class="site-content row">
+
+	<div id="primary" class="content-area col-sm-9">
+		<div id="single-content" class="div-content">
+
+			
+				
+<article id="post-165" class="post-165 post type-post status-publish format-standard hentry category-uncategorized">
+
+	<header class="entry-header single">
+		<h1 class="entry-title">(Cross-Post) Managing Concurrency in Microsoft Azure Storage</h1>		<div class="rating-wrap">
+		<div id="star-rating-165" class="wds-ratings" data-rating="5" data-userrating="0" data-postid="165" data-container="body" data-toggle="tooltip" title="1 user(s) rated">
+			<div class="wds-ratings-inner-wrap">
+				<div>
+					<div aria-label="Select 5 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="5"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span><span aria-hidden="true" class="star-5"><span>&#x2605;</span></span></div><div aria-label="Select 4 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="4"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span></div><div aria-label="Select 3 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="3"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span></div><div aria-label="Select 2 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="2"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span></div><div aria-label="Select 1 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="1"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span></div>
+				</div>
+			</div>
+		</div>
+		</div>		<div class="clear-both"></div>
+		<div class="entry-meta">
+			<img alt="avatar of windows-azure-storage" src="https://i1.social.s-msft.com/profile/u/avatar.jpg?displayname=Windows+Azure+Storage&amp;size=extralarge&amp;version=00000000-0000-0000-0000-000000000000" class="avatar avatar-22 photo" height="22" width="22"/><span class="byline"><span class="author vcard"><a class="url fn n profile-usercard-hover" data-profile-userid="59e1aedafa2d4428b7004b2c2fac4adc" href="https://social.msdn.microsoft.com/profile/Windows+Azure+Storage">Windows Azure Storage</a></span></span><span class="posted-on posted-on-margin"><span class="screen-reader-text"></span><time class="entry-date published updated" datetime="2014-09-08T07:00:00+00:00">September 8, 2014</time></span><span class="comments-link"><span class="glyphicon glyphicon-comment" aria-hidden="true"></span><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/#comments">2</a></span>				<span class="social-icons-wrap">
+		<ul class="social-icons">
+			<li><div class="fb-share-button" data-href="https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/" data-layout="button_count" data-size="large" data-mobile-iframe="true"><a class="fb-xfbml-parse-ignore" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/&amp;src=sdkpreparse">Share</a></div></li>
+			<div id="fb-root" style="display:none"></div>
+
+			<li class="social-icon twitter"><a data-social="{&quot;type&quot;:&quot;twitter&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/&quot;, &quot;text&quot;: &quot;(Cross-Post) Managing Concurrency in Microsoft Azure Storage&quot;}" href="#" id="post_tweet_count">0</a></li>
+			<li class="social-icon linkedin"><a data-social="{&quot;type&quot;:&quot;linkedin&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/&quot;, &quot;text&quot;: &quot;(Cross-Post) Managing Concurrency in Microsoft Azure Storage&quot;}" href="#" id="get_post_linkedin_count">0</a></li>
+		</ul>
+	</span><!-- .social-icons-wrap -->
+	<script type="text/javascript">
+		// Get social counts
+		jQuery( window ).load(function () {
+			jQuery.getScript('https://blogs.msdn.microsoft.com/windowsazurestorage/wp-content/themes/microsoft/js/social-counts.js?ver=02092017')
+				.done(function(script,textStatus) {
+					window.msdnsocial.ajax('https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/');
+				});
+		});
+	</script>
+		</div>
+		<hr>
+	</header><!-- .entry-header -->
+
+	<div class="entry-content single">
+		<p>Modern Internet based applications usually have multiple users viewing and updating data simultaneously. This requires application developers to think carefully about how to provide a predictable experience to their end users, particularly for scenarios where multiple users can update the same data. There are three main data concurrency strategies developers will typically consider:</p>
+<ol>
+<li>Optimistic concurrency &ndash; An application performing an update will as part of its update verify if the data has changed since the application last read that data. For example, if two users viewing a wiki page make an update to the same page then the wiki platform must ensure that the second update does not overwrite the first update &ndash; and that both users understand whether their update was successful or not. This strategy is most often used in web applications.</li>
+<li>Pessimistic concurrency &ndash; An application looking to perform an update will take a lock on an object preventing other users from updating the data until the lock is released. For example, in a master/slave data replication scenario where only the master will perform updates the master will typically hold an exclusive lock for an extended period of time on the data to ensure no one else can update it.</li>
+<li>Last writer wins &ndash; An approach that allows any update operations to proceed without verifying if any other application has updated the data since the application first read the data. This strategy (or lack of a formal strategy) is usually used where data is partitioned in such a way that there is no likelihood that multiple users will access the same data. It can also be useful where short-lived data streams are being processed.</li>
+</ol>
+<p>This blog post provides an overview of how the Azure Storage platform simplifies development by providing first class support for all three of these concurrency strategies.</p>
+<h3>Azure Storage &ndash; Simplifies Cloud Development</h3>
+<p>The Azure storage service supports all three strategies, although it is distinctive in its ability to provide full support for optimistic and pessimistic concurrency because it was designed to embrace a strong consistency model which guarantees that when the Storage service commits a data insert or update operation all further accesses to that data will see the latest update. Storage platforms that use an eventual consistency model have a lag between when a write is performed by one user and when the updated data can be seen by other users thus complicating development of client applications in order to prevent inconsistencies from affecting end users.</p>
+<p>In addition to selecting an appropriate concurrency strategy developers should also be aware of how a storage platform isolates changes &ndash; particularly changes to the same object across transactions. The Azure storage service uses snapshot isolation to allow read operations to happen concurrently with write operations within a single partition. Unlike other isolation levels, snapshot isolation guarantees that all reads see a consistent snapshot of the data even while updates are occurring &ndash; essentially by returning the last committed values while an update transaction is being processed.</p>
+<h3>Managing Concurrency in the Blob Service</h3>
+<p>You can opt to use either optimistic or pessimistic concurrency models to manage access to blobs and containers in the blob service. If you do not explicitly specify a strategy last writes wins is the default.</p>
+<h4>Optimistic concurrency for blobs and containers</h4>
+<p>The Storage service assigns an identifier to every object stored. This identifier is updated every time an update operation is performed on an object. The identifier is returned to the client as part of an HTTP GET response using the ETag (entity tag) header that is defined within the HTTP protocol. A user performing an update on such an object can send in the original ETag along with a conditional header to ensure that an update will only occur if a certain condition has been met &ndash; in this case the condition is an &ldquo;If-Match&rdquo; header which requires the Storage Service to ensure the value of the ETag specified in the update request is the same as that stored in the Storage Service.</p>
+<p>The outline of this process is as follows:</p>
+<ol>
+<li>Retrieve a blob from the storage service, the response includes an HTTP ETag Header value that identifies the current version of the object in the storage service.</li>
+<li>When you update the blob, include the ETag value you received in step 1 in the <strong>If-Match</strong> conditional header of the request you send to the service.</li>
+<li>The service compares the ETag value in the request with the current ETag value of the blob.</li>
+<li>If the current ETag value of the blob is a different version than the ETag in the <strong>If-Match</strong> conditional header in the request, the service returns a 412 error to the client. This indicates to the client that another process has updated the blob since the client retrieved it.</li>
+<li>If the current ETag value of the blob is the same version as the ETag in the <strong>If-Match</strong> conditional header in the request, the service performs the requested operation and updates the current ETag value of the blob to show that it has created a new version.</li>
+</ol>
+<p>The following C# snippet (using the Client Storage Library 4.2.0) shows a simple example of how to construct an <strong>If-Match</strong> <strong>AccessCondition</strong> based on the ETag value that is accessed from the properties of a blob that was previously either retrieved or inserted. It then uses the <strong>AccessCondition</strong> object when it updating the blob: the <strong>AccessCondition</strong> object adds the <strong>If-Match</strong> header to the request. If another process has updated the blob, the blob service returns an HTTP 412 (Precondition Failed) status message. The full sample can be downloaded <a href="http://code.msdn.microsoft.com/windowsazure/Managing-Concurrency-using-56018114" target="_blank">here</a>.</p>
+<div id="codeSnippetWrapper">
+<div id="codeSnippet" style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #008000;">// Retrieve the ETag from the newly created blob</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #008000;">// Etag is already populated as UploadText should cause a PUT Blob call </span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #008000;">// to storage blob service which returns the etag in response.</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #0000ff;">string</span> orignalETag = blockBlob.Properties.ETag;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">&nbsp;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #008000;">// This code simulates an update by a third party.</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #0000ff;">string</span> helloText = <span style="color: #006080;">"Blob updated by a third party."</span>;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">&nbsp;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #008000;">// No etag, provided so orignal blob is overwritten (thus generating a new etag)</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">blockBlob.UploadText(helloText);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">Console.WriteLine(<span style="color: #006080;">"Blob updated. Updated ETag = {0}"</span>, </pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">blockBlob.Properties.ETag);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">&nbsp;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #008000;">// Now try to update the blob using the orignal ETag provided when the blob was created</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #0000ff;">try</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">{</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    Console.WriteLine(<span style="color: #006080;">"Trying to update blob using orignal etag to generate if-match access condition"</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    blockBlob.UploadText(helloText,accessCondition:</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    AccessCondition.GenerateIfMatchCondition(orignalETag));</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">}</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #0000ff;">catch</span> (StorageException ex)</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">{</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    <span style="color: #0000ff;">if</span> (ex.RequestInformation.HttpStatusCode == (<span style="color: #0000ff;">int</span>)HttpStatusCode.PreconditionFailed)</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    {</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">        Console.WriteLine(<span style="color: #006080;">"Precondition failure as expected. Blob's orignal etag no longer matches"</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">        <span style="color: #008000;">// TODO: client can decide on how it wants to handle the 3rd party updated content.</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    }</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    <span style="color: #0000ff;">else</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">        <span style="color: #0000ff;">throw</span>;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">}</pre>
+<!--CRLF--></div>
+</div>
+<p>The Storage Service also includes support for additional conditional headers such as <strong>If-Modified-Since</strong>, <strong>If-Unmodified-Since</strong> and <strong>If-None-Match </strong>as well as combinations thereof.<strong> </strong>For more information see <a href="http://msdn.microsoft.com/en-us/library/dd179371.aspx" target="_blank">Specifying Conditional Headers for Blob Service Operations</a> on MSDN.</p>
+<p>The following table summarizes the container operations that accept conditional headers such as <strong>If-Match</strong> in the request and that return an ETag value in the response.</p>
+<table class="xstore" border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top" width="225">
+<p><strong>Operation</strong></p>
+</td>
+<td valign="top" width="240">
+<p><strong>Returns Container ETag value</strong></p>
+</td>
+<td valign="top" width="293">
+<p><strong>Accepts conditional headers</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Create Container</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Container Properties</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Container Metadata</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Set Container Metadata</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Container ACL</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Set Container ACL</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes (*)</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Delete Container</p>
+</td>
+<td valign="top" width="240">
+<p>No</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Lease Container</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>List Blobs</p>
+</td>
+<td valign="top" width="240">
+<p>No</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>(*) The permissions defined by SetContainerACL are cached and updates to these permissions take 30 seconds to propagate during which period updates are not guaranteed to be consistent.</p>
+<p>The following table summarizes the blob operations that accept conditional headers such as <strong>If-Match</strong> in the request and that return an ETag value in the response.</p>
+<table border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top" width="225">
+<p><strong>Operation</strong></p>
+</td>
+<td valign="top" width="240">
+<p><strong>Returns ETag value</strong></p>
+</td>
+<td valign="top" width="293">
+<p><strong>Accepts conditional headers</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Put Blob</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Blob</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Blob Properties</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Set Blob Properties</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Blob Metadata</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Set Blob Metadata</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Lease Blob (*)</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Snapshot Blob</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Copy Blob</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes (for source and destination blob)</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Abort Copy Blob</p>
+</td>
+<td valign="top" width="240">
+<p>No</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Delete Blob</p>
+</td>
+<td valign="top" width="240">
+<p>No</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Put Block</p>
+</td>
+<td valign="top" width="240">
+<p>No</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Put Block List</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Block List</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Put Page</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="225">
+<p>Get Page Ranges</p>
+</td>
+<td valign="top" width="240">
+<p>Yes</p>
+</td>
+<td valign="top" width="293">
+<p>Yes</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>(*) Lease Blob does not change the ETag on a blob.</p>
+<h4>Pessimistic concurrency for blobs</h4>
+<p>To lock a blob for exclusive use, you can acquire a <a href="http://msdn.microsoft.com/en-us/library/azure/ee691972.aspx" target="_blank">lease</a> on it. When you acquire a lease, you specify for how long you need the lease: this can be for between 15 to 60 seconds or infinite which amounts to an exclusive lock. You can renew a finite lease to extend it, and you can release any lease when you are finished with it. The blob service automatically releases finite leases when they expire.</p>
+<p>Leases enable different synchronization strategies to be supported, including exclusive write / shared read, exclusive write / exclusive read and shared write / exclusive read. Where a lease exists the storage service enforces exclusive writes (put, set and delete operations) however ensuring exclusivity for read operations requires the developer to ensure that all client applications use a lease ID and that only one client at a time has a valid lease ID. Read operations that do not include a lease ID result in shared reads.</p>
+<p>The following C# snippet shows an example of acquiring an exclusive lease for 30 seconds on a blob, updating the content of the blob, and then releasing the lease. If there is already a valid lease on the blob when you try to acquire a new lease, the blob service returns an &ldquo;HTTP (409) Conflict&rdquo; status result. The snippet below uses an <strong>AccessCondition</strong> object to encapsulate the lease information when it makes a request to update the blob in the storage service. The full sample can be downloaded <a href="http://code.msdn.microsoft.com/windowsazure/Managing-Concurrency-using-56018114" target="_blank">here</a>.</p>
+<div id="codeSnippetWrapper">
+<div id="codeSnippet" style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #008000;">// Acquire lease for 15 seconds</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #0000ff;">string</span> lease = blockBlob.AcquireLease(TimeSpan.FromSeconds(15), <span style="color: #0000ff;">null</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">Console.WriteLine(<span style="color: #006080;">"Blob lease acquired. Lease = {0}"</span>, lease);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">&nbsp;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #008000;">// Update blob using lease. This operation will succeed</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> helloText = <span style="color: #006080;">"Blob updated"</span>;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">var accessCondition = AccessCondition.GenerateLeaseCondition(lease);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">blockBlob.UploadText(helloText, accessCondition: accessCondition);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">Console.WriteLine(<span style="color: #006080;">"Blob updated using an exclusive lease"</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">&nbsp;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #008000;">//Simulate third party update to blob without lease</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #0000ff;">try</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">{</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    <span style="color: #008000;">// Below operation will fail as no valid lease provided</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    Console.WriteLine(<span style="color: #006080;">"Trying to update blob without valid lease"</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    blockBlob.UploadText(<span style="color: #006080;">"Update without lease, will fail"</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">}</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #0000ff;">catch</span> (StorageException ex)</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">{</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    <span style="color: #0000ff;">if</span> (ex.RequestInformation.HttpStatusCode == (<span style="color: #0000ff;">int</span>)HttpStatusCode.PreconditionFailed)</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">        Console.WriteLine(<span style="color: #006080;">"Precondition failure as expected. Blob's lease does not match"</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    <span style="color: #0000ff;">else</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">        <span style="color: #0000ff;">throw</span>;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">}</pre>
+<!--CRLF--></div>
+</div>
+<p>If you attempt a write operation on a leased blob without passing the lease id, the request fails with a 412 error. Note that if the lease expires before calling the <strong>UploadText</strong> method but you still pass the lease id, the request also fails with a <strong>412</strong> error. For more information about managing lease expiry times and lease ids, see the <a href="http://msdn.microsoft.com/en-us/library/azure/ee691972.aspx" target="_blank">Lease Blob</a> REST documentation.</p>
+<p>The following blob operations can use leases to manage pessimistic concurrency:</p>
+<ul>
+<li>Put Blob</li>
+<li>Get Blob</li>
+<li>Get Blob Properties</li>
+<li>Set Blob Properties</li>
+<li>Get Blob Metadata</li>
+<li>Set Blob Metadata</li>
+<li>Delete Blob</li>
+<li>Put Block</li>
+<li>Put Block List</li>
+<li>Get Block List</li>
+<li>Put Page</li>
+<li>Get Page Ranges</li>
+<li>Snapshot Blob - lease id optional if a lease exists</li>
+<li>Copy Blob - lease id required if a lease exists on the destination blob</li>
+<li>Abort Copy Blob - lease id required if an infinite lease exists on the destination blob</li>
+<li>Lease Blob</li>
+</ul>
+<h4>Pessimistic concurrency for containers</h4>
+<p>Leases on containers enable the same synchronization strategies to be supported as on blobs (exclusive write / shared read, exclusive write / exclusive read and shared write / exclusive read) however unlike blobs the storage service only enforces exclusivity on delete operations. To delete a container with an active lease, a client must include the active lease ID with the delete request. All other container operations succeed on a leased container without including the lease ID in which case they are shared operations. If exclusivity of update (put or set) or read operations is required then developers should ensure all clients use a lease ID and that only one client at a time has a valid lease ID.</p>
+<p>The following container operations can use leases to manage pessimistic concurrency:</p>
+<ul>
+<li>Delete Container</li>
+<li>Get Container Properties</li>
+<li>Get Container Metadata</li>
+<li>Set Container Metadata</li>
+<li>Get Container ACL</li>
+<li>Set Container ACL</li>
+<li>Lease Container</li>
+</ul>
+<p>For more information see:</p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/dd179371.aspx" target="_blank">Specifying Conditional Headers for Blob Service Operations</a></p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/jj159103.aspx" target="_blank">Lease Container</a></p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/ee691972.aspx" target="_blank">Lease Blob</a></p>
+<h3>Managing Concurrency in the Table Service</h3>
+<p>The table service uses optimistic concurrency checks as the default behavior when you are working with entities, unlike the blob service where you must explicitly choose to perform optimistic concurrency checks. The other difference between the table and blob services is that you can only manage the concurrency behavior of entities whereas with the blob service you can manage the concurrency of both containers and blobs.</p>
+<p>To use optimistic concurrency and to check if another process modified an entity since you retrieved it from the table storage service, you can use the ETag value you receive when the table service returns an entity. The outline of this process is as follows:</p>
+<ol>
+<li>Retrieve an entity from the table storage service, the response includes an ETag value that identifies the current identifier associated with that entity in the storage service.</li>
+<li>When you update the entity, include the ETag value you received in step 1 in the mandatory <strong>If-Match</strong> header of the request you send to the service.</li>
+<li>The service compares the ETag value in the request with the current ETag value of the entity.</li>
+<li>If the current ETag value of the entity is different than the ETag in the mandatory <strong>If-Match</strong> header in the request, the service returns a 412 error to the client. This indicates to the client that another process has updated the entity since the client retrieved it.</li>
+<li>If the current ETag value of the entity is the same as the ETag in the mandatory <strong>If-Match</strong> header in the request or the <strong>If-Match</strong> header contains the wildcard character (*), the service performs the requested operation and updates the current ETag value of the entity to show that it has been updated.</li>
+</ol>
+<p>Note that unlike the blob service, the table service requires the client to include an <strong>If-Match</strong> header in update requests. However, it is possible to force an unconditional update (last writer wins strategy) and bypass concurrency checks if the client sets the <strong>If-Match</strong> header to the wildcard character (*) in the request.</p>
+<p>The following C# snippet shows a customer entity that was previously either created or retrieved having their email address updated. The initial insert or retrieve operation stores the ETag value in the customer object, and because the sample uses the same object instance when it executes the replace operation, it automatically sends the ETag value back to the table service, enabling the service to check for concurrency violations. If another process has updated the entity in table storage, the service returns an HTTP 412 (Precondition Failed) status message. The full sample can be downloaded <a href="http://code.msdn.microsoft.com/windowsazure/Managing-Concurrency-using-56018114" target="_blank">here</a>.</p>
+<div id="codeSnippetWrapper">
+<div id="codeSnippet" style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;"><span style="color: #0000ff;">try</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">{</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    customer.Email = <span style="color: #006080;">"updatedEmail@contoso.org"</span>;</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    TableOperation replaceCustomer = TableOperation.Replace(customer);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">    customerTable.Execute(replaceCustomer);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    Console.WriteLine(<span style="color: #006080;">"Replace operation succeeded."</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">}</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;"><span style="color: #0000ff;">catch</span> (StorageException ex)</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">{</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    <span style="color: #0000ff;">if</span> (ex.RequestInformation.HttpStatusCode == 412)</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">        Console.WriteLine(<span style="color: #006080;">"Optimistic concurrency violation &ndash; entity has changed since it was retrieved."</span>);</pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">    <span style="color: #0000ff;">else</span></pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: white; border-style: none; padding: 0px;">        <span style="color: #0000ff;">throw</span>; </pre>
+<!--CRLF-->
+<pre style="overflow: visible; font-size: 8pt; font-family: 'Courier New', courier, monospace; width: 100%; color: black; direction: ltr; text-align: left; margin: 0em; line-height: 12pt; background-color: #f4f4f4; border-style: none; padding: 0px;">}</pre>
+<!--CRLF--></div>
+</div>
+<p>To explicitly disable the concurrency check, you should set the <strong>ETag</strong> property of the <strong>employee</strong> object to &ldquo;*&rdquo; before you execute the replace operation.</p>
+<p>customer.ETag = "*";</p>
+<p>The following table summarizes how the table entity operations use ETag values:</p>
+<table border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top" width="232">
+<p><strong>Operation</strong></p>
+</td>
+<td valign="top" width="255">
+<p><strong>Returns ETag value</strong></p>
+</td>
+<td valign="top" width="285">
+<p><strong>Requires If-Match request header</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Query Entities</p>
+</td>
+<td valign="top" width="255">
+<p>Yes</p>
+</td>
+<td valign="top" width="285">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Insert Entity</p>
+</td>
+<td valign="top" width="255">
+<p>Yes</p>
+</td>
+<td valign="top" width="285">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Update Entity</p>
+</td>
+<td valign="top" width="255">
+<p>Yes</p>
+</td>
+<td valign="top" width="285">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Merge Entity</p>
+</td>
+<td valign="top" width="255">
+<p>Yes</p>
+</td>
+<td valign="top" width="285">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Delete Entity</p>
+</td>
+<td valign="top" width="255">
+<p>No</p>
+</td>
+<td valign="top" width="285">
+<p>Yes</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Insert or Replace Entity</p>
+</td>
+<td valign="top" width="255">
+<p>Yes</p>
+</td>
+<td valign="top" width="285">
+<p>No</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="232">
+<p>Insert or Merge Entity</p>
+</td>
+<td valign="top" width="255">
+<p>Yes</p>
+</td>
+<td valign="top" width="285">
+<p>No</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note that the <strong>Insert or Replace Entity</strong> and <strong>Insert or Merge Entity</strong> operations do <em>not</em> perform any concurrency checks because they do not send an ETag value to the table service.</p>
+<p>In general developers using tables should rely on optimistic concurrency when developing scalable applications. If pessimistic locking is needed, one approach developers can take when accessing Tables is to assign a designated blob for each table and try to take a lease on the blob before operating on the table. This approach does require the application to ensure all data access paths obtain the lease prior to operating on the table. You should also note that the minimum lease time is 15 seconds which requires careful consideration for scalability.</p>
+<p>For more information see:</p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/dd179375.aspx" target="_blank">Operations on Entities</a></p>
+<h3>Managing Concurrency in the Queue Service</h3>
+<p>One scenario in which concurrency is a concern in the queueing service is where multiple clients are retrieving messages from a queue. When a message is retrieved from the queue, the response includes the message and a pop receipt value, which is required to delete the message. The message is not automatically deleted from the queue, but after it has been retrieved, it is not visible to other clients for the time interval specified by the visibilitytimeout parameter. The client that retrieves the message is expected to delete the message after it has been processed, and before the time specified by the TimeNextVisible element of the response, which is calculated based on the value of the visibilitytimeout parameter. The value of visibilitytimeout is added to the time at which the message is retrieved to determine the value of TimeNextVisible.</p>
+<p>The queue service does not have support for either optimistic or pessimistic concurrency and for this reason clients processing messages retrieved from a queue should ensure messages are processed in an idempotent manner. A last writer wins strategy is used for update operations such as SetQueueServiceProperties, SetQueueMetaData, SetQueueACL and UpdateMessage.</p>
+<p>For more information see:</p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/dd179363.aspx" target="_blank">Queue Service REST API</a></p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/dd179474.aspx" target="_blank">Get Messages</a></p>
+<h3>Managing Concurrency in the File Service</h3>
+<p>The file service can be accessed using two different protocol endpoints &ndash; SMB and REST. The REST service does not have support for either optimistic locking or pessimistic locking and all updates will follow a last writer wins strategy. SMB clients that mount file shares can leverage file system locking mechanisms to manage access to shared files &ndash; including the ability to perform pessimistic locking. When an SMB client opens a file, it specifies both the file access and share mode. Setting a File Access option of "Write" or "Read/Write" along with a File Share mode of "None" will result in the file being locked by an SMB client until the file is closed. If REST operation is attempted on a file where an SMB client has the file locked the REST service will return status code 409 (Conflict) with error code SharingViolation.</p>
+<p>When an SMB client opens a file for delete, it marks the file as pending delete until all other SMB client open handles on that file are closed. While a file is marked as pending delete, any REST operation on that file will return status code 409 (Conflict) with error code SMBDeletePending. Status code 404 (Not Found) is not returned since it is possible for the SMB client to remove the pending deletion flag prior to closing the file. In other words, status code 404 (Not Found) is only expected when the file has been removed. Note that while a file is in a SMB pending delete state, it will not be included in the List Files results.Also note that the REST Delete File and REST Delete Directory operations are committed atomically and do not result in pending delete state.</p>
+<p>For more information see:</p>
+<p>- <a href="http://msdn.microsoft.com/en-us/library/azure/dn194265.aspx" target="_blank">Managing File Locks</a></p>
+<h3>Summary and Next Steps</h3>
+<p>The Microsoft Azure Storage service has been designed to meet the needs of the most complex online applications without forcing developers to compromise or rethink key design assumptions such as concurrency and data consistency that they have come to take for granted.</p>
+<p>For the complete sample application referenced in this blog:</p>
+<p>- <a href="http://code.msdn.microsoft.com/windowsazure/Managing-Concurrency-using-56018114" target="_blank">Managing Concurrency using Azure Storage - Sample Application</a></p>
+<p>For more information on Azure Storage see:</p>
+<p>- <a href="http://azure.microsoft.com/en-us/services/storage/" target="_blank">Microsoft Azure Storage Home Page</a></p>
+<p>- <a href="http://azure.microsoft.com/en-us/documentation/articles/storage-introduction/" target="_blank">Introduction to Azure Storage</a></p>
+<p>- Storage Getting Started for <a href="http://azure.microsoft.com/en-us/documentation/articles/storage-dotnet-how-to-use-blobs/" target="_blank">Blob</a>, <a href="http://azure.microsoft.com/en-us/documentation/articles/storage-dotnet-how-to-use-tables/" target="_blank">Table</a> and <a href="http://azure.microsoft.com/en-us/documentation/articles/storage-dotnet-how-to-use-queues/" target="_blank">Queues</a></p>
+<p>- Storage Architecture &ndash; <a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2011/11/20/windows-azure-storage-a-highly-available-cloud-storage-service-with-strong-consistency.aspx" target="_blank">Windows Azure Storage : A Highly Available Cloud Storage Service with Strong Consistency</a></p>
+<p><em>Jason Hogg</em></p>
+	</div><!-- .entry-content -->
+
+
+	<footer class="entry-footer single">
+				<hr>
+	</footer><!-- .entry-footer -->
+
+</article><!-- #post-## -->
+
+			
+		</div><!-- #single-content -->
+
+		
+<div id="comments" class="comments-area">
+	<div class="comments-title">
+		Comments (2)	</div>
+
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title"> <small><a rel="nofollow" id="cancel-comment-reply-link" href="https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/#respond" style="display:none;">Cancel reply</a></small></h3><p class="must-log-in">You must be <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2014%2F09%2F08%2Fcross-post-managing-concurrency-in-microsoft-azure-storage%2F">logged in</a> to post a comment.</p>	</div><!-- #respond -->
+	
+			<div class="navigation pagination clear-both">
+					</div>
+
+		<ol class="comment-list">
+					<li class="comment even thread-even depth-1" id="comment-518">
+				<div id="div-comment-518" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">okwap</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/#comment-518">
+			September 9, 2014 at 12:56 am</a>		</div>
+
+		<p>Great information for me. An question is, do if-* conditions guarantee optimistic concurrency? If I update one object by two PUT OBJECT operations in the same time with if-match header, will one operation fail and return 412 error code? Thanks.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2014%2F09%2F08%2Fcross-post-managing-concurrency-in-microsoft-azure-storage%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-519">
+				<div id="div-comment-519" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/419b33245887eb453bdf6c8715579628?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/419b33245887eb453bdf6c8715579628?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">serdar.ozler@outlook.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2014/09/08/cross-post-managing-concurrency-in-microsoft-azure-storage/#comment-519">
+			September 9, 2014 at 7:46 am</a>		</div>
+
+		<p>@okwap, that is correct. Only one of those operations will succeed.</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2014%2F09%2F08%2Fcross-post-managing-concurrency-in-microsoft-azure-storage%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		</ol><!-- .comment-list -->
+
+		<div class="navigation pagination">
+					</div>
+
+	
+	
+</div><!-- .comments-area -->
+	</div><!-- #primary -->

@@ -1,0 +1,92 @@
+---
+layout: default
+title: SharePoint 2010&#58; "The remote server returned an error 401 unauthorized" - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="The_remote_server_returned_an_error_401_unauthorized"></a><a name="The_remote_server_returned_an_error_401_unauthorized"></a><a name="The_remote_server_returned_an_error_401_unauthorized"></a><a name="The_remote_server_returned_an_error_401_unauthorized"></a><a name="The_remote_server_returned_an_error_401_unauthorized"></a>The
+ remote server returned an error 401 unauthorized</h2>
+<p>Actually, A Customer has requested to be able to get SharePoint Calendar entries &quot;Meetings and events&quot; as an XML File, and there is a dll file that is used for dealing with&nbsp; lists&#39; data as XML, So I have built an .aspx page that only creates a&nbsp;System.Net.HttpWebRequest&nbsp;in
+ order to get the above mentioned XML.&nbsp;However the problem was that when&nbsp;I enter the url that directly&nbsp;deal with the&nbsp;owssvr.dll file, then the requests&nbsp;returns the&nbsp;expected XML file:<br />
+<a href="http://mysharepointserverurl/_vti_bin/owssvr.dll?Cmd=Display&amp;List=161D7884-FD59-4464-AF00-40F653A214F8&amp;XMLDATA=TRUE">http://MySharepointServerURL/_vti_bin/owssvr.dll?Cmd=Display&amp;List=161D7884-FD59-4464-AF00-40F653A214F8&amp;XMLDATA=TRUE</a><br />
+<br />
+Nevertheless, When requesting my custom&nbsp;.aspx page that&nbsp;should do the same, then&nbsp;unauthorized error appears to me:<br />
+<a href="http:///_vti_bin/getListItemsXML.aspx">http://<span>MySharepoint</span> ServerURL/_vti_bin/getListItemsXML.aspx</a><br />
+<br />
+The inline code of my aspx page:</p>
+<div class="reCodeBlock" style="overflow-y:auto;">
+<div><span><code>&lt;%@ Page Language=&quot;C#&quot; contentType=&quot;BinaryStream&quot; %&gt;</code></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&lt;</code><code style="font-weight:bold;">script</code>
+<code>language</code><code>=</code><code style="color:blue;">&quot;c#&quot;</code>
+<code>runat</code><code>=</code><code style="color:blue;">&quot;server&quot;</code><code>&gt;</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>protected void Page_Load(object sender, EventArgs e)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>string strURL = Microsoft.SharePoint.SPContext.Current.Web.Url &#43; &quot;/_vti_bin/owssvr.dll?Cmd=Display&amp;List=161D7884-FD59-4464-AF00-40F653A214F8&amp;XMLDATA=TRUE&quot;;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>System.Net.HttpWebRequest objWebRequest = null;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>System.Net.HttpWebResponse objWebResponse = null;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>System.IO.StreamReader streamReader = null;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>string strHTML = null;</code></span></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>System.Net.ServicePointManager.ServerCertificateValidationCallback = delegate(object s, System.Security.Cryptography.X509Certificates.X509Certificate
+ certificate, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors) { return true; };</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebRequest = (System.Net.HttpWebRequest)System.Net.WebRequest.Create(strURL);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebRequest.Method = &quot;GET&quot;;</code></span></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebRequest.Credentials = System.Net.CredentialCache.DefaultCredentials;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebResponse = (System.Net.HttpWebResponse)objWebRequest.GetResponse();</code></span></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>streamReader = new System.IO.StreamReader(objWebResponse.GetResponseStream());</code></span></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>strHTML = streamReader.ReadToEnd();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>streamReader.Close();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebResponse.Close();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebRequest.Abort();</code></span></span></div>
+<div><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Response.ContentType = &quot;text/xml&quot;;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Respnbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>strHTML = streamReader.ReadToEnd();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>streamReader.Close();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebResponse.Close();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>objWebRequest.Abort();</code></span></span></dionse.Write(strHTML);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Response.End();</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&lt;/</code><code style="font-weight:bold;">script</code><code>&gt;</code></span></div>
+</div>
+<h2><a name="Actions_Required_Resolve_the_quot_error_401_unauthorized_quot"></a><a name="Actions_Required_Resolve_the_error_401_unauthorized"></a><a name="Actions_Required_Resolve_the_error_401_unauthorized"></a><a name="Actions_Required_Resolve_the_error_401_unauthorized"></a><a name="Actions_Required_Resolve_the_error_401_unauthorized"></a>&nbsp;</h2>
+<h2><a name="Actions_Required_Resolve_the_quot_error_401_unauthorized_quot"></a>Actions Required Resolve the &quot;error 401 unauthorized&quot;</h2>
+<p><span style="font-size:x-small;">YOU COULD REFER TO KB896861 (</span><a href="http://support.microsoft.com/kb/896861"><span style="font-size:x-small;">HTTP://SUPPORT.MICROSOFT.COM/KB/896861</span></a><span style="font-size:x-small;">)
+ TO WORKAROUND THE ISSUE.<br />
+</span><span style="font-size:x-small;">I QUOTED THE METHOD 2 IN THE KB FOR YOUR INFORMATION:</span></p>
+<p><span style="font-size:x-small;">&nbsp;</span><span style="font-size:x-small;">TO DISABLE THE LOOPBACK CHECK. FOLLOW THESE STEPS:
+</span></p>
+<ol style="margin-top:0cm;list-style-type:decimal;">
+<li><span style="font-size:x-small;">CLICK <strong>START</strong>, CLICK <strong>RUN</strong>, TYPE
+<strong>REGEDIT</strong>, AND THEN CLICK <strong>OK</strong>. </span></li><li><span style="font-size:x-small;">IN REGISTRY EDITOR, LOCATE AND THEN CLICK THE FOLLOWING REGISTRY KEY:
+</span><span style="font-size:x-small;"><strong>HKEY_LOCAL_MACHINE\SYSTEM\CURRENTCONTROLSET\CONTROL\LSA</strong></span>
+</li><li><span style="font-size:x-small;"></span><span style="font-size:x-small;">RIGHT-CLICK
+<strong>LSA</strong>, POINT TO <strong>NEW</strong>, AND THEN CLICK <strong>DWORD VALUE</strong>.
+</span></li><li><span style="font-size:x-small;">TYPE <strong>DISABLELOOPBACKCHECK</strong>, AND THEN PRESS ENTER.
+</span></li><li><span style="font-size:x-small;">RIGHT-CLICK <strong>DISABLELOOPBACKCHECK</strong>, AND THEN CLICK
+<strong>MODIFY</strong>. </span></li><li><span style="font-size:x-small;">IN THE <strong>VALUE DATA</strong> BOX, TYPE <strong>
+1</strong>, AND THEN CLICK <strong>OK</strong>. </span></li><li><span style="font-size:x-small;">QUIT REGISTRY EDITOR, AND THEN RESTART YOUR SERVER.</span>
+</li></ol>
+&nbsp;
+<h2><a name="References"></a>References</h2>
+<p>The following reference is related to my issue.</p>
+<ul>
+<li><a href="http://social.msdn.microsoft.com/Forums/en/sharepointinfopath/thread/544a81dc-214a-4caf-aa42-fc9dec796882">http://social.msdn.microsoft.com/Forums/en/sharepointinfopath/thread/544a81dc-214a-4caf-aa42-fc9dec796882</a>
+</li></ul>
+
+</div>
+    
+    

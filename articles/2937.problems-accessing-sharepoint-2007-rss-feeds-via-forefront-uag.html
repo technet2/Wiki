@@ -1,0 +1,101 @@
+---
+layout: default
+title: Problems Accessing SharePoint 2007 RSS Feeds via Forefront UAG - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="line-height:13.5pt;background-color:white;"><strong></strong></p>
+<p style="line-height:13.5pt;background-color:white;"><strong>[This article originally appeared in the &quot;Closer to the Edge&quot; blog at:
+<a href="http://blog.msedge.org.uk/2010/1tent-fra1/problems-accessing-sharepoint-2007-rss.html">
+http://blog.msedge.org.uk/2010/11/problems-accessing-sharepoint-2007-rss.html</a>]</strong></p>
+<p style="line-height:13.5pt;">During a recent deployment, I experienced problems accessing SharePoint RSS feeds when using Forefront UAG. After some assistance from Ben Ari at Microsoft and a little of my own research, I thought it might be useful share the
+ solution as it is a likely common problem when using Forefront UAG to publish SharePoint.
+</p>
+<p style="line-height:13.5pt;">Forefront UAG trunks enable access to multiple web applications by using host address translation (HAT). While users communicate with the external websites to request, receive, and upload data to and from the applications they
+ access via Forefront UAG, Forefront UAG transparently parses the requests and responses, using content-type parsers, and manipulates the URLs in those transactions, on the fly. The parsers manipulate the data so that, to the user, all links to the applications
+ that are enabled in the portal point to one host, the public host. </p>
+<p style="line-height:13.5pt;">However, sometimes this parsing process can do more harm than good; as shown with the example presented in this wiki article!
+</p>
+<p style="line-height:13.5pt;">Having used the native Microsoft Office SharePoint Server 2007 template in order to publish the SharePoint web servers,&nbsp;I then received
+<strong>Feed code errors</strong> in the browser when attempting to access SharePoint RSS feeds. After investigating this further, it was found that UAG was applying changes to the RSS page as part of the parsing process and consequently corrupting the feed
+ data.&nbsp; </p>
+In order to fix the issue, it was necessary to define a series of entries to prevent particular SharePoint responses from being parsed by UAG. In order to create these entries, we need to consider the application server being published and construct a regular
+ expression that can be used to define the URL that should be excluded from parsing. This is achieved by using the
+<strong>Do not parse the response bodies to these requests:</strong> option available in the
+<strong>Portal</strong> tab of the <strong>Advanced Trunk Configuration</strong> page, as shown below:<br />
+<p style="text-align:left;">Click <strong>Edit</strong> to begin the process: </p>
+<p style="line-height:13.5pt;"><a target="_blank"></a></p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh6.ggpht.com/_cX7_SW32U04/TNLoVVveVTI/AAAAAAAABo4/RvfEXMIPnj8/image_thumb1.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;">In order to define the URLs which will not be subject to UAG parsing, we need to define a Server and URL combination to represent the requests used when accessing RSS data via SharePoint. These URLs can often be determined by looking
+ at the browser address bar, or more likely using some form of web debugging utility like
+<a href="http://www.fiddler2.com/fiddler2/" target="_blank">Fiddler</a>, <a href="http://www.httpwatch.com/?gclid=CLmLzKOsg6UCFYxH4wod_C4FPQ" target="_blank">
+HttpWatch</a> or <a href="http://www.charlesproxy.com/" target="_blank">Charles</a>.</p>
+<p style="line-height:13.5pt;">Click <strong>Add</strong> to define the <strong>Server</strong> field for our request:<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh6.ggpht.com/_cX7_SW32U04/TNLoWBLvnyI/AAAAAAAABpA/UmRfyy8HqAI/image_thumb2.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;">In order to define the server name that matches the specific requests for our scenario, we need to enter the server as defined in the
+<strong>Web Servers</strong> tab of the SharePoint application within the portal. In our example, the server name listed under the
+<strong>Web Servers</strong> tab for our SharePoint application is <strong>sharepoint.internal.msedge.org.uk.</strong> The syntax for the server field needs to comply with RegEx which is common place within UAG as discussed
+<a href="http://technet.microsoft.com/en-us/library/dd282903.aspx" target="_blank">
+here</a>. However, in RegEx, dots are non-literals, which must be escaped using an escape character. Consequently, the server name needs to be entered into the server field including the use of
+<em>backslash escape characters</em> because our server name is an FQDN and contains dots:<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh5.ggpht.com/_cX7_SW32U04/TNLoWyCnZ9I/AAAAAAAABpI/QbXqB88hfFg/image_thumb.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;"><a target="_blank"></a></p>
+<p style="line-height:13.5pt;">Once entered, we then need to define a URL which matches one of the specific requests for our RSS scenario. Highlight the appropriate
+<strong>Server</strong> item and then click <strong>Add </strong>to begin defining the URLs:<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh3.ggpht.com/_cX7_SW32U04/TNLoXw3tsWI/AAAAAAAABpQ/jaavFNWb2fY/image_thumb4.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;">For our particular RSS scenario we need to define the first URL using a regular expression (<a href="http://technet.microsoft.com/en-us/library/dd282903.aspx" target="_blank">RegEx</a>) of
+<strong>.*listfeed.*</strong> This essentially matches any URL that contains the text
+<strong>listfeed</strong> as this is used in the majority of SharePoint pages that contain RSS elements (called listfeed.aspx).<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh6.ggpht.com/_cX7_SW32U04/TNLoYt4F7vI/AAAAAAAABpY/3W4l4CWbOnk/image_thumb6.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;"><a target="_blank"></a></p>
+<p style="line-height:13.5pt;">With the above changes, you should now have the following configuration:<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh5.ggpht.com/_cX7_SW32U04/TNLoZJcuILI/AAAAAAAABpg/oAA-rz4MmnU/image_thumbstyle="line-height:13.5pt;">For our particular RSS scenario we need to define the first URL using a regular expression (<a href="http://technet.microsoft.com/en-us/library/dd282903.aspx" target="_blank">RegEx</a>) of
+<strong>.*listfeed.*</strong> This essentially matches any URL that contains the text
+<strong>listfeed</strong> as this is used in the majority of SharePoint pages that contain RSS elements (called listfeed.aspx).<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh6.ggpht.com/_cX7_SW32U04/TNLoYt4F7vI/AAAAAAAABpY/3W4l4CWbOnk/image_thumb6.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;"><a tar7.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;">We also need to define a second URL using a <a href="http://technet.microsoft.com/en-us/library/dd282903.aspx" target="_blank">
+RegEx</a> expression of <strong>.*srchrss.*</strong> This essentially matches any URL that contains the text
+<strong>srchrss</strong> which is used when accessing RSS information from the SharePoint search page (called srchrss.aspx).<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh4.ggpht.com/_cX7_SW32U04/TNLoZ-4K24I/AAAAAAAABpo/6cXnaDzPmZY/image_thumb8.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;"><a target="_blank"></a></p>
+<p style="line-height:13.5pt;">With the above changes, you should now have the following configuration:<br />
+<br />
+</p>
+<p style="text-align:center;line-height:13.5pt;"><img alt=" " src="http://lh3.ggpht.com/_cX7_SW32U04/TNLoa6ERrvI/AAAAAAAABpw/N-_g7WhPIJQ/image_thumb9.png?imgmax=800" style="border:0px solid currentColor;" /></p>
+<p style="line-height:13.5pt;">Click <strong>OK</strong>, followed by <strong>OK</strong> on the
+<strong>Advanced Trunk Configuration</strong> page and then click <strong>Activate</strong> to apply the changes.
+</p>
+<p style="line-height:13.5pt;">Once applied, you should now find that RSS pages appear correctly and the
+<strong>feed code</strong> browser errors should be gone!</p>
+<p style="line-height:13.5pt;background-color:white;">This article was originally written by:</p>
+<p style="background-color:white;"><strong>Jason Jones, Forefront MVP<br />
+</strong><strong>Principal Security Consultant<br />
+Silversands Limited<br />
+</strong>--------<br />
+My Forefront Edge Blog: <a href="http://blog.msedge.org.uk/">http://blog.msedge.org.uk/</a>
+<br />
+My ISA Server Blog: <a href="http://blog.msfirewall.org.uk/">http://blog.msfirewall.org.uk/</a>
+<br />
+MVP Profile: <a href="https://mvp.support.microsoft.com/profile/Jason.Jones">https://mvp.support.microsoft.com/profile/Jason.Jones</a><br />
+Twitter: <a href="http://twitter.com/jjatsilversands">http://twitter.com/jjatsilversands</a></p>
+
+</div>
+    
+    

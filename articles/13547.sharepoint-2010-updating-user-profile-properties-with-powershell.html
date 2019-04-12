@@ -1,0 +1,44 @@
+---
+layout: default
+title: SharePoint 2010&#58; Updating User Profile Properties with PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>PowerShell can be a lot of fun and quite powerful because you can script several functions together to create Admin and maintenance function that would take you days to do through the UI. If I am an admin who has been granted the Manage Profiles right and
+ Full Control in the permissions section of the UPS, I can do some pretty interesting things with a few basic scripts.</p>
+<p>For example, imagine that the company has just gone through a massive re-org and now we have a whole bunch of colleagues who have either changed their department or had their department renamed. Imagine trying to do that for 50 colleagues through the UI,
+ it is doable, but tedious. Now imagine it was 500 colleagues or even 5000 colleagues. This is where PowerShell can come in and really save the day.</p>
+<p>So, imagine we’re given a Comma Separated Values (CSV) file with the colleague NTID and Department Name and we need to update this information in SharePoint User Profiles.</p>
+<p>First step would be to check out the <strong>Import-CSV </strong>cmdlet ( <a title="http://technet.microsoft.com/en-us/library/ee176874.aspx" href="http://technet.microsoft.com/en-us/library/ee176874.aspx">
+<strong><span>http://technet.microsoft.com/en-us/library/ee176874.aspx</span></strong></a> )</p>
+<p>Seems like this will work perfectly for our needs, so let’s start building up our script.</p>
+<p>I always load in the SharePoint PowerShell snapin:</p>
+<pre class="csharpcode">#First load the SharePoint commands <br />add-PSSnapIn Microsoft.SharePoint.PowerShell</pre>
+
+<p>Now we set up our Job variables, good coding says do this at the top so they are easy to find and change, you can probably further comment them, but the variable names should be descriptive enough so anyone else reading your script will know what’s going
+ on.</p>
+<pre class="csharpcode">#Set up the job variables <br />$csvfile=<span class="str">&quot;Department.csv&quot;</span> <br />$mySiteUrl = <span class="str">&quot;http://mysite&quot;</span> <br />$upAttribute = <span class="str">&quot;Department&quot;</span></pre>
+<p>We will then need to instantiate a UserProfileManager object for the mysites, more information about UPM can be found here:
+<a title="http://msdn.microsoft.com/en-us/library/microsoft.office.server.userprofiles.userprofilemanager.aspx" href="http://msdn.microsoft.com/en-us/library/microsoft.office.server.userprofiles.userprofilemanager.aspx">
+<strong><span>http://msdn.microsoft.com/en-us/library/microsoft.office.server.userprofiles.userprofilemanager.aspx</span></strong></a> (Side note: Why hasn’t Microsoft started producing PowerShell Examples in their documentation
+ pages? You’d think PowerShell is starting to come into its own enough to be listed next to the C# and VB examples)</p>
+<pre class="csharpcode">#Connect to User Profile Manager service <br />$site = Get-SPSite <br />$mySiteUrl $context = Get-SPServiceContext <br />$site $profileManager = New-Object Microsoft.Office.Server.UserProfiles.UserProfileManager($context)</pre>
+
+<p>Now we transform our CSV file into data we can consume inside our script.</p>
+<pre class="csharpcode">#Create Lists from each item <span class="kwrd">in</span> CSV file $csvData = Import-Csv $csvfile</pre>
+And the magic of it all happens here, because we’re going to iterate through our data and apply the new values through our UPM that we’ve instantiated.
+<pre class="csharpcode">#Now iterate through the list to update the attribute with <span class="kwrd">new</span> <span class="kwrd">value</span> <br /><span class="kwrd">foreach</span> ($line <span class="kwrd">in</span> $csvData) <br />&nbsp;&nbsp;&nbsp;&nbsp;{ <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#Check to see <span class="kwrd">if</span> user profile exists <br /><span class="kwrd">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if</span> ($profileManager.UserExists($line.NTName)) <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ #Get user profile and change the <span class="kwrd">value</span> <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$up = $profileManager.GetUserProfile($line.NTName) <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$up[$upAttribute].Value = $line.PropertyVal <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$up.Commit() <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwrd">else</span> <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;write-host <span class="str">&quot;Profile for user&quot;</span>$line.NTName <span class="str">&quot;cannot be found&quot;</span> <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br />&nbsp;&nbsp;&nbsp;&nbsp;}</pre>
+
+<p>Last but definitely not least, release our site object! Anyone who has dealt with SharePoint programming for more than a day or two will tell you always dispose of your objects when you’re done with them. Always call dispose on your object even if you think
+ during the course of the run – whether it’s PowerShell or C# – the object will be disposed of anyways.</p>
+<pre class="csharpcode">#Dispose of site <span class="kwrd">object</span> <br />$site.Dispose()</pre>
+And there you have it. A very simple script that will allow us to read in a file containing NTID’s and Departments and update the User Profiles. Save this script and you’re ready for any re-orgs that come your way! For those of you who want to cut and
+ past the whole script, here it is all put together:
+<pre class="csharpcode">#First load the SharePoint commands <br />add-PSSnapIn Microsoft.SharePoint.PowerShell <br /><br />#Set up the job variables <br />$csvfile=<span class="str">&quot;Department.csv&quot;</span> <br />$mySiteUrl = <span class="str">&quot;http://mysite&quot;</span> <br />$upAttribute = <span class="str">&quot;Department&quot;</span> <br /><br />#Connect to User Profile Manager service <br />$site = Get-SPSite$mySiteUrl <br />$context = Get-SPServiceContext $site <br />$profileManager = New-Object Microsoft.Office.Server.UserProfiles.UserProfileManager($context) <br /><br />#Create Lists from each item <span class="kwrd">in</span> CSV file <br />$csvData = Import-Csv $csvfile <br /><br />#Now iterate through the list to update the attribute with <span class="kwrd">new</span> <span class="kwrd">value</span> <br /><span class="kwrd">foreach</span> ($line <span class="kwrd">in</span> $csvData)<br />{ <br />&nbsp;&nbsp;&nbsp;&nbsp;#Check to see <span class="kwrd">if</span> user profile exists <span class="kwrd"><br />&nbsp;&nbsp;&nbsp;&nbsp;if</span> ($profileManager.UserExists($line.NTName)) <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#Get user profile and change the <span class="kwrd">value</span> <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$up = $profileManager.GetUserProfile($line.NTName) <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$up[$upAttribute].Value = $line.PropertyVal <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$up.Commit() <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} <span class="kwrd"><br />&nbsp;&nbsp;&nbsp;&nbsp;else</span> <br />&nbsp;&nbsp;&nbsp;&nbsp;{ <br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;write-host <span class="str">&quot;Profile for user&quot;</span>$line.NTName <span class="str">&quot;cannot be found&quot;</span> <br />&nbsp;&nbsp;&nbsp;&nbsp;} <br />} <br /><br />#Dispose of site <span class="kwrd">object</span> <br />$site.Dispose()</pre>
+<br />
+
+</div>
+    
+    

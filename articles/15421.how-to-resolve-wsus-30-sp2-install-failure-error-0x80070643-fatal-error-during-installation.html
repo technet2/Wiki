@@ -1,0 +1,55 @@
+---
+layout: default
+title: How to resolve WSUS 30 SP2 Install Failure Error 0x80070643&#58; Fatal error during installation - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="line-height:125%;"><span style="line-height:125%;font-family:Segoe UI Semibold,sans-serif;color:#3a3e43;font-size:15pt;">Troubleshooting</span></p>
+<p><i><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">I was trying to install WSUS 30 SP2, in preparation of SUP install in my SCCM 2012 SP1 for which WSUS&nbsp;is a prerequisite as some of you admins especially SCCM folks aware of. Install
+ kept failing, whatever method I chose to install, either thru Server Manager Add roles /features or downloaded setup executable WSUS30-KB972455-SP2-x64.exe. Install gets kicked of and accepts all of your selections and throws above error which we don’t like
+ much as it doesn’t reveal needed info to solve the problem.</span></i> </p>
+<p style="line-height:125%;"><span style="line-height:125%;font-family:Segoe UI Semibold,sans-serif;color:#3a3e43;font-size:15pt;">Actions Required to find related information
+</span></p>
+<p><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">Now, the hunt began for more info, precisely the location of log files to find more details of failure. Install logs location may vary based on how you install WSUS</span></p>
+<p><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C:\windows\logs\servermanager.log in case if you use “Add Roles” feature using server manger
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %TEMP% which usually resolves to C:\Users\userid\AppData\Local\Temp in case if you used downloaded executable to kick of install
+</span></p>
+<p><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">In my case I used downloaded executable and found 3 related logs, each of which are passing information to other.
+</span></p>
+<p><b><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">WSUSSetup.log:
+</span></b><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">This log is kind oversees and passes same info as what GUI throws and very basic<br />
+</span><span style="font-family:Segoe UI,sans-serif;color:#376092;font-size:9pt;">2013-01-18 15:43:39&nbsp; Error&nbsp;&nbsp;&nbsp;&nbsp; MWUSSetup&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; InstallWsus: MWUS Installation Failed (Error 0x80070643: Fatal error during installation.)<br />
+2013-01-18 15:43:39&nbsp; Error&nbsp;&nbsp;&nbsp;&nbsp; MWUSSetup&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CInstallDriver::PerformSetup: WSUS installation failed (Error 0x80070643: Fatal error during installation.)<br />
+2013-01-18 15:43:39&nbsp; Error&nbsp;&nbsp;&nbsp;&nbsp; MWUSSetup&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CSetupDriver::LaunchSetup: Setup failed (Error 0x80070643: Fatal error during installation.)<br />
+2013-01-18 15:43:53&nbsp; Error&nbsp;&nbsp;&nbsp;&nbsp; MWUSSetup&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DoInstall: Wsus setup failed (Error 0x80070643: Fatal error during installation.)</span>
+</p>
+<p><b><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">WSUSSetupmsi_130118_1541.log:
+</span></b><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">This log possess little more details but couldn’t give all, rather pointed to below log for actual details on failure
+<b><br />
+</b></span><span style="font-family:Segoe UI,sans-serif;color:#376092;font-size:9pt;">Error 1722. There is a problem with this Windows Installer package. A program run as part of the setup did not finish as expected. Contact your support personnel or package
+ vendor.&nbsp; Action ExConfigureDb….. C:\Users\UserID\AppData\Local\Temp\2\WSUSCa_130118_1541.log&quot;</span>
+</p>
+<p><b><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">WSUSCa_130118_1541.log: This is the log which has given suffice and needed info to resolve the issue</span></b><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">
+<br />
+</span><span style="font-family:Segoe UI,sans-serif;color:#376092;font-size:9pt;">Cannot create file &#39;C:\Program Files\Microsoft SQL Server\MSSQL10_50.MSSQLSERVER\MSSQL\DATA\SUSDB.mdf&#39; because it already exists. Change the file path or the file name, and retry
+ the operation.Msg 1802, Level 16, State 4, Server ServerName,&nbsp; Line 2<br />
+CREATE DATABASE failed. Some file names listed could not be created. Check related errors.</span>
+</p>
+<p style="line-height:125%;"><span style="line-height:125%;font-family:Segoe UI Semibold,sans-serif;color:#3a3e43;font-size:15pt;">Actions Required to Resolve the &quot;How-To&quot;</span></p>
+<p><span style="font-family:Segoe UI,sans-serif;color:#333333;font-size:9pt;">WSUSCa_****.log has indicated clearly that database file that setup attempts to creat fails, as a file exists with same name in SQL DB Files. I guess file might have created during
+ my earlier attempt of WSUS either standalone or part of SUP install or sorts and MDF/LFD got created during. Post deleting the same install went smoothly
+</span></p>
+<ul style="list-style-type:disc;">
+<li style="color:#333333;"><span style="font-family:Segoe UI,sans-serif;font-size:9pt;">Delete any MDF or LDF files that denote SUS Databases from SQL DB files location (Don’t delete these files if they are used for any other purposes)</span>
+</li><li style="color:#333333;"><span style="font-family:Segoe UI,sans-serif;font-size:9pt;">Rerun the setup successfully&nbsp; and watch through above logs for status, in detail
+</span></li></ul>
+<p><span style="background-color:#ffc000;"><strong>This error code doesnt always necessarily results from same root cause, hence exercise more care before taking any actions especially deletions of files or so</strong><br />
+</span><br />
+--- Thanks, Vasu Miriyala</p>
+
+</div>
+    
+    

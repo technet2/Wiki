@@ -1,0 +1,136 @@
+---
+layout: default
+title: Restore a Virtual Machine From a Checkpoint (SPF) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div id="mainBody">
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/contents/articles/19162.service-provider-foundation-programmers-guide-spf.aspx" title="Click to view the page titled: Service Provider Foundation Programmers Guide (SPF)">Service Provider Foundation Programmers Guide (SPF)</a>.</p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#To_restore_a_checkpoint_to_a_VM_with_NET">To restore a checkpoint to a VM with .NET</a></li><li class="hierarchy-item"><a href="#To_restore_a_checkpoint_to_a_VM_with_HTTP">To restore a checkpoint to a VM with HTTP</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<p>Virtual Machine Checkpoints provide a way to capture the state of a Virtual Machine. The Checkpoint can then be used to restore the Virtual Machine back to the way it was when the Checkpoint was created.</p>
+<p>To restore a checkpoint state to a Virtual Machine, you update an existing Checkpoint object. Set the
+<strong>VMCheckPointAction</strong> property to <strong>Restore</strong> and submit the changed entity back to the server. This is done with a
+<strong>MERGE</strong> or <strong>PUT</strong> HTTP operation.</p>
+<div>
+<h2 class="heading"><a name="To_restore_a_checkpoint_to_a_VM_with_NET"></a><strong>To restore a checkpoint to a VM with .NET</strong></h2>
+<div class="section" id="procedureSection0">
+<ol class="ordered">
+<li>
+<p>Connect to the Service Provider Foundation <strong>VMM</strong> service.</p>
+</li><li>
+<p>Obtain reference to the specific <strong>SpfVMM.VMCheckPoint</strong> you want to restore an associated virtual machine to.</p>
+</li><li>
+<p>Set the <strong>VMCheckPointAction</strong> property to <strong>Restore</strong>.</p>
+</li><li>
+<p>Call the <strong>UpdateObject</strong> method on the <strong>VMM</strong> service object reference and pass in the checkpoint reference.</p>
+</li><li>
+<p>Call the <strong>SaveChanges</strong> method on the <strong>VMM</strong> service object reference.</p>
+</li></ol>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="To_restore_a_checkpoint_to_a_VM_with_HTTP"></a><strong>To restore a checkpoint to a VM with HTTP
+</strong></h2>
+<div class="section" id="procedureSection1">
+<ol class="ordered">
+<li>
+<p>Create a new HTTP <strong>PUT</strong> or <strong>MERGE</strong> operation.</p>
+<div class="alert" style="margin-bottom:10px;">
+<table width="100%" cellspacing="0" cellpadding="0" style="border-width:0px;">
+<tbody>
+<tr>
+<th align="left" style="border-width:0px;border-style:hidden;padding:10px 11px 1px;border-collapse:collapse;">
+<img class="note" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/10x10/__key/communityserver-wikis-components-files/00-00-00-00-05/1205.Important.gif" />Important
+</th>
+</tr>
+<tr>
+<td style="border-width:0px;padding:1px 11px 10px;">
+If you supply only the key and changed properties, use a <strong>MERGE</strong> operation.
+<strong>PUT</strong> is used when you want to replace all properties on the entity with new or default values. The
+<strong>MERGE</strong> operation updates the existing entity with the properties supplied.
+<strong>PUT</strong> will update the existing entity with the properties supplied, but will reset all missing properties back to their default values.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</li><li>
+<p>Set the URL to the URI of a specific checkpoint: https://<em>server</em>:30005/<em>subscription-id</em>/services/systemcenter/vmm/VMCheckPoints(ID=guid&#39;<em>checkpoint-id</em>&#39;,StampId=guid&#39;<em>stamp-id</em>&#39;)
+</p>
+</li><li>
+<p>Add the HTTP headers.</p>
+<p>Specifically, add the <strong>x-ms-principal-id</strong> header, which can be set to any value.</p>
+</li><li>
+<p>Create the HTTP payload containing the checkpoint entity with the <strong>VMCheckPointAction</strong> property set to
+<strong>Restore</strong>.</p>
+</li><li>
+<p>Submit the HTTP request.</p>
+</li></ol>
+</div>
+</div>
+<h2 class="heading"><a name="Example"></a>Example</h2>
+<div class="section" id="codeExampleSection">
+<p>The following example shows how to get a specific checkpoint and restore it using .NET. For more information, see
+<a href="http://aka.ms/figpnj">Programming in Visual Studio with Service Provider Foundation Services</a>.</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<div class="reCodeBlock">
+<div><span><code>var checkpoint = vmmService.VMCheckPoints.Where(cp =&gt; cp.ID ==
+</code><code style="font-weight:bold;">new</code> <code>
+Guid(</code><code style="color:blue;">&quot;a11cc636-5521-4f88-92b2-cad392911fe0&quot;</code><code>)).FirstOrDefault();</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code style="font-weight:bold;">if</code>
+<code>(checkpoint != </code><code style="font-weight:bold;">null</code><code>)</code></span></div>
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>checkpoint.VMCheckPointAction =
+</code><code style="color:blue;">&quot;Restore&quot;</code><code>;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>vmmService.UpdateObject(checkpoint);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>vmmService.SaveChanges();</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</div>
+<p>The following is an example HTTP request sent to the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>MERGE https://wapserver:30005/BA4146FA-FB41-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/VMCheckPoints(ID=guid&#39;a11cc636-5521-4f88-92b2-cad392911fe0&#39;,StampId=guid&#39;ba4146fa-fb41-4f59-a193-ad00c52a138c&#39;) HTTP/1.1
+DataServiceVersion: 3.0;NetFx
+MaxDataServiceVersion: 3.0;NetFx
+Accept: application/json;odata=minimalmetadata
+Accept-Charset: UTF-8
+DataServiceUrlConventions: KeyAsSegment
+User-Agent: Microsoft ADO.NET Data Services
+x-ms-principal-id: user@contoso.com
+Content-Type: application/json;odata=minimalmetadata
+Host: wapserver:30005
+Content-Length: 80
+Expect: 100-continue
+
+{
+    &quot;VMCheckPointAction&quot;: &quot;Restore&quot;,
+    &quot;odata.type&quot;: &quot;VMM.VMCheckPoint&quot;
+}
+</pre>
+</div>
+<p>The following is an example HTTP response from the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>HTTP/1.1 204 No Content
+Cache-Control: no-cache
+Server: Microsoft-IIS/8.5
+x-ms-request-id: 6e0d9045-9d24-4ac1-93fc-a172e09af870
+X-Content-Type-Options: nosniff
+request-id: eda9bde6-834a-0000-2eda-aced4a83ce01
+DataServiceVersion: 1.0;
+X-AspNet-Version: 4.0.30319
+Persistent-Auth: true
+X-Powered-By: ASP.NET
+Date: Mon, 19 Aug 2013 22:13:09 GMT
+</pre>
+</div>
+</div>
+</div>
+
+</div>
+    
+    

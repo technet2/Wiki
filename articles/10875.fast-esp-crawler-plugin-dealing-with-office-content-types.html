@@ -1,0 +1,110 @@
+---
+layout: default
+title: FAST ESP Crawler Plugin - Dealing with office content types - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">This article applies to the use of the FAST Enterprise Crawler in a large scale web crawl setting.&nbsp; When crawling documents on the web, the mime-type returned is often not reliable for many document formats.<br />
+<br />iv class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">FAST ESP Crawler Plugin - Dealing with office content types</h1>
+    
+
+    <div class="post-content user-defined-markup">This article applies to the use of the
+If you use the FAST Enterprise Crawler&#39;s document type detection, you may experience that documents that are in the Office 2010 and newer formats are detected as <strong>application/zip</strong>.&nbsp; One way to include these documents in the crawl, is to allow these formats as a supported document type.&nbsp;&nbsp; Here are some useful tricks on how to get the most of the Office document types, without including all <strong>ZIP</strong> files that you may come over.<br />
+<ol>
+    <li>Exclude the <strong>.zip </strong>extension.&nbsp; That way, zip archives are not crawled by default.</li>
+    <li>Make sure you allow the download of the most common <strong>mime-types</strong> used by general web servers.</li>
+    <li>Also, allow the retrieval of <strong>application/zip</strong>.&nbsp; This, because many web servers will incorrectly identify Office 2010 documents as this type.</li>
+</ol>
+<p>This may be &quot;good enough&quot;.&nbsp; <br />
+<br />
+However, for a general large scale web crawl, you may find that some sites post large numbers of ZIP files without the .ZIP extension.&nbsp; One simple way to get rid of many of these zip files is to write a little <strong>crawler plugin</strong> that will reject documents that are not obviously Office documents.&nbsp; One way is to filter on file extensions.&nbsp; Here is a sample code:<br />
+<br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">import</code> <code style="color:#000000;">pyuriparse</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">from</code> <code style="color:#000000;">pylib </code><code style="color:#006699;font-weight:bold;">import</code> <code style="color:#000000;">Logger</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">import</code> <code style="color:#000000;">re</code></span></div>
+<div style="background-color:#f8f8f8;"><span> </span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">LOG_ONCE</code><code style="color:#006699;font-weight:bold;">=</code><code style="color:#009900;">1</code>            <code style="color:#008200;"># Set to 1 to get the init pattern.</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">DEBUG_10</code><code style="color:#006699;font-weight:bold;">=</code><code style="color:#009900;">1</code>            <code style="color:#008200;"># Set to some value &gt; 0 to get a limited number of msgs. E.g. 10 :)</code></span></div>
+<div style="background-color:#ffffff;"><span> </span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">CrawlerFilterZip:</code></span></div>
+<div style="background-color:#ffffff;"><span><code>  </code><span><code style="color:#008200;">&quot;&quot;&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>  </code><span><code style="color:#008200;">Reject documents that are application/zip, but don&#39;t have an office extension.</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>  </code><span><code style="color:#008200;">&quot;&quot;&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span> </span></div>
+<div style="background-color:#ffffff;"><span><code>  </code><span><code style="color:#006699;font-weight:bold;">def</code> <code style="color:#000000;">__init__(</code><code style="color:#808080;">self</code><code style="color:#000000;">):</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>    </code><span><code style="color:#006699;font-weight:bold;">global</code> <code style="color:#000000;">LOG_ONCE</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>    </code><span><code style="color:#808080;">self</code><code style="color:#000000;">.RE </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:blue;">&quot;(?i)\.((ppt|doc|xls)[x]?|ods|odp|odt)$&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>    </code><span><code style="color:#808080;">self</code><code style="color:#000000;">.officeExtensionRE </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#000000;">re.compile(</code><code style="color:#808080;">self</code><code style="color:#000000;">.RE)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>    </code><span><code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">LOG_ONCE&gt;</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>      </code><span><code style="color:#000000;">log(log.FLOG_INFO, </code><code style="color:blue;">&#39;CrawlerFilterZip.__init__() - URI path (params removed) must match &quot;%s&quot;&#39;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#808080;">self</code><code style="color:#000000;">.RE)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>      </code><span><code style="color:#000000;">LOG_ONCE</code><code style="color:#006699;font-weight:bold;">=</code><code style="color:#009900;">0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span> </span></div>
+<div style="background-color:#ffffff;"><span> </span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">##################################################################</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;"># CrawlerFilterZip.process(doc) - Filter (remove) zip files that are not office docs.</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#   Crawler plugin, processing documents scheduled for link extraction.</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#   Simple attempt at filtering documents that are zip files, but not office docs.</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#   Using file extension as method to filter out non-office docs (!)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#   Looking at the URI path after parameter removal.</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#-----------------------------------------------------------------</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#   Expect:</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#     doc.mimetype - e.g. application/zip</code></span></div>
+<div style="background-color:#ffffff;"><span><ments scheduled for link extraction.</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#   Simple attempt at filtering documents that are zip files, but not office docs.</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#   Using file extension as method to filter out non-office docs (!)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#   Looking at the URI path after parameter removal.</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#-----------------------------------------------------------------</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#   Expect:</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#     doc.code style="color:#008200;">#     doc.data     - the downloaded document - used to check for zip signature</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#     doc.store_document - indicate if the document is to be stored or not</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">#                          For non-office docs - want to set this to 0</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">#  NOTE: Don&#39;t call this if already known that store_doc should be 0 (e.g. other plugins)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">##################################################################</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>  </code><span><code style="color:#006699;font-weight:bold;">def</code> <code style="color:#000000;">process(</code><code style="color:#808080;">self</code><code style="color:#000000;">, doc):</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>    </code><span><code style="color:#006699;font-weight:bold;">global</code> <code style="color:#000000;">DEBUG_10</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>    </code><span><code style="color:#000000;">doc.store_document </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#009900;">1</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>    </code><span><code style="color:#006699;font-weight:bold;">try</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>      </code><span><code style="color:#008200;"># log(log.FLOG_INFO, &#39;CrawlerFilterZip.process() - Checking &quot;%s, %s, %s&quot;&#39; % (doc.uri, doc.mimetype, repr(doc.data[0:100])))</code></span></span></div>
+<div style="background-color:#ffffff;"><span> </span></div>
+<div style="background-color:#f8f8f8;"><span><code>      </code><span><code style="color:#008200;"># Only check documents returned as ZIP from server, or if have ZIP signature:</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>      </code><span><code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">doc.mimetype </code><code style="color:#006699;font-weight:bold;">=</code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:blue;">&#39;application/zip&#39;</code> <code style="color:#006699;font-weight:bold;">or</code> <code style="color:#000000;">doc.data[</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code><code style="color:#009900;">4</code><code style="color:#000000;">] </code><code style="color:#006699;font-weight:bold;">=</code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:blue;">&#39;PK\003\004&#39;</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#008200;"># log(log.FLOG_INFO, &#39;CrawlerFilterZip.process() - Checking &quot;%s, %s, %s&quot;&#39; % (doc.uri, doc.mimetype, repr(doc.data[0:100])))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#000000;">doc.store_document </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#009900;">0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#000000;">uriParts</code><code style="color:#006699;font-weight:bold;">=</code><code style="color:#000000;">pyuriparse.uriparse(doc.uri)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#000000;">matches </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#808080;">self</code><code style="color:#000000;">.officeExtensionRE.findall(uriParts[pyuriparse.URI_PATH])</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">len(matches)&gt;</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>          </code><span><code style="color:#000000;">log(log.FLOG_INFO, </code><code style="color:blue;">&#39;CrawlerFilterZip.process() - Passed &quot;%s, %s, %s&quot;&#39;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#000000;">(doc.uri, doc.mimetype, repr(doc.data[</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code><code style="color:#009900;">4</code><code style="color:#000000;">])))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>          </code><span><code style="color:#000000;">doc.store_document </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#009900;">1</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#006699;font-weight:bold;">else</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>          </code><span><code style="color:#000000;">log(log.FLOG_WARNING, </code><code style="color:blue;">&#39;CrawlerFilterZip.process() - Rejected &quot;%s, %s, %s&quot;&#39;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#000000;">(doc.uri, doc.mimetype, repr(doc.data[</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code><code style="color:#009900;">4</code><code style="color:#000000;">])))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>          </code><span><code style="color:#000000;">doc.errmsg </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:blue;">&quot;CrawlerFilterZip: %s failed OFFICE extension check&quot;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#000000;">uriParts[pyuriparse.URI_PATH]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>      </code><span><code style="color:#006699;font-weight:bold;">else</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#008200;"># Not checking non-zip documents.</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#006699;font-weight:bold;">if</code> <code style="color:#000000;">DEBUG_10&gt;</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>          </code><span><code style="color:#000000;">log(log.FLOG_INFO, </code><code style="color:blue;">&#39;CrawlerFilterZip.process() - Not checking &quot;%s, %s, %s&quot;&#39;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#000000;">(doc.uri, doc.mimetype, repr(doc.data[</code><code style="color:#009900;">0</code><code style="color:#000000;">:</code><code style="color:#009900;">4</code><code style="color:#000000;">])))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>          </code><span><code style="color:#000000;">DEBUG_10 </code><code style="color:#006699;font-weight:bold;">-</code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#009900;">1</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span> </span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>    </code><span><code style="color:#006699;font-weight:bold;">except</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>      </code><span><code style="color:#006699;font-weight:bold;">try</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#000000;">log_exc(log.FLOG_ERROR, </code><code style="color:blue;">&#39;CrawlerFilterZip.process() - Unable to check %s&#39;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#000000;">doc.uri)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#000000;">doc.store_document </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#009900;">0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#000000;">doc.errmsg </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:blue;">&quot;CrawlerFilterZip: %s caught exception.&quot;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#808080;">self</code><code style="color:#000000;">.uri</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#000000;">log_exc(log.FLOG_ERROR, </code><code style="color:blue;">&#39;CrawlerFilterZip.process() - Unable to check %s&#39;</code> <code style="color:#006699;font-weight:bold;">%</code> <code style="color:#000000;">doc.uri)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#000000;">doc.store_document </code><code style="color:#006699;font-weight:bold;">=</code> <code style="color:#009900;">0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#000000;">doc.errmsg </code><code style="color:#006699;font-weight:bold;">=;"><span><code>      </code><span><code style="color:#006699;font-weight:bold;">except</code><code style="color:#000000;">:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>        </code><span><code style="color:#000000;">log_exc(log.FLOG_ERROR, </code><code style="color:blue;">&#39;CrawlerFilterZip.process() - Passing weird document&#39;</code> <code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>        </code><span><code style="color:#006699;font-weight:bold;">pass</code></span></span></div>
+</div>
+<p>The document will then still be passed on as application/zip to the FAST ESP Pipeline, but the standard format detector there will identify it as a Word/PowerPoint/Excel document and handle it properly.<br />
+<br />
+</p></div>
+    
+    

@@ -1,0 +1,32 @@
+---
+layout: default
+title: How Does a Storage Migration of a Running Virtual Machine in Windows Server 2012 (both through Hyper-V Manager and through PowerShell) Actually Work? - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">The process followed by Hyper-V internally to perform a storage migration is actually quite simple to explain and is as follows:</span></p>
+<p><strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">Step 1:</span></strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;"> Start with a virtual machine that is reading and writing to a virtual hard disk file (.VHDX in the diagram,
+ but storage migration is supported for both .VHDX and .VHD files).</span></p>
+<p><span style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6038.1.png">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6038.1.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">Step 2: </span>
+</strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">After the user selects to perform a storage migration, immediately create a new virtual hard disk in the requested destination. Continue to read and write to the source virtual hard disk –
+ but any new write operations are also mirrored to the new virtual hard disk.</span></p>
+<p><span style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7242.2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7242.2.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">Step 3: </span>
+</strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">Perform a single pass operation to copy the data from the source virtual hard disk to the destination virtual hard disk. While this copy is happening, it still continues to mirror writes to
+ both disks. It also keep track of uncopied blocks that have already been updated through a mirrored write – and make sure to not needlessly copy that data again.</span></p>
+<p><span style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7522.3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7522.3.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">Step 4:</span></strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;"> Once the copy operation is complete – it switch the virtual machine to be running only on the destination
+ virtual hard disk.</span></p>
+<p><span style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3681.4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3681.4.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">Step 5:</span></strong><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;"> Delete the source virtual hard disk and the migration is now complete.</span></p>
+<p><span style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1300.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1300.5.png" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><span lang="EN" style="font-family:&#39;verdana&#39;,&#39;sans-serif&#39;;">One important note to make here – Microsoft are very careful to not delete the source virtual hard disk until after the virtual machine is successfully running on the destination virtual hard disk.
+ This way if there is an error at any point in the storage migration – we can always fail back to running off of the source virtual hard disk.</span></p>
+
+</div>
+    
+    

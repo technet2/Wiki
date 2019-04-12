@@ -1,0 +1,88 @@
+---
+layout: default
+title: Data Replication Using SSIS and MS "Change Track" - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1 style="font-weight:bold;"><a name="Introduction"></a>Introduction</h1>
+<br />
+Our customer required near real-time data from our OLTP database. There&nbsp;were many approaches we could have taken to replicate the data. We decided to use this approach,&nbsp;which uses Microsoft&#39;s SSIS application and&nbdiv><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div><sp;Microsoft&#39;s Change Track option in SQL Server.
+<br />
+<br />
+There are three components of this process:&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;The Source (OLTP) database<br />
+&nbsp;&nbsp;&nbsp;&nbsp;An SSIS package<br />
+&nbsp;&nbsp;&nbsp;&nbsp;The Target DB<br />
+<br />
+<span style="font-size:18px;">Approach</span><br />
+<br />
+Source DB<br />
+On the source OLTP database, Microsoft &quot;Change track&quot; was enabled on 70 tables. We then created&nbsp;a read-only access account. The two requirements for Change Track was that the candidate tables needed to have a primary key, and the database had to have Read Commit
+ Snapshot Isolation set. That was all that was needed on source DB side.<br />
+<br />
+Target DB<br />
+One the Target DB, we&nbsp;created exact duplicates of the source tables, called target tables. We also create 2 additional supporting tables for each target table.&nbsp;One of the supporting tables&nbsp;was used as a temporary holding area for changed data. The&nbsp;other&nbsp;was
+ a history table, an optional component that tracks the history of changes. Both of these tables&nbsp;contain the same columns as the target table,&nbsp;and, in addition,&nbsp;contain the&nbsp;following&nbsp;column(s):<br />
+<br />
+target_table_tmp:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;sys_change_opration&nbsp;nchar(2) - contains the type of change for the record (I - insert, U- update, D&nbsp;- Delete)<br />
+target_table_history:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;sys_change_opration&nbsp;nchar(2) - contains the type of change for the record (I - insert, U- update, D&nbsp;- Delete)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;sync_version -&nbsp;Change Track&nbsp;version&nbsp;number at the time of capture<br />
+&nbsp;&nbsp;&nbsp;&nbsp;extraction_date - date/time of the extraction<br />
+<br />
+Two other tables were created:<br />
+A table&nbsp;(T_REP) that contains a record for each table was being replicated.&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Table_name<br />
+&nbsp;&nbsp;&nbsp;&nbsp;last_sync_version bigint - last version that was changed for that table<br />
+&nbsp;&nbsp;&nbsp;&nbsp;last_extraction_date datetime - last date/time that the table was updated.&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;last_change_count - number of rows changed from the last capture for that table.<br />
+<br />
+A table (T_REP_SUMMARY) that contains one row of summary information<br />
+&nbsp;&nbsp;&nbsp;&nbsp;last_change_tracked bigint - last value of Change Track that was captured for&nbsp;all tables<br />
+&nbsp;&nbsp;&nbsp;&nbsp;last_check_date datetime - last checked date/time<br />
+&nbsp;&nbsp;&nbsp;&nbsp;last_extraction_date datetime - last extraction datetime<br />
+&nbsp;&nbsp;&nbsp;&nbsp;history_flag - allows the abilty to set history off/on. <br />
+<br />
+<br />
+SSIS Package<br />
+We then created an SSIS Package than contains the ETL&nbsp;code.<br />
+The package is very simple:<br />
+<br />
+Step 1:&nbsp;Connect&nbsp;to the Source&nbsp;DB:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.1 Determine if changes occurred to&nbsp;any of the 70 tables since the last check. This is performed&nbsp;using&nbsp;a Change Track Function Call&nbsp;using the last_change_tracked number value from T_REP_SUMMARY.&nbsp;(use 0 if this is the first time checking)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.2 If changes occured, proceed to Step 2.&nbsp;Otherwise,&nbsp;update the&nbsp;last_check_date field in&nbsp;the T_REP_SUMMARY,&nbsp;and wait until the next checktime<br />
+<br />
+Step 2:&nbsp;ETL<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1&nbsp;Using the T_REP table and a loop,&nbsp;use the MIN_VALID_VERSION function&nbsp;to&nbsp;find which table(s) were changed<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1 For each changed table:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1.1 Truncate the target_tmp table associated with&nbsp;selected table<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1.2.&nbsp;By Joining the internal Change Track table with the actual source table,&nbsp;populate the rows in the the target_tmp table with the source table&nbsp;along&nbsp;with the sys_change_operation number.&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1.3 Using the MERGE statement, merged the changes with the target table to&nbsp;update the&nbsp;replicated table<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1.4&nbsp;Update the T_REP table with last_sync_version ,last_extraction_date , and&nbsp;last_change_count&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.1.5 Finally, copy all the changes from the target_tmp table to the target_history table along with the&nbsp;sync_version and extraction_date.&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2&nbsp;Update the T_REP_SUMMARY table with the last_updated timestamp and the last_sync_version.&nbsp;<br />
+<br />
+<br />
+For testing,&nbsp;the application was&nbsp;stress tested&nbsp;using a tool that performed&nbsp;120&nbsp;DML changes per minute on the source. The ETL SSIS package was implemented using the SQL Server Job Scheduler with a 30 second interval. The average process time was 6 seconds. The
+ interval was&nbsp;changed to 1 minute. The average process time remained the same. <br />
+<br />
+<span style="font-size:18px;">Conclusion<br />
+</span><br />
+By using the power of&nbsp; Microsoft&#39;s Change Track and SSIS,&nbsp;our customer is able to view near real time OLTP data&nbsp;without&nbsp;having&nbsp;to access the production servers.
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<br />
+<br />
+<br />
+&nbsp;
+
+</div>
+    
+    

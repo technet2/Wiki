@@ -1,0 +1,406 @@
+---
+layout: default
+title: Criando e Consumindo Web API - Parte 1 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Olá pessoal, este artigo eu vou falar e mostrar como criar um Web API e a parte 2 eu vou focar em consumir através do C# esse Web API. Se você ainda não sabe o que é Web API, leia alguns artigos anteriores publicados no site
+<a href="http://www.ecode10.com/">www.ecode10.com</a> e <a href="http://www.mauriciojunior.org/">
+www.mauriciojunior.org</a>. O Web API veio para entrar no lugar do Web Service que é mais pesado, pesado para consumir ou trafegar na rede de Internet.
+</p>
+<p><strong>Links para analisar:</strong></p>
+<p><a href="http://ecode10.com/artigo/1612/Curso-gratis-de-Aplicativo-HTML5-usando-ASP.NET-Web-API-e-jQuery">http://ecode10.com/artigo/1612/Curso-gratis-de-Aplicativo-HTML5-usando-ASP.NET-Web-API-e-jQuery</a></p>
+<p><a href="http://ecode10.com/artigo/1707/Tecnologia-WebApi">http://ecode10.com/artigo/1707/Tecnologia-WebApi</a><br />
+<br />
+</p>
+<p><strong>Requisito: </strong></p>
+<p>Ferramenta: Visual Studio 2012</p>
+<p>Linguagem: C#.NET</p>
+<p>Tecnologia: Web API, MVC e ASP.NET.</p>
+<p>Banco de dados: SQL Server 2008</p>
+<p>Conexão com banco de dados: Entity Framework</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Nesta parte 1, eu vou montar as classes de banco de dados usando Entity Framework criado pela Microsoft com o objetivo de conectar ao banco SQL Server 2008. O primeiro passo para criar um Web API começa na criação do projeto. Agora você não
+ cria mais um Web Project, você cria um Projeto do tipo Web API. </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Primeiro você escolhe a linguagem do lado esquero, depois o tipo do projeto que é Web e depois o ASP.NET MVC 4 Web Application. Coloque um nome e confirme o endereço onde será gravado. Figura 1.
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7206.MVC_2D00_WebApi_2D00_1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7206.MVC_2D00_WebApi_2D00_1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p style="margin-left:35.4pt;text-indent:-35.4pt;">Figura 1 - Criando o projeto</p>
+<p style="text-indent:35.4pt;">Confirmado o nome e o endereço, clique no botão OK, outra tela aparece para você escolher o template do projeto. Nela você escolhe a opção Web API. Veja a figura 2.<br />
+<br />
+<span style="text-indent:35.4pt;font-size:12.1px;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1031.MVC_2D00_WebApi_2D00_2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1031.MVC_2D00_WebApi_2D00_2.png" style="border-width:0px;border-style:solid;" /></a><br />
+Figura 2 - Escolhendo o template do projeto</span></p>
+<p style="text-indent:35.4pt;">Clique no botão OK e todo o projeto é criado. Até agora só temos o template funcionando, nada de conexão nem classes criadas ainda. É necessário criar classe para conexão com o banco e classes para gerar as tabelas do banco de
+ dados.</p>
+<p style="text-indent:35.4pt;">Antes de qualquer alteração no template criado, vamos passar para o arquivo de configuração e alterar a “string” de conexão com o banco de dados. O template vem com uma “string” “default”, como o nosso caso é criar um projeto Web
+ API onde o banco de dados já está pronto, vamos mudar essa “string” de conexão. <span>
+Listagem 1.</span></p>
+<p><span>Listagem 1- “String” de conexão</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">&lt;!--</span><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">&lt;add name=&quot;DefaultConnection&quot; connectionString=&quot;Data Source=(LocalDb)\v11.0;Initial
+ Catalog=aspnet-MVCTeste-20130401162929;Integrated Security=SSPI;AttachDBFilename=|DataDirectory|\aspnet-MVCTeste-20130401162929.mdf&quot;</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; providerName=&quot;System.Data.SqlClient&quot; /&gt;</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">--&gt;</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">&nbsp;&nbsp;&nbsp; &lt;</span><span style="font-size:9.5pt;font-family:Consolas;color:#a31515;background-color:white;">add</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:red;background-color:white;">
+name</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">=</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&quot;</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">MeuContext</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&quot;</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:red;background-color:white;">
+connectionString</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">=</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&quot;</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">Data
+ Source=Servidor; Initial Catalog=dbWebApi; User Id=usuario; Password=senha;</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&quot;</span></p>
+<p><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:blue;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:red;background-color:white;">providerName</span><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:blue;background-color:white;">=</span><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:black;background-color:white;">&quot;</span><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:blue;background-color:white;">System.Data.SqlClient</span><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:black;background-color:white;">&quot;</span><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:blue;background-color:white;">
+ /&gt;</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Note que na listagem 1, a “string” que veio no template foi comentada e uma outra foi criada com o nome de “MeuContext”. Precisamos agora criar uma classe chamada “MeuContext” dentro da pasta Model do projeto. Para criar uma classe dentro
+ da pasta, clique com o botão direito em cima da pasta e siga os passos da Figura 3.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6837.MVC_2D00_WebApi_2D00_3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6837.MVC_2D00_WebApi_2D00_3.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figura 3 - Criando classe dentro da pasta.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Essa classe precisa extender de “DbContext”, indicando o nome de MeuContext.cs. O banco de dados chama dbWebAPI informado na conexão e no arquivo de configuração. Figura 4.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3223.MVC_2D00_WebApi_2D00_4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3223.MVC_2D00_WebApi_2D00_4.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figura 4 - Criando a classe MeuContext.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A classe precisa ser alterada em alguns aspectos, para isso temos a listagem 2.</p>
+<p><span>Listagem 2 - Classe MeuContext.</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Data.Entity;</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">namespace</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MVCTeste.Models</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+class</span> <span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+MeuContext</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> :
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">DbContext</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MeuContext() :
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">base</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">(</span><span style="font-size:9.5pt;font-family:Consolas;color:#a31515;background-color:white;">&quot;name=MeuContext&quot;</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">}</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Note que a listagem 2 possui a base de extensão no construtor da classe (base(“name=MeuContext”)) indicando o nome colocado no arquivo de configuração. Pronto, agora temos a classe de conexão com o banco de dados usando o Entity Framework
+ e o banco de dados SQL Server 2008. Lembre-se que o banco já está pronto com suas respectivas tabelas.
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A primeira tabela que vou abordar é a de usuários. O banco de dados tem uma tabela chamada “Usuarios”, precisamos criar uma classe chamada “Usuario” e depois vamos indicar na classe de conexto. Utilize os passos da figura 3 para gerar uma
+ classe chamada “Usuario.cs” dentro da pasta Model. O banco de dados possui apenas dois campos, um do tipo “Int” e outro “String”.</p>
+<p>Tabela: Usuarios</p>
+<p>Campos: Id, Nome.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Já que temos dois campos dentro da tabela de usuário, vamos criar uma classe de “usuário” com duas propriedades iguais aos valores das tabelas. Uma dessas propriedades será chave da tabela, crie a classe dentro da pasta Model.
+<span>Listagem 3.</span></p>
+<p><span>Listagem 3 - Classe de usuário</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Collections.Generic;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.ComponentModel.DataAnnotations;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Linq;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Web;</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">namespace</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MVCTeste.Models</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+class</span> <span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+Usuario</span> </p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Key</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">]</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+Int32</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Id {
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">get</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">set</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+String</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Nome {
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">get</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">set</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">}</span></p>
+<p><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;sp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+String</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Nome {
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">get</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-cocolor:black;background-color:white;">}</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Depois da classe criada, precisamos mudar a classe de contexto, adicionando a classe de “usuário” com o nome (sem acento). Listagem 4.</p>
+<p>Listagem 4 - Alterando a classe de contexto MeuContext.cs.</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Data.Entity;</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">namespace</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MVCTeste.Models</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+class</span> <span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+MeuContext</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> :
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">DbContext</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MeuContext() :
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">base</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">(</span><span style="font-size:9.5pt;font-family:Consolas;color:#a31515;background-color:white;">&quot;name=MeuContext&quot;</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+DbSet</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&lt;</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&gt;
+ Usuarios { </span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">get</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">set</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">}</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">}</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Pronto, o nosso trabalho está quase pronto. Compile todo o projeto e veja se tem algum erro, não deixe erro no projeto para pode gerar a “controller”. Depois disso, vamos adicionar um controle de usuário, responsável por inserir, alterar,
+ excluir e pesquisar no banco de dados SQL Server. Em vez de criarmos um controle MVC, vamos criar um controle do tipo Web API pedindo para criar todos os métodos.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Clique com o botão direito em cima da pasta “Controller”, escolha a opção Add e depois Controller. Uma tela aparece para que seja digitado e escolhidas algumas opções. Figura 5.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5722.MVC_2D00_WebApi_2D00_5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5722.MVC_2D00_WebApi_2D00_5.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figura 5 - Criando controle de usuário</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Digite o nome UsuarioControler no campo “controller name”, escolha o template API “controller with read/write actions, usando Entity Framework”, escolha na opção “Model class” a classe Usuario e no campo “Data context class” a opção Usuario.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Depois de clicar no botão OK, toda estrutura é criada de forma automática pela ferramenta Visual Studio 2012. Todos os métodos foram criados na classe UsuarioController.cs, veja na listagem 5.</p>
+<p>Listagem 5 - Controts-fileller de usuário criada.</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Collections.Generic;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Data;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Data.Entity;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Data.Entity.Infrastructure;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Linq;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Net;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Net.Http;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Web;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> System.Web.Http;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">using</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MVCTeste.Models;</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">namespace</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> MVCTeste.Controllers</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+class</span> <span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+UsuarioController</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> :
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">ApiController</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">private</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+MeuContext</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> db =
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">new</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+MeuContext</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">();</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">// GET api/Usuario</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+IEnumerable</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&lt;</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&gt;
+ GetUsuarios()</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> db.Usuarios.AsEnumerable();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">// GET api/Usuario/5</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> GetUsuario(</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">int</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ id)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> usuario = db.Usuarios.Find(id);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">if</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (usuario ==
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">null</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">throw</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+new</span> <span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+HttpResponseException</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">(Request.CreateResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.NotFound));</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> usuario;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">// PUT api/Usuario/5</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+HttpResponseMessage</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> PutUsuario(</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">int</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ id, </span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> usuario)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">if</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (!ModelState.IsValid)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateErrorResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.BadRequest,
+ ModelState);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">if</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ (id != usuario.Id)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.BadRequest);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.Entry(usuario).State =
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">EntityState</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.Modified;</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">try</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.SaveChanges();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">catch</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">DbUpdateConcurrencyException</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ ex)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateErrorResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.NotFound,
+ ex);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.OK);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">// POST api/Usuario</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+HttpResponseMessage</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> PostUsuario(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ usuario)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">try</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">if</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (ModelState.IsValid)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.Usuarios.Add(usuario);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.SaveChanges();</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpResponseMessage</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> response = Request.CreateResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.Created,
+ usuario);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; response.Headers.Location =
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">new</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+Uri</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">(Url.Link(</span><span style="font-size:9.5pt;font-family:Consolas;color:#a31515;background-color:white;">&quot;DefaultApi&quot;</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">,
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">new</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> { id = usuario.Id }));</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> response;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">else</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateErrorResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.BadRequest,
+ ModelState);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">catch</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Exception</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ ex)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">throw</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> ex;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:green;background-color:white;">// DELETE api/Usuario/5</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">public</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">
+HttpResponseMessage</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> DeleteUsuario(</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">int</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ id)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">Usuario</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> usuario = db.Usuarios.Find(id);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blacky:Consolas;color:#2b91af;background-color:white;">
+HttpResponseMessage</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> DeleteUsuario(</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">i;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">if</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (usuario ==
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">null</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.NotFound);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.Usuarios.Remove(usuario);</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">try</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.SaveChanges();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">catch</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> (</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">DbUpdateConcurrencyException</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ ex)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateErrorResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.NotFound,
+ ex);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">return</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Request.CreateResponse(</span><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;background-color:white;">HttpStatusCode</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.OK,
+ usuario);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">protected</span>
+<span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+override</span> <span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">
+void</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;"> Dispose(</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">bool</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">
+ disposing)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">{</span><
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span st/p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; db.Dispose();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;color:blue;background-color:white;">base</span><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">.Dispose(disposing);</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;background-color:white;">&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;line-height:107%;font-family:Consolas;color:black;background-color:white;">}</span>
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; O resultado final é lindo, como diz alguns amigos. Compile e clique F5 para rodar a aplicação. Acrescente no endereço da URL o /api/usuario e automaticamente aparece o XML pronto no “browser”. No caso de abrir pelo “browser”, o dado retornado
+ vem em XML, se for usado outro cliente, pode ser usado o Json. A figura 6 mostra os dados buscados diretamente do banco de dados.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5732.MVC_2D00_WebApi_2D00_6.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5732.MVC_2D00_WebApi_2D00_6.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figura 6 - Resultado buscado do banco de dados.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Bom, eu vou parar por aqui. Primeiro para não ficar tão grande e segundo para não ficar cansativo. Espero que o seu projeto tenha dado certo como o meu e que no final os valores do banco de dados apareçam na tela.
+</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Esse padrão Web API é tão legal por utilizar Json que pode ser consumido por qualquer aplicativo, incluindo o serviço móvel como no smartphone, tv digital ou tablet. Os dados são importantes e são buscados de um mesmo local através do Web
+ API com Json.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; O próximo artigo eu vou falar como consumir esses dados em Json chamando essa Web API no C#. Qualquer dúvida, pode entrar em contato pelo site
+<strong><a href="http://www.mauriciojunior.org/">www.mauriciojunior.org</a></strong>.</p>
+<span style="color:#2a2a2a;font-family:Calibri,sans-serif;line-height:13px;background-color:#ffffff;">This article was originally written by:<br />
+<br />
+<strong>Maurício Júnior</strong><br />
+MCP, MCAD, MVP Microsoft<br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/4083.aspx" style="color:#00749e;">www.mauriciojunior.org</a><br />
+</span><a href="http://blog.mauriciojunior.org/" target="_blank" style="color:#00749e;font-family:Calibri,sans-serif;line-height:13px;background-color:#ffffff;">blog.mauriciojunior.org&nbsp;<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;&nbsp;<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;&nbsp;<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;&nbsp;<img alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" title="This link is external to TechNet Wiki. It will open in a new window." style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;</a><span style="color:#2a2a2a;font-family:Calibri,sans-serif;line-height:13px;background-color:#ffffff;">&nbsp;</span><span style="color:#2a2a2a;font-family:Calibri,sans-serif;line-height:13px;background-color:#ffffff;">&nbsp;</span>
+
+</div>
+    
+    

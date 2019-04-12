@@ -1,0 +1,111 @@
+---
+layout: default
+title: Exchange&#58; Mailbox Delegate Report using PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+This article will demonstrate a couple of ways to pull the Mailbox Delegation Report easily from PowerShell. A lot of administrators and System engineers are asked for such reports almost every other day and we will be happy if we can help a few of them.<br />
+<br />
+<table>
+<tbody>
+<tr>
+<td>&nbsp;Note:</td>
+</tr>
+<tr>
+<td>We will discuss the scenarios of pulling the Mailbox Permission report in Exchange 2016, Exchange 2013 and Exchange 2010 and will also scope oud="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Exchange: Mailbox Delegate Report using PowerShell</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+
+
+
+This article will demonstrate a couple of ways to pull the Mailbox Delegation Report easily from PowerShell. A lot of administrators and System engineers are asked for such reports almost every other day and we will be happy if we can help a few of them.<br />
+<br />
+<table>
+<tbody>
+<tr>
+<td>&nbsp;Note:</td>
+</tr>
+<trr reports to a particular Organizational Unit in AD</td>
+</tr>
+</tbody>
+</table>
+<p>You can specify a single mailbox and retrieve the permissions assigned to it by using the&nbsp;<a title="Go to 'Get-MailboxPermission' cmdlet help on TechNet" href="https://technet.microsoft.com/en-us/library/aa998218.aspx">Get-MailboxPermission</a>&nbsp;cmdlet. Alternatively,
+ you can use the Get-Mailbox&nbsp;cmdlet to retrieve all or a subset of mailboxes, and then pipe the results to the&nbsp;Get-MailboxPermission&nbsp;cmdlet. Instead of running this against all mailboxes in the Organization, it makes sense to filter it against a subset of mailboxes.<br />
+<code style="background-color:#ffffff;color:#000000;"><br />
+Example:<br />
+</code></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="background-color:#ffffff;color:#000000;"><span><code style="color:#000000;">Get-Mailbox -RecipientType
+</code><code style="color:blue;">&#39;UserMailbox&#39;</code> <code style="color:#000000;">
+-ResultSize Unlimited | Get-MailboxPermission</code></span></code></div>
+</div>
+<code style="background-color:#ffffff;color:#000000;"></code><br />
+<code style="background-color:#ffffff;color:#000000;"></code>
+<p>You could export the output to CSV and manipulate it using Excel to get just the permissions information you want, but another method is to filter the PowerShell output.</p>
+<p>For example, to filter out all of the SELF permissions and the inherited permissions we can run this command:</p>
+<table>
+<tbody>
+<tr>
+<td>
+<pre><div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;"><div style="background-color:#ffffff;"><span><code style="color:#000000;">Get-Mailbox</code></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">-RecipientType </code><code style="color:blue;">&#39;UserMailbox&#39;</code> <code style="color:#000000;">-ResultSize Unlimited&nbsp;</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">|</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Get-MailboxPermission</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">|</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">where</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{$_.user.tostring()</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">-ne</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;NT AUTHORITY\SELF&quot;</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">-and</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">$_.IsInherited</code></span></span></div><div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">-eq</code></span></span></div><div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">$</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">}&nbsp;</code></span></span></div></div></pre>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The Identity field contains long strings because it includes the full directory path to the mailbox user, so it may get truncated on your screen. In that case, you could export the output to CSV file.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Get-Mailbox | Get-MailboxPermission | where {$_.user.tostring() -ne
+</code><code style="color:blue;">&quot;NT AUTHORITY\SELF&quot;</code> <code style="color:#000000;">
+-and $_.IsInherited -eq $</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">} | Select Identity,User,@{Name=</code><code style="color:blue;">&#39;AccessRights&#39;</code><code style="color:#000000;">;Expression={[string]::join(</code><code style="color:blue;">&#39;,
+ &#39;</code><code style="color:#000000;">, $_.AccessRights)}}</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">| Export-Csv -NoTypeInformation mailboxpermissions.csv</code></span></span></div>
+</div>
+<br />
+Now, let&#39;s think about pulling the same report for mailboxes in a particular OU. For example, we have a different subdomain for users in the UK, a different sub-domain for users in Australia, and we want a report which is based on the OU or AD Domain. We can
+ achieve that by running the below command:
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Get-Mailbox -RecipientType
+</code><code style="color:blue;">&#39;UserMailbox&#39;</code> <code style="color:#000000;">
+-ResultSize unlimited -OrganizationalUnit </code><code style="color:blue;">&quot;OU=UK,OU=Global,dc=gb,dc=ad,dc=maaz,dc=biz&quot;</code>
+<code style="color:#000000;">| Get-MailboxPermission | where {$_.user.tostring() -ne
+</code><code style="color:blue;">&quot;NT AUTHORITY\SELF&quot;</code> <code style="color:#000000;">
+-and $_.user.tostring()</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">-notlike
+</code><code style="color:blue;">&quot;S-1-5-21*&quot;</code> <code style="color:#000000;">-and $_.IsInherited -eq $</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">} | Select Identity,User,@{Name=</code><code style="color:blue;">&#39;Access
+ Rights&#39;</code><code style="color:#000000;">;Expression={[string]::join(</code><code style="color:blue;">&#39;, &#39;</code><code style="color:#000000;">, $_.AccessRights)}} | Export-Csv -NoTypeInformation GBMailboxReport.csv</code></span></span></div>
+</div>
+<br />
+Also, please note, in case if the default scope of your Exchange shell is for a different domain, please run the below command to change the scope:
+<pre></pre>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Set-AdServerSettings -ViewEntireForest $True</code></span></div>
+</div>
+<br />
+<a href="https://social.technet.microsoft.com/wiki/contents/articles/51341.exchange-mailbox-delegate-report-using-powershell/" target="_self">Exchherited -eq $</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">} | Select Identity,User,@{Name=</code><code style="color:blue;">&#39;Access
+ Rights&#39;</code><code style="color:#000000;">;Expression={[string]::join(</code><code style="color:blue;">&#39;, &#39;</code><code style="color:#000000;">, $_.AccessRights)}} | Export-Csv -NoTypeInformation GBMailboxReport.csv</code></span></span></div>
+</div>
+<br />
+Also, please note, in case if the default scope of your Exchange shell is for a different domain, please run the below command to change the scope:
+<pre></pre>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Set-AdServerSettings -ViewEntireForest $True</code></span></div>
+</div>
+<br />
+<a href=ange: mailbox Delegate Report using PowerShell</a> by
+<a href="https://social.technet.microsoft.com/profile/maaz-siddiqui/">Maaz Siddiqui</a>
+
+</div>
+    
+    

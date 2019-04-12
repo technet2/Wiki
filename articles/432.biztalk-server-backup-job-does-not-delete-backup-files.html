@@ -1,0 +1,118 @@
+---
+layout: default
+title: BizTalk Server Backup Job Does Not Delete Backup Files - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="r3 fiji-rass="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Important">Important</a></li><li class="hierarchy-item"><a href="#Summary">Summary</a></li><li class="hierarchy-item"><a href="#More_Information">More Information</a></li><li class="hierarchy-item"><a href="#Acknowledgements">Acknowledgements</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Important"></a>Important</h1>
+<p>This wiki post is a preliminary Knowledge Base article. The official version of this article has been published to
+<a href="http://support.microsoft.com/kb/982546">http://support.microsoft.com/kb/982546</a><a href="http://support.microsoft.com./">.</a></p>
+<h1><a name="Summary"></a>Summary</h1>
+<p>The SQL Server Agent job named &quot;Backup BizTalk Server&quot; does not provide functionality for deleting backup files that have accrued over time. This can cause the disk that houses the backup files to fill up which can eventually cause the Backup BizTalk Server
+ job to fail or other problems associated with limited disk space to occur.</p>
+<h1><a name="More_Information"></a>More Information</h1>
+<p>To workaround this issue follow these steps:</p>
+<ol>
+<li>Start SQL Server Management Studio. </li><li>Launch the Query Editor. </li><li>Connect to the BizTalk&nbsp;Management database (BizTalkMgmtDb by default) </li><li>Execute the following SQL Script to create the stored procedure sp_DeleteBackupHistoryAndFiles
+<blockquote>
+<p><span style="font-size:x-small;font-family:&#39;Courier New&#39;;"></span></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">PROCEDURE</code> <code style="color:#000000;">
+[dbo].[sp_DeleteBackupHistoryAndFiles] @DaysToKeep </code><code style="color:#006699;font-weight:bold;">smallint</code>
+<code style="color:#000000;">= </code><code style="color:#808080;">null</code></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code style="color:#006699;font-weight:bold;">AS</code></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code style="color:#006699;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">nocount </code><code style="color:#006699;font-weight:bold;">on</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IF @DaysToKeep
+</code><code style="color:#006699;font-weight:bold;">IS</code> <code style="color:#808080;">
+NULL</code> <code style="color:#808080;">OR</code> <code style="color:#000000;">@DaysToKeep &lt;= 0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">RETURN</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">/*</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Only</code>
+<code style="color:#006699;font-weight:bold;">delete</code> <code style="color:#006699;font-weight:bold;">
+full</code> <code style="color:#000000;">sets</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">If a
+</code><code style="color:#006699;font-weight:bold;">set</code> <code style="color:#000000;">
+spans a </code><code style="color:#ff1493;">day</code> <code style="color:#000000;">
+such that </code><code style="color:#808080;">some</code> <code style="color:#000000;">
+items fall </code><code style="color:#006699;font-weight:bold;">into</code> <code style="color:#000000;">
+the deleted </code><code style="color:#006699;font-weight:bold;">group</code> <code style="color:#808080;">
+and</code> <code style="color:#000000;">the other doesn</code><code style="color:blue;">&#39;t, do not delete the set</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">*/</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;">&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">DECLARE DeleteBackupFiles CURSOR</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">FOR SELECT &#39;</code><code style="color:#000000;">del
+</code><code style="color:blue;">&quot;&#39; &#43; [BackupFileLocation] &#43; &#39;\&#39; &#43; [BackupFileName] &#43; &#39;&quot;</code><code style="color:#000000;">&#39;
+</code><code style="color:#006699;font-weight:bold;">FROM</code> <code style="color:#000000;">
+[adm_BackupHistory]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">WHERE</code>&nbsp;
+<code style="color:#000000;">datediff( dd, [BackupDateTime], getdate() ) &gt;= @DaysToKeep</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">AND</code>
+<code style="color:#000000;">[BackupSetId] </code><code style="color:#808080;">NOT</code>
+<code style="color:#808080;">IN</code> <code style="color:#000000;">( </code><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">[BackupSetId] </code><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">[dbo].[adm_BackupHistory] [h2] </code><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#000000;">[h2].[BackupSetId] = [BackupSetId] </code><code style="color:#808080;">AND</code>
+<code style="color:#000000;">datediff( dd, [h2].[BackupDateTime], getdate() ) &lt; @DaysToKeep )</code></span></span></div>
+<div style="ba0000;">datediff( dd, [BackupDateTime], getdate() ) &gt;= @DaysToKeep</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">AND</code>
+<code style="color:#000000;">[BackupSetId] </code><code style="color:#808080;">NOT</code>
+<code style="color:#808080;">IN</code> <code style="color:#000000;">( </code><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">[BackupSetId] </code><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">[dbo].[adm_BackupHistory] [h2] </code><code styckground-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@cmd </code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(400)</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">OPEN</code>
+<code style="color:#000000;">DeleteBackupFiles</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">FETCH</code>
+<code style="color:#006699;font-weight:bold;">NEXT</code> <code style="color:#006699;font-weight:bold;">
+FROM</code> <code style="color:#000000;">DeleteBackupFiles </code><code style="color:#006699;font-weight:bold;">INTO</code>
+<code style="color:#000000;">@cmd</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">WHILE (@@fetch_status &lt;&gt; -1)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;">&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IF (@@fetch_status &lt;&gt; -2)</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">EXEC</code>
+<code style="color:#000000;">master.dbo.xp_cmdshell @cmd, NO_OUTPUT</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">delete</code>
+<code style="color:#006699;font-weight:bold;">from</code> <code style="color:#000000;">
+[adm_BackupHistory] </code><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#006699;font-weight:bold;">CURRENT</code> <code style="color:#006699;font-weight:bold;">
+OF</code> <code style="color:#000000;">DeleteBackupFiles</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">print @cmd</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;">&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">FETCH</code>
+<code style="color:#006699;font-weight:bold;">NEXT</code> <code style="color:#006699;font-weight:bold;">
+FROM</code> <code style="color:#000000;">DeleteBackupFiles </code><code style="color:#006699;font-weight:bold;">INTO</code>
+<code style="color:#000000;">@cmd</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;">&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">CLOSE</code>
+<code style="color:#000000;">DeleteBackupFiles</code></span></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">DEALLOCATE</code>
+<code style="color:#000000;">DeleteBackupFiles</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code style="color:#006699;font-weight:bold;">END</code></span></div>
+<div style="background-color:#ffffff;"><span style="font-size:12px;font-family:&#39;Courier New&#39;;"><code style="color:#000000;">GO</code></span></div>
+</div>
+</blockquote>
+</li><li>Modify the &quot;Clear Backup History&quot; step of the Backup BizTalk Server job to call sp_DeleteBackupHistoryAndFiles rather than calling sp_DeleteBackupHistory.
+</li><li>
+<p>Enable xp_cmdshell for the SQL Server instance&nbsp;if it is disabled (xp_cmdshell is disabled by default). See the SQL Server online help for information about enabling xp_cmdshell.</p>
+</li></ol>
+<h1><a name="Acknowledgements"></a>Acknowledgements</h1>
+<p>Many thanks to William Chesnut (<a href="http://biztalkbill.com/">http://biztalkbill.com/</a>) &nbsp;for the SQL query code used above to delete old backup files.</p>
+<h1><a name="See_Also"></a>See Also</h1>
+Another important place to find a huge amount of BizTalk related articles is the TechNet Wiki itself. The best entry point is
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/2240.biztalk-server-resources-on-the-technet-wiki.aspx" target="_blank">
+BizTalk Server Resources on the TechNet Wiki</a>.
+
+</div>
+    
+    

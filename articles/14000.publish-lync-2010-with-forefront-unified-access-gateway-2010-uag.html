@@ -1,0 +1,119 @@
+---
+layout: default
+title: Publish Lync 2010 with ForeFront Unified Access Gateway 2010 (UAG) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Overview">Overview</a></li><li class="hierarchy-item"><a href="#Certificate_Requirements_Public_Certificate_for_UAG">Certificate Requirements (Public Certificate for UAG)</a></li><li class="hierarchy-item"><a href="#Software_Requirements">Software Requirements</a></li><li class="hierarchy-item"><a href="#Configuration_Steps">Configuration Steps</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_Lync_Web_Services_Trunk">Create Lync Web Services Trunk</a></li><li class="hierarchy-item"><a href="#Click_Lync_Web_Services_Application">Click Lync Web Services Application</a></li><li class="hierarchy-item"><a href="#Create_LyncDiscovery_Application">Create LyncDiscovery Application</a></li><li class="hierarchy-item"><a href="#Additional_Trunk_Configuration">Additional Trunk Configuration</a></li><li class="hierarchy-item"><a href="#Additional_Registry_Entry">Additional Registry Entry</a></li><li class="hierarchy-item"><a href="#Save_and_Activate_the_Configuration">Save and Activate the Configuration</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Lync_Client_for_iPhone">Lync Client for iPhone</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+This is a step-by-step on configuring ForeFront UAG to&nbsp;work with&nbsp;Lync Server 2010. &nbsp;This does not include the configuration of the Edge server or other Lync components. These steps were used in my test environment, they may not necessary be right for your right
+ environment (i.e. security policies and naming conventions, but the steps should provide a good overview for getting it working). Hopefully it helps you out if you are having issues.</p>
+<p><strong></strong></p>
+<h2><a name="Overview"></a><strong>Overview</strong></h2>
+<ul>
+<li>Get Certificate </li><li>Create DNS entries </li><li>Create UAG Trunk </li><li>Create UAG Application for Lync Web Services </li><li>Create UAG Application for LyncDiscovery </li></ul>
+<p>This has been tested with</p>
+<ul>
+<li>Lync 2010 Client </li><li>Lync 2010 Client for iPhone/iPad </li><li>Lync 2010 Client for Windows Mobile </li></ul>
+<h2><a name="Certificate_Requirements_Public_Certificate_for_UAG"></a><strong>Certificate Requirements</strong>&nbsp;(Public Certificate for UAG)</h2>
+<p>Primary Name: lync.&lt;your domain FQDN&gt;<br />
+Subject Alternate Name(s) SAN<br />
+lyncuag.&lt;your domain FQDN&gt;<br />
+lync.&lt;your domain FQDN&gt;<br />
+dialin.&lt;your domain FQDN&gt;<br />
+meet.&lt;your domain FQDN&gt;<br />
+lyncdiscover.&lt;your domain FQDN&gt;<br />
+lyncweb.&lt;your domain FQDN&gt;</p>
+<p>External DNS Requirements (including Edge entries)<br />
+lyncuag.&lt;your domain FQDN&gt; (A record) – UAG External IP<br />
+lyncweb.&lt;your domain FQDN&gt; (A record) – UAG External IP<br />
+lyncdiscover.&lt;your domain FQDN&gt; (CNAME) – (lyncweb.&lt;your domain FQDN&gt;)<br />
+sip.&lt;your domain FQDN&gt; (A record) – Edge External IP (used for Edge deployment separate to UAG)<br />
+sipexternal.&lt;your domain FQDN&gt; (CNAME) – (sip.&lt;your domain FQDN&gt;) (used for Edge deployment separate to UAG)<br />
+_sip_tls.&lt;your domain FQDN&gt; (SRV) record Port 5061 (used for Edge deployment separate to UAG)</p>
+<p><strong></strong></p>
+<h2><a name="Software_Requirements"></a><strong>Software Requirements</strong></h2>
+Microsoft® ForeFront Unified Access Gateway 2010 SP2 (TMG SP2)<br />
+Windows Server 2008 R2 Standard Edition<br />
+Lync Server 2010 with CU4<br />
+Lync Server Mobility installed
+<p><strong></strong></p>
+<h2><a name="Configuration_Steps"></a><strong>Configuration Steps</strong></h2>
+<p><strong></strong></p>
+<h3><a name="Create_Lync_Web_Services_Trunk"></a><strong>Create Lync Web Services Trunk</strong></h3>
+<p>1. Start ForeFront UAG.<br />
+2. Right-Click&nbsp;HTTPS Connection&nbsp;and select&nbsp;New Trunk<br />
+3. Name the Trunk and enter the public hostname and IP address (this should match the DNS record created i.e. lyncuag.&lt;your domain FQDN&gt;) – this name should be different to the external name of the Lync Front End Pool. Click&nbsp;<strong>Next<br />
+</strong>4. Select the Authentication Server for your domain by clicking <strong>
+Add</strong>. Click&nbsp;<strong>Next</strong>.<br />
+5. Select the Public Certificate you have obtained. Click&nbsp;<strong>Next.<br />
+</strong>6. Select the default option of&nbsp;<em>Use ForeFront UAG access policies</em>. Click&nbsp;<strong>Next</strong>.<br />
+7. Select the Default Endpoint Policies. Click&nbsp;<strong>Next</strong>.<br />
+8. Click&nbsp;<strong>Finish</strong>.</p>
+<h3><a name="Click_Lync_Web_Services_Application"></a><strong>Click&nbsp;Lync Web Services Application</strong>&nbsp;</h3>
+<p>1. Select the trunk created above.<br />
+2. Click&nbsp;<strong>Add</strong>&nbsp;under <em>Applications</em>.<br />
+3. Click&nbsp;<strong>Next<br />
+</strong>4.<strong> </strong>Select&nbsp;<em>Microsoft Lync Web App 2010&nbsp;under&nbsp;Web</em>. Click&nbsp;<strong>Next</strong>.<br />
+5. Enter a name for the application (i.e. LyncWeb). Click&nbsp;<strong>Next</strong>.<br />
+6. Leave the Endpoint Policies as default. Click&nbsp;<strong>Next</strong>.<br />
+7. Click&nbsp;<strong>Next</strong>.<br />
+8. Enter lyncweb.&lt;your domain FQDN&gt; under <em>Addresses</em>. This should resolve to the Front Edge (or Director) Server from the UAG server. This should also match the name that External Access URL&nbsp;is set in the Lync Topology. Enter the same public host name.
+ Click&nbsp;<strong>Next</strong>. <br />
+9. Uncheck <strong>Use SSO</strong>. Click&nbsp;<strong>Next</strong>.<br />
+10. Remove “dialin” from Application URL. Click&nbsp;<strong>Next</strong>.<br />
+11. Click&nbsp;<strong>Finish</strong>.<br />
+<strong></strong></p>
+<h3><a name="Create_LyncDiscovery_Application"></a><strong>Create LyncDiscovery Application</strong></h3>
+<strong><br />
+</strong>1. In the same Trunk click&nbsp;<strong>Add</strong>&nbsp;under <em>Applications</em>.<br />
+2. Select&nbsp;<em>Microsoft Lync Web App 2010</em>. Click&nbsp;<strong>Next</strong>.<br />
+3. Enter a name for the application (i.e. LyncDiscovery). Click&nbsp;<strong>Next</strong>.<br />
+4. Click&nbsp;<strong>Next</strong>.<br />
+5. Enter lyncweb.&lt;your domain FQDN&gt; as the IP/Host and <em>lyncdiscover</em> as the public hostname. Click&nbsp;<strong>Next</strong>.
+<br />
+6. Uncheck <strong>Use SSO</strong>. Click&nbsp;<strong>Next</strong>.<br />
+7. Remove “dialin” from the application URL and click&nbsp;<strong>Next</strong>.<br />
+8. Click&nbsp;<strong>Next</strong><br />
+9. Click&nbsp;<strong>Finish</strong>.<br />
+<br />
+The wizard will create two additional entries for <em>meet</em> and <em>dialin</em> for the
+<em>LyncDiscover</em> application. Remove them by selecting each one and click <strong>
+Remove</strong>.
+<p><strong></strong></p>
+<h3><a name="Additional_Trunk_Configuration"></a><strong>Additional Trunk Configuration</strong></h3>
+<p>1. Click&nbsp;<strong>Configure</strong>&nbsp;under<em> Trunk Configure</em>.<br />
+2. Select the&nbsp;<strong>Authentication</strong>&nbsp;tab.&nbsp;Uncheck <strong>Require users to authenticate at session logon</strong>.<br />
+3. Select the&nbsp;<strong>Session</strong>&nbsp;tab and check&nbsp;<strong>Disable component installation and activation</strong>&nbsp;and
+<strong>Disable scripting for portal applications</strong>. <br />
+4. Click&nbsp;<strong>OK</strong>.</p>
+<h3><a name="Additional_Registry_Entry"></a><strong>Additional Registry Entry</strong>
+</h3>
+<p>(<strong>Warning</strong> Serious problems might occur if you modify the registry incorrectly by using Registry Editor or by using another method. These problems might require that you reinstall the operating system. Microsoft cannot guarantee that these
+ problems can be solved. Modify the registry at your own risk.)<br />
+<br />
+1. Open <strong>Registry Editor<br />
+</strong>2. Navigate to HKLM\Software\WhaleCom\e-Gap\von\UrlFilter<br />
+3. Right-Click and add a <strong>DWORD</strong> 32-bit registry&nbsp;&nbsp;<strong>KeepClientAuthHeader</strong>&nbsp;and set the value to&nbsp;<strong>1</strong>.<br />
+4. Close the registry editor.<br />
+<strong></strong></p>
+<h3><a name="Save_and_Activate_the_Configuration"></a><strong>Save and Activate the Configuration</strong></h3>
+<p>1. Click the <strong>Save</strong> button in the UAG console.<br />
+2. Click <strong>Activate</strong><br />
+3. Once the configuration has completed, click <strong>Finish</strong><br />
+4. Start a Command Prompt (cmd) as Administrator.<br />
+5. Perform an&nbsp;IISRESET.<br />
+<strong></strong></p>
+<h2><a name="Lync_Client_for_iPhone"></a><strong>Lync Client for iPhone</strong></h2>
+In order for the Lync iPhone Login to work the following change may also need to occur within the Lync configuration using the Lync Powershell:<br />
+<br />
+Set-CsWebServiceConfiguration –UseWindowsAuth Negotiate<br />
+<br />
+I&#39;ve also blogged these instructions with screenshot at <a href="http://blog.georgt.com/2012/10/publishing-lync-server-with-forefront.html">
+<span>http://blog.georgt.com/2012/10/publishing-lync-server-with-forefront.html</span></a>
+
+</div>
+    
+    

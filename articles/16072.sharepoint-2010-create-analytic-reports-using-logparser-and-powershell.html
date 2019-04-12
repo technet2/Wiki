@@ -1,0 +1,254 @@
+---
+layout: default
+title: SharePoint 2010&#58; Create Analytic Reports using LogParser and PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Walk_Through">Walk Through</a></li><li class="hierarchy-item"><a href="#References">References</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<br />
+<br />
+<h2><a name="Introduction"></a>Introduction</h2>
+SharePoint has built-in analytic reports, but they don&#39;t always provide you with the data you need.<br />
+<br />
+This article demonstrates how you can combine two great Microsoft tools, LogParser and PowerShell, to create a custom report that summarizes the access to a particular PDF file in a SharePoint library, &nbsp;broken down by department, location and employee type&nbsp;(a
+ custom Active Directory attribute).&nbsp;<br />
+<br />
+PowerShell probably doesn&#39;t need much of an introduction, but LogParser might. It&#39;s a tool that has been around for a while now, and it&#39;s extremely useful for parsing and querying a variety of log file formats. It can then output the results in various formats.
+ You can download LogParser from Microsoft here, <a href="http://www.microsoft.com/en-gb/download/details.aspx?id=24659" target="_blank">
+Download Log Parser 2.2</a>,&nbsp;and there is great information on using LogParser on the TechNet site,
+<a href="http://technet.microsoft.com/en-us/scriptcenter/dd919274.aspx" target="_blank">
+Log Parser 2.2</a>. &nbsp;<br />
+<br />
+To complete this exercise, you will need to:<br />
+<br />
+1. Copy the IIS log files (for the SharePoint web application in question) from all of the WFE (web front end) servers into a single directory on your computer<br />
+<br />
+2. Open a PowerShell console that has the Active Directory module installed, change to the directory with the log files, run LogParser against the files, and extract the data you want into a CSV file.<br />
+<br />
+[Notes]&nbsp;<br />
+a). This example assumes all of the IIS Log files for the web application http://corporate were copied from all the SharePoint web front end servers in the farm to c:\iislogs directory.<br />
+b). You have installed LogParser 2.2<br />
+c). You have the Active Directory module loaded.&nbsp;<span style="font-size:12px;line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">You can find out about installing and using the
+ Active Directory module for PowerShell on Microsoft&#39;s TechNet site, here:</span><br style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;line-height:16px;background-color:#ffffff;" />
+<a href="http://technet.microsoft.com/en-us/library/dd378937%28WS.10%29.aspx" target="_blank" style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#00749e;line-height:16px;background-color:#ffffff;">Active Directory Administration
+ with Windows PowerShell&nbsp;<img alt=" " title="This link is external to TechNet Wiki. It will open in a new window." src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="overflow:hidden;border:0px solid;" />&nbsp;</a>and
+ here&nbsp;<a href="http://technet.microsoft.com/en-us/library/ee617195.aspx" target="_blank" style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#00b0e0;line-height:16px;background-color:#ffffff;">Active Directory Cmdlets in
+ Windows PowerShell&nbsp;<img alt=" " title="This link is external to TechNet Wiki. It will open in a new window." src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="overflow:hidden;border:0px solid;" />&nbsp;</a><br />
+<br />
+Simple hey? Let&#39;s take a closer look.<br />
+<br />
+<h2><a name="Walk_Through"></a>Walk Through</h2>
+<span style="font-size:12px;">This example steps through creating a report the number of staff in a global firm that have downloaded a document, myspecialdocument.pdf, from the documents library in the SharePoint Marketing site. The URL of the document is http://corporate/marketing/documents/myspecialdocument.pdf,
+ and the web application is http://corporate</span><br />
+<br />
+1. The first thing to do is write a log parser command to select all the logs in the last 30 days (since 2013-07-09) where the URI = /marketing/documents/myspecialdocument.pdf, where the user is not null. Aggregate and count all the logs for each unique visitor,
+ and stored them in the ReadCount column. Output the results to a CSV file called report.csv.<br />
+<br />
+<div class="reCodeBlock" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">C:\iislogs\logparser.exe
+</code><code style="font-weight:bold;color:#006699;">-</code><code style="color:#000000;">i:W3C
+</code><code style="color:blue;">&quot;select cs-username as User, Count(*) as ReadCount, date into report.csv from .\* where cs-uri-stem = &#39;/marketing/documents/myspecialdocument.pdf&#39; and User Is Not Null and date &gt; Timestamp(&#39;2013-07-09&#39;,&#39;yyyy-MM-dd&#39;) group by
+ user,date&quot;</code> <code style="font-weight:bold;color:#006699;">-</code><code style="color:#000000;">o:CSV</code></span></div>
+</div>
+<br />
+<br />
+2. Next is the fun bit, using PowerShell to bring it all together. We create an object to store each record in, then add the records to an array, and use the array to create the report.... Oh, and we use the Active Directory PowerShell module to get some extra
+ data about each user from Active Directory (department, office location and employee type).<br />
+<br />
+First, create the object for storing each record in:<br />
+<br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">New-Object</span> <span style="color:#8a2be2;">psobject</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Name&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Location&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Department&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;EmployeeType&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Reads&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span></pre>
+<br />
+Copy the data from the CSV file to a PowerShell object we can use (from more information importing CSV files, see:
+<a href="http://technet.microsoft.com/en-us/library/hh849891.aspx" target="_blank">
+Import-CSV</a>):<br />
+<span style="font-size:12px;"><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$r</span>  <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">Import-Csv</span> <span style="color:#8a2be2;">.\report.csv</span></pre>
+<br />
+The object $r now contains each line of the CSV file (as a collection of objects), and we can access individual columns by their original column name in the CSV file. I.e. $r[0].user</span><br />
+<br />
+Next, create a new array, loop through each object in $r (aka each line of the imported CSV file), format the &#39;user&#39; column (we need to trim off the domain name), passing the &#39;user&#39; string to the
+<a href="http://technet.microsoft.com/en-us/library/ee617241.aspx" target="_blank">
+Get-AdUser</a> cmdlet (returning a user object containing the extra properties (displayName, Office and employeeType) needed for the report, parse the object returned from Active Directory, extracting the contents into a new &quot;request&quot; object and merge it with
+ the details from the current object in $r, and finally add it to the array. Phew... that was a long sentence, but really quite straight forward when you break it down!<br />
+<br />
+To break it down a little;<br />
+<br />
+1. Create an empty array to store the data used for the report<br />
+<span style="font-size:12px;"><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$null</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">=</span> <span style="color:#000000;">@(</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span></pre>
+<br />
+<span style="font-size:12px;">2. For each object (aka line of the CSV file) in $r</span><br />
+</span><span style="font-size:12px;"><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$r</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#000000;">}</span></pre>
+<br />
+3. Getting the &quot;user&quot; property. The user is represented as domain\user, so we need to trim off the domain name and forward slash<br />
+</span><span style="font-size:12px;"><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Substring</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">IndexOf</span><span style="color:#000000;">(</span><span style="color:#8b0000;">&#39;\&#39;</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#800080;">1</span><span style="color:#000000;">)</span></pre>
+<br />
+<span style="font-size:12px;">4. Pass the trimmed username to the Get-AdUser cmdlet, and request the additional properties, displayName, department, office and employeeType<br />
+</span></span><span style="font-size:12px;"><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$u</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">get-aduser</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Substring</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">IndexOf</span><span style="color:#000000;">(</span><span style="color:#8b0000;">&#39;\&#39;</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#800080;">1</span><span style="color:#000000;">)</span> <span style="color:#000080;">-Properties</span> <span style="color:#8a2be2;">displayName</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">department</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">office</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">employeeType</span></pre>
+<br />
+5. If the object returned from Active Directory is not empty, then create a new &quot;request&quot; object, and populate it with information from the current object in $r (aka current line in the CSV file), and finally add it to the array<br />
+</span><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#00008b;">if</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$u</span> <span style="color:#a9a9a9;">-ne</span> <span style="color:#8b0000;">&quot;&quot;</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Select-Object</span> <span style="color:#8a2be2;">*</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">displayName</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Location</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">office</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Department</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">department</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">employeeType</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Reads</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ReadCount</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">;</span>  /span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">department</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">employeeType</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Reads</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span s          
+<span style="color:#000000;">;</span><span style="color:#000000;">}</span></pre>
+<br />
+<span style="font-size:12px;">Here&#39;s the full command, condensed:<br />
+</span><span style="font-size:12px;"><br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$null</span>            
+<span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">=</span> <span style="color:#000000;">@(</span><span style="color:#000000;">)</span>            
+<span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$r</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span>            
+    <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">=</span><span style="color:#8b0000;">&quot;&quot;</span><span style="color:#000000;">;</span>            
+    <span style="color:#ff4500;">$u</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">get-aduser</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Substring</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">IndexOf</span><span style="color:#000000;">(</span><span style="color:#8b0000;">&#39;\&#39;</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#800080;">1</span><span style="color:#000000;">)</span> <span style="color:#000080;">-Properties</span> <span style="color:#8a2be2;">displayName</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">department</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">office</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">employeeType</span> <span style="color:#000080;">-ErrorAction:</span><span style="color:#8a2be2;">SilentlyContinue</span><span style="color:#000000;">;</span>             
+    <span style="color:#00008b;">if</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$u</span> <span style="color:#a9a9a9;">-ne</span> <span style="color:#8b0000;">&quot;&quot;</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span>            
+        <span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Select-Object</span> <span style="color:#8a2be2;">*</span><span style="color:#000000;">;</span>             
+        <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">displayName</span><span style="color:#000000;">;</span>             
+        <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Location</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">office</span><span style="color:#000000;">;</span>             
+        <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Department</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">department</span><span style="color:#000000;">;</span>             
+        <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">employeeType</span><span style="color:#000000;">;</span>             
+        <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Reads</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ReadCount</span><span style="color:#000000;">;</span>             
+        <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">;</span>            
+    <span style="color:#000000;">}</span>            
+<span style="color:#000000;">}</span></pre>
+<br />
+Once we have done this, we have all the information we need in a new array of objects, and it&#39;s simply a case of formatting the data the way we want it and creating the report. Because we have an array of &quot;request&quot; objects, this is very easy, as we can iterate
+ over them, group them, sort them, all using PowerShell&#39;s built-in cmdlets, such as Format-Table, Sort-Object, Measure-Object, Where-Object and Group-Obejct. In this example, we need to display the following information:</span><br />
+<br />
+Total amount of people who opened the document<br />
+Total amount of people by Office<br />
+Total people with the job title &quot;Partners&quot;<br />
+Total people with the department&nbsp;Fee Earners<br />
+Total people with the employee type (a custom Active Directory attribute) &quot;Business Services&quot;<br />
+<br />
+The script for the report looks like this:<br />
+<br />
+<pre class="PowerShellColorizedScript" style="font-size:12px;border:1px solid #7f9db9;font-family:consolas;overflow-y:auto;"><span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">New-Object</span> <span style="color:#8a2be2;">psobject</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Name&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Location&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</spanpan> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Name&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Location&quot;</span> <span style="color:#000080;">-value</span> <> <span style="color:#8b0000;">&quot;Department&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;EmployeeType&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Add-Member</span> <span style="color:#000080;">-MemberType</span> <span style="color:#8a2be2;">NoteProperty</span> <span style="color:#000080;">-Name</span> <span style="color:#8b0000;">&quot;Reads&quot;</span> <span style="color:#000080;">-value</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+             
+<span style="color:#ff4500;">$r</span>  <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">Import-Csv</span> <span style="color:#8a2be2;">.\report.csv</span>            
+<span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$null</span>            
+<span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">=</span> <span style="color:#000000;">@(</span><span style="color:#000000;">)</span>            
+            
+<span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$r</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">=</span><span style="color:#8b0000;">&quot;&quot;</span><span style="color:#000000;">;</span><span style="color:#ff4500;">$u</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">get-aduser</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Substring</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">User</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">IndexOf</span><span style="color:#000000;">(</span><span style="color:#8b0000;">&#39;\&#39;</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#800080;">1</span><span style="color:#000000;">)</span> <span style="color:#000080;">-Properties</span> <span style="color:#8a2be2;">displayName</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">department</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">office</span><span style="color:#a9a9a9;">,</span><span style="color:#8a2be2;">employeeType</span> <span style="color:#000080;">-ErrorAction:</span><span style="color:#8a2be2;">SilentlyContinue</span><span style="color:#000000;">;</span> <span style="color:#00008b;">if</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$u</span> <span style="color:#a9a9a9;">-ne</span> <span style="color:#8b0000;">&quot;&quot;</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$request</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">Select-Object</span> <span style="color:#8a2be2;">*</span><span style="color:#000000;">;</span> <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">displayName</span><span style="color:#000000;">;</span> <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Location</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">office</span><span style="color:#000000;">;</span> <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Department</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">department</span><span style="color:#000000;">;</span> <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$u</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">employeeType</span><span style="color:#000000;">;</span> <span style="color:#ff4500;">$b</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Reads</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$i</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ReadCount</span><span style="color:#000000;">;</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">;</span>            
+<span style="color:#000000;">;</span><span style="color:#000000;">}</span><span style="color:#000000;">}</span>            
+             
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">=</span> <span style="color:#000000;">@(</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Total Count: &quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$a</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Count per office:&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">group</span> <span style="color:#8a2be2;">location</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Total Partners&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Department</span> <span style="color:#a9a9a9;">-like</span> <span style="color:#8b0000;">&quot;Partners&quot;</span><span style="color:#000000;">}</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">measure</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Partners / Office&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Department</span> <span style="color:#a9a9a9;">-like</span> <span style="color:#8b0000;">&quot;Partners&quot;</span><span style="color:#000000;">}</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">group</span> <span style="color:#8a2be2;">location</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Total Support Staff&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">-like</span> <span style="color:#8b0000;">&quot;SupportStaff&quot;</span><span style="color:#000000;">}</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">measure</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Support Staff / Office&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">-like</span> <span style="color:#8b0000;">&quot;SupportStaff&quot;</span><span style="color:#000000;">}</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">group</span> <span style="color:#8a2be2;">location</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Total Fee Earning Staff&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">-like</span> <span style="color:#8b0000;">&quot;FeeEarningStaff&quot;</span><span style="color:#000000;">}</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">measure</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;&quot;</span>            
+<span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#8b0000;">&quot;Fee Earning Staff / Office&quot;</span>            
+<span style="color:#ff4500;">$b</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$a</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">EmployeeType</span> <span style="color:#a9a9a9;">-like</span> <span style="color:#8b0000;">&quot;FeeEarningStaff&quot;</span><span style="color:#000000;">}</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">group</span> <span style="color:#8a2be2;">location</span><span style="color:#000000;">;</span> <span style="color:#00008b;">foreach</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$d</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$b</span><span style="color:#000000;">)</span><span style="color:#000000;">{</span><span style="color:#ff4500;">$nr</span> <span style="color:#a9a9a9;">&#43;=</span> <span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Count</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">ToString</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#8b0000;">&quot;`t&quot;</span><span style="color:#a9a9a9;">&#43;</span><span style="color:#ff4500;">$d</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Name</span><span style="color:#000000;">}</span></pre>
+<br />
+<br />
+And when displayed, it looks like this...<br />
+<br />
+<span style="font-size:12px;">Total Count: 477</span><br />
+<br />
+Count per office:<br />
+52 &nbsp; &nbsp; &nbsp;Hong Kong<br />
+42 &nbsp; &nbsp; &nbsp;Hamburg<br />
+8 &nbsp; &nbsp; &nbsp; &nbsp;Monaco<br />
+191 &nbsp; &nbsp;London<br />
+12 &nbsp; &nbsp; &nbsp;Le Havre<br />
+19 &nbsp; &nbsp; &nbsp;Paris<br />
+33 &nbsp; &nbsp; &nbsp;Dubai<br />
+36 &nbsp; &nbsp; &nbsp;Greece<br />
+29 &nbsp; &nbsp; &nbsp;Singapore<br />
+33 &nbsp; &nbsp; &nbsp;Shanghai<br />
+20 &nbsp; &nbsp; &nbsp;Singapore Local<br />
+2 &nbsp; &nbsp; &nbsp; &nbsp;Beijing<br />
+<br />
+Total Partners<br />
+92<br />
+<br />
+Partners / Office<br />
+58 &nbsp; &nbsp; &nbsp;London<br />
+1 &nbsp; &nbsp; &nbsp; &nbsp;Hamburg<br />
+5 &nbsp; &nbsp; &nbsp; &nbsp;Singapore<br />
+11 &nbsp; &nbsp; &nbsp;Greece<br />
+2 &nbsp; &nbsp; &nbsp; &nbsp;Shanghai<br />
+8 &nbsp; &nbsp; &nbsp; &nbsp;Dubai<br />
+3 &nbsp; &nbsp; &nbsp; &nbsp;Singapore Local<br />
+4 &nbsp; &nbsp; &nbsp; &nbsp;Paris<br />
+<br />
+Total Support Staff<br />
+195<br />
+<br />
+Support Staff / Office<br />
+23 &nbsp; &nbsp; &nbsp;Hong Kong<br />
+35 &nbsp; &nbsp; &nbsp;Hamburg<br />
+58 &nbsp; &nbsp; &nbsp;London<br />
+12 &nbsp; &nbsp; &nbsp;Le Havre<br />
+15 &nbsp; &nbsp; &nbsp;Paris<br />
+11 &nbsp; &nbsp; &nbsp;Greece<br />
+7 &nbsp; &nbsp; &nbsp; &nbsp;Dubai<br />
+15 &nbsp; &nbsp; &nbsp;Singapore Local<br />
+5 &nbsp; &nbsp; &nbsp; &nbsp;Shanghai<br />
+13 &nbsp; &nbsp; &nbsp;Singapore<br />
+1 &nbsp; &nbsp; &nbsp; &nbsp;Beijing<br />
+<br />
+Total Fee Earning Staff<br />
+269<br />
+<br />
+Fee Earning Staff / Office<br />
+6 &nbsp; &nbsp; &nbsp; &nbsp; Monaco<br />
+7 &nbsp; &nbsp; &nbsp; &nbsp; Hamburg<br />
+133 &nbsp; &nbsp; London<br />
+26 &nbsp; &nbsp; &nbsp; Dubai<br />
+29 &nbsp; &nbsp; &nbsp; Hong Kong<br />
+15 &nbsp; &nbsp; &nbsp; Greece<br />
+21 &nbsp; &nbsp; &nbsp; Singapore<br />
+28 &nbsp; &nbsp; &nbsp; Shanghai<br />
+4 &nbsp; &nbsp; &nbsp; &nbsp; Paris&nbsp;<br />
+<br />
+<h2><a name="References"></a>References</h2>
+<ul>
+<li><span style="font-size:12px;line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">This article originally came from a blog post of&nbsp;</span><span style="font-size:12px;line-height:16px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#00749e;"><a href="http://social.msdn.microsoft.com/profile/matthew%20yarlett/?ws=usercard-mini" target="_blank" style="font-size:12px;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#00749e;line-height:16px;background-color:#ffffff;">Matthew
+ Yarlett</a></span><span style="font-size:12px;">, which can be seen here:&nbsp;</span><a href="http://matthewyarlett.blogspot.co.uk/2012/05/quick-analytics-from-sharepoint-kind-of.html" target="_blank" style="font-size:12px;">Quick Analytics from SharePoint (kind
+ of...)&nbsp;</a> </li></ul>
+
+</div>
+    
+    

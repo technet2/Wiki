@@ -1,0 +1,289 @@
+---
+layout: default
+title: Get Customers Technical Notification E-mail and List of all Company Admins - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-size:20px;">Before you start...</span></p>
+<ul>
+This article is a part of a collection of articles.&nbation-list-footer"></divsp; Please read <a href="http://social.technet.microsoft.com/wiki/contents/articles/17126.office-365-reporting-via-powershell-for-syndication-partners.aspx">
+Office 365 Reporting via PowerShell for Syndication Partners</a>&nbsp;to understand the audience this article is intended for, the background, what&#39;s in scope and out of scope, assumptions and limitations.</ul>
+<p><span style="font-size:20px;">Scenario</span></p>
+<ul>
+The Syndication Partner needs to contact some or all of its customers to share a communication with technical information related to the Office 365 service. The communication requires that the customer&#39;s company administrator(s)&nbsp;performs administrative actions.<br />
+<br />
+The Syndication Partner must retrieve from MOP the Technical Contact Email&nbsp;which the customer provides in the Company&#39;s&nbsp;Profile.&nbsp; The partner also needs to identify in MOP the users who have been granted administrator permissions as Global Administrators.<br />
+<br />
+The Syndication Partner can obtain this information using Windows Azure Active Directory Module for Windows PowerShell cmdlets (previously known as the Microsoft Online Services Module for Windows PowerShell cmdlets).<br />
+<br />
+A Syndication Partner may need to get this information for all of its customers or for some of its customers.&nbsp; Both options are covered in this article.<br />
+&nbsp;&nbsp;&nbsp; </ul>
+<p><span style="font-size:20px;">Option 1:&nbsp; Get Report for All Customers</span>&nbsp;</p>
+<ul>
+<span style="font-size:16px;">Input</span></ul>
+<ul>
+<ul>
+None. The script will retrieve information for all customer tenants of the partner</ul>
+</ul>
+<ul>
+<span style="font-size:16px;">Output</span></ul>
+<ul>
+<ul>
+Three CSV files located in C:\Scripts named:<br />
+<ul>
+<li>TechNotList.csv =&gt; List of Technical Notification Email address provided by the customer
+</li><li>CompanyAdminList.csv =&gt; List of users and their alternate e-mail address who have a Company Admin role
+</li><li>InvalidTenants.csv =&gt; List of tenants that at some point had one or more subscription, all of which are now deprovisioned.&nbsp; The file may not always contain information if the partner does not have customers with all subscriptions deprovisioned.
+</li></ul>
+</ul>
+</ul>
+<ul>
+<ul>
+One txt file&nbsp; located in C:\Scripts named:<br />
+<ul>
+<li>TenantList.txt =&gt;&nbsp; List of all tenants for the partner with active, in grace period, disabled or deprovisioned subscriptions
+</li></ul>
+</ul>
+</ul>
+<ul>
+<ul>
+&nbsp;*** NOTE:&nbsp; The folder C:\Scripts must exist prior to running the script<br />
+</ul>
+</ul>
+<ul>
+<span style="font-size:16px;">Sample Script</span></ul>
+<table>
+<tbody>
+<tr>
+<td>
+<ul>
+<ul>
+<p><span style="font-size:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Clear-Host<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Write-Progress -Id 1 -Activity &quot;Get tenant list&quot; -Status &quot;Retrieving... this may take several minutes&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $tenantList = Get-MsolpartnerContract -All | Format-Table -Property TenantID -AutoSize -HideTableHeaders | Out-file &quot;C:\Scripts\TenantList.txt&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (get-content &quot;C:\Scripts\TenantList.txt&quot;) | where {$_ -ne &quot;&quot;} | out-file &quot;C:\Scripts\TenantList.txt&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myTechNotOutput=@()<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myAdminOutput =@()<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myInvalidOutput =@()<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $inputFile = get-content &quot;C:\Scripts\TenantList.txt&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $totTenants =&nbsp; $inputfile.count<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; foreach ($tenantItem in $inputFile)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $tenantCount = $tenantItem.readcount<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Write-Progress -Id 1 -Activity &quot;Get tenant list&quot; -Status &quot;Completed&quot; -PercentComplete 100<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Write-Progress -Id 2 -Activity &quot;Validating tenant list and retrieving data&quot; -PercentComplete (($tenantCount/ $totTenants)*100) -CurrentOperation &quot; processing $tenantCount of $totTenants&quot; -status &quot;Please wait&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $Company = Get-MsolCompanyInformation -TenantID $tenantItem -ErrorAction SilentlyContinue<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; If (!$?)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objInvalid = New-Object system.object<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objInvalid | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myInvalidOutput &#43;= $objInvalid<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Else<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $Company = Get-MsolCompanyInformation -TenantID $tenantItem | Select DisplayName, @{Name=&#39;TechnicalNotificationEmails&#39sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objInvalid | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myInvalidOutput &#43;= $objInvalid<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Else<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbs;;Expression={[string]::join(&quot;;&quot;, ($_.TechnicalNotificationEmails))}}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $InitialDomain = Get-MsolDomain -TenantID $tenantItem | where {$_.IsInitial -Eq $true}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $CompanyAdmins = Get-MsolRoleMember -TenantID $tenantItem -roleobjectID 62e90394-69f5-4237-9190-012177145e10<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot = New-Object system.object<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name CompanyName -value $Company.DisplayName<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name OnMicrosoftDomain -value $InitialDomain.Name<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name CompanyTechnicalNotificationEmails -value $Company.TechnicalNotificationEmails<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myTechNotOutput &#43;= $objTechNot<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; foreach($caItem in $CompanyAdmins)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $Email =Get-MsolUser -TenantID $tenantItem -ObjectID $caItem.ObjectID | Select UserPrincipalName, PhoneNumber, MobilePhone, @{Name=&#39;AlternateEmailAddresses&#39;;Expression={[string]::join(&quot;;&quot;, ($_.AlternateEmailAddresses))}}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin = New-Object system.object<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name CompanyName -value $Company.DisplayName<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name OnMicrosoftDomain -value $InitialDomain.Name<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserUPN -value $Email.UserPrincipalName<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserAltEmail -value $Email.AlternateEmailAddresses<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserPhone -value $Email.PhoneNumber<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserMobilePhone -value $Email.MobilePhone<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myAdminOutput &#43;= $objAdmin<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myInvalidOutput | export-csv -Path &quot;C:\Scripts\InvalidTenants.csv&quot; -NoTypeInformation<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myTechNotOutput | export-csv -Path &quot;C:\Scripts\TechNotList.csv&quot; -NoTypeInformation<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myAdminOutput | export-csv -Path &quot;C:\Scripts\CompanyAdminList.csv&quot; -NoTypeInformation</span></p>
+</ul>
+</ul>
+&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<br />
+<ul>
+<span style="font-size:16px;">Sample Output</span></ul>
+<ul>
+<ul>
+<br />
+Click image for better quality<br />
+<br />
+TechNotList.csv<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2465.SampleOutputTechNotification.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2465.SampleOutputTechNotification.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+CompanyAdminList.csv<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2086.SampleOutputCompanyAdmins.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2086.SampleOutputCompanyAdmins.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+InvalidTenants.csv<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.SampleOutputInvalidTenants.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.SampleOutputInvalidTenants.PNG" width="212" height="68" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+TenantList.txt<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6138.SampleOutputTenantList.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6138.SampleOutputTenantList.PNG" width="320" height="118" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</ul>
+</ul>
+<p><span style="font-size:20px;">Option 2:&nbsp; Get Report for Some Customers&nbsp; (provide list of TenantIDs)</span></p>
+<ul>
+<span style="font-size:16px;">Input</span></ul>
+<ul>
+<ul>
+A txt file located in C:\Scripts named TenantList.txt with the TenantID GUIDs of those customers that you want to retrieve data for.&nbsp; Provide data as displayed below.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7658.SampleOutputTenantList.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7658.SampleOutputTenantList.PNG" width="407" height="150" style="border-width:0px;border-style:solid;" /></a><br />
+&nbsp;<br />
+&nbsp;*** NOTE:&nbsp; The folder C:\Scripts must exist prior to running the script<br />
+</ul>
+</ul>
+<ul>
+<span style="font-size:16px;">Output</span></ul>
+<ul>
+<ul>
+Three CSV files located in C:\Scripts named:<br />
+<ul>
+<li>TechNotList.csv =&gt; List of Technical Notification Email address provided by the customer
+</li><li>CompanyAdminList.csv =&gt; List of users and their alternate e-mail address who have a Company Admin role
+</li><li>InvalidTenants.csv =&gt; List of tenants that at some point had one or more subscription, all of which are now deprovisioned. &nbsp;&nbsp; The file may not always contain information if the partner does not have customers with all subscriptions deprovisioned. &nbsp;
+</li></ul>
+</ul>
+</ul>
+<ul>
+<ul>
+</ul>
+</ul>
+<ul>
+<ul>
+&nbsp;*** NOTE:&nbsp; The folder C:\Scripts must exist prior to running the script<br />
+</ul>
+</ul>
+<ul>
+<span style="font-size:16px;">Sample Script</span></ul>
+<table>
+<tbody>
+<tr>
+<td>
+<ul>
+<ul>
+<p><span style="font-size:12px;">Clear-Host<br />
+Write-Progress -Id 1 -Activity &quot;Get tenant list&quot; -Status &quot;Retrieving... this may take several minutes&quot;&nbsp;&nbsp; &nbsp;<br />
+$myTechNotOutput=@()<br />
+$myAdminOutput =@()<br />
+$myInvalidOutput =@()<bal Notification Email address provided by the customer
+</li><li>CompanyAdminList.csv =&gt; List of users and their alternate e-mail address who have a Company Admin role
+</li><li>InvalidTenants.csv =&gt; List of tenants that at some point had one or more subscription, all of which are now deprovisioned. &nbsp;&nbsp; The file may not always contain information if the partner does not have customers with all subscriptions deprovisioned. &nbsp;
+</li></ul>
+</ul>
+</ul>
+<ul>
+<ul>
+</ul>
+</ul>
+<ul>
+<ul>
+&nbsp;*** NOTE:&nbsp; The folder C:\Scripts must exist prior to running the script<br />
+</ul>
+</ul>
+<ul>
+<span style="font-size:16px;">Sample Script</span></ul>
+<table>
+<tbody>
+<tr>
+<td>
+<ul>
+<ul>
+<p><span style="font-size:12px;">Clear-Host<br />
+Write-Progress -Id 1 -Activity &quot;Get tenant list&quot; -Status &quot;Retrieving... this may take several minutes&quot;&nbsp;&nbsp; &nbsp;<br />
+$myTecr />
+$inputFile = get-content &quot;C:\Scripts\TenantList.txt&quot;<br />
+$totTenants =&nbsp; $inputfile.count<br />
+foreach ($tenantItem in $inputFile)<br />
+&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $tenantCount = $tenantItem.readcount<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Write-Progress -Id 1 -Activity &quot;Get tenant list&quot; -Status &quot;Completed&quot; -PercentComplete 100<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Write-Progress -Id 2 -Activity &quot;Validating tenant list and retrieving data&quot; -PercentComplete (($tenantCount/ $totTenants)*100) -CurrentOperation &quot; processing $tenantCount of $totTenants&quot; -status &quot;Please wait&quot;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $Company = Get-MsolCompanyInformation -TenantID $tenantItem -ErrorAction SilentlyContinue<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; If (!$?)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objInvalid = New-Object system.object<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objInvalid | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myInvalidOutput &#43;= $objInvalid<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Else<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $Company = Get-MsolCompanyInformation -TenantID $tenantItem | Select DisplayName, @{Name=&#39;TechnicalNotificationEmails&#39;;Expression={[string]::join(&quot;;&quot;, ($_.TechnicalNotificationEmails))}}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $InitialDomain = Get-MsolDomain -TenantID $tenantItem | where {$_.IsInitial -Eq $true}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $CompanyAdmins = Get-MsolRoleMember -TenantID $tenantItem -roleobjectID 62e90394-69f5-4237-9190-012177145e10<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot = New-Object system.object<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name CompanyName -value $Company.DisplayName<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name OnMicrosoftDomain -value $InitialDomain.Name<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objTechNot | Add-Member -Type NoteProperty -Name CompanyTechnicalNotificationEmails -value $Company.TechnicalNotificationEmails<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myTechNotOutput &#43;= $objTechNot<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; foreach($caItem in $CompanyAdmins)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $Email =Get-MsolUser -TenantID $tenantItem -ObjectID $caItem.ObjectID | Select UserPrincipalName, PhoneNumber, MobilePhone, @{Name=&#39;AlternateEmailAddresses&#39;;Expression={[string]::join(&quot;;&quot;, ($_.AlternateEmailAddresses))}}<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin = New-Object system.object<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name TenantID -value $tenantItem<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name CompanyName -value $Company.DisplayName<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name OnMicrosoftDomain -value $InitialDomain.Name<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserUPN -value $Email.UserPrincipalName<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserAltEmail -value $Email.AlternateEmailAddresses<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserPhone -value $Email.PhoneNumber<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserMobilePhone -value $Email.MobilePhone<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $myAdminOutput &#43;= $objAdmin<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbspsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserAltEmail -value $Email.AlternateEmailAddresses<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserPhone -value $Email.PhoneNumber<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; $objAdmin | Add-Member -Type NoteProperty -Name AdminUserMobilePhone -value $Email.MobilePhone<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; }<br />
+$myInvalidOutput | export-csv -Path &quot;C:\Scripts\InvalidTenants.csv&quot; -NoTypeInformation<br />
+$myTechNotOutput | export-csv -Path &quot;C:\Scripts\TechNotList.csv&quot; -NoTypeInformation<br />
+$myAdminOutput | export-csv -Path &quot;C:\Scripts\CompanyAdminList.csv&quot; -NoTypeInformation<br />
+</span></p>
+</ul>
+</ul>
+&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<br />
+<ul>
+<span style="font-size:16px;">Sample Output</span></ul>
+<br />
+<ul>
+<ul>
+Click image for better quality<br />
+<br />
+TechNotList.csv<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2465.SampleOutputTechNotification.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2465.SampleOutputTechNotification.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+CompanyAdminList.csv<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2086.SampleOutputCompanyAdmins.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2086.SampleOutputCompanyAdmins.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+InvalidTenants.csv<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.SampleOutputInvalidTenants.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4544.SampleOutputInvalidTenants.PNG" width="212" height="68" style="border-width:0px;border-style:solid;" /></a></ul>
+</ul>
+
+</div>
+    
+    

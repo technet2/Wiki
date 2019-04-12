@@ -1,0 +1,163 @@
+---
+layout: default
+title: AD FS 2.0&#58; How to Use Fiddler Web Debugger to Analyze a WS-Federation Passive Sign-In - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">></span>
+                        History
+                    </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name"
+
+This article&#39;s purpose is to demonstrate how to utilize Fiddler Web Debugger to&nbsp;analyze traffic in a WS-Federation sign-in conversation, specifically for AD FS 2.0. If you are looking for Fiddler debugging information for another protocol such as WS-Trust or
+ SAML 2.0, please see the <strong>More Information</strong> section of this article for possible links.<br />
+<br />
+<br />
+<br />
+<br />
+<span style="font-size:18px;"><strong>Getting started<br />
+</strong></span>
+<ol>
+<li>Download and install <a href="http://www.fiddlertool.com/fiddler/version.asp" title="Download Fiddler" target="_blank">
+Fiddler Web Debugger</a>&nbsp;<strong>on the client machine</strong> </li><li>Launch Fiddler from&nbsp;the Programs menu </li><li>Fiddler will automatically start capturing. We&#39;re not quite ready for that yet, so click
+<strong>File</strong> -&gt; <strong>Capture Traffic</strong> to stop the capture. </li></ol>
+<br />
+<span style="font-size:18px;"><strong>Configure Fiddler to decrypt&nbsp;HTTPS traffic<br />
+</strong></span>
+<ol>
+<li>Within Fiddler, click <strong>Tools</strong> -&gt; <strong>Fiddler Options</strong>
+</li><li>Select the <strong>HTTPS</strong> tab </li><li>Check the checkbox to <strong>Decrypt HTTPS traffic</strong> </li><li>You will receive a few pop-ups that are required in order to install the Fiddler root certificate, which allows Fiddler to sit as a man-in-the-middle to your&nbsp;HTTPS session. Click
+<strong>Yes</strong> to these prompts. </li><li>Click <strong>OK</strong> to close Fiddler Options </li></ol>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6330.Decrypt_2D00_HTTPS_2D00_Traffic.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/6330.Decrypt_2D00_HTTPS_2D00_Traffic.JPG" style="border:0px solid;" /></a></p>
+<p><span style="font-size:18px;"><strong><br />
+Understanding the view of the Fiddler tool<br />
+</strong></span></p>
+<ul>
+<li>The left side of the vertical divider will show a sequential flow of the HTTP conversation.
+</li><li>The right side of the vertical divider is where the data is viewed. </li><li>I recommend splitting the left and right panes into a 50%/50% view so that you can work through both panes.
+</li><li>The right pane is split by a horizontal divider, which separates the request from the response. Unlike a network trace where you typically get&nbsp;a frame for a request and another frame for a reponse, Fiddler provides one frame that contains both the request
+ and the reponse. </li><li>We will be interested in the <strong>Inspectors</strong> tab data, so go ahead and select
+<strong>Inspectors</strong> at the top of the right pane. </li><li>You&#39;ll notice that we have sub-tabs under the <strong>Inspectors</strong> main tab, such as
+<strong>Headers, TextView, WebView, Auth, Raw</strong>, etc. We will be toggling through these sub-tabs as we work through our trace.
+</li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5732.Fiddler_2D00_View.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/5732.Fiddler_2D00_View.JPG" style="border:0px solid;" /></a></p>
+<p><span style="font-size:18px;"><strong><br />
+Configure AD FS 2.0 to allow Fiddler to act as a man-in-the-middle to the&nbsp;HTTPS session<br />
+<br />
+</strong></span>If AD FS 2.0 is the claims provider (identity provider, meaning, you are authenticating to the AD FS 2.0 server) and is
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/ad-fs-2-0-how-to-change-the-local-authentication-type.aspx" title="Understand AD FS 2.0 authentication types" target="_blank">
+configured to utilize Windows authentication</a>, we need to disable&nbsp;<a href="http://support.microsoft.com/kb/968389" title="Explanation of EPA" target="_blank">Extended Protection for Authentication</a> on the AD FS 2.0 server in order for Fiddler to be able
+ to act as a man-in-the-middle to the&nbsp;HTTPS session. Follow the steps in the following article to disable Extended Protection for Authentication:
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/ad-fs-2-0-continuously-prompted-for-credentials-while-using-fiddler-web-debugger.aspx" title="Disable EPA" target="_blank">
+AD FS 2.0: Continuously Prompted for Credentials While Using Fiddler Web Debugger<br />
+</a><br />
+<br />
+<span style="font-size:18px;"><strong>Capture the WS-Federation sign-in data<br />
+<br />
+</strong></span>We will be capturing the trace data from the client machine</p>
+<ol>
+<li>Make sure that ALL web browser windows are completely closed </li><li>In Fiddler, click <strong>File</strong> -&gt; <strong>Capture Traffic</strong> to start the capture
+</li><li>Click the <strong>Launch IE</strong> button in the ribbon bar near the top (this will take you to the about:blank page, which helps to keep the trace clean)
+</li><li><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1104.Launch_2D00_IE.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/1104.Launch_2D00_IE.JPG" style="border:0px solid;" /></a>
+</li><li>Browse to the relying party (RP) application and authenticate to the Federation Service
+</li><li>When you have finished signing in or reproducing your failure, in Fiddler, click
+<strong>File</strong> -&gt; <strong>Capture Traffic</strong> to stop the trace </li></ol>
+<p><span style="font-size:18px;"><strong>Analyze the captured WS-Federation sign-in data<br />
+</strong></span></p>
+<ul>
+<li>We browsed, first,&nbsp;to your RP application, so let&#39;s find that frame in the trace.&nbsp;In the example, my
+<strong>HTTP GET to the RP</strong> was in frame&nbsp;2 </li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6278.Get_2D00_To_2D00_RP.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/6278.Get_2D00_To_2D00_RP.JPG" style="border:0px solid;" /></a></p>
+<ul>
+<li>The URL is http://contosoweb1.contoso.com:8085/ </li><li>The action is a HTTP GET </li><li>The response is a HTTP 302 (Redirect), and the <strong>Response -&gt; Headers</strong> sub-tab<strong>&nbsp;Transport</strong> data&nbsp;shows us where we are being redirected to. In this case, we are redirected to the AD FS server whose URL is https://sso.contoso.com/adfs/ls/
+</li><li>Notice we have query string parameters on the URL to the AD FS server: <strong>
+wa, wtrealm</strong>, etc. wa=wsignin1.0 shows us that our RP application has built a WS-Federation sign-in request for uas in frame&nbsp;2 </li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6278.Get_2D00_To_2D00_RP.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/6278.Get_2D00_To_2D00_RP.JPG" style="border:0px solid;" /></a></p>
+<ul>
+<li>The URL is http://contosoweb1.contoso.com:8085/ </li><li>The action is a HTTP GET </li><li>The response is a HTTP 302 (Redirect), and the <strong>Response -&gt; Headers</strong> sub-tab<strong>&nbsp;Transport</strong> data&nbsp;shows us where we are being redirected to. In this case, we are redirected to the AD FS server whose URL is https://sso.contoso.com/adfs/ls/
+</li><li>Notice we have query string parameters on the URL to the AD FS sers, and sent this to the AD FS server&#39;s
+<strong>/adfs/ls/</strong> endpoint. This is known as using the <strong>Redirect</strong> binding.
+</li><li>The next frame of interest is where we first contact the AD FS server in frame 5
+</li></ul>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/1803.Get_2D00_to_2D00_ADFSLS.JPG" style="border:0px solid;" /></p>
+<ul>
+<li>This is a HTTP GET to the AD FS&nbsp;server&#39;s <strong>/adfs/ls/</strong> endpoint accompanied by a WS-Federation sign-in request (<strong>wa=wsignin1.0</strong>)
+</li><li>Notice that the client is presenting a browser cookie named <strong>MSISIPSelectionPersistent</strong>. This cookie is the persistent cookie which is written to the file system on the client that shows who should be the identity provider (IDP)&nbsp;for this
+ client. If the client does not already have this cookie set, and there are multiple&nbsp;IDPs to choose from, AD FS will prompt the user to select an&nbsp;IDP through a process called<strong> Home Realm Discovery (HRD).</strong>
+</li><li>The MSISIPSelectionPersistent cookie data is base64 encoded, so you can use your favorite base64 decoder to see the value of the identity provider. Fiddler has a base64 decoder built into its<strong> Decoders</strong> menu.
+</li><li>This is what my MSISIPSelectionPersistent cookie data looks like: http://sso.contoso.com/adfs/services/trust
+<strong>(this is my Federation Service Identifier. This is a URI, not a URL!)</strong>
+</li><li>This HTTP GET results in another HTTP 302 to the <strong>/adfs/ls/auth/integrated/</strong> endpoint of AD FS 2.0. This shows me that the authentication type set for this Federation Server is Windows authentication. You can figure out which authentication
+ type you are using by reading through this article: <a href="http://social.technet.microsoft.com/wiki/contents/articles/ad-fs-2-0-how-to-change-the-local-authentication-type.aspx" title="Set your AD FS 2.0 Authentication Type" target="_blank">
+AD FS 2.0: How to Change the Local Authentication Type</a> </li></ul>
+<p>&nbsp;</p>
+<ul>
+<li>Frame 6 shows a HTTP GET to the <strong>/adfs/ls/auth/integrated/</strong> endpoint of AD FS 2.0
+</li></ul>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/6710.GET_2D00_AuthInt_2D00_401.JPG" style="border:0px solid;" /></p>
+<ul>
+<li>Selecting the <strong>Auth</strong> sub-tabs, you can see that the client is performing a GET to this endpoint, and the server is responding with a credential challenge in a HTTP 401. You can see on the
+<strong>Response -&gt; Auth</strong> sub-tab that the server is offering an authentication header
+<strong>Negotiate</strong> and <strong>NTLM</strong>. </li><li>Frame 7 shows that we are, again, performing a GET to the <strong>/adfs/ls/auth/integrated/</strong> endpoint
+</li></ul>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/6177.ADFS_2D00_Sets_2D00_Auth_2D00_Cookies.JPG" style="border:0px solid;" /></p>
+<ul>
+<li>This results in a HTTP 200 (OK) which means that AD FS (IIS, really)&nbsp;has authenticated the user based on the credentials provided
+</li><li>The <strong>Response -&gt; Headers</strong> sub-tab is especially interesting here because we see AD FS 2.0 is setting 5 cookies back to the client.
+</li><li>These cookies are used to fascilitate the single-sign-on process (SSO), and they are session cookies which means they are lost once the browser session has ended or the cookies are cleared in some other way such as invoking WS-Federation sign-out.
+</li><li><strong>MSISAuth</strong> and <strong>MSISAuth1</strong> are the encrypted cookies used to validate the SAML assertion produced for the client. These are what we call the &quot;authentication cookies&quot;, and you will see these cookies ONLY when AD FS 2.0 is the
+ IDP. Without these, the client will not experience SSO when AD FS 2.0 is the IDP.
+</li><li><strong>MSISAuthenticated</strong> contains a base64-encoded timestamp value for when the client was authenticated. You will see this cookie set whether AD FS 2.0 is the IDP or not.
+</li><li><strong>MSISSignout</strong> is used to keep track of the IDP and all RPs visited for the SSO session. This cookie is utilized when a WS-Federation sign-out is invoked. You can see the contents of this cookie using a base64 decoder.
+</li><li><strong>MSISLoopDetectionCookie</strong> is used by the AD FS 2.0 infinite loop detection mechanism to stop clients who have ended up in an infinite redirection loop to the Federation Server. For example, if an RP is having an issue where it cannot consume
+ the SAML assertion from AD FS, the RP may continuously redirect the client to the AD FS 2.0 server. When the redirect loop hits a certain threshold, AD FS 2.0 uses this cookie to detect that threshold being met, and will throw an exception which lands the
+ user on the AD FS 2.0 error page rather than leaving them in&nbsp;the loop. The cookie data is a timestamp that is base64 encoded.
+</li></ul>
+<p>&nbsp;</p>
+<ul>
+<li>Frame 11 is where we are POSTing the SAML assertion back to the RP </li></ul>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/7115.POST_2D00_to_2D00_RP.JPG" style="border:0px solid;" /></p>
+<ul>
+<li>AD FS 2.0 scripts a HTTP POST to cause the client to POST the SAML assertion to the RP. AD FS 2.0 will POST to the WS-Federation endpoint defined in the RP Trust. In this case, AD FS 2.0 is POSTing to https://contosoweb1.contoso.com:8085/
+</li><li>The <strong>Request -&gt; TextView</strong> will show you the WS-Federation response which is a
+<strong>RequestSecurityTokenResponse (RSTR).</strong> The SAML assertion is in this
+<strong>TextView</strong> area as well, and may be encrypted if token encryption is configured for the RP Trust. For troubleshooting, you may wish to disable token encryption for the RP so you can see the SAML assertion in transit.
+<ul>
+<li><span style="text-decoration:underline;">PowerShell to disable token encryption for the RP:</span>
+<ul>
+<li><em>Add-Pssnapin Microsoft.Adfs.Powershell</em> </li><li><em>Set-AdfsRelyingPartyTrust -TargetName &quot;yourRPname&quot; -EncryptClaims $false</em>
+</li></ul>
+</li></ul>
+</li><li>The <strong>TextView</strong> data is URL-encoded, so passing this through a URL-decoder will make it easier to look through. Fiddler has a built-in URL-decoder under
+<strong>Encoder</strong>. </li><li>The <strong>Response -&gt; Headers</strong> sub-tab shows that the RP is setting two cookies to the client:
+<strong>FedAuth</strong> and <strong>FedAuth1</strong>. These are authentication cookies used to fascilitate SSO for a
+<strong>Windows Identity Foundation (WIF)</strong> RP. Your trace will likely look different at this point if your RP is not a WIF RP. We should expect to see some browser cookie(s) set by the RP so that SSO is achieved.
+</li><li>The Response from the RP is a 302 redirect to the <strong>default.aspx</strong> page of the RP.
+</li><li>Finally, in frame 12, the client performs a HTTP GET to the <strong>default.aspx</strong> page of the RP
+</li></ul>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x550/__key/communityserver-wikis-components-files/00-00-00-00-05/1680.Access_2D00_to_2D00_the_2D00_RP_2D00_Granted.JPG" style="border:0px solid;" /></p>
+<ul>
+<li>The <strong>Request -&gt; Headers</strong> sub-tab shows the the client is presenting the
+<strong>FedAuth</strong> and <strong>FedAuth1</strong> cookies to the RP so that the client can experience SSO to the
+<strong>default.aspx</strong> page. </li><li>The response to the GET is a HTTP 200 (OK) which shows us that the FedAuth cookies were successful in allowing the client to access default.aspx
+</li><li>The <strong>Response -&gt; WebView</strong> tab can be used to view what the client saw in the browser&nbsp;upon the HTTP 200 (OK) to default.aspx.
+</li></ul>
+<p><span style="font-size:18px;"><strong><br />
+More Information<br />
+</strong></span><br />
+This section is a work in progress.</p>
+
+</div>
+    
+    

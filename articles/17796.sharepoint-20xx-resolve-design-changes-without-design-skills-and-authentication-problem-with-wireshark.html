@@ -1,0 +1,168 @@
+---
+layout: default
+title: SharePoint 20XX&#58; Resolve design Changes without design skills and authentication problem with WireShark - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="text-align:left;"><span style="font-size:12.1px;">A few weeks ago I switched from client and began a new mission at an International Bank. They have big SharePoint Platform with 2 DMZ zones. Here is the technical overview of the SharePoint Platform.</span></p>
+<div style="text-align:left;">
+<div id="attachment_219" class="wp-caption aligncenter" style="width:490px;">
+<p style="text-align:center;"><img class="size-full wp-image-219" alt="DMZ Zone" src="http://gokanx.files.wordpress.com/2013/06/wireshark1.png?w=480&amp;h=246" width="480" height="246" /></p>
+<div style="text-align:left;">&nbsp;</div>
+<p>&nbsp;</p>
+<p class="wp-caption-text">DMZ Zone</p>
+</div>
+</div>
+<p style="text-align:left;">Clients, members and other people can connect to the public SharePoint Internet sites.</p>
+<p style="text-align:left;">People connecting from the public cloud have to pass the firewall and they are going to be routed by the
+<strong>F5</strong> (Physical Load Balancer) to the <strong>DMZ</strong> zone so they can check the internet site. The sites who are being hosted on the
+<strong>DMZ</strong> zones are all anonym sites and visitors don’t have to use a username or password to check the site.</p>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is F5?</span></strong> F5 delivers world-class performance, security, and cloud solutions for top global websites, enterprises, and service providers. F5 Networks’ flagship product,
+ the BIG-IP network appliance, was originally a network load balancer but today also offers other functionality such as access control and application security. Add-on modules to F5′s BIG-IP family of products offer email filtering and intelligent compression
+ to allow for lower bandwidth and faster downloads in addition to load balancing and local traffic management capabilities.</div>
+</li></ul>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is DMZ?</span></strong> In computer security, a DMZ (sometimes referred to as a perimeter network) is a physical or logical subnetwork that contains and exposes an organization’s
+ external-facing services to a larger untrusted network, usually the Internet. The purpose of a DMZ is to add an additional layer of security to an organization’s local area network (LAN); an external attacker only has access to equipment in the DMZ, rather
+ than any other part of the network. The name is derived from the term “demilitarized zone”, an area between nation states in which military action is not permitted.</div>
+</li></ul>
+<p style="text-align:left;">But Site Administrators or Persons who fill data on the site have to connect to the site; so basically they have to get access so they can authenticate.</p>
+<p style="text-align:left;">But we had a problem to authenticate peoples coming from the
+<strong>public cloud</strong> and also contributors from other <strong>Active Directory’s</strong>.</p>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is Public Cloud?</span></strong> A public cloud is one based on the standard cloud computing model, in which a service provider makes resources, such as applications and storage,
+ available to the general public over the Internet. Public cloud services may be free or offered on a pay-per-usage model. The main benefits of using a public cloud service are:
+</div>
+<ul>
+<li>
+<div style="text-align:left;">Easy and inexpensive set-up because hardware, application and bandwidth costs are covered by the provider.</div>
+</li><li>
+<div style="text-align:left;">Scalability to meet needs.</div>
+</li><li>
+<div style="text-align:left;">No wasted resources because you pay for what you use.</div>
+</li></ul>
+</li></ul>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is Active Directory?</span></strong> An AD domain controller authenticates and authorizes all users and computers in a Windows domain type network—assigning and enforcing security
+ policies for all computers and installing or updating software. For example, when a user logs into a computer that is part of a Windows domain, Active Directory checks the submitted password and determines whether the user is a system administrator or normal
+ user.</div>
+</li></ul>
+<p style="text-align:left;"><strong>Problem 1: </strong>We search for a user from another Active Directory and we have to wait more than 1 minute before the user is displayed in the people picker or getting a user is not found. Normally with this little PowerShell
+ script you can tell the <strong>People Picker</strong> to search multiple domains. If you have a 2-way trusted domains</p>
+<p style="text-align:left;"><strong>Stsadm -o setproperty -pn peoplepicker-searchadforests -pv “domain:Hades.Corp.Pegasus;domain:Poseidon.Corp.Perseus” -url
+<a href="http://publicinternetsite/">http://publicinternetsite/</a></strong></p>
+<p style="text-align:left;">Even when I executed this little PowerShell command I couldn’t find my user. So I had to check the SharePoint Logs but even there not an explicit error. Only one solution left and this was to use
+<strong>WireShark</strong> to sniff the network protocol.</p>
+<div style="text-align:left;">
+<div id="attachment_203" class="wp-caption aligncenter" style="width:366px;"><img class="size-full wp-image-203" alt="WireShark SharePoint 1" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager1.png?w=480" />
+<p class="wp-caption-text">WireShark SharePoint 1</p>
+</div>
+</div>
+<p style="text-align:left;">You will notice that for the first time when you will begin capture all the traffic a million of record will be appearing and you can normally not follow. We have authentication errors so we have to search on query who’s containing
+<strong>LDAP</strong>. So on the Filter text box you can hit LDAP so only traffic about LDAP will appear.</p>
+<div style="text-align:left;">
+<div id="attachment_204" class="wp-caption aligncenter" style="width:391px;"><img class="size-full wp-image-204" alt="WireShark SharePoint 2" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager2.png?w=480" />
+<p class="wp-caption-text">WireShark SharePoint 2</p>
+</div>
+</div>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is WireSHARK?</span></strong> Wireshark is a free and open-source packet analyzer. It is used for network troubleshooting, analysis, software and communications protocol development,
+ and education. Originally named Ethereal, in May 2006 the project was renamed Wireshark due to trademark issues.</div>
+</li></ul>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is LDAP?</span></strong> The Lightweight Directory Access Protocol is an application protocol for accessio only traffic about LDAP will appear.</p>
+<div style="text-align:left;">
+<div id="attachment_204" class="wp-caption aligncenter" style="width:391px;"><img class="size-full wp-image-204" alt="WireShark SharePoint 2" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager2.png?w=480" />
+<p class="wp-caption-text">WireShark SharePoint 2</p>
+</div>
+</div>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is WireSHARK?</span></strong> Wireshark is a free and open-source packet analyzer. It is used for network troubleshooting, analysis, software and communications protocol development,
+ and education. Originally named Ethereal, in May 2006 the project wang and maintaining distributed directory information services over an
+ Internet Protocol (IP) network. Directory services may provide any organized set of records, often with a hierarchical structure, such as a corporate email directory. Similarly, a telephone directory is a list of subscribers with an address and a phone number.
+ LDAP is specified in a series of Internet Engineering Task Force (IETF) Standard Track Request for Comments (RFCs), using the description language ASN.1. The latest specification is Version 3, published as RFC 4511<strong></strong></div>
+</li></ul>
+<p style="text-align:left;">The next step is to create LDAP traffic. Therefore open any SharePoint Site. Just go to the site actions menu and select Site Permissions. Try to search a user in the new AD. As an example I search a user with the login name “Gokan
+ Ozcifci”.</p>
+<p style="text-align:left;">You will see now some traffic in the WireShark. Click on stop monitoring.</p>
+<div style="text-align:left;">
+<div id="attachment_205" class="wp-caption aligncenter" style="width:410px;"><img class="size-full wp-image-205" alt="WireShark SharePoint 3" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager3.png?w=480" />
+<p class="wp-caption-text">WireShark SharePoint 3</p>
+</div>
+</div>
+<p style="text-align:left;">Click on Edit Menu and then on “Find Packet”. Give the login name you searched for into the search box.</p>
+<div style="text-align:left;">
+<div id="attachment_206" class="wp-caption aligncenter" style="width:410px;">
+<p style="text-align:center;"><img class="size-full wp-image-206" alt="WireShark SharePoint 4" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager4.png?w=480" /></p>
+<div style="text-align:left;">&nbsp;</div>
+<p>&nbsp;</p>
+<p class="wp-caption-text">WireShark SharePoint 4</p>
+</div>
+</div>
+<div style="text-align:left;">
+<div id="attachment_207" class="wp-caption aligncenter" style="width:490px;"><a href="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager5.png"><img class="size-full wp-image-207" alt="WireShark SharePoint 5" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager5.png?w=480&amp;h=169" width="480" height="169" /></a>
+<p class="wp-caption-text">WireShark SharePoint 5</p>
+</div>
+</div>
+<p style="text-align:left;">In my case, by inspecting the LDAP query I found out that we had a very long filer. By removing the filter everything worked fine.</p>
+<p style="text-align:left;">Now I could authenticate my users coming from the public cloud or other domains. The question was I want to make changes on the Master Page without having design skills or even the capacity to use Design Manager on SharePoint 2013.
+ I want to hide some parts of my page.</p>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is MasterPage?</span></strong> Master pages provide the look and feel that you want for all of the pages in your site. By changing the styles or content of the master page, you
+ can quickly customize the appearance of an entire site.</div>
+</li></ul>
+<ul>
+<li>
+<div style="text-align:left;"><strong><span style="text-decoration:underline;">What is Design Manager?</span></strong> Design Manager in SharePoint 2013 provides a new approach for designing websites. Several new branding and design-based capabilities available
+ in Design Manager enable you to create a compelling look, feel, and behavior for your SharePoint 2013 site. Design Manager also supports importing and exporting a visual design, and can help you ensure a consistent visual experience across all device platforms
+ in your organization.<strong></strong></div>
+</li></ul>
+<p style="text-align:left;">Actually it’s pretty simple; if you can use JavaScript you can directly make changes on the MasterPage without changing anything on the Website.</p>
+<p style="text-align:left;">Therefor you need to know that there is something called “Developer tools” on Internet Explorer that helps and leads you to get the name of each part on a SharePoint Site.</p>
+<p style="text-align:left;">Hit F12 on a SharePoint Site and select <strong>“Select element by click”
+</strong></p>
+<div style="text-align:left;">
+<div id="attachment_208" class="wp-caption aligncenter" style="width:398px;"><img class="size-full wp-image-208" alt="Developper Tools 1" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager6.png?w=480" />
+<p class="wp-caption-text">Developer Tools 1</p>
+</div>
+</div>
+<p style="text-align:left;">So when I click the Quick launch of our SharePoint Website</p>
+<div style="text-align:left;">
+<div id="attachment_209" class="wp-caption aligncenter" style="width:189px;"><img class="size-full wp-image-209" alt="Developper Tools 2" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager7.png?w=480" />
+<p class="wp-caption-text">Developper Tools 2</p>
+</div>
+</div>
+<p style="text-align:left;">I got every information on the Developper tool. I even can manually made changes here a get a little preview on the SharePoint Site.</p>
+<div style="text-align:left;">
+<div id="attachment_210" class="wp-caption aligncenter" style="width:490px;"><a href="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager8.png"><img class="size-full wp-image-210" alt="Developper Tools 3" src="http://gokanx.files.wordpress.com/2013/06/whirshareksharepointdesignmanager8.png?w=480&amp;h=217" width="480" height="217" /></a>
+<p class="wp-caption-text">Developper Tools 3</p>
+</div>
+</div>
+<p style="text-align:left;">Now you can take each information that you want and use it.</p>
+<p style="text-align:left;">A little example I want to hide my #s4-bodyContainer. Only thing to do is to edit the SharePoint Site and add a Content Query Web Part and paste this little code:</p>
+<p style="text-align:left;"><strong>#s4-bodyContainer{</strong><br />
+<strong>display:none</strong><br />
+<strong>}</strong></p>
+<p style="text-align:left;">Just do not forget to place your web part hidden; and you made directly changes on your website without affecting your MasterPage.</p>
+<p style="text-align:left;">More information</p>
+<ul>
+<li>
+<div style="text-align:left;"><a href="http://www.sharepoint-howto.com/2011/12/15/sharepoint-2010-base-css-classes-names/">http://www.sharepoint-howto.com/2011/12/15/sharepoint-2010-base-css-classes-names/</a></div>
+</li><li>
+<div style="text-align:left;"><a href="http://ipanco.wordpress.com/2011/05/16/sharepoint-2010-master-page-and-css/">http://ipanco.wordpress.com/2011/05/16/sharepoint-2010-master-page-and-css/</a></div>
+</li></ul>
+
+</div>
+    
+    

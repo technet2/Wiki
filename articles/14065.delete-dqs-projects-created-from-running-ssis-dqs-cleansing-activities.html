@@ -1,0 +1,248 @@
+---
+layout: default
+title: Delete DQS Projects Created from Running SSIS DQS Cleansing Activities - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Intnt-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fijiroduction">Introduction</a></li><li class="hierarchy-item"><a href="#Manual_Approach">Manual Approach</a></li><li class="hierarchy-item"><a href="#Description">Automated TSQL Script Approach</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Instructions">Instructions</a></li><li class="hierarchy-item"><a href="#TSQL_Code">TSQL Code</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+</p>
+<h2><a name="Introduction"></a>Introduction</h2>
+<p>When you use an SSIS package to run Data Quality Services Cleansing activities via the DQS Cleansing Component, each run produces a Data Quality Project. The resulting Data Quality project is useful for auditing the cleansed data produced from the SSIS package,
+ and also to export the data if a copy is needed. <br />
+<br />
+However, over time the DQS projects accumulate in the DQS_PROJECTS database, the database may grow large, and the projects may become too numerous to easily delete. If you need to find the largest projects for cleanup, use the script described in
+<a target="_blank" href="http://support.microsoft.com/kb/2685743">KB 2685743</a>&nbsp;to identify the projects and the size of each.<br />
+<br />
+</p>
+<h2><a name="Manual_Approach"></a>Manual Approach</h2>
+<p>In the Data Quality Client, click the button to open the Data Quality Project</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3630.DQS_5F00_Project_5F00_Open.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/200x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3630.DQS_5F00_Project_5F00_Open.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+Enumerate the list of DQS Cleansing Projects. The SSIS projects will have a unique naming convention with the Package Name, Transform Name, Run Date and Time, GUID.<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3733.DQS_5F00_SSIS_5F00_Projects.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3733.DQS_5F00_SSIS_5F00_Projects.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Right click on a project to unlock it (red text means locked)<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.DQS_5F00_Project_5F00_Unlock.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.DQS_5F00_Project_5F00_Unlock.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Deselect the unlocked project by moving up or down one row (this will refresh the menu), then right click on the unlocked project, and choose Delete.<br />
+<br />
+<a><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4010.DQS_5F00_Project_5F00_Delete.png" style="border-width:0px;border-style:solid;" /></a>
+<br />
+<br />
+</p>
+<p>&nbsp;</p>
+<h2><a name="Description"></a>Automated TSQL Script Approach</h2>
+<p>In the case where there are too many projects to manually delete, you may use the TSQL script described here to automate the cleanup for a certain date range.</p>
+<p>1.&nbsp;The script uses a date and time range to target the project deletion to a scope of time.
+<br />
+2.&nbsp;The script bulk deletes Data Quality projects according to the ‘Type’ flag which is set to 3 by default (1 = KB, 2 = Cleansing project DQS Client, 3 = SSIS Project)<br />
+3.&nbsp;The script deletes project in both Locked and Unlocked states.<br />
+4.&nbsp; If a project fails to delete, the script continues to delete the remaining projects.<br />
+5.&nbsp; Printed text output shows progress of the deletions and any errors which occur.</p>
+<h3><a name="Instructions"></a>Instructions</h3>
+<p>1. The Windows account executing the TSQL script should have a ‘dqs_administrator’ role; we recommend the account to have a sysadmin role on the box.<br />
+2. Run the script from SQL Server Management Studio while connected to SQL Server instance running the DQS instance (hosting the DQS_MAIN and DQS_PROJECTS databases)<br />
+3. Modify the ‘FromDate’ and ‘ToDate’ dates and times &nbsp;in the script to define the window for cleansing up the projects</p>
+<h3><a name="TSQL_Code"></a>TSQL Code</h3>
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">SET</code>
+<code style="color:#000000;">NOCOUNT </code><code style="color:#006699;font-weight:bold;">ON</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">USE DQS_MAIN</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@FromDate datetime</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@ToDate datetime</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@ProjectId </code><code stSQL_Code"></a>TSQL Code</h3>
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">SET</code>
+<code style="color:#000000;">yle="color:#006699;font-weight:bold;">bigint</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@LockClientId </code><code style="color:#006699;font-weight:bold;">bigint</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@DqProject varbinary(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@ResultRecords varbinary(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">,@ErrMessage
+</code><code style="color:#006699;font-weight:bold;">VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">max</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">,@rowcount
+</code><code style="color:#006699;font-weight:bold;">INT</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">,@errCount
+</code><code style="color:#006699;font-weight:bold;">INT</code> <code style="color:#000000;">
+= 0</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">--Update From date and To date here before execution of script</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">@FromDate = </code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;2012-10-19 00:00:01.001&#39;</code>
+<code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+datetime)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">@ToDate = </code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:blue;">&#39;2012-10-19 23:59:59.997&#39;</code>
+<code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+datetime)</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">PRINT
+</code><code style="color:blue;">&#39;***************************************************************&#39;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PRINT
+</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(GETDATE()
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)) &#43;
+</code><code style="color:blue;">&#39; :: &#39;</code> <code style="color:#000000;">&#43; </code>
+<code style="color:blue;">&#39;Executing script for date range &#39;</code> <code style="color:#000000;">
+&#43; </code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(@FromDate
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)) &#43;
+</code><code style="color:blue;">&#39; to &#39;</code> <code style="color:#000000;">&#43;&nbsp; </code>
+<code style="color:#ff1493;">CAST</code><code style="color:#000000;">(@ToDate </code>
+<code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">DELETE_PROJECTS_CURSOR </code><code style="color:#006699;font-weight:bold;">CURSOR</code>
+<code style="color:#006699;font-weight:bold;">FOR</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">[ID], </code><code style="color:#ff1493;">ISNULL</code><code style="color:#000000;">([LOCK_CLIENT_ID],-1)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">[DQS_Main].[dbo].[A_KNOWLEDGEBASE]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#000000;">[TYPE] = 3 </code><code style="color:#008200;">-- BatchDQProject, projects that are generated by SSIS packages</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">AND</code>
+<code style="color:#000000;">[CREATE_DATE] </code><code style="color:#808080;">BETWEEN</code>
+<code style="color:#000000;">@FromDate </code><code style="color:#808080;">AND</code>
+<code style="color:#000000;">@ToDate</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">OPEN</code>
+<code style="color:#000000;">DELETE_PROJECTS_CURSOR</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">FETCH</code>
+<code style="color:#006699;font-weight:bold;">NEXT</code> <code style="color:#006699;font-weight:bold;">
+FROM</code> <code style="color:#000000;">DELETE_PROJECTS_CURSOR</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">INTO</code>
+<code style="color:#000000;">@ProjectId, @LockClientId</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">WHILE @@FETCH_STATUS = 0</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">BEGIN</code>
+<code style="color:#000000;">TRY</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PRINT
+</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(GETDATE()
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)) &#43;
+</code><code style="color:blue;">&#39; :: &#39;</code> <code style="color:#000000;">&#43; </code>
+<code style="color:blue;">&#39;Operating on Project: [&#39;</code> <code style="color:#000000;">
+&#43; </code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(@ProjectId
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)) &#43;</code><code style="color:blue;">&#39;]&#39;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">EXECUTE</code>
+<code style="color:#000000;">[KnowledgebaseManagement].[SetDataQualitySession] @clientId=@LockClientId, @knowledgebaseId=</code><code style="color:#808080;">NULL</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">IF (@LockClientId != -1)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">EXECUTE</code>
+<code style="color:#000000;">[KnowledgebaseManagement].[DQProjectGetById] @ProjectId,@DqProject
+</code><code style="color:#006699;font-weight:bold;">OUTPUT</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">EXECUTE</code>
+<code style="color:#000000;">[KnowledgebaseManagement].[DQProjectExit] @DqProject,@ResultRecords
+</code><code style="color:#006699;font-weight:bold;">OUTPUT</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nde>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">EXECUTE</code>
+<code style="color:#000000;">[KnowledgebaseManagement].[DQProjectGetById] @ProjectId,@DqProjebsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">END</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">-- delete project&#39;s activity archive</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">DELETE</code>
+<code style="color:#006699;font-weight:bold;">FROM</code> <code style="color:#000000;">
+[dbo].[A_PROFILING_ACTIVITY_ARCHIVE]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#000000;">[ACTIVITY_ID] </code><code style="color:#808080;">IN</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">ID </code><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">[dbo].[A_KNOWLEDGEBASE_ACTIVITY] </code><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#000000;">[KNOWLEDGEBASE_ID] = @ProjectId)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">-- refresh the project state</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">EXECUTE</code>
+<code style="color:#000000;">[KnowledgebaseManagement].[DQProjectGetById] @ProjectId,@DqProject
+</code><code style="color:#006699;font-weight:bold;">OUTPUT</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">PRINT
+</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(GETDATE()
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)) &#43; &#39; ::
+</code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Deleting project: [</code><code style="color:blue;">&#39; &#43; CAST(@ProjectId AS VARCHAR(MAX)) &#43;&#39;</code><code style="color:#000000;">]</code><code style="color:blue;">&#39;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">EXECUTE [KnowledgebaseManagement].[DQProjectDelete] @DqProject</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Deleted project: [</code><code style="color:blue;">&#39; &#43; CAST(@ProjectId AS VARCHAR(MAX)) &#43;&#39;</code><code style="color:#000000;">]</code><code style="color:blue;">&#39;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">END TRY</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">BEGIN CATCH</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">An error has occurred
+</code><code style="color:#006699;font-weight:bold;">with</code> <code style="color:#000000;">
+the following details</code><code style="color:blue;">&#39;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Error
+</code><code style="color:blue;">&#39; &#43; CONVERT(varchar(50), ERROR_NUMBER()) &#43;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&#39;</code><code style="color:#000000;">, Severity
+</code><code style="color:blue;">&#39; &#43; CONVERT(varchar(5), ERROR_SEVERITY()) &#43;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&#39;</code><code style="color:#000000;">, State
+</code><code style="color:blue;">&#39; &#43; CONVERT(varchar(5), ERROR_STATE()) &#43;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style</code><code style="color:#000000;">Error
+</code><code style="color:blue;">&#39; &#43; CONVERT(varchar(50), ERROR_NUMBER()) &#43;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&="color:blue;">&#39;</code><code style="color:#000000;">,
+</code><code style="color:#006699;font-weight:bold;">Procedure</code> <code style="color:blue;">
+&#39; &#43; ISNULL(ERROR_PROCEDURE(), &#39;</code><code style="color:#000000;">-</code><code style="color:blue;">&#39;) &#43;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&#39;</code><code style="color:#000000;">, Line
+</code><code style="color:blue;">&#39; &#43; CONVERT(varchar(5), ERROR_LINE());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Error Message:
+</code><code style="color:blue;">&#39; &#43; ERROR_MESSAGE();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">SELECT @errCount = @errCount &#43; 1</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Skipping this project because
+</code><code style="color:#006699;font-weight:bold;">of</code> <code style="color:#000000;">
+errors</code><code style="color:blue;">&#39;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">END CATCH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">FETCH NEXT FROM DELETE_PROJECTS_CURSOR INTO @ProjectId, @LockClientId</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:blue;">END</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">IF @errCount &gt; 0</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Script completed
+</code><code style="color:#006699;font-weight:bold;">with</code> <code style="color:blue;">
+&#39; &#43; CAST(@errCount AS VARCHAR(MAX)) &#43; &#39;</code> <code style="color:#000000;">errors</code><code style="color:blue;">&#39;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">ELSE</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">PRINT CAST(GETDATE() AS VARCHAR(MAX)) &#43; &#39;</code>
+<code style="color:#000000;">:: </code><code style="color:blue;">&#39; &#43; &#39;</code><code style="color:#000000;">Script completed successfully</code><code style="color:blue;">&#39;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">PRINT &#39;</code><code style="color:#000000;">***************************************************************&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">BEGIN</code>
+<code style="color:#000000;">TRY</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">CLOSE</code>
+<code style="color:#000000;">DELETE_PROJECTS_CURSOR</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">DEALLOCATE</code>
+<code style="color:#000000;">DELETE_PROJECTS_CURSOR</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">END</code>
+<code style="color:#000000;">TRY</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">BEGIN</code>
+<code style="color:#000000;">CATCH</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">--Do nothing</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">END</code>
+<code style="color:#000000;">CATCH</code></span></div>
+</div>
+<br />
+<br />
+<h2><a name="See_Also"></a>See Also</h2>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/4385.data-quality-services-dqs-en-us.aspx">DQS Resources on TechNet Wiki</a></p>
+
+</div>
+    
+    

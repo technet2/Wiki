@@ -1,0 +1,109 @@
+---
+layout: default
+title: Delete a Virtual Machine Checkpoint (SPF) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div id="mainBody">
+<div class="message warning">This page is now retired and kept for archival purposes. This programming guide has been published on MSDN at
+<a href="http://msdn.microsoft.com/library/jj643273.aspx">http://msdn.microsoft.com/library/jj643273.aspx</a>
+</div>
+<p>This article is part of the <a class="ExistingPageLink" href="/wiki/contents/articles/19162.service-provider-foundation-programmers-guide-spf.aspx" title="Click to view the page titled: Service Provider Foundation Programmers Guide (SPF)">Service Provider Foundation Programmers Guide (SPF)</a>.</p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#To_delete_a_checkpoint_with_NET">To delete a checkpoint with .NET</a></li><li class="hierarchy-item"><a href="#To_delete_a_checkpoint_with_HTTP">To delete a checkpoint with HTTP</a></li><li class="hierarchy-item"><a href="#Example">Example</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<p>Virtual Machine Checkpoints provide a way to capture the state of a Virtual Machine. The Checkpoint can then be used to restore the Virtual Machine back to the way it was when the Checkpoint was created.</p>
+<p>Sometimes though, a checkpoint may no longer be needed and you may want to delete it. This is completed using the standard OData method of deleting a resource. A checkpoint is deleted by calling the
+<strong>DELETE</strong> HTTP operation on the checkpoint identified by the URL.</p>
+<div>
+<h2 class="heading"><a name="To_delete_a_checkpoint_with_NET"></a><strong>To delete a checkpoint with .NET</strong></h2>
+<div class="section" id="procedureSection0">
+<ol class="ordered">
+<li>
+<p>Connect to the Service Provider Foundation <strong>VMM</strong> service.</p>
+</li><li>
+<p>Obtain reference to the specific <strong>SpfVMM.VMCheckPoint</strong> you want to delete.</p>
+</li><li>
+<p>Call the <strong>DeleteObject</strong> method on the <strong>VMM</strong> service object reference and pass in the checkpoint reference.</p>
+</li><li>
+<p>Call the <strong>SaveChanges</strong> method on the <strong>VMM</strong> service object reference.</p>
+</li></ol>
+</div>
+</div>
+<div>
+<h2 class="heading"><a name="To_delete_a_checkpoint_with_HTTP"></a><strong>To delete a checkpoint with HTTP</strong></h2>
+<div class="section" id="procedureSection1">
+<ol class="ordered">
+<li>
+<p>Create a new <strong>HTTP</strong> DELETE operation.</p>
+</li><li>
+<p>Set the URL to the <strong>VMCheckPoints</strong> collection, identifying the checkpoint to delete. For example: https://<em>server</em>:30005/<em>subscription-id</em>/services/systemcenter/vmm/VMCheckPoints(ID=guid&#39;a11cc636-5521-4f88-92b2-cad392911fe0&#39;,StampId=guid&#39;ba4146fa-fb41-4f59-a193-ad00c52a138c&#39;).</p>
+</li><li>
+<p>Add the HTTP headers.</p>
+<p>Specifically, add the <strong>x-ms-principal-id</strong> header, which can be set to any value.</p>
+</li><li>
+<p>Submit the HTTP request.</p>
+</li></ol>
+</div>
+</div>
+<h2 class="heading"><a name="Example"></a>Example</h2>
+<div class="section" id="codeExampleSection">
+<p>The following example shows how to delete a Virtual Machine Checkpoint using .NET. For more information, see
+<a href="http://aka.ms/figpnj">Programming in Visual Studio with Service Provider Foundation Services</a>.</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<div>
+<div><span><code>SpfVMM.VMM vmmService =
+</code><code style="font-weight:bold;">new</code> <code>
+SpfVMM.VMM(</code><code style="font-weight:bold;">new</code>
+<code>Uri(</code><code style="color:blue;">&quot;<a href="https://wapserver/">https://wapserver/</a>:30005/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/&quot;</code><code>));</code></span></div>
+<div><span><code>vmmService.Credentials = System.Net.CredentialCache.DefaultNetworkCredentials;</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>var checkpoint = vmmService.VMCheckPoints.Where(cp =&gt; cp.ID ==
+</code><code style="font-weight:bold;">new</code> <code>
+Guid(</code><code style="color:blue;">&quot;3499b02c-8dc9-4c0d-aa83-097a1340cbda&quot;</code><code>)).FirstOrDefault();</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code style="font-weight:bold;">if</code>
+<code>(checkpoint != </code><code style="font-weight:bold;">null</code><code>)</code></span></div>
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>vmmService.DeleteObject(checkpoint);</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>vmmService.SaveChanges();</code></span></span></div>
+<div><span><code>}</code></span></div>
+</div>
+</div>
+<p>The following is an example HTTP request sent to the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>DELETE https://wapserver:30005/97FD50F3-1DC0-41B6-A7C0-2B4FF4C3F7E3/services/systemcenter/vmm/VMCheckPoints(ID=guid&#39;a11cc636-5521-4f88-92b2-cad392911fe0&#39;,StampId=guid&#39;ba4146fa-fb41-4f59-a193-ad00c52a138c&#39;) HTTP/1.1
+DataServiceVersion: 3.0;NetFx
+MaxDataServiceVersion: 3.0;NetFx
+Accept: application/json;odata=minimalmetadata
+Accept-Charset: UTF-8
+DataServiceUrlConventions: KeyAsSegment
+User-Agent: Microsoft ADO.NET Data Services
+x-ms-principal-id: user@contoso.com
+Content-Type: application/json;odata=minimalmetadata
+Host: wapserver:30005
+Content-Length: 0
+</pre>
+</div>
+<p>The following is an example HTTP response from the server:</p>
+<div class="code" style="border-width:1px;border-style:solid;overflow:auto;margin-bottom:10px;">
+<pre>HTTP/1.1 204 No Content
+Cache-Control: no-cache
+Server: Microsoft-IIS/8.5
+x-ms-request-id: 7ce34b7f-81a1-40e6-a3bf-12b84995cf74
+X-Content-Type-Options: nosniff
+request-id: eda9bde6-834a-0001-9808-abed4a83ce01
+DataServiceVersion: 1.0;
+X-AspNet-Version: 4.0.30319
+Persistent-Auth: true
+X-Powered-By: ASP.NET
+Date: Mon, 19 Aug 2013 22:17:52 GMT
+
+</pre>
+</div>
+</div>
+</div>
+
+</div>
+    
+    

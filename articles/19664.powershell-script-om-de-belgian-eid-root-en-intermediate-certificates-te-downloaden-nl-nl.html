@@ -1,0 +1,144 @@
+---
+layout: default
+title: PowerShell script om de Belgian eID root en intermediate certificates te downloaden (NL-NL) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Translated from: <a href="http://social.technet.microsoft.com/wiki/contents/articles/19660.powershell-script-to-download-the-belgian-eid-root-and-intermediate-certificates.aspx">
+<span>PowerShell script to download the Belgian eID root and intermediate certificates</span></a><br />
+<br />
+Wanneer je AD gebruiks wil toelaten om aan te loggen op AD met hun (Belgische) eID card, moet je de AD / PKI omgeving configureren om de root en intermediate CA van de Belgische overheid te herkennen.<br />
+<br />
+Daarvoor moet je de certificaten downloaden en hen toevoegen aan de trusted root en intermediate certificate authorities van je AD/PKI.<br />
+<br />
+Je kan ze natuurlijk manueel downloaden van: <a href="http://repository.eid.belgium.be/index.php?lang=en">
+<span>http://repository.eid.belgium.be/index.php?lang=en</span></a><br />
+De certificaten lijst is eigenlijk beschikbaar op: <a href="http://certs.eid.belgium.be/">
+<span>http://certs.eid.belgium.be/</span></a></p>
+<p>Je kan natuurlijk een downloadmanager gebruiken.&nbsp;<br />
+<br />
+Maar het is even handig om met een gratis Powershell script de download te automatiseren.<br />
+<br />
+Hier gaan we:</p>
+<p><span class="auto-style1" lang="EN" style="color:darkgreen;">#----------------------------------------------------------------------------------------------------<br />
+# Original Author: Peter Geelen<br />
+# e-mail: <br />
+#<a href="mailto:peter@fim2010.be"><span>peter@fim2010.be</span></a><br />
+# Web: blog.identityunderground.be<br />
+#----------------------------------------------------------------------------------------------------<br />
+# Set base parameters<br />
+#----------------------------------------------------------------------------------------------------</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$sourceURL</span><span class="auto-style1" lang="EN" style="color:darkgray;">=</span><span class="auto-style1" lang="EN" style="color:darkred;">&quot;<a href="http://certs.eid.belgium.be/"><span>http://certs.eid.belgium.be/</span></a>&quot;<br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$sourceEXT</span><span class="auto-style1" lang="EN" style="color:darkgray;">=</span><span class="auto-style1" lang="EN" style="color:darkred;">&quot;<a href="http://certs.eid.belgium.be/"><span>crt</span></a>&quot;</span><br />
+</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$destination</span><span class="auto-style1" lang="EN" style="color:darkgray;">=</span><span class="auto-style1" lang="EN" style="color:darkred;">&quot;D:\Downloads\eID\allcerts&quot;</span></p>
+<p><span class="auto-style1" lang="EN" style="color:darkgreen;">#----------------------------------------------------------------------------------------------------<br />
+# generate list of current eID certs<br />
+#----------------------------------------------------------------------------------------------------</span></p>
+<p><span class="auto-style1" lang="EN" style="color:darkgreen;">#open web connection</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$webclient</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:blue;">New-Object</span> <span style="color:blueviolet;">Net.Webclient</span><br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$htmlData</span><span class="auto-style1" lang="EN">&nbsp;
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$webclient</span><span style="color:darkgray;">.</span>DownloadString(<span style="color:darkred;">&quot;</span><span style="color:orangered;">$sourceURL</span><span style="color:darkred;">&quot;</span>)
+</span></p>
+<p><span class="auto-style1" lang="EN" style="color:darkgreen;">#skip header info</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$index</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;"><span class="auto-style1" lang="EN">IndexOf(<span style="color:darkred;">&quot;Description&quot;</span></span>)<br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$htmlData</span><span class="auto-style1" lang="EN">&nbsp;
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>substring(<span style="color:orangered;">$index</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)</span></p>
+<p>#find first cert URL (after header info)</p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$startpos</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;"><span class="auto-style1" lang="EN">IndexOf(<span style="color:darkred;">&quot;a href&quot;</span></span>)</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$fileList</span><span class="auto-style1" lang="EN">&nbsp;
+<span style="color:darkgray;">=</span> @()<br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$datelist</span><span class="auto-style1" style="color:darkgray;">=</span><span class="auto-style1" lang="EN" style="font-family:&#39;Lucida Console&#39;;"> @()</span></p>
+<p><span class="auto-style1" lang="EN" style="font-family:&#39;Lucida Console&#39;;">)</span></p>
+<p>#find first cert URL (after header info)</p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$startpos</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</s"EN" style="color:darkblue;">while</span><span class="auto-style1" lang="EN"> (<span style="color:orangered;">$startpos</span>
+<span style="color:darkgray;">-ge</span> <span style="color:purple;">0</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)</span></p>
+<p><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">{<br />
+</span><br />
+<span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$htmlData</span>&nbsp;
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>substring(<span style="color:orangered;">$startpos</span><span style="color:darkgray;">&#43;</span><span style="color:purple;">8</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+</span><br />
+<span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$endpos</span>
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>IndexOf(<span style="color:darkred;">&quot;&gt;&quot;</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+</span><br />
+<span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$filename</span>
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>Substring(<span style="color:purple;">0</span><span style="color:darkgray;">,</span><span style="color:orangered;">$endpos</span><span style="color:darkgray;">-</span><span style="color:purple;">1</span>)
+</span></p>
+<p><span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$startpos</span>
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>IndexOf(<span style="color:darkred;">&quot;right&quot;&quot;&gt;&quot;</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+</span><br />
+<span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$htmlData</span>&nbsp;
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>substring(<span style="color:orangered;">$startpos</span><span style="color:darkgray;">&#43;</span><span style="color:purple;">7</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+</span><br />
+<span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$endpos</span>
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>IndexOf(<span style="color:darkred;">&quot; &lt;&quot;</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+</span><br />
+<span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$date</span>
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>Substring(<span style="color:purple;">0</span><span style="color:darkgray;">,</span><span style="color:orangered;">$endpos</span>)
+</span></p>
+<p><span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:darkblue;">if</span> (<span style="color:orangered;">$filename</span><span style="color:darkgray;">.</span>Contains(<span class="auto-style1" lang="EN" style="color:orangered;">$sourceEXT</span>))<br />
+</span><br />
+<span class="auto-style1">&nbsp;&nbsp;&nbsp; </span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">{</span></p>
+<p><span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$fileList</span>
+<span style="color:darkgray;">&#43;=</span> <span style="color:orangered;">$filename<br />
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$datelist</span> <span style="color:darkgray;">
+&#43;=</span> <span style="color:orangered;">$date</span></span></p>
+<p><span class="auto-style1">&nbsp;&nbsp;&nbsp; </span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">}</span></p>
+<p><span class="auto-style1" lang="EN">&nbsp;&nbsp;&nbsp; <span style="color:orangered;">$startpos</span>
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$htmlData</span><span style="color:darkgray;">.</span>IndexOf(<span style="color:darkred;">&quot;a href&quot;</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)</span></p>
+<p><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">}</span><span class="auto-style1" lang="EN">&nbsp;</span></p>
+<p><span class="auto-style1" lang="EN" style="color:darkgreen;">#----------------------------------------------------------------------------------------------------<br />
+# download all current eID certs<br />
+# from URL<br />
+# to local folder<br />
+#----------------------------------------------------------------------------------------------------</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$counter</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:purple;">0</span></span></p>
+<p><span class="auto-style1" lang="EN" style="color:darkblue;">foreach</span><span class="auto-style1" lang="EN"> (<span style="color:orangered;">$file</span>
+<span style="color:darkblue;">in</span> <span style="color:orangered;">$fileList</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+{<br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$from</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:orangered;">$sourceURL</span> <span style="color:darkgray;">&#43;</span>
+<span style="color:darkred;">&quot;/&quot;</span> <span style="color:darkgray;">&#43;</span><span style="color:orangered;">$file</span><br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$to</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>&nbsp;
+<span style="color:orangered;">$destination</span> <span style="color:darkgray;">&#43;</span>
+<span style="color:darkred;">&quot;\&quot;</span> <span style="color:darkgray;">&#43;</span><span style="color:orangered;">$file</span></span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$to<br />
+$region</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:darkgray;">[</span><span style="color:teal;">Globalization.CultureInfo</span><span style="color:darkgray;">]::</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;"><span class="auto-style1" lang="EN">CreateSpecificCulture(<span style="color:darkred;">&#39;en-US&#39;</span></span>)</span></p>
+<p><span class="auto-style1" lang="EN" style="color:orangered;">$webclient</span><span class="auto-style1" lang="EN" style="color:darkgray;">.</span><span class="auto-style1" lang="EN">DownloadFile(<span style="color:orangered;">$from</span><span style="color:darkgray;">,</span>
+<span style="color:orangered;">$to</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;">)<br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$creationdate</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">=</span>
+<span style="color:darkgray;">[</span><span style="color:teal;">datetime</span><span style="color:darkgray;">]::</span></span><span lang="EN" style="font-family:&#39;Lucida Console&#39;;"><span class="auto-style1" lang="EN">parseexact(<span style="color:orangered;">$datelist</span><span style="color:darkgray;">[</span><span style="color:orangered;">$counter</span><span style="color:darkgray;">].</span>Trim()<span style="color:darkgray;">,</span><span style="color:darkred;">&quot;dd-MMM-yyyy
+ HH:mm&quot;</span><span style="color:darkgray;">,</span><span style="color:orangered;">$region</span></span>)<br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:darkgreen;">#$creationdate</span></p>
+<p>&nbsp;</p>
+<p><span class="auto-style1" lang="EN" style="color:darkgreen;">#set creation date to original timestamp</span><span class="auto-style1" lang="EN" style="color:blue;"><br />
+Get-Item</span><span class="auto-style1" lang="EN"><span style="color:orangered;">$to</span>
+<span style="color:darkgray;">|</span> <span style="color:blue;">%</span></span><span class="auto-style1" lang="EN" style="font-family:&#39;Lucida Console&#39;;"> {
+<span style="color:orangered;">$_</span><span style="color:darkgray;">.</span>CreationTime
+<span style="color:darkgray;">=</span> <span style="color:orangered;">$creationdate</span> }<br />
+</span><br />
+<span class="auto-style1" lang="EN" style="color:orangered;">$counter</span><span class="auto-style1" lang="EN"><span style="color:darkgray;">&#43;=</span><span style="color:purple;">1<br />
+</span>}</span></p>
+<p>En je krijgt de gratis add-on voor de CRL download erbij.<br />
+<br />
+Je past gewoon het script aan.<br />
+Wijzig de download URL naar : <a href="http://crl.eid.belgium.be/"><span></span></a><a href="http://crl.eid.belgium.be/">http://crl.eid.belgium.be/</a><a></a><a><br />
+En</a> de file extension wordt &quot;crl&quot;.</p>
+
+</div>
+    
+    

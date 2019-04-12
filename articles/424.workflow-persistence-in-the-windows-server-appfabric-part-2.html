@@ -1,0 +1,61 @@
+---
+layout: default
+title: Workflow Persistence in the Windows Server AppFabric - Part 2 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li clon-list-footer"></div></div>
+<div class="content-fragment-footer"ass="hierarchy-item"><a href="#How_does_the_persistence_subsystem_work">How does the persistence subsystem work?</a></li><li class="hierarchy-item"><a href="#The_persistence_subsystem_consists_of_four_parts">The persistence subsystem consists of four parts:</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Loading_and_locking">Loading and locking</a></li><li class="hierarchy-item"><a href="#Processing_of_expired_timers">Processing of expired timers</a></li><li class="hierarchy-item"><a href="#Instance_recovery">Instance recovery</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<h1 style="margin:24pt 0in 0pt;"><a name="How_does_the_persistence_subsystem_work"></a><span style="font-family:cambria;"><span lang="EN" style="font-size:12pt;color:#376092;">How does the persistence subsystem work?</span><span lang="EN" style="font-family:&#39;times new roman&#39;,serif;"></span></span></h1>
+<h1 style="margin:24pt 0in 0pt;"><a name="The_persistence_subsystem_consists_of_four_parts"></a><span lang="EN" style="font-weight:normal;font-size:12pt;font-family:calibri,sans-serif;color:black;">The persistence subsystem consists of four parts:</span></h1>
+<p style="text-indent:-0.25in;margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;">
+<span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">1.</span><span lang="EN" style="font-size:7pt;font-family:&#39;times new roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:small;"><strong><span lang="EN" style="font-family:calibri,sans-serif;">Persistence Framework API</span></strong><span lang="EN" style="font-family:calibri,sans-serif;"> A set of persistent interfaces that define the contract with
+ Workflow Service Host to persists its state. These enable you to build any type of persistence provider from database backed to say distributed in-memory cache.</span></span></p>
+<p style="text-indent:-0.25in;margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;">
+<span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">2.</span><span lang="EN" style="font-size:7pt;font-family:&#39;times new roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">The
+<strong>SQL Workflow Instance Store</strong> (SWIS) implements the abstract class
+<em>InstanceStore</em> of the Persistence Framework API. This class is used by the Workflow Service Host to create, load, save and delete durable instance data.</span></p>
+<p style="text-indent:-0.25in;margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;">
+<span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">3.</span><span lang="EN" style="font-size:7pt;font-family:&#39;times new roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">The
+<strong>SQL Server Persistence database</strong> stores all the durable instance state. It also stores the additional metadata that is used to activate and recover a service instance.</span></p>
+<p style="text-indent:-0.25in;margin:0in 0in 10pt 0.5in;margin:0 0 .0001pt .5in;">
+<span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">4.</span><span lang="EN" style="font-size:7pt;font-family:&#39;times new roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span lang="EN" style="font-size:small;font-family:calibri,sans-serif;">The
+<strong>Workflow Management Service (WMS)</strong> is a Windows Service that activates a Workflow Service Host whenever there are unloaded instances with expired durable timers, instances that need to be reactivated after a graceful shutdown or instances that
+ need to be recovered after a crash. The WMS is also involved in the execution of instance control commands, which will be covered in a future blog post.</span></p>
+<div style="margin:0in 0in 10pt;"><span lang="EN" style="font-size:small;font-family:calibri;">All workflow instances that are hosted by a Workflow Service Host that configures the SQL Workflow Instance Store save their instance state in the
+ SQL Server Persistence Database. In addition to the instance state binary blob, the persistence store holds the following:</span></div>
+<div style="margin:0in 0in 10pt 0.25in;"><span lang="EN" style="font-size:small;font-family:calibri;">The
+<strong>message correlation key</strong> allows the Workflow Service Host to correlate an incoming message to a service instance if that instance is not loaded.</span></div>
+<div style="margin:0in 0in 10pt 0.25in;"><span lang="EN" style="font-size:small;font-family:calibri;">The
+<strong>instance lock</strong> indicates whether the service instance is loaded.</span></div>
+<div style="margin:0in 0in 10pt 0.25in;"><span lang="EN" style="font-size:small;font-family:calibri;">The
+<strong>service deployment information</strong> defines how the service is deployed in a IIS/WAS-hosted environment. It consists of site name, application path, service path and service name. Note that the instance store does not contain any deployment information
+ for self-hosted workflows, meaning that the WMS is specifically tailored for IIS hosted services.</span></div>
+<h2 style="margin:10pt 0in 0pt;"><a name="Loading_and_locking"></a><span lang="EN" style="font-size:11pt;font-family:cambria,serif;color:#4f81bd;">Loading and locking</span></h2>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;"><span lang="EN">If a workflow instance is loaded by a Workflow Service Host the persistence store locks that instance, and the instance cannot be loaded by any
+ other service host. If the service host unloads the service instance the lock is released, and the instance can be loaded by a different service host. The new service host may reside on a different machine. This means that a workflow instance can run on multiple
+ machines throughout its lifetime, whenever activation messages arrive. It also means that you can build a machine farm without employing an intelligent message router that remembers which machine is running a particular workflow instance. Instead, the router
+ routes a message to any of the machines in the farm. If the message i 0in 0pt;"><a name="Loading_and_locking"></a><span lang="EN" style="font-size:11pt;font-family:cambria,serif;color:#4f81bd;">Loading and locking</span></h2>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;"><span lang="EN">If a workflow instance is loaded by a Workflow Service Host the persistence store locks that instance, and the instance cannot be loaded by any
+ other service host. If the service host unloads the service instance the lock is released, and the instance can be loaded by a different service host. The new service host may reside on a different machine. This means that a workflow instances correlated to an existing workflow instance, the instance will be loaded by that machine. Casually speaking, the service instance follows the message.</span><span lang="EN" style="font-size:12pt;"></span></span></div>
+<h2 style="margin:10pt 0in 0pt;"><a name="Processing_of_expired_timers"></a><span lang="EN" style="font-size:11pt;font-family:cambria,serif;color:#4f81bd;">Processing of expired timers</span></h2>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;"><span lang="EN">If a workflow instance is executing a delay activity at the time it persists the instance store stores the expiration time of the activity. At
+ the time the activity expires the SQL Workflow Instance Store notifies the Workflow Service Host, which then loads the workflow instance and processes the expired delay activity. If multiple machines are available, the instance may be loaded on any of these
+ machines.</span><span lang="EN" style="font-size:12pt;"></span></span></div>
+<div style="margin:0in 0in 10pt;"><span lang="EN" style="font-size:small;font-family:calibri;">If no Workflow Service Host is running on a particular machine the WMS will activate a host on that machine. This causes the instances of a particular
+ workflow type to be distributed among all machines in the farm.</span></div>
+<h2 style="margin:10pt 0in 0pt;"><a name="Instance_recovery"></a><span lang="EN" style="font-size:11pt;font-family:cambria,serif;color:#4f81bd;">Instance recovery</span></h2>
+<div style="margin:0in 0in 10pt;"><span style="font-size:small;font-family:calibri;"><span lang="EN">If a service host has loaded a workflow instance the Workflow Service Host must renew the instance&#39;s lock on a regular basis. If not renewed
+ on time, the lock expires. An expired lock indicates that the service host or the machine the service host ran on has crashed. In this case another Workflow Service Host will load the instance. If no other Workflow Service Host is running the WMS will activate
+ a host.</span><span lang="EN" style="font-size:12pt;"></span></span></div>
+<div style="margin:0in 0in 10pt;"><span lang="EN" style="font-size:small;font-family:calibri;">If the Workflow Service Host shuts down (e.g., due to an app domain recycle) it releases the locks of all the service instances it has loaded.</span></div>
+
+</div>
+    
+    

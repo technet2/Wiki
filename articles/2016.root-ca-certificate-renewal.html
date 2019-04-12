@@ -1,0 +1,84 @@
+---
+layout: default
+title: Root CA certificate renewal - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="text-align:justify;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Renewal_with_existing_key_pair">Renewal with existing key pair</a></li><li class="hierarchy-item"><a href="#Renewal_with_new_key_pair">Renewal with new key pair</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+In this v class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Root CA certificate renewal</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615_article I will discuss about Root CA certificate renewal with new and existing key pair. At first we discuss about CA certificate renewal with existing key pair.</p>
+<h2 style="text-align:center;"><a name="Renewal_with_existing_key_pair"></a>Renewal with existing key pair</h2>
+<p style="text-align:justify;">When you renew CA certificate with existing key pair, nothing important in certificate is changed. The certificate will contain the same public and private key. As the result all previously issued certificates will chain up to
+ new CA cert without any changes. You just replace old CRT file in AIA download locations. In addition, new CA cert ValidFrom (NotBefore) field will contain the value when existing CA key pair was generated. For example, old CA cert has
+<strong>ValidFrom</strong> (<strong>NotBefore</strong>) = 08.10.2000 and <strong>
+ValidTo</strong> (<strong>NotAfter</strong>) 08.10.2010. When you renew CA cert with existing key pair new certificate will have following values:
+<strong>ValidFrom</strong> (<strong>NotBefore</strong>) 08.10.2000 and <strong>ValidTo</strong> (<strong>NotAfter</strong>) 08.10.2020. In other words this renewal just increases current CA certificate validity period. In addition new CA cert introduces one
+ new extension: <strong>Previous CA certificate hash</strong> that will contains previous certificate Thumbprint extension value. And changes another extension:
+<strong>CA Version</strong>. Let&#39;s take a look to a CA Version extension.</p>
+<p style="text-align:justify;"><strong>CA Version</strong> extension allows to build correct chains in the case when particular CA has more than one certificate. This extension consist of two values:
+<strong>CA Certificate Index</strong> and <strong>CA Key Index</strong>. These values are separated by dot, for example: 0.0, 2.1, 3.3, etc. Each time you renew CA certificate (regardless with existing or new key pair),
+<strong>CA Certificate Index</strong> is increased by 1: 0.0, 1.0, 2.0, etc. Since the key pair remains the same, the
+<strong>CA Key Index</strong> value is not changed. In that case CA will maintain the same CRL&#39;s and clients will be able to chain previously (prior to CA cert renewal) and newly (after CA cert renewal) issued certificates up to new CA certificate. This is
+ because all these client certificates was signed by the same CA signing key and both CA certs produces the same signature for the identical data.</p>
+<p style="text-align:justify;"><strong><span style="color:#ff0000;">Note:</span></strong> after CA cert renewal, new CA cert will not replace previous CA cert, but is another file and adds a certificate index in parenthesises in the file name. For example old
+ cert has a name: <strong>TestCA.crt</strong>, and new cert will have the following name:
+<strong>TestCA(1).crt</strong>. The number and parenthesises are&nbsp;maintained by <strong>
+&lt;CertificateName&gt;</strong> variable in AIA location settings and the number always equals to certificate CA Version extension
+<strong>CA Certificate Index</strong> value (except when you setup new CA. In that case &lt;CertificateName&gt; is ignored).</p>
+<p style="text-align:justify;">As you see, this renewal is quite simple and is recommended for most scenarios unless of the following statements are valid for you:</p>
+<ul>
+<li>CA signing (existing CA key pair) is compromised; </li><li>You have a program that requires a new signing key to be used with a new CA certificate;
+</li><li>The current CRL file is too large and you want to move some revocation information to a new CRL file.
+</li></ul>
+<h2 style="text-align:center;"><a name="Renewal_with_new_key_pair"></a>Renewal with new key pair</h2>
+<p style="text-align:justify;">As we have discussed previous scenario is Ok for most scenarios. However there might be a requirement to renew CA certificate with a new key pair. This renewal type is more complex. Since new key pair is generated many things in
+ the CA cert are changed. For example new public key will produce different <strong>
+Subject Key Identifier</strong> (the hash of public key). When CA issues new certificate it places own certificate
+<strong>Subject Key Identifier</strong> value to a issued certificate <strong>Authority Key Identifier</strong> extension. Actually these extension comparison is used by certificate chaining engine (CCE). As the result previously issued certs will chain up
+ to previous CA cert and newly issued certs will chain up to new CA cert respectively. In addition new CRL is generated. New CRL will contain only those revoked certificates that were signed using renewed CA cert (or signing key) and new CRL file will contain
+ CRL suffix. For example, old CRL has <strong>TestCA.crl</strong> name and new CRL will have new name:
+<strong>TestCA(1).crl</strong>. This CRL suffix is&nbsp;maintained by <strong>&lt;CRLNameSuffix&gt;</strong> variable in CDP location settings and the number always equals to certificate CA Version extension CA Key Index value.</p>
+<p style="text-align:justify;"><strong><span style="color:#ff0000;">Note:</span></strong> unlike CA Certificate Index value, the CA Key Index is not always increased by 1, but is set to CA Certificate Index value. For example, previous CA cert has CA Version
+ extension as 2.0 and new CA cert CA Version extension will have the following value: 3.3.</p>
+<p style="text-align:justify;">To address this issue (when you use new root CA cert, but it is not deployed to all clients yet) Windows CA generates two cross-certificates. First cross-certificate is signed by previous CA signing key and certifies new CA certificate.
+ Certification direction is determined by numbers in parenthesises. In our case one cross-cert will have
+<strong>(0-1)</strong> suffix. Here is an example how this works during certificate chain building:</p>
+<p style="text-align:justify;">1) <strong>PreviousCACert<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LeafPreviousCertificate</strong></p>
+<p style="text-align:justify;">2) <strong>PreviousCACert<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cross-cert(0-1)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LeafNewCertificate</strong></p>
+<p style="text-align:justify;">As you see in these example, by using cross-certificate CCE will be able to construct certification paths for previously and newly (after CA cert renewal) issued certificates, so bothificate is signed by previous CA signing key and certifies new CA certificate.
+ Certification direction is determined by numbers in parenthesises. In our case one cross-cert will have
+<strong>(0-1)</strong> suffix. Here is an example how this works during certificate chain building:</p>
+<p style="text-align:justify;">1) <strong>PreviousCACert<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&n paths chains up to only previous CA certificate
+ (because new CA cert is not deployed yet). In order to chain both paths to a new CA certificate (when new CA cert is deployed and you are ready to remove old CA cert from clients) additional cross-certificate is generated. In that case new CA cert certifies
+ previous CA cert (reverse direction). This direction is shown in the file name parenthesises:
+<strong>(1-0)</strong>. And here are examples how this works:</p>
+<p style="text-align:justify;">3) <strong>NewCACert<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LeafNewCertificate</strong></p>
+<p style="text-align:justify;">4) <strong>NewCACert<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cross-cert(1-0)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LeafPreviousCertificate</strong></p>
+<p style="text-align:justify;">As you see by using these cross-certificates you can maintain only one root CA certificate with ability to build correct chains for any certificate issued by this CA (before and after CA cert renewal with new key pair).
+</p>
+<p style="text-align:justify;">In order to use these cross-certificates you must publish them in you Active Directory forest by running the following commands:</p>
+<p style="text-align:justify;"><span style="color:#804000;">certutil –dspublish –f &lt;CAName(0-1).crt&gt; CrossCA</span></p>
+<p style="text-align:justify;"><span style="color:#804000;">certutil –dspublish –f &lt;CAName(1-0).crt&gt; CrossCA</span></p>
+<p style="text-align:justify;"><strong><span style="color:#ff0000;">Note:</span></strong> replace &lt;CAName(#-#).crt&gt; with actual file names.</p>
+<p style="text-align:justify;">Once you have deployed new CA certificate to clients (it MUST be published to Trusted Root CAs container on client computer) you may remove previous CA certificate from clients. Though it is recommended to not remove old CA certs,
+ because they can be used during file digital signature validation.</p>
+<p style="text-align:justify;">If you are able to deploy new CA cert to all client computers very quickly, you may ignore these cross-certificates or instruct CA server to not generate them by running the following command:</p>
+<p style="text-align:justify;"><span style="color:#804000;">certutil -setreg ca\CRLFlags &#43;CRLF_DISABLE_ROOT_CROSS_CERTS</span></p>
+
+</div>
+    
+    

@@ -1,0 +1,311 @@
+---
+layout: default
+title: Serializing WCF Contract with Object Property - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#WCF_Service">WCF Service 
+ The issue stems with how to handle contracts with object type properties:</a></li><li class="hierarchy-item"><a href="#WCF_Client">WCF Client</a></li><li class="hierarchy-item"><a href="#Initial_observations">Initialnt-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Serializing WCF Contract with Object Property</h1>
+    
+
+    <div class="post-content user-defined-markup"> observations</a></li><li class="hierarchy-item"><a href="#Adding_a_new_class">Adding a new class</a></li></ul><div class="hierarchy-list-footer"> </div></div><span style="font-size:14px;">​</span></p>
+<h1><span style="font-size:14px;"><a name="Introduction"></a>Introduction</span></h1>
+<p>This sample project is posted in reply to the forum post: <a href="http://social.msdn.microsoft.com/Forums/en-US/554a7c1c-cea7-4743-ad4f-7845da2e9683/sending-xml-string-to-generated-webservice-proxy-stub">
+http://social.msdn.microsoft.com/Forums/en-US/554a7c1c-cea7-4743-ad4f-7845da2e9683/sending-xml-string-to-generated-webservice-proxy-stub</a>.<br />
+<br />
+</p>
+<h1><a name="WCF_Service"></a><span><strong><span style="font-size:14px;">WCF Service<br />
+</span></strong></span><span style="color:#333333;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:12.1px;">The issue stems with how to handle contracts with object type properties:</span></h1>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.DataMemberAttribute(IsRequired=</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">)]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">object</code> <code style="color:#000000;">
+richPresenceField {</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">get</code>
+<code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.richPresenceFieldField;</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">set</code>
+<code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">((</code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">.ReferenceEquals(</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.richPresenceFieldField,
+ value) != </code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">)) {</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.richPresenceFieldField = value;</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.RaisePropertyChanged(</code><code style="color:blue;">&quot;richPresenceField&quot;</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>To illustrate, I created a WCF Service using the Visual Studio template and then modified the default service to return the contract provided in the forum post.&nbsp; The class setPresence contains a property that has the richPresenceField shown above.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[ServiceContract]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">interface</code> <code style="color:#000000;">
+IService1</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[OperationContract]</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">GetData(</code><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">value);</code></span></div>
+<div style="background-color:#ffffff;"><span></span></div>
+<div style="background-color:#;"><span><code style="color:#000000;">[ServiceContract]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;fonf8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[OperationContract]</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">setPresence GetPresence(setPresence composite);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>I wanted my implementation to be a little interesting so I added a couple of changes.&nbsp; In general, the service just echos what it receives but I wanted to add a class that was included in the original contract and introduce a new contract that I manually
+ added to the service.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">setPresence GetPresence(setPresence presence)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(presence == </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+ArgumentNullException(</code><code style="color:blue;">&quot;setPresence&quot;</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(presence.presenceInfo.richPresence </code><code style="color:#006699;font-weight:bold;">is</code>
+<code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#008200;">// if a string is sent then try to parse and return as</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#008200;">// an int to illustrate that the type can change</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">value;</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">.TryParse(((</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">) presence.presenceInfo.richPresence),
+</code><code style="color:#006699;font-weight:bold;">out</code> <code style="color:#000000;">
+value))</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">presence.presenceInfo.richPresence = value;</code></span></div>
+<div style="background-color:#ffffff;"><span></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#008200;">// return out a new setPresence</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">if</code><code style="color:#000000;">(value==4)</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">presence.presenceInfo.richPresence =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+setPresence { expiration = 4, presenceType = </code><code style="color:blue;">&quot;test presence&quot;</code>
+<code style="color:#000000;">};</code></span></div>
+<div style="background-color:#ffffff;"><span></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#008200;">// return out a new MyClass</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(value == 5)</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">presence.presenceInfo.richPresence =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+MyOtherClass</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">AnIntWithAnotherName = 3,</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">MyStringCollection =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#006699;font-weight:bold;">
+string</code><code style="color:#000000;">[] {</code><code style="color:blue;">&quot;avalue&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;and another&quot;</code><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">};</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">presence;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<strong>
+<h1><a name="WCF_Client"></a><span style="font-size:14px;"><br />
+<strong>WCF Client</strong></span></h1>
+</strong>The proxy was initially generated in a normal console app using Add Service Reference.&nbsp; This created the proxy as expected and added the following known types to the proxy (note the service was added as
+<em>funnyservice</em> so the namespace was created as <em>FunnyClient.funnyservice</em>):
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Diagnostics.DebuggerStepThroughAttribute()]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.CodeDom.Compiler.GeneratedCodeAttribute(</code><code style="color:blue;">&quot;System.Runtime.Serialization&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;4.0.0.0&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.DataContractAttribute(Name=</code><code style="color:blue;">&quot;PresenceInfoType&quot;</code><code style="color:#000000;">, Namespace=</code><code style="color:blue;">&quot;<a href="http://schemas.datacontract.org/2004/07/FunnySerialisation">http://schemas.datacontract.org/2004/07/FunnySerialisation</a>&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.SerializableAttribute()]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(FunnyClient.funnyservice.setPresence))]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.MulticastDelegate))]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.Delegate))]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.ComponentModel.PropertyChangedEventHandler))]&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">partial</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">PresenceInfoType : </code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">, System.Runtime.Serialization.IExtensibleDataan></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.Delegate))]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><codeObject, System.ComponentModel.INotifyPropertyChanged {</code></span></div>
+</div>
+<p>In my client I created a little helper method that returns an setPresence object that contains the object I am trying to verify:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#000000;">
+setPresence BuildSimplePresence(</code><code style="color:#006699;font-weight:bold;">object</code>
+<code style="color:#000000;">content)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+setPresence</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">expirationField = 100,</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">presenceInfoField =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+PresenceInfoType</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">basicPresenceField =
+</code><code style="color:blue;">&quot;basic&quot;</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">richPresenceField = content</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">},</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">presenceTypeField =
+</code><code style="color:blue;">&quot;a type of presence&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">};</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<strong>
+<h1><strong><a name="Initial_observations"></a><span style="font-size:14px;"><br />
+Initial observations</span></strong></h1>
+</strong>Without making any changes to the proxy or service contracts, the datacontract serializer will allow us to send the richPresenceField as a base type (e.g., int, string, etc) or to a setPresence object.&nbsp; This is shown and validated in the statements
+ below (Note, I validated the result in the debugger):
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var presence = client.GetPresence(BuildSimplePresence(</code><code style="color:blue;">&quot;some simple content that will be encoded &lt;here&gt; and &lt;there&gt;.&quot;</code><code style="color:#000000;">));</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">presence = client.GetPresence(BuildSimplePresence(</code><code style="color:blue;">&quot;12202&quot;</code><code style="color:#000000;">));</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">presence = client.GetPresence(BuildSimplePresence(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">setPresence { expirationField = 1 } ));</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">presence = client.GetPresence(BuildSimplePresence(</code><code style="color:blue;">&quot;4&quot;</code><code style="color:#000000;">));</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">presence = client.GetPresence(BuildSimplePresence(</code><code style="color:blue;">&quot;5&quot;</code><code style="color:#000000;">));</code></span></div>
+</div>
+<strong>
+<h1><strong><a name="Adding_a_new_class"></a><span style="font-size:14px;"><span style="font-size:8px;">​</span><br />
+Adding a new class</span></strong></h1>
+</strong>I wanted to do something a little more interesting that hopefully illustrates the disconnect between client and server and provide some insight into serialization.&nbsp; In my service I added a new class (Note how the class name and first member name do
+ not match the contract name):
+<div class="reCbackground-color:#ffffff;"><span><code style="color:#000000;">presence = client.GetPresence(BuildSimplePresence(</code><code style="color:blue;">&quot;4&quot;</code><code style="color:#000000;">));</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#odeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.CodeDom.Compiler.GeneratedCodeAttribute(</code><code style="color:blue;">&quot;System.Xml&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;4.0.30319.18046&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.SerializableAttribute()]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.ComponentModel.DesignerCategoryAttribute(</code><code style="color:blue;">&quot;code&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Runtime.Serialization.DataContractAttribute(Name =
+</code><code style="color:blue;">&quot;PresenceInfoType&quot;</code><code style="color:#000000;">, Namespace =
+</code><code style="color:blue;">&quot;<a href="http://schemas.datacontract.org/2004/07/FunnySerialisation">http://schemas.datacontract.org/2004/07/FunnySerialisation</a>&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Xml.Serialization.XmlTypeAttribute(AnonymousType =
+</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">, Namespace =
+</code><code style="color:blue;">&quot;urn:somecompany:presence:soap&quot;</code><code style="color:#000000;">, TypeName =
+</code><code style="color:blue;">&quot;MyClass&quot;</code><code style="color:#000000;">)]&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+MyOtherClass</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#808080;">/// &lt;remarks/&gt;</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Xml.Serialization.XmlElementAttribute(Order = 0, ElementName =
+</code><code style="color:blue;">&quot;MyIntValue&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Runtime.Serialization.DataMember()]</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">int</code> <code style="color:#000000;">
+AnIntWithAnotherName { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Xml.Serialization.XmlElementAttribute(Order = 0)]</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Runtime.Serialization.DataMember()]</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">[] MyStringCollection {
+</code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>I also had to inform datacontractserializer to expect these type of objects by inserting the knowntypeattribute:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.CodeDom.Compiler.GeneratedCodeAttribute(</code><code style="color:blue;">&quot;System.Xml&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;4.0.30319.18046&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.SerializableAttribute()]&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.ComponentModel.DesignerCategoryAttribute(</code><code style="color:blue;">&quot;code&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Xml.Serialization.XmlTypeAttribute(Namespace =
+</code><code style="color:blue;">&quot;urn:somecompany:presence:soap&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(MyOtherClass))]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">partial</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">PresenceInfoType : </code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">, System.ComponentModel.INotifyPropertyChanged</code></span></div>
+</div>
+<p>Without updating the proxy, I then manually added a class that has the same contract definition
+<strong>but different class structure</strong>:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.CodeDom.Compiler.GeneratedCodeAttribute(</code><code style="color:blue;">&quot;System.Xml&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;4.0.30319.18046&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.SerializableAttribute()]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.ComponentModel.DesignerCategoryAttribute(</code><code style="color:blue;">&quot;code&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Xml.Serialization.XmlTypeAttribute(AnonymousType =
+</code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">, Namespace =
+</code><code style="color:blue;">&quot;urn:somecompany:presence:soap&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.DataContractAttribute(Name =
+</code><code style="color:blue;">&quot;PresenceInfoType&quot;</code><code style="color:#000000;">, Namespace =
+</code><code style="color:blue;">&quot;<a href="http://schemas.datacontract.org/2004/07/FunnySerialisation">http://schemas.datacontract.org/2004/07/FunnySerialisation</a>&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+MyClass</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#808080;">/// &lt;remarks/&gt;</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Xml.Serialization.XmlElementAttribute(Order = 0, Namespace =
+</code><code style="color:blue;">&quot;urn:somecompany:presence:soap&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Runtime.Serialization.DataMember()]</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">int</code> <code style="color:#000000;">
+MyIntValue { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Xml.Serialization.XmlElementAttribute(Order = 0, Namespace =
+</code><code style="color:blue;">&quot;urn:somecompany:presence:soap&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">[System.Runtime.Serialization.DataMember()]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">[] MyStringCollection {
+</code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></div>
+<div style="background-color:#f8f8f8;"><span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>And, I need to let the proxy (Reference.cs) know about this&nbsp; new type:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Diagnostics.DebuggerStepThroughAttribute()]</code>e.Serialization.DataMember()]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#ffffff;"><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">string</code><code style="colo</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.CodeDom.Compiler.GeneratedCodeAttribute(</code><code style="color:blue;">&quot;System.Runtime.Serialization&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;4.0.0.0&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.DataContractAttribute(Name=</code><code style="color:blue;">&quot;PresenceInfoType&quot;</code><code style="color:#000000;">, Namespace=</code><code style="color:blue;">&quot;<a href="http://schemas.datacontract.org/2004/07/FunnySerialisation">http://schemas.datacontract.org/2004/07/FunnySerialisation</a>&quot;</code><code style="color:#000000;">)]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.SerializableAttribute()]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(FunnyClient.funnyservice.setPresence))]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.MulticastDelegate))]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.Delegate))]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(System.ComponentModel.PropertyChangedEventHandler))]</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">[System.Runtime.Serialization.KnownTypeAttribute(</code><code style="color:#006699;font-weight:bold;">typeof</code><code style="color:#000000;">(MyClass))]&nbsp;&nbsp;&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">partial</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">PresenceInfoType : </code><code style="color:#006699;font-weight:bold;">object</code><code style="color:#000000;">, System.Runtime.Serialization.IExtensibleDataObject, System.ComponentModel.INotifyPropertyChanged {</code></span></div>
+</div>
+<p>This then allows for the following message to be sent (and echoed):</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">presence = client.GetPresence(BuildSimplePresence(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">MyClass { MyIntValue = 4, MyStringCollection = </code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#006699;font-weight:bold;">
+string</code><code style="color:#000000;">[] { </code><code style="color:blue;">&quot;test1&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;test2&quot;</code> <code style="color:#000000;">}}));</code></span></div>
+</div>
+<p>Hope this is helpful.</p>
+
+</div>
+    
+    

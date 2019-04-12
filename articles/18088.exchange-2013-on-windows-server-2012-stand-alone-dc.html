@@ -1,0 +1,167 @@
+---
+layout: default
+title: Exchange 2013 on Windows Server 2012 (Stand Alone DC) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Prepare_Schema">Prepare Schema:</a></li><li class="hierarchy-item"><a href="#Installing_Windows_Features_using_Exchange_Server_TwentyThirteen_Setup_Wizard">Installing Windows Features using Exchange Server 2013 Setup Wizard</a></li><li class="hdiv></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Exchange 2013 on Windows Server 2012 (Stand Alone DC)</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-iteierarchy-item"><a href="#Microsoft_Filter_Pack_and_Exchange_Server_TwentyThirteen">Microsoft Filter Pack and Exchange Server 2013…</a></li><li class="hierarchy-item"><a href="#User_Account_Settings_and_Exchange_Server_TwentyThirteen_deployment">User Account Settings and Exchange Server 2013 deployment…</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<br />
+In this article I have explained step by step installation of Exchange 2013 on windows server 2012 standalone server (DC server: Though not recommended) its just a Lab environment, following steps will save a lot of time and error free installation.<br />
+<br />
+<em>&quot;Exchange Server 2013 is bringing a lot of exciting new features which deserve several articles to describe each one of them in detail.<br />
+</em>
+<ol style="text-align:left;">
+<li><em>New Architecture<br />
+There are only two roles now: Mailbox and Client Access. The new Mailbox role will contain all components of CAS/HUB/Mailbox and UM comparing with Exchange Server 2010 roles and it will handle all processes for any given mailbox. The new CAS will proxy, authenticate
+ and redirect requests. Just by doing this change the future upgrades will be easier, since there is no translation work being done at CAS. The NLB is much simpler as well, because we need only Layer 4 level on our Load Balancers.
+</em></li><li><em>Management Tools<br />
+Exchange Management Console is gone, the two ways that we have to manage the product is using either Exchange Management Shell or the web interface EAC (Exchange Admin Center).
+</em></li><li><em>Outlook client<br />
+Because of the architectural change, the product has changed how the clients will connect to the server. The decision was to remove MAPI and use only Outlook Anywhere (RPC over HTTP).
+</em></li><li><em>Public Folders and Collaboration<br />
+They are back and with cool new features, such as: new replication method using a single-master replication model. In this new release we will also have a Site Mailbox which is a feature that will integrate Mailbox and SharePoint information in a single location
+ for the end-user.&quot; [<a href="http://www.msexchange.org/articles-tutorials/exchange-server-2013/migration-deployment/deploying-exchange-server-2013-part1.html">msexchange.org (part1)</a>]</em>
+</li></ol>
+<p>whatever the size of your VMware machine, but for production you need atleast 8 GB RAM,</p>
+<p><strong><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3286.A1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3286.A1.png" style="border-width:0px;border-style:solid;" /></a></strong></p>
+<strong></strong>
+<div style="line-height:normal;margin-bottom:0pt;"><span lang="EN-US" style="font-size:20pt;font-family:&#39;Calibri Light&#39;,sans-serif;color:black;">&nbsp;</span><span style="color:black;">&nbsp;After prereqs... Installing windows server 2012 on your test
+ machine (hyper v or VMware machine), ADDS, and then promoting as a DC (not recommended by MS), static Ip, Update and a domain.
+</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:black;">Exchange Setup (extract to a folder) and then follow step by step:<br />
+<br />
+</span></div>
+<h2><a name="Prepare_Schema"></a><strong>Prepare Schema:</strong></h2>
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/45853.1.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/45853.1.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+Prepare AD &amp; Organization Name *(in this case PirExchange)<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2210.3.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2210.3.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Accept License agreement Always<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0535.5.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0535.5.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Preparing domain<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2450.6.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2450.6.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+installing feature in windows Power shell (Tip: use&nbsp; cd.. )<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2425.8.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2425.8.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<h2 style="text-align:left;"><a name="Installing_Windows_Features_using_Exchange_Server_TwentyThirteen_Setup_Wizard"></a><strong>Installing Windows Features using Exchange Server 2013 Setup Wizard</strong></h2>
+<strong></strong>
+<p style="text-align:left;"><em>&quot;If you don’t want to type in too much information in PowerShell, you can use this lazy approach that will have the same result:</em></p>
+<ol style="text-align:left;">
+<li><em>Install Desktop Experience on the server by running the following cmdlet:<br />
+Add-WindowsFeature Desktop-Experience (figure below)<br />
+Note: This feature is a requirement to install Microsoft Unified Communications Managed API 4.0&quot;</em><strong><em>&nbsp;[<a href="http://www.msexchange.org/articles-tutorials/exchange-server-2013/migration-deployment/deploying-exchange-server-2013-part1.html">msexchange.org
+ (part 1)</a>]</em></strong> </li></ol>
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.10.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.10.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Simple next nextrShell, you can use this lazy approach that will have the same result:</em></p>
+<ol style="text-align:left;">
+<li><em>Install Desktop Experience on the server by running the following cmdlet:<br />
+Add-WindowsFeature Desktop-Experience (figure below)<br />
+Note: This feature is a requirement to install Microsoft Unified Communications Managed API 4.0&quot;</em><strong><em>&nbsp;[<a href="http://www.msexchange.org/articles-tutorials/exchange-server-2013/migration-deployment/deploying-exchange-server-2013-part1.html">msexchange.org
+ (part 1)</a>]</em></strong> </li></ol>
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.10.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.10.png" style="border-width:0px;border-style:solid;" /></a><br /> done:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2664.13.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2664.13.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<h2 style="text-align:left;"><a name="Microsoft_Filter_Pack_and_Exchange_Server_TwentyThirteen"></a><strong>Microsoft Filter Pack and Exchange Server 2013…</strong></h2>
+<strong></strong>
+<p style="text-align:left;"><em>&quot;Finally, we have the Microsoft Filter pack dilemma and it has changed in this new version. Exchange Server 2013 uses a new search engine however the Filter Pack is still required when you want to use Transport Rules for either
+ Office OneNote or Publisher files.</em></p>
+<p style="text-align:left;"><em>It’s up to you as it doesn’t hurt to install it. I would recommend going ahead and installing it on Exchange Server 2013 that will have the Mailbox server role deployed.</em></p>
+<p style="text-align:left;"><em>The installation is a straight forward process and the only decision making is during the license agreement portion of the package which is not challenging at all.&quot;</em><strong>&nbsp;</strong><em style="font-weight:bold;">[<a href="http://www.msexchange.org/articles-tutorials/exchange-server-2013/migration-deployment/deploying-exchange-server-2013-part1.html">msexchange.org
+ (part 1)</a>]</em></p>
+<strong><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2480.15.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2480.15.png" style="border-width:0px;border-style:solid;" /></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5775.15.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5775.15.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7585.17.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7585.17.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+</strong>
+<h2 style="text-align:left;"><a name="User_Account_Settings_and_Exchange_Server_TwentyThirteen_deployment"></a><strong>User Account Settings and Exchange Server 2013 deployment…</strong></h2>
+<strong></strong>
+<p style="text-align:left;"><em>&quot;Just a follow up in this area, if you use UAC (User Account Settings) make sure that you right-click on the setup.exe installation from Exchange and run it as Administrator (Figure below).&quot;&nbsp;</em><strong style="font-weight:bold;">&nbsp;</strong><em style="font-weight:bold;">[<a href="http://www.msexchange.org/articles-tutorials/exchange-server-2013/migration-deployment/deploying-exchange-server-2013-part1.html">msexchange.org
+ (part 1)</a>]</em></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2350.18.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2350.18.png" style="border-width:0px;border-style:solid;" /></a><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5488.18.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5488.18.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+if you have internet click connect else dont check updates right now.<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8272.19.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8272.19.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+accept agreement and click next on introduction page and setup will start \ (GUI mode)<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.31.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7774.31.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2234.32.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2234.32.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0081.33.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0081.33.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7360.34.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7360.34.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<em>&quot;On the Malware Protection Settings page (Figure below). That is a new feature of Exchange Server 2013, where we have Malware protection and this option can be managed through Exchange Administration Center or Exchange Management Shell afterwards. Let’s
+ leave the default settings and click Next.&quot; [<a href="http://www.msexchange.org/articles-tutorials/exchange-server-2013/migration-deployment/deploying-exchange-server-2013-part2.html">msexchange.org (part 2)</a>]</em><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4846.35.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4846.35.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4572.36.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4572.36.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Since as I mentioned earlier MS doesn&#39;t recommend installing exchange 2013 on DC, however I have done and its work fine for me in LAB environment ) but mind you in production environment it may create headaches in administration.<br />
+<br />
+<strong>Click Install</strong><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6862.37.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6862.37.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0535.38.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0535.38.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6886.20.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6886.20.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5657.21.png" style="font-weight:bold;"><img alt=" solid;" /></a><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0535.38.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0535.38.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6886.20.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/res" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5657.21.png" style="border-width:0px;border-style:solid;" /></a><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7140.22.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7140.22.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+there you go restart &amp; now you will see Exchange Management Shell &amp; Exchange toolbox
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6505.24.png" style="font-weight:bold;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6505.24.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Post configuration tasks are coming soon.<br />
+Cheers!<br />
+<br />
+
+</div>
+    
+    

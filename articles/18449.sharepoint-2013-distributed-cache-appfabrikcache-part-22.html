@@ -1,0 +1,161 @@
+---
+layout: default
+title: SharePoint 2013&#58; Distributed Cache (AppFabrikCache) part 2/2 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Debug_of_Cache">Debug of Cache</a></li><li class="hierarchy-item"><a href="#serviceInstance_Unprovision">$servdiv class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SharePoint 2013: Distributed Cache (AppFabrikCache) part 2/2</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class=iceInstance.Unprovision()</a></li><li class="hierarchy-item"><a href="#Allocate_Memory_on_Distributed_Cache_Service">Allocate Memory on Distributed Cache Service</a></li><li class="hierarchy-item"><a href="#Change_the_Memory_allocation">Change the Memory allocation</a></li><li class="hierarchy-item"><a href="#Add_or_Delete_a_server_on_a_Distributed_Cache_Cluster">Add or Delete a server on a Distributed Cache Cluster</a></li><li class="hierarchy-item"><a href="#Graceful_shutdown_of_the_Distributed_Cache_Service">Graceful shutdown of the Distributed Cache Service</a></li><li class="hierarchy-item"><a href="#Change_the_Managed_Account">Change the Managed Account</a></li><li class="hierarchy-item"><a href="#Repair_a_Cache_host">Repair a Cache host</a></li><li class="hierarchy-item"><a href="#What_you_need_to_retain_Summary">What you need to retain? (Summary)</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<p>Hi,</p>
+<p>A few weeks ago I wrote an article about AppFabric Cache aka Distributed Cache. It’s time to continue about AppFabric Cache. If you didn’t read the previous article please hit the following link:
+<a href="https://gokanx.wordpress.com/2013/06/15/distributed-cache-appfabrikcache-on-sharepoint-server-2013-part-12/">
+https://gokanx.wordpress.com/2013/06/15/distributed-cache-appfabrikcache-on-sharepoint-server-2013-part-12/</a></p>
+<p>A little reminder about AppFabric Cache: This new way of caching was originally based on the “Cloud” of Microsoft (Azure) but has been integrated on the On Premise systems of Microsoft. The Distributed Cache can be deployed on 2 different ways</p>
+<ul>
+<li>Dedicated Mode </li><li>Collocated Mode </li></ul>
+<p>On the dedicated mode only this service is running on the application server and all other services are stopped who is hosting the AppFabric Cache Service.</p>
+<p>On The Collocated mode the Distributed Cache is running with all other Service Applications on the Application Server. This is the recommended mode for deploying Distributed Cache.</p>
+<h2><a name="Debug_of_Cache"></a>Debug of Cache</h2>
+<p><span style="text-decoration:underline;">Via Central Administration:</span></p>
+<ul>
+<li>Open Central Administration and hit <strong>Application Management</strong> </li><li>From Service Applications, hit <strong>Manage Services on Server</strong> </li><li>Select <strong>Distributed Cache Service</strong> </li><li>Hit <strong>START</strong> or <strong>STOP</strong> to start or stop your service
+</li></ul>
+<p><span style="text-decoration:underline;">Via PowerShell:</span></p>
+<p>At the Windows PowerShell command prompt, run the following command:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$instanceName = “SPDistributedCacheService Name = AppFabricCachingService”
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$serviceInstance = Get-SPServiceInstance | ? {( $_.service.tostring()) –eq $instanceName –and ($_.server.name) –eq $env:computername
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$serviceInstance.Provision()
+</code></span></div>
+</div>
+<p>OR</p>
+<h2><a name="serviceInstance_Unprovision"></a>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;"><span style="font-size:12px;">$serviceInstance.Unprovision()</span>
+</code></span></div>
+</div>
+</h2>
+<h2>&nbsp;</h2>
+<h2><a name="Allocate_Memory_on_Distributed_Cache_Service"></a>Allocate Memory on Distributed Cache Service</h2>
+<p>When SharePoint Server 2013 is installed, 10% of the total physical memory is allocated. The Distributed Cache service use 50% of this memory as storage and the other to manage the memory.</p>
+<p>This cache size can be increased when:</p>
+<ul>
+<li>You add more memory on the Server
+<ul>
+<li>Be aware; when you add memory to the server, the Distributed Cache isn’t updating by himself. You need to reconfigure the Cache Size.
+</li></ul>
+</li></ul>
+<ul>
+<li>If you have a dedicated caching server
+<ul>
+<li>You should calculate it so&nbsp;:
+<ul>
+<li>Determine the total sum of physical memory. Let’s take the example that your server has 16GB of memory.
+</li><li>You have to book 2GB of memory for other processes. So this means 16GB – 2GB = 14GB
+</li><li>Now we have to take the half of this amount and that size is our AppFabric Cache Size&nbsp;: 14GB / 2 = 7GB
+</li><li>Again, as said on the previous post&nbsp;; the total size of memory should never be more than 16GB
+</li></ul>
+</li></ul>
+</li></ul>
+<h2><a name="Change_the_Memory_allocation"></a>Change the Memory allocation</h2>
+<p>Use this procedure to reconfigure the memory allocation of Cache Size<br />
+<br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Use-CacheCluster
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Get-APCacheHostConfiguration –ComputerName –CachePort « 22233 »</code></span></div>
+</div>
+<p>Or</p>
+<ul>
+<li><strong>Stop</strong> the service via <strong>Central Administration</strong>
+</li><li>Update-SPDistributedCacheSize –CacheSizeInMB CacheSize
+<ul>
+<li>If we take our example&nbsp;; you have to fill 7000 MB for a server who has 16GB or RAM
+</li></ul>
+</li><li><strong>Start</strong> the service via <strong>Central Administration</strong>
+</li></ul>
+<h2><a name="Add_or_Delete_a_server_on_a_Distributed_Cache_Cluster"></a>Add or Delete a server on a Distributed Cache Cluster</h2>
+<p>When you want to <strong>delete</strong> an AppFabric Server from the cluster, be aware that the service is stopped from the
+<strong>Central Administration </strong>and then execute the folling commands via PowerShell:<br />
+<br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Adding: Add-SPDistributedCacheServiceInstance
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Deleting: Remove- SPDistributedCacheServiceInstance
+</code></span></div>
+<br />
+</div>
+<h2>&nbsp;</h2>
+<h2><a name="Graceful_shutdown_of_the_Distributed_Cache_Service"></a>Graceful shutdown of the Distributed Cache Service</h2>
+<p>In SharePoint 2013, a cluster cache exists when one or many machines are running the Distributed Cache Service.</p>
+<p>When you have to do maintenance on your platform, the possibility exists that you have to remove a server from the Distributed Cache Cluster.</p>
+<p>You have to run the following command (graceful) on the server that you want to remove.</p>
+<div class="reCodeBlock" style="border:1px solid he folling commands #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Stop-SPDistributedCacheServiceInstance – Graceful
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Remove-SPDistributedCacheServiceInstance
+</code></span></div>
+</div>
+<p>This operation can take more than 15 minutes. The graceful option will prevent losing any data.</p>
+<h2><a name="Change_the_Managed_Account"></a>Change the Managed Account</h2>
+<p>When SharePoint Server 2013 is installed the Managed Account of Distributed Cache is the same as the Installation Account (PEGASUS\SPInstall_GA). You can change this with Powershell commands:</p>
+<h2>&nbsp;</h2>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$farm = Get-SPFarm
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$cacheService = $farm.Services | where {$_.Name –eq “AppFabricCachingService”}
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$account = Get-SPManagedAccount –Identity Pegasus\USER_NAME
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$cacheService.ProcessIdentity.CurrentIdentityType = “USER”
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$cacheService.ProcessIdentity.ManagedAccount = $account
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$cacheService.ProcessIdentity.Update()
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$CacheService.ProcessIdentity.Deploy()
+</code></span></div>
+</div>
+<h2>&nbsp;</h2>
+<h2>&nbsp;</h2>
+<h2><a name="Repair_a_Cache_host"></a>Repair a Cache host</h2>
+<p>After an installation or maintenance of your cluster, the Distributed Cache can be non-operational. You can repair this again with PowerShell:<br />
+<br />
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$Get-SPServiceInstance
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">$var = Get-SPServiceInstance GUID OF APPFABRICK
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$var.delete()
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Add-SPDistributedCacheServiceInstance
+</code></span></div>
+</div>
+<h2><a name="What_you_need_to_retain_Summary"></a>What you need to retain? (Summary)</h2>
+<ul>
+<li>Do not give more than 16GB for you Distributed Cache Service and not more than 16 machines for your cluster
+</li><li>Pray attention when changing anything and use the Graceful option to prevent data loss
+</li><li>Never give Dynamic memory but always static memory </li><li>Never ignore alerts in Health Analyzer </li></ul>
+<br />
+Please read here the part 1:&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/17900.sharepoint-2013-distributed-cache-appfabrikcache-part-12.aspx">http://social.technet.microsoft.com/wiki/contents/articles/17900.sharepoint-2013-distributed-cache-appfabrikcache-part-12.aspx</a>
+
+</div>
+    
+    

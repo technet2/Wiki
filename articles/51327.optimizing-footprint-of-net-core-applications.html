@@ -1,0 +1,193 @@
+---
+layout: default
+title: Optimizing footprint of .NET Core applications - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+A <span style="font-weight:700;">linker</span> is, in general, a program (tool) used in application compiling process to incorporate together all required program artifacts (DLLs, assemblies, libraries, etc.) needed for an executable program.<br />
+The .NET core team is working on a .NET IL Linker version, with the goal to reduce the size of .NET Core applications. If you remember, a similar approach was used by .NET native several years ago. Making application footprint small is in many scenarios not
+ really required. But when a .NET application has to be downloaded before execution, it is good to have a smaller footprint. For example, when an application is downloaded from an application store. Interestingly Microsoft is working on a project called &quot;Blazor&quot;,
+ which will leverage WebAssembly format to execute .NET code in a browser. Because applications, which run in a browser, first have to be downloaded, the footprint of the application does matter in this scenario too.<br />
+To recap, when using <em>.NET IL linker</em>, we want to create application footprint as small as possible.</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+To demonstrate linker in action, we have used an existing .NET Core 2.0 application. It is in this context an example application, a CLI command line toll inside of daenet IoTService platform.</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+Used following command line to build and publish the executable:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<pre style="background:none 0% 0% repeat scroll #f5f5f5;border:0px none #333333;font-family:Monaco,monospace,sans-serif;font-size:12.8px;letter-spacing:0.1px;line-height:20.48px;margin-bottom:10px;margin-top:0px;overflow:auto;padding:0px;position:relative;"><code style="background:none 0% 0% repeat scroll transparent;border:0px none #333333;font-family:Monaco,monospace,sans-serif;padding:0px;white-space:pre-wrap;"> publish -c release -r win-x64 -o out
+</code></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+This is nothing new. It creates an application with s called framework independent deployment (FID). Next we added a new NuGet configuration to the project:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<pre style="background:none 0% 0% repeat scroll #f5f5f5;border:0px none #333333;font-family:Monaco,monospace,sans-serif;font-size:12.8px;letter-spacing:0.1px;line-height:20.48px;margin-bottom:10px;margin-top:0px;overflow:auto;padding:0px;position:relative;"><code style="background:none 0% 0% repeat scroll transparent;border:0px none #333333;font-family:Monaco,monospace,sans-serif;padding:0px;white-space:pre-wrap;">dotnet new nuget
+</code></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+, and finally pasted following in the newly created NuGet configuration:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<pre class="language-xml code-toolbar" style="background:none 0% 0% repeat scroll #f5f2f0;border:0px none #000000;color:#000000;font-family:Monaco,monospace,sans-serif;font-size:12.8px;letter-spacing:0.1px;line-height:20.48px;margin-bottom:6.4px;margin-top:6.4px;overflow:auto;padding:0px;position:relative;"><code class="language-xml" style="background:none 0% 0% repeat scroll transparent;border:0px none #000000;font-family:Monaco,monospace,sans-serif;line-height:19.2px;padding:0px;"> <span class="token prolog" style="background:none 0% 0% repeat scroll transparent;color:#708090;">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</span>
+<span class="token tag" style="background:none 0% 0% repeat scroll transparent;color:#990055;"><span class="token tag" style="background:none 0% 0% repeat scroll transparent;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&lt;</span>configuration</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&gt;</span></span>
+  <span class="token tag" style="background:none 0% 0% repeat scroll transparent;color:#990055;"><span class="token tag" style="background:none 0% 0% repeat scroll transparent;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&lt;</span>packageSources</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&gt;</span></span>
+    <span class="token tag" style="background:none 0% 0% repeat scroll transparent;color:#990055;"><span class="token tag" style="background:none 0% 0% repeat scroll transparent;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&lt;</span>add</span> <span class="token attr-name" style="background:none 0% 0% repeat scroll transparent;color:#669900;">key</span><span class="token attr-value" style="background:none 0% 0% repeat scroll transparent;color:#0077aa;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">=</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span>dotnet-core<span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span></span> 
+    <span class="token attr-name" style="background:none 0% 0% repeat scroll transparent;color:#669900;">value</span><span class="token attr-value" style="background:none 0% 0% repeat scroll transparent;color:#0077aa;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">=</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span>https://dotnet.myget.org/F/dotnet-core/api/v3/index.json<span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span></span> <span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">/&gt;</span></span>
+  <span class="token tag" style="background:none 0% 0% repeat scroll transparent;color:#990055;"><span class="token tag" style="background:none 0% 0% repeat scroll transparent;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&lt;/</span>packageSources</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&gt;</span></span>
+<span class="token tag" style="background:none 0% 0% repeat scroll transparent;color:#990055;"><span class="token tag" style="background:none 0% 0% repeat scroll transparent;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&lt;/</span>configuration</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&gt;</span></span>
+</code><div class="toolbar" style="background:none 0% 0% repeat scroll transparent;position:absolute;right:2.56px;top:3.84px;"><div class="toolbar-item" style="background:none 0% 0% repeat scroll transparent;display:inline-block;"><span style="padding:0px 5.13px;font-size:10px;color:#bbbbbb;">XML</span></div><div class="toolbar-item" style="background:none 0% 0% repeat scroll transparent;display:inline-block;"><a style="color:#bbbbbb;font-size:10.26px;padding:0px 5.13px;">Copy</a></div></div></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+Please not the URI of .NET Core API feed v3:<a href="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" style="color:#36a1e7;"> https://dotnet.myget.org/F/dotnet-core/api/v3/index.json</a>. This feed contains the linker NuGet package
+<em>ILLink.Task</em></p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<pre class="language-xml code-toolbar" style="background:none 0% 0% repeat scroll #f5f2f0;border:0px none #000000;color:#000000;font-family:Monaco,monospace,sans-serif;font-size:12.8px;letter-spacing:0.1px;line-height:20.48px;margin-bottom:6.4px;margin-top:6.4px;overflow:auto;padding:0px;position:relative;"><code class="language-xml" style="background:none 0% 0% repeat scroll transparent;border:0px none #000000;font-family:Monaco,monospace,sans-serif;line-height:19.2px;padding:0px;">   <span class="token tag" style="background:none 0% 0% repeat scroll transparent;color:#990055;"><span class="token tag" style="background:none 0% 0% repeat scroll transparent;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&lt;</span>PackageReference</span> <span class="token attr-name" style="background:none 0% 0% repeat scroll transparent;color:#669900;">Include</span><span class="token attr-value" style="background:none 0% 0% repeat scroll transparent;color:#0077aa;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">=</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span>ILLink.Tasks<span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span></span> <span class="token attr-name" style="background:none 0% 0% repeat scroll transparent;color:#669900;">Version</span><span class="token attr-value" style="background:none 0% 0% repeat scroll transparent;color:#0077aa;"><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">=</span><span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span>0.1.4-preview-906439<span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">&quot;</span></span> <span class="token punctuation" style="background:none 0% 0% repeat scroll transparent;color:#999999;">/&gt;</span></span>
+</code><div class="toolbar" style="background:none 0% 0% repeat scroll transparent;position:absolute;right:2.56px;top:3.84px;"><div class="toolbar-item" style="background:none 0% 0% repeat scroll transparent;display:inline-block;"><span style="padding:0px 5.13px;font-size:10px;color:#bbbbbb;">XML</span></div><div class="toolbar-item" style="background:none 0% 0% repeat scroll transparent;display:inline-block;"><a style="color:#bbbbbb;font-size:10.26px;padding:0px 5.13px;">Copy</a></div></div></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+Next, build the application with using of IL linker:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<pre style="background:none 0% 0% repeat scroll #f5f5f5;border:0px none #333333;font-family:Monaco,monospace,sans-serif;font-size:12.8px;letter-spacing:0.1px;line-height:20.48px;margin-bottom:10px;margin-top:0px;overflow:auto;padding:0px;position:relative;"><code style="background:none 0% 0% repeat scroll transparent;border:0px none #333333;font-family:Monaco,monospace,sans-serif;padding:0px;white-space:pre-wrap;">publish -c release -r win-x64 -o out /p:LinkDuringPublish=true
+</code></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+Here is the result, which shows the difference in size of two builds:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<table style="border-collapse:collapse;color:#2c3f51;font-size:16px;letter-spacing:0.1px;margin:28px 0px;width:679.92px;">
+<thead>
+<tr>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-align:top;">
+Build type</th>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-align:top;">
+Size of output</th>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-align:top;">
+Number of items in output folder</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+Build with IL linker</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+52,9 MB (55.500.395 bytes)</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+211</td>
+</tr>
+<tr>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+Build without IL Linker</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+80,4 MB (84.370.552 bytes)</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+274</td>
+</tr>
+</tbody>
+</table>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+If you want to get more details about package compression, execute the following statement:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<pre style="background:none 0% 0% repeat scroll #f5f5f5;border:0px none #333333;font-family:Monaco,monospace,sans-serif;font-size:12.8px;letter-spacing:0.1px;line-height:20.48px;margin-bottom:10px;margin-top:0px;overflow:auto;padding:0px;position:relative;"><code style="background:none 0% 0% repeat scroll transparent;border:0px none #333333;font-family:Monaco,monospace,sans-serif;padding:0px;white-space:pre-wrap;">dotnet publish -c release -r win-x64 -o out-with-linker /p:LinkDuringPublish=true /p:ShowLinkerSizeComparison=true
+</code></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+Here is a snapshot of the result:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<table style="border-collapse:collapse;color:#2c3f51;font-size:16px;letter-spacing:0.1px;margin:28px 0px;width:679.92px;">
+<thead>
+<tr>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-align:top;">
+Assembly</th>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-0px;white-space:pre-wrap;">dotnet publish -c release -r win-x64 -o out-with-linker /p:LinkDuringPublish=true /p:ShowLinkerSizeComparison=true
+</code></pre>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+Here is a snapshot of the result:</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<table style="border-collapse:collapse;color:#2c3f51;font-size:16px;letter-spacing:0.1px;align:top;">
+Before</th>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-align:top;">
+After</th>
+<th style="border-top-style:none;border-top-width:0px;color:#000000;line-height:20px;padding:8px;text-align:left;vertical-align:top;">
+Size decrease</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+iotsvcctl.dll</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+126.464</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+126.464</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+0,00 %</td>
+</tr>
+<tr>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+Microsoft.Win32.Registry.dll</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+85.008</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+17.920</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+78,92 %</td>
+</tr>
+<tr>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+Microsoft.VisualBasic.dll</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+465.416</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+0</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+100,00 %</td>
+</tr>
+<tr>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+. . .</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+. . .</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+. . .</td>
+<td style="border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+. . .</td>
+</tr>
+<tr>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+Total</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+66.180</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+37.322</td>
+<td style="background:none 0% 0% repeat scroll #f6f6f6;border-top-color:#efefef;border-top-style:solid;line-height:20px;padding:8px;vertical-align:top;">
+43,61 %</td>
+</tr>
+</tbody>
+</table>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<h3 id="Recap" style="border-left:5px solid #2c3f51;color:#2c3f51;font-size:24px;font-weight:700;letter-spacing:0.1px;line-height:26.4px;margin-bottom:10px;margin-left:-20px;margin-top:20px;padding-left:15px;">
+<a name="Recap"></a>Recap</h3>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+.NET IL Linker is a new tool, which helps to make .NET Core application footprint smaller.<br />
+In some scenarios, this is not very important, but when application needs to be downloaded from a store or from some server, it is important to have small footprint to reduce download time and application startup time. This tool will be used in “Blazor”, which
+ leverage using of WebAssemblies.</p>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<h3 id="References" style="border-left:5px solid #2c3f51;color:#2c3f51;font-size:24px;font-weight:700;letter-spacing:0.1px;line-height:26.4px;margin-bottom:10px;margin-left:-20px;margin-top:20px;padding-left:15px;">
+<a name="References"></a>References</h3>
+<span style="letter-spacing:0.1px;font-family:&#39;Microsoft Yahei&#39;,Helvetica,Arial,sans-serif,serif;font-size:16px;color:#2c3f51;"></span>
+<p style="color:#2c3f51;font-size:16px;letter-spacing:0.1px;line-height:28px;margin:0px 0px 10px;">
+<a href="https://github.com/dotnet/announcements/issues/30" style="color:#36a1e7;">.NET Core IL Linker on GitHub</a><br />
+<a href="https://github.com/dotnet/core/blob/master/samples/linker-instructions.md" style="color:#36a1e7;">Using linker</a><br />
+<a href="https://github.com/aspnet/blazor" style="color:#36a1e7;">Blazor</a></p>
+
+</div>
+    
+    

@@ -1,0 +1,358 @@
+---
+layout: default
+title: Cấu hình Web Access Policy trên Forefront TMG 2010 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong style="font-size:12.1px;">I- GIỚI THIỆU</strong></p>
+<p>Forefront Threat Management Gateway (TMG) 2010 là phiên bản firewall tiếp theo của các phiên bản Internet Security and Acceleration (ISA) trước đó của Micrososoft. Trên TMG cottom fiji-content-fragment-bottom"><div class="r1 fiji-ró bổ sung một số chức năng mới so với ISA, điển hình là chức năng điều khiển việc
+ truy cập Web của người dùng thông qua Web Access Policy.</p>
+<p>Trong bài viết này tôi sẽ giới thiệu thao tác cấu hình một số chức năng để hạn chế việc truy cập Web và bảo mật Web cho người dùng thông qua Web Access Policy</p>
+<p><strong>II- TRIỂN KHAI CHI TIẾT</strong></p>
+<p>Bài LAB sử dụng 2 server</p>
+<p><strong><em>- DC:</em></strong> Domain Controller (domain <strong><em>mcthub.local</em></strong>) chạy Windows Serrer 2008 R2</p>
+<p><strong><em>- TMGSERVER: </em></strong>Domain Member chạy Windows Server 2008 R2 đã cài đặt TMG 2010 Standard SP1</p>
+<p>Thông số TCP/IP đề nghị:</p>
+<table border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td style="width:245px;"></td>
+<td style="width:245px;">
+<p style="text-align:center;"><strong><em>DC</em></strong></p>
+</td>
+<td style="width:245px;">
+<p style="text-align:center;"><strong><em>TMGSERVER</em></strong></p>
+</td>
+</tr>
+<tr>
+<td style="width:245px;">
+<p style="text-align:center;">Internal Card</p>
+</td>
+<td style="width:245px;">
+<p>IP Address: 192.168.1.2</p>
+<p>Subnet Mask: 255.255.255.0</p>
+<p>Default Gateway: 192.168.1.1</p>
+<p>DNS Server: 172.0.0.1</p>
+</td>
+<td style="width:245px;">
+<p>IP Address: 192.168.1.1</p>
+<p>Subnet Mask: 255.255.255.0</p>
+<p>Default Gateway: để trống</p>
+<p>DNS Server: 192.168.1.2</p>
+</td>
+</tr>
+<tr>
+<td style="width:245px;">
+<p style="text-align:center;">External Card</p>
+</td>
+<td style="width:245px;"></td>
+<td style="width:245px;">
+<p>IP Address: 172.16.0.10</p>
+<p>Subnet Mask: 255.255.0.0</p>
+<p>Default Gateway: IP của Router ADSL</p>
+<p>DNS Server:</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Bài LAB gồm các bước chính sau đây</p>
+<p>1- URL Filtering</p>
+<p>2- Malware Inspection</p>
+<p>3- HTTPS Inspection</p>
+<p>4- HTTP Filter</p>
+<p>5- Web Caching</p>
+<p><strong><em>Chuẩn bị:</em></strong> trước khi thực hiện, bạn cần tạo các Access Rule cho phép truy cập trong mạng nội bộ, cho phép phân giải bằng DNS và cho phép truy cập Web bằng HTTPS và HTTPS như hình bên dưới</p>
+<p><img alt=" " width="719" height="307" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image001.jpg" /></p>
+<p><strong>1- URL Filtering</strong></p>
+<p>URL Filtering là chức năng cho phép hay cấm các trang Web dựa theo chủ đề (category). Trong ví dụ này tôi sẽ cấu hình cấm truy cập các trang Web mua bán (Shopping). Trước khi thực hiện, trên máy DC bạn thử truy cập các trang Web mua bán bao gồm
+<strong><em>www.ebay.com, www.amazon.com </em></strong>và<strong><em> www.5giay.vn
+</em></strong>và kiểm tra truy cập bình thường vào các trang Web trên</p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image002.jpg" /></p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image003.jpg" /></p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image004.jpg" /></p>
+<p>Bật chức năng URL Filtering: Chọn <strong><em>Web Access Policy</em></strong>, trong Action Pane, chọn
+<strong><em>Configure URL Filtering</em></strong></p>
+<p><img alt=" " width="720" height="463" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image005.jpg" /></p>
+<p>Đánh dấu check <strong><em>Enable URL Filtering</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image006.jpg" /></p>
+<p>Cấu hình Access Rule: Bấm phải chuột vào Access Rule <strong><em>Allow Web</em></strong> - Chọn
+<strong><em>Properties</em></strong></p>
+<p><img alt=" " width="720" height="463" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image007.jpg" /></p>
+<p>Sang Tab <strong><em>To</em></strong>, trong khung <strong><em>Exceptions</em></strong> - Nhấn
+<strong><em>Add</em></strong></p>
+<p><img alt=" " width="404" height="466" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image008.jpg" /></p>
+<p>Chọn <strong><em>Shopping</em></strong> - Nhấn <strong><em>Add</em></strong> - Nhấn
+<strong><em>Close</em></strong></p>
+<p><img alt=" " width="269" height="418" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image009.jpg" /></p>
+<p>Nhấn <strong><em>OK </em></strong>sau đó nhấn <strong><em>Apply - Apply - OK</em></strong> để lưu sự thay đổi</p>
+<p><img alt=" " width="404" height="466" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image010.jpg" /></p>
+<p>Sang máy DC kiểm tra không truy cập được vào các trang <strong><em>www.ebay.com</em></strong> và
+<strong><em>www.amazon.com</em></strong> vì các trang Web này thuộc chủ đề <strong>
+<em>Shopping</em></strong></p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image011.jpg" /></p>
+<p>Tuy nhiên trang <strong><em>www.5giay.vn</em></strong> vẫn có thể truy cập bình thường do TMG không đưa trang này vào chủ đề Shopping (<em>cũng có thể do TMG không biết đến trang Web này</em>)</p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image012.jpg" /></p>
+<p>Do đó nếu muốn cấm trang www.5giay.vn bạn cần bổ sung trang Web này vào chủ đề Shopping bằng cách chọn
+<strong><em>Web Access Policy - Configure URL Category Overrides</em></strong></p>
+<p><img alt=" " width="720" height="463" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image013.jpg" /></p>
+<p>Nhấn <strong><em>Add</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image014.jpg" /></p>
+<p>Bổ sung URL pattern <strong><em>5giay.vn/*</em></strong> vào category <strong>
+<em>Shopping - </em></strong>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="251" heigh /></p>
+<p>Tuy nhiên trang <strong><em>www.5giay.vn</em></strt="249" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image015.jpg" /></p>
+<p>Tương tự bạn bổ sung URL pattern <strong><em>www.5giay.vn/*</em></strong> vào chủ đề
+<strong><em>Shopping</em></strong>. Nhấn <strong><em>OK </em></strong>sau đó nhấn
+<strong><em>Apply - Apply - OK</em></strong> để lưu sự thay đổi</p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image016.jpg" /></p>
+<p>Sang máy DC kiểm tra không truy cập vào trang <strong><em>www.5giay.vn</em></strong> nữa</p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image017.jpg" /></p>
+<p><strong>2- Malware Inspection</strong></p>
+<p>Malware&nbsp;(MaliciousSoftware) là tên gọi chung cho tất cả những phần mềm độc hại đối với máy tính.<br />
+Malware&nbsp;bao gồm:&nbsp;Virus,&nbsp;Worm,&nbsp;Trojan,&nbsp;Spyware,&nbsp;Adware&nbsp;.. đều là những phần mềm gây hại cho máy tính theo những cách khác nhau. Do đó việc chống malware là hết sức cần thiết đối với người dùng khi truy cập web. Trước khi cấu hình, bạn cho Download thử các file
+ có chứa Malware bằng cách truy cập Web trang Web <strong><em>eicar.org</em></strong>. Chọn
+<strong><em>DOWNLOAD ANTI MALWARE TESTFILE</em></strong></p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image018.jpg" /></p>
+<p>Chọn <strong><em>DOWNLOAD</em></strong></p>
+<p><img alt=" " width="696" height="503" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image019.jpg" /></p>
+<p>Chọn File <strong><em>eicar.com </em></strong>trong khung<strong><em> Download area using the standard protocol http</em></strong></p>
+<p><img alt=" " width="686" height="262" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image020.jpg" /></p>
+<p>Nhấn <strong><em>Save</em></strong></p>
+<p><img alt=" " width="404" height="266" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image021.jpg" /></p>
+<p>Kiểm tra việc download hoàn toàn bình thường</p>
+<p><img alt=" " width="625" height="480" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image022.jpg" /></p>
+<p><img alt=" " width="419" height="266" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image023.jpg" /></p>
+<p>Tiếp theo tôi sẽ cấu hình chức năng Malware Inspection. Triên tiên bạn cần kiểm tra việc cập nhật cho chức năng Malware Inspection bằng cách chọn Update Center, quan sát chức năng Malware đã được cập nhật đầy đủ (trạng thái hiển thị là
+<strong><em>Up to date</em></strong>)</p>
+<p><img alt=" " width="720" height="327" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image024.jpg" /></p>
+<p>Nếu chưa cập nhật hoặc do chưa khai báo việc cập nhật trong ở bước cấu hình TMG, bạn có thể cấu hình bằng cách sau
+<em>(lưu ý nếu TMG đã cập nhật hoàn tất thì bạn có thể bỏ qua bước này). </em>Chọn<strong><em>Forefront TMG (Tên Server) - Launch Getting Started Wizrd</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image025.jpg" /></p>
+<p>Chọn <strong><em>Define deployment options</em></strong></p>
+<p><img alt=" " width="538" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image026.jpg" /></p>
+<p>Chọn <strong><em>Use the Microsoft Update service to check for updates</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="552" height="484" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image027.jpg" /></p>
+<p>Kiểm tra bảo đảm dấu check <strong><em>Enable Malware Inspection</em></strong> được chọn và nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="552" height="484" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image028.jpg" /></p>
+<p>Chấp nhận các thông số mặc định - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="552" height="484" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image029.jpg" /></p>
+<p>Chọn <strong><em>No, I don&#39;t want to participate</em></strong> - Nhấn <strong>
+<em>Next</em></strong></p>
+<p><img alt=" " width="552" height="484" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image030.jpg" /></p>
+<p>Chọn <strong><em>None. No information is send to Microsoft</em></strong> - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="552" height="484" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image031.jpg" /></p>
+<p>Nhấn <strong><em>Finish</em></strong></p>
+<p><img alt=" " width="552" height="484" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image032.jpg" /></p>
+<p>Chọn <strong><em>Update Center</em></strong> - Bấm phải chuột <strong><em>Malware Inspection</em></strong> - Chọn
+<strong><em>Check for and install New Definitions</em></strong> và chờ đợi quá trình cập nhật, quá trình này có thể mất nhiều thời gian và phụ thuộc vào đường truyền Internet của bạn</p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image033.jpg" /></p>
+<p>Sau khi đã cập nhật hoàn tất, cấu hình Malware Inspection bằng cách chọn <strong>
+<em>Firewall Policy</em></strong> - Bấm phải chuột vào Access Rule <strong><em>Allow Web</em></strong> - Chọn
+<strong><em>Properties</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image034.jpg" /></p>
+<p>Sang Tab <strong><em>Malware Inspection</em></strong> - Đánh dấu check <strong>
+<em>Inspect content downloaded from Web servers to clients</em></strong> - Nhấn <strong>
+<em>OK </em></strong>sau đó nhấn <strong><em>Apply - Apply - OK</em></strong> để lưu sự thay đổi</p>
+<p><img alt=" " width="404" height="466" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image035.jpg" /></p>
+<p>Sang máy DC, kiểm tra bằng cách download lại file <strong><em>eicar.com</em></strong></p>
+<p><img alt=" " width="686" height="262" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image020.jpg" /></p>
+<p>Bạn sẽ nhận thông báo lỗi như hình dưới cho biết file này có chứa malware và đã bị chặn</p>
+<p><img alt=" " width="696" height="549" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image036.jpg" /></p>
+<p><strong>3- HTTPS Inspection</strong></p>
+<p>HTTPS Inspection là chức năng tương tự Malware Inspection nhưng cho phép chặn Malware được download bằng giao thức
+<strong><em>HTTPS. </em></strong>Trước khi cấu hình, sang máy DC cho download file
+<strong><em>eicar.com</em></strong>trong khung <strong><em>Download area using the secure, SSL enabled protocol https</em></strong></p>
+<p><img alt=" " width="690" height="270" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image037.jpg" /></p>
+<p>Nhấn <strong><em>Save</em></strong></p>
+<p><img alt=" " width="404" height="266" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image038.jpg" /></p>
+<p>Kiểm tra việc download hoàn toàn bình thường mặc dù trước đó tôi đã cấu hình chức năng Malware Inspection</p>
+<p><img alt=" " width="625" height="480" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image039.jpg" /></p>
+<p><img alt=" " width="419" height="266" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image040.jpg" /></p>
+<p>Tiếp theo tôi sẽ cấu hình HTTPS Inspection bằng cách chọn <strong><em>Web Access Policy - Configure HTTPS Inspection</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image041.jpg" /></p>
+<p>Đánh dấu <strong><em>check Enable HTTPS Inspection</em></strong> - Nhấn nút <strong>
+<em>Generate</em></strong> để phát sinh Certificate</p>
+<p><img alt=" " width="404" height="466" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image042.jpg" /></p>
+<p>Nhấn nút <strong><em>Generate Certificate Now</em></strong></p>
+<p><img alt=" " width="401" height="392" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image043.jpg" /></p>
+<p>Bạn sẽ thấy TMG tự động phát sinh một Certificate cho chức năng HTTPS Inspection. Nhấn nút
+<strong><em>Install Certificate</em></strong></p>
+<p><img alt=" " width="409" height="508" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image044.jpg" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="453" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image045.jpg" /></p>
+<p>Chấp nhận nơi lưu trữ Certificate mặc định - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="453" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image046.jpg" /></p>
+<p>Nhấn <strong><em>Finish</em></strong></p>
+<p><img alt=" " width="503" height="453" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image047.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="227" height="145" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image048.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="409" height="508" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image049.jpg" /></p>
+<p>Nhấn <strong><em>Close</em></strong></p>
+<p><img alt=" " width="401" height="392" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image050.jpg" /></p>
+<p>Nhấn <strong><em>HTTPS Inspection Trusted Root CA Certificate Options</emG-WebAccess_files/image045.jpg" /></p>
+<p>Chấp nhận nơi lưu trữ Certificate mặc định - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="453" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image046.jpg" /></p>
+<p>Nhấn <strong><em>Finish</em></strong></p>
+<p><img alt=" " width="503" height="453" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image047.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="227" height="145" src=></strong></p>
+<p><img alt=" " width="404" height="466" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image051.jpg" /></p>
+<p>Nhấn nút <strong><em>Domain Administrator Credential</em></strong>s</p>
+<p><img alt=" " width="401" height="392" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image052.jpg" /></p>
+<p>Nhập Username và Password của account domain admin - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="326" height="267" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image053.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="323" height="126" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image054.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="401" height="392" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image055.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="404" height="466" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image056.jpg" /></p>
+<p>Kiểm tra Certificate bằng cách mở Certificate Console bằng lệnh <strong><em>CERTMGR.MSC</em></strong></p>
+<p><img alt=" " width="417" height="222" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image057.jpg" /></p>
+<p>Bung theo hình bên dưới và kiểm tra Certificate mới đã phát sinh</p>
+<p><img alt=" " width="720" height="420" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image058.jpg" /></p>
+<p>Cập nhật policy bằng lệnh <strong><em>GPUPDATE /FORCE</em></strong></p>
+<p><img alt=" " width="668" height="271" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image059.jpg" /></p>
+<p>Sang máy DC kiểm tra bằng cách download lại file <strong><em>eicar.com</em></strong></p>
+<p><img alt=" " width="690" height="270" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image037.jpg" /></p>
+<p>Kiểm tra bạn sẽ nhận báo lỗi như hình dưới cho biết đã phát hiện và chặn file có chứa malware</p>
+<p><img alt=" " width="524" height="374" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image060.jpg" /></p>
+<p><strong>4- HTTP Filter</strong></p>
+<p>HTTP filter là chưc năng cho phép lọc và chặn dựa vào nội dung của gói tin HTTP khi truy cập Web. Trên TMG có thể sử dụng chức năng này để cấm download các loại file chỉ định, cấm theo phương thức truy cập web cũng như cấm dựa vào thông số signature của
+ các ứng dụng truy cập Web như ưng dụng Chat hay Game online… Trong ví dụ này tôi sẽ cấu hình cấm download các loại file chỉ định và cấm dựa theo phương thức truy cập Web</p>
+<p>a. Cấm Download các loại file chỉ định</p>
+<p>Chọn <strong><em>Firewall Policy</em></strong> - Bấm phải chuột lên Access Rule
+<strong><em>Allow Web</em></strong> - Chọn <strong><em>Configure HTTP</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image061.jpg" /></p>
+<p>Sang Tab <strong><em>Extensions</em></strong> - Chọn <strong><em>Block specified extensions (allow all others)</em></strong> - Nhấn
+<strong><em>Add</em></strong></p>
+<p><img alt=" " width="404" height="448" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image062.jpg" /></p>
+<p>Nhập loại file mà bạn muốn cấm, ví dụ tôi muốn cấm download các file có phần mở rộng là exe, nhập
+<strong><em>.exe</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="314" height="230" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image063.jpg" /></p>
+<p>Nhấn <strong><em>OK </em></strong>sau đó nhấn <strong><em>Apply - Apply - OK</em></strong> để lưu sự thay đổi</p>
+<p><img alt=" " width="404" height="448" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image064.jpg" /></p>
+<p>Sang máy DC, kiểm tra tìm và download một file có phần mở rộng là EXE, bạn sẽ nhận báo lỗi như hình dưới với thông tin
+<strong><em>Source</em></strong> là <strong><em>Web filter</em></strong></p>
+<p><img alt=" " width="696" height="579" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image065.jpg" /></p>
+<p>b. Cấm dựa vào phương thức (method) truy cập Web</p>
+<p>Khi truy cập web, thông thường người dùng sẽ sử dụng một trong các phương thức truy cập phổ biến sau:</p>
+<p><strong><em>- GET:</em></strong> Lấy thông tin từ server, đây là phương thức truy cập phổ biến nhất để đọc nội dung Web</p>
+<p><strong><em>- POST</em></strong>: Gửi thông tin từ client lên Web Server. Đây là phương thức thường dùng của các Web Mail hay diễn đàn</p>
+<p>Trong ví dụ này tôi sẽ cấm truy cập bằng phương thức POST. Chọn <strong><em>Firewall Policy</em></strong>. Bấm phải chuột vào Access Rule
+<strong><em>Allow Web</em></strong> - Chọn <strong><em>Configure HTTP</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image066.jpg" /></p>
+<p>Sang Tab <strong><em>Methods</em></strong> - Chọn <strong><em>Block specified method (allow all others)</em></strong> - Nhấn
+<strong><em>Add</em></strong></p>
+<p><img alt=" " width="404" height="448" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image067.jpg" /></p>
+<p>Nhập phương thức cần cấm (ví dụ <strong><em>POST</em></strong>) - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="314" height="230" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image068.jpg" /></p>
+<p>Nhấn <strong><em>OK </em></strong>sau đó nhấn <strong><em>Apply - Apply - OK</em></strong> để lưu sự thay đổi</p>
+<p><img alt=" " width="404" height="448" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image069.jpg" /></p>
+<p>Chuyển sang máy DC thử đang nhập vào một diễn đàn (forum) nào đó sử dụngem>Configure HTTP</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image066.jpg" /></p>
+<p>Sang Tab <strong><em>Methods</em></strong> - Chọn <strong><em>Block specified method (allow all phương thức POST. Bạn sẽ nhận báo lỗi như hình dưới</p>
+<p><img alt=" " width="696" height="579" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image070.jpg" /></p>
+<p><strong>5- Web Caching</strong></p>
+<p>Web Caching là chức năng cho phép lưu trữ nội dung các trang Web đã truy cập trên máy TMG nhằm mục đích tăng tốc độ truy cập cho những lần truy cập sau.</p>
+<p>Để kiểm tra chức năng Web Caching đối với các trang Web bên trong nội bộ, trên máy DC, bạn cài đặt thêm Role
+<strong><em>Web server (IIS) </em></strong>bằng cách mở<strong><em> Server Manager.
+</em></strong>Bấm phải chuột lên<strong><em> Roles - </em></strong>Chọn<strong><em>Add Roles</em></strong></p>
+<p><img alt=" " width="654" height="355" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image071.jpg" /></p>
+<p>Đánh dấu chọn <strong><em>Web Server (IIS)</em></strong> sau đó nhấn Next và chấp nhận tất cả các lựa chọn mặc định khi cài đặt</p>
+<p><img alt=" " width="720" height="531" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image072.jpg" /></p>
+<p>Mở DNS Console, tạo một HOST (A) tên là <strong><em>www</em></strong> trỏ về IP của máy DC</p>
+<p><img alt=" " width="668" height="438" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image073.jpg" /></p>
+<p>a. Enable Caching</p>
+<p>Mặc định TMG chưa bật chức năng Web Caching. Để sử dụng bạn cần bật tính năng này. Chọn
+<strong><em>Web Access Policy</em></strong> - Nhấn vào link <strong><em>Disabled </em>
+</strong>của mục <strong><em>Web Caching</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image074.jpg" /></p>
+<p>Sang tab <strong><em>Cache Drives</em></strong> - Nhấn nút <strong><em>Configure</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image075.jpg" /></p>
+<p>Chọn ỗ đĩa tùy ý, tôi chọn đĩa C: - Nhập dung lượng tùy ý (tính bằng MB) vào ô
+<strong><em>Maximum cache size (MB)</em></strong> - Nhấn nút <strong><em>Set</em></strong></p>
+<p><img alt=" " width="446" height="448" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image076.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="446" height="448" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image077.jpg" /></p>
+<p>Nhấn <strong><em>Apply</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image078.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image079.jpg" /></p>
+<p>Nhấn <strong><em>Apply</em></strong></p>
+<p><img alt=" " width="720" height="408" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image080.jpg" /></p>
+<p>Chọn <strong><em>Save the changes and restart the services</em></strong> - <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="366" height="348" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image081.jpg" /></p>
+<p>Nhấn <strong><em>Apply</em></strong></p>
+<p><img alt=" " width="530" height="264" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image082.jpg" /></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="527" height="250" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image083.jpg" /></p>
+<p>Mở ổ C: bạn sẽ thấy xuất hiện một thư mục mới tên là <strong><em>urlcache</em></strong>, mở thư mục này bạn sẽ thấy 1 file tên tên là
+<strong><em>Dir1.cdat</em></strong> có dung lượng bằng với dung lượng bạn đã chỉ định ở bước trước. Đây chính là file sẽ chứa nội dung các trang Web mà TMG truy cập</p>
+<p><img alt=" " width="720" height="256" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image084.jpg" /></p>
+<p>Sang máy DC kiểm tra truy cập một trang Web tùy ý (ví dụ <strong><em>www.yahoo.com</em></strong>) và đợi cho đến khi trang web này hiển thị đầy đủ nội dung và hình ảnh</p>
+<p><img alt=" " width="696" height="549" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image085.jpg" /></p>
+<p>Đóng Internet Explorer, mở lại Internet Explorer và truy cập lại trang Web trên lần thứ hai, kiểm tra tốc độ lần thứ hai sẽ nhanh hơn nhiều so với khi truy cập lần đầu tiên</p>
+<p>Tiếp theo tôi sẽ kiểm tra Web Caching đối với các trang Web trong nội bộ. Trên máy TMG, truy cập trang Web
+<strong><em>www.mcthub.local </em></strong>để trang Web này được lưu vào Cache</p>
+<p><img alt=" " width="696" height="549" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image086.jpg" /></p>
+<p>Sang máy DC mở <strong><em>Internet Information Service (IIS) Manager</em></strong></p>
+<p><img alt=" " width="417" height="222" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image087.jpg" /></p>
+<p>Chọn trang Web <strong><em>Default Web Site</em></strong> - Trong Action Pane - Chọn
+<strong><em>Stop</em></strong></p>
+<p><img alt=" " width="720" height="450" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image088.jpg" /></p>
+<p>Sang máy TMG đóng Internet Explorer, mở Internet Explorer và truy cập lại và trang
+<strong><em>www.mcthub.local</em></strong>. Bạn sẽ vẫn truy cập được do đang truy cập nội dung trang web từ Cache.</p>
+<p><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image089.jpg" /></p>
+<p>b. Content Download Job</p>
+<p>Content Download Job là chức năng tự động download một trang Web chỉ định vào Cache cho phép trang Web này luôn được truy cập với tốc độ tốt nhất có thể. Chọn
+<strong><em>Web Access Policy</em></strong> - Nhấn chuột vào link <strong><em>Enabled</em></strong> của mục
+<strong><em>Web Caching</em></strong></p>
+<p><img alt=" " width="720" height="463" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image090.jpg" /></p>
+<p>Sang tab <strong><em>Content Download</em></strong> - Nhấn <strong><em>New</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image091.jpg" /></p>
+<p>Nhập tên tùy ý - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="389" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image092.jpg" /></p>
+<p>Chọn lịch trình Download là <strong><em>Daily</em></strong> (hàng ngày) - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="389" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image093.jpg" /></p>
+<p>Trong khung <strong><em>Job start time</em></strong>: chỉ định giờ sau giờ hiện hành khoảng 5 phút - Nhấn
+<strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="389" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image094.jpg" /></p>
+<p>Khung Download content from this URL: Nhập URL của trang Web cần download là <strong>
+<em>http://mcthub.com</em></strong> - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="389" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image095.jpg" /></p>
+<p>Chấp nhận các thông số mặc định về TTL - Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="503" height="389" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image096.jpg" /></p>
+<p>Nhấn <strong><em>Finish</em></strong></p>
+<p><img alt=" " width="503" height="389" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image097.jpg" /></p>
+<p>Nhấn <strong><em>Yes</em></strong> để khởi động dịch vụ</p>
+<p><img alt=" " width="408" height="217" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image098.jpg" /></p>
+<p>Nhấn <strong><em>Apply</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image099.jpg" /></p>
+<p>Nhấn <strong><em>OK </em></strong>sau đó nhấn <strong><em>Apply - Apply - OK</em></strong> để lưu sự thay đổi</p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image100.jpg" /></p>
+<p>Mở lại hộp thoại <strong><em>Cache Setting</em></strong>, sang tab <strong><em>Content Download</em></strong>, chọn job vừa tạo và nhấn
+<strong><em>Start Job</em></strong></p>
+<p><img alt=" " width="410" height="482" src="http://mcthub.com/images/ContentLab/TMG-WebAccess_files/image101.jpg" /></p>
+<p>Sang máy DC, chờ đến thời gian mà bạn đã qui định, sau vài phút truy cập trang web
+<strong><em>http://mcthub.com</em></strong> để kiểm tra tốc độ truy cập</p>
+<p>Bài viết liên quan</p>
+<p><a href="http://mcthub.com/technologies/microsoft/messaging-system/215-c%E1%BA%A5u-h%C3%ACnh-alti-malware-tr%C3%AAn-exchange-server-2013.html">Cấu hình Anti Malware trên Exchange Server 2013</a></p>
+<p><br />
+</p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a>
+<br />
+<a href="http://www.mcthub.com/technologies/microsoft/network-security/232-c%E1%BA%A5u-h%C3%ACnh-web-access-policy-tr%C3%AAn-forefront-tmg-2010.html">mcthub.com</a>
+
+</div>
+    
+    

@@ -1,0 +1,92 @@
+---
+layout: default
+title: Customizing An Alert - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="font-family:tahoma;font-size:18px;"><strong>Customizing what is an e-mail alert on SBS Essentials 2011, Windows Home Server 2011, and Windows Storage Server 2008 r2 Essentials<br />
+</strong></span><br />
+Content originally from <a href="http://sbs.seandaniel.com/2010/10/customizing-what-is-e-mail-alerts-on.html">
+http://sbs.seandaniel.com/2010/10/customizing-what-is-e-mail-alerts-on.html</a><br />
+<p style="text-align:center;"><span>[This post comes courtesy of Adrian Maziak, our System Health PM]</span></p>
+<p>Small Business Server 2011 Essentials, Windows Home Server 2011 and Windows Storage Server 2008 R2 Essentials allows for customization of alerts.&nbsp; In previous versions of Home Server, Monitoring could only be done without an add-in in the local console,
+ or from the system tray icon on a local client. You needed something like <a href="http://www.homeserverhacks.com/2009/05/give-your-windows-home-server-its-own.html" target="_blank">
+<span style="color:#2f618d;">@WHSTweet</span></a> to get the alerts off the box (which by the way was a wicked application, I use it for my V1), or perhaps another add-in that I’m not aware of. Also, in previous versions of Small Business Server, there was an
+ Exchange mail server locally to send the alert. But in&nbsp;the various Colorado servers&nbsp;there is no exchange server.<br />
+<br />
+With Small Business Server 2011 Essentials, Windows Home Server 2011 and Windows Storage Server 2008 R2 Essentials we provide the ability to insert a “<a href="http://en.wikipedia.org/wiki/Smart_host" target="_blank"><span style="color:#2f618d;">SmartHost</span></a>”
+ email server that you can send mail through. This can be an email server that lives out on the Internet that you have access to, or the one at your ISP that you simply have access to simply by being part of their network.</p>
+<p>&nbsp;</p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6038.alertsean1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6038.alertsean1.png" style="border:0px solid currentcolor;" /></a>
+<p>&nbsp;</p>
+<p>However, not all alerts will generate e-mail. The health team took a hard look at all the alerts and have made a call on which ones might be critical for the admin to know immediately, and which ones that can wait until the admin is on the network. But while
+ we optimize this for certain scenarios, we may have missed yours. This is where customization comes in.</p>
+<p>Each health alert is defined in a health definition file. These definition files are stored in
+<em>C:\Program Files\Windows Server\Bin\FeatureDefinitions\Microsoft Base\definition.xml.config</em>.</p>
+<p>For example, if you were to scroll down in this file to the “AutoStartServicesVistaWin7Client” for the alert about auto started services on clients that aren’t running. This doesn’t alert by default via email, but if you wanted it to, you can add a line
+ to the XML file <strong>&lt;Escalate&gt;true&lt;/Escalate&gt;</strong>. </p>
+<blockquote>
+<p><span>&lt;HealthDefinitionConfiguration Name=&quot;AutoStartServicesVistaWin7Client&quot;&gt; <br />
+&lt;Configurations&gt; <br />
+&lt;Enable&gt;true&lt;/Enable&gt; <br />
+<strong><span style="background-color:#ffff00;">&lt;Escalate&gt;true&lt;/Escalate&gt; <br />
+</span></strong>&lt;/Configurations&gt; <br />
+&lt;Arguments&gt; <br />
+&lt;Argument Name=&quot;Description&quot;&gt;<em>don’t touch this stuff</em>&lt;/Argument&gt; <br />
+&lt;/Arguments&gt; <br />
+&lt;/HealthDefinitionConfiguration&gt; <br />
+</span></p>
+</blockquote>
+<p>Likewise, if you are getting an alert via email that you really don’t care about, then simply open up the definition xml file and remove the &lt;Escalate&gt; line.</p>
+<p><strong>Important Tip</strong>: Make sure you back-up the <em>definition.xml.config</em> file before you change it. You never know when you’re going to need to revert back to the default version!</p>
+<p><strong>Some Known SmartHosts</strong></p>
+<table width="546" border="1" cellspacing="0" cellpadding="2">
+<tbody>
+<tr>
+<td valign="top" style="width:154px;"><strong>SMTP Server</strong></td>
+<td valign="top" style="width:46px;"><strong>SSL?</strong></td>
+<td valign="top" style="width:49px;"><strong>Auth?</strong></td>
+<td valign="top" style="width:44px;"><strong>Port</strong></td>
+<td valign="top" style="width:251px;"><strong>Logon Information</strong></td>
+</tr>
+<tr>
+<td valign="top" style="width:156px;">smtp.live.com</td>
+<td valign="top" style="width:50px;">Yes</td>
+<td valign="top" style="width:54px;">Yes</td>
+<td valign="top" style="width:47px;">587</td>
+<td valign="top" style="width:242px;">Full LiveID username &amp; Password</td>
+</tr>
+<tr>
+<td valign="top" style="width:156px;">smtp.comcast.net</td>
+<td valign="top" style="width:52px;">Yes</td>
+<td valign="top" style="width:57px;">No</td>
+<td valign="top" style="width:49px;">587</td>
+<td valign="top" style="width:238px;">Must be in Comcast’s Network</td>
+</tr>
+<tr>
+<td valign="top" style="width:156px;">smtp.gmail.com</td>
+<td valign="top" style="width:53px;">Yes</td>
+<td valign="top" style="width:59px;">Yes</td>
+<td valign="top" style="width:50px;">587</td>
+<td valign="top" style="width:236px;">Full GMail username &amp; password</td>
+</tr>
+<tr>
+<td valign="top" style="width:156px;">smtp.mail.yahoo.com</td>
+<td valign="top" style="width:54px;">No</td>
+<td valign="top" style="width:60px;">Yes</td>
+<td valign="top" style="width:51px;">25</td>
+<td valign="top" style="width:235px;">Email Name and password</td>
+</tr>
+</tbody>
+</table>
+<p><span>*Subject to change without notice</span></p>
+<p>&nbsp;</p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7840.alertsean2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7840.alertsean2.png" style="border:0px solid currentcolor;" /></a>
+<p>&nbsp;</p>
+<p style="text-align:center;"><em>Example using the Live Smart Host</em></p>
+
+</div>
+    
+    

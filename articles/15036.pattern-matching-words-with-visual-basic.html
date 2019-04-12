@@ -1,0 +1,312 @@
+---
+layout: default
+title: Pattern Matching Words With Visual Basic - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="How_to_match_word_patterns_with_Visual_Basic"></a>
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1134.pattern.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1134.pattern.png" style="border-width:0px;border-style:solid;" /></a></div>
+How to match word patterns with Visual Basic</h2>
+<p><em>Someone recently asked a question about solving crypto class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Pattern Matching Words With Visual Basic</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<h2><a name="How_to_match_word_patterns_with_Visual_grams and I had recalled reading an article about MIT students creating a cryptogram solver that used some kind of pattern matching. i figured it was interesting enough to give a go at it. Below is
+ my result, and can be improved up.</em></p>
+<p><br />
+</p>
+<h2><a name="Commented_Source_Code"></a>Commented Source Code</h2>
+<blockquote style="margin:0px 0px 0px 40px;border:none;padding:0px;">
+<p>This code is the core of the example linked in the section below, in order to see an example of it&#39;s implementation, you will need to download the example project below.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;summary&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;&#39;&#39; This function calculates likely word matches for cryptogram words.</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;/summary&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;param name=&quot;Word&quot;&gt;The encrypted word&lt;/param&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;param name=&quot;Dictionary&quot;&gt;A list of words to match the encrypted word against.&lt;/param&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;param name=&quot;Filter&quot;&gt;A filter pattern for reducing results.&lt;/param&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;param name=&quot;PB&quot;&gt;Optional Progressbar to report progress.&lt;/param&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;param name=&quot;UpdateLabel&quot;&gt;Optional Label to report current match count.&lt;/param&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;returns&gt;&lt;/returns&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;&#39;&#39; &lt;remarks&gt;&lt;/remarks&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Function</code>
+<code style="color:#000000;">GetWordPatternMatches(Word </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code><code style="color:#000000;">, _</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Dictionary
+</code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+List(Of </code><code style="color:#006699;font-weight:bold;">String</code><code style="color:#000000;">), _</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Optional</code>
+<code style="color:#000000;">Filter </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code> <code style="color:#000000;">
+= </code><code style="color:blue;">&quot;*&quot;</code><code style="color:#000000;">, _</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Optional</code>
+<code style="color:#000000;">PB </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">ProgressBar = </code><code style="color:#006699;font-weight:bold;">Nothing</code><code style="color:#000000;">, _</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Optional</code>
+<code style="color:#000000;">UpdateLabel </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">Label = </code><code style="color:#006699;font-weight:bold;">Nothing</code><code style="color:#000000;">) _</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#000000;">ListViewItem()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> ">As</code>
+<code style="color:#000000;">Label = </code><code style="color:#006699;font-weight:bold;">Nothing</code><code style="color:#000000;">) _</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbs<code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Value = 0</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Maximum = 0</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;A list of identifications for pattern matching</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Const</code>
+<code style="color:#000000;">Legend </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code> <code style="color:#000000;">
+= </code><code style="color:blue;">&quot;01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;return an empty array if there is no word to match</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#000000;">Word.Length = 0 </code><code style="color:#006699;font-weight:bold;">Then</code>
+<code style="color:#006699;font-weight:bold;">Return</code> <code style="color:#000000;">
+{}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a new pattern table</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">map </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+List(Of pt), I = 0, WordPattern </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code> <code style="color:#000000;">
+= </code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Maximum &#43;= Word.Count</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Examine each letter in the encrypted word</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+S </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+String</code> <code style="color:#006699;font-weight:bold;">In</code> <code style="color:#000000;">
+Word</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Increment(1)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;search the pattern table to see if the letter was already assigned an identification</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">Q1 = From P </code><code style="color:#006699;font-weight:bold;">In</code>
+<code style="color:#000000;">map Where P.Letter = S </code><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">P</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If it has then use the same identification for that letter</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+Q1.ToArray.Count = 0 </code><code style="color:#006699;font-weight:bold;">Then</code>
+<code style="color:#000000;">map.Add(</code><code style="color:#006699;font-weight:bold;">New</code>
+<code style="color:#000000;">pt(Q1.ToArray(0).ID, S)) : Continue </code><code style="color:#006699;font-weight:bold;">For</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If it has not, then assign a new pattern identification</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">map.Add(</code><code style="color:#006699;font-weight:bold;">New</code>
+<code style="color:#000000;">pt((Legend)(I), S))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Increment the next pattern id index number</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">I &#43;= 1</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Maximum &#43;= map.Count</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Go through each mapped letter</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+P </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+pt </code><code style="color:#006699;font-weight:bold;">In</code> <code style="color:#000000;">
+map</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Increment(1)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Assemble the encrypted word&#39;s pattern</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">WordPattern = WordPattern &amp; P.ID :
+</code><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Get all word from the dictionary that are:</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;A.) The same length of the bord</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;B.) Match the FILTER specified</code></span></span></div>
+<div style="backp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Assemble the encrypted word&#39;s pattern</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">WordPattern = WordPattern &amp; P.ID :
+</code><code style="color:#006699;fground-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">Q2 = From W </code><code style="color:#006699;font-weight:bold;">In</code>
+<code style="color:#000000;">Dictionary Where (W.Length = Word.Length) </code><code style="color:#006699;font-weight:bold;">And</code>
+<code style="color:#000000;">(W </code><code style="color:#006699;font-weight:bold;">Like</code>
+<code style="color:#000000;">Filter) </code><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">W</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a list for holding the result</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">results </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+List(Of </code><code style="color:#006699;font-weight:bold;">String</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Maximum &#43;= Q2.ToArray.Count</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Go through each dictionary word from the LINQ result</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+W </code><code style="color:#006699;font-weight:bold;">In</code> <code style="color:#000000;">
+Q2.ToArray</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Increment(1)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a pattern map for each word from the LINQ result, create a</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39; legend index counter, create a dictionary word pattern to compare against the encrypted word pattern</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">map2 </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+List(Of pt), I2 = 0, DictPattern </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code> <code style="color:#000000;">
+= </code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Go through each character, of each word from the LINQ result</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+S </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+String</code> <code style="color:#006699;font-weight:bold;">In</code> <code style="color:#000000;">
+W</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;search the pattern table to see if the letter was already assigned an identification</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-wethe LINQ result</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+S </code><code style="color:#006ight:bold;">Dim</code>
+<code style="color:#000000;">Q3 = From P </code><code style="color:#006699;font-weight:bold;">In</code>
+<code style="color:#000000;">map2 Where P.Letter = S </code><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">P</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If it has then use the same identification for that letter</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+Q3.ToArray.Count = 0 </code><code style="color:#006699;font-weight:bold;">Then</code>
+<code style="color:#000000;">map2.Add(</code><code style="color:#006699;font-weight:bold;">New</code>
+<code style="color:#000000;">pt(Q3.ToArray(0).ID, S)) : Continue </code><code style="color:#006699;font-weight:bold;">For</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If it has not, then assign a new pattern identification</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">map2.Add(</code><code style="color:#006699;font-weight:bold;">New</code>
+<code style="color:#000000;">pt((Legend)(I2), S))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Increment the next pattern id index number</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">I2 &#43;= 1 :
+</code><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Go through each mapped letter</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+P </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#000000;">
+pt </code><code style="color:#006699;font-weight:bold;">In</code> <code style="color:#000000;">
+map2</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Assemble the dictionary word&#39;s pattern</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DictPattern = DictPattern &amp; P.ID</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Compare the encrypted word&#39;s pattern to the pattern of each result from the LINQ query(Q2)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#000000;">DictPattern = WordPattern </code><code style="color:#006699;font-weight:bold;">Then</code>
+<code style="color:#000000;">results.Add(W)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user provided a label to update status</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+UpdateLabel </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Change the label&#39;s text to reflect the current matches found</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">UpdateLabel.Text = results.Count &amp;
+</code><code style="color:blue;">&quot; matches found so far...&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;refresh the label/app</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Application.DoEvents()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">If</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a list for returning the final results</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">Items </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+List(Of ListViewItem)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Maximum &#43;= results.Count</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#006699;font-weight:bold;">Each</code> <code style="color:#000000;">
+S </code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+String</code> <code style="color:#006699;font-weight:bold;">In</code> <code style="color:#000000;">
+results</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;If the user specified a progressbar, then update the values</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">If</code>
+<code style="color:#006699;font-weight:bold;">Not</code> <code style="color:#000000;">
+PB </code><code style="color:#006699;font-weight:bold;">Is</code> <code style="color:#006699;font-weight:bold;">
+Nothing</code> <code style="color:#006699;font-weight:bold;">Then</code> <code style="color:#000000;">
+PB.Increment(1)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Create a new listview item with subitem(0) being the encrypted word</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">Item </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">New</code> <code style="color:#000000;">
+ListViewItem(Word)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Add 2 subitems to the item(Dictionary word, the pattern that they were matched with)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Item.SubItems.AddRange({S, WordPattern})</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Add the item to the final results</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Items.Add(Item)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Next</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;convert the resuts and returnary word, the pattern that they were matched with)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Item.SubItems.AddRange({S, WordPattern})</code></span></spann it as an array of Listviewitem</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Return</code>
+<code style="color:#000000;">Items.ToArray</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Function</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Private</code>
+<code style="color:#006699;font-weight:bold;">Class</code> <code style="color:#000000;">
+pt </code><code style="color:#008200;">&#39; Pattern Table</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;I.e. The letter can only receive this ID, this ID can only represent this letter</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Public</code>
+<code style="color:#000000;">ID, Letter </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Sub</code>
+<code style="color:#006699;font-weight:bold;">New</code><code style="color:#000000;">(ID
+</code><code style="color:#006699;font-weight:bold;">As</code> <code style="color:#006699;font-weight:bold;">
+String</code><code style="color:#000000;">, Letter </code><code style="color:#006699;font-weight:bold;">As</code>
+<code style="color:#006699;font-weight:bold;">String</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&#39;Populate the ID and Letter values of this pattern table</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Me</code><code style="color:#000000;">.ID = ID :
+</code><code style="color:#006699;font-weight:bold;">Me</code><code style="color:#000000;">.Letter = Letter</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Sub</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">End</code>
+<code style="color:#006699;font-weight:bold;">Class</code></span></div>
+</div>
+<br />
+</blockquote>
+<ul>
+</ul>
+<h2><a name="Example_Project_Click_Here_To_Download_The_Example_Project"></a>Example Project<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7673.dd.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7673.dd.png" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<div style="text-align:center;"><a href="http://sdrv.ms/ZdOQKq">Click Here To Download The Example Project</a></div>
+</h2>
+<p><em><a href="http://social.technet.microsoft.com/wiki/contents/articles/14665.visual-basic-articles-by-paul-ishak.aspx">Please view my other wiki articles!</a></em></p>
+<ul>
+</ul>
+<p>Please update this article if you see any mistakes.</p>
+<a href="http://www.hitwebcounter.com/" target="_blank"><img alt=" " src="http://hitwebcounter.com/counter/counter.php?page=4656431&amp;style=0007&amp;nbdigits=9&amp;type=page&amp;initCount=3" style="border-width:0px;border-style:solid;" />
+</a>
+
+</div>
+    
+    

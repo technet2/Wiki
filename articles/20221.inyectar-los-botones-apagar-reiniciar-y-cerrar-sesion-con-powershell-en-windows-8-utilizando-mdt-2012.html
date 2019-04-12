@@ -1,0 +1,133 @@
+---
+layout: default
+title: Inyectar los botones Apagar, Reiniciar y Cerrar Sesión con Powershell en Windows 8 utilizando MDT 2012 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span>Hola que tal amigos pues en esta ocasión vamos a realizar el deployment de Windows 8 y que este al finalizar la instalación integre los botones de Apagado, Reinicio y Cerrar Sesión de forma automatizada.</span></p>
+<p><img width="640" height="63" class="aligncenter" alt=" " src="http://blogs.itpro.es/octaviordz/files/2013/08/5482_SolutionAcceleratorslogo_70D03793.png" /></p>
+<p style="text-align:justify;"><span>para este post voy a tomar algunas imágenes de post anteriores para no volver a subir imágenes.</span></p>
+<p style="text-align:justify;"><span>lo primero que haremos será inyectar Windows 8 dentro de nuestro MDT 2012 tal y como se muestra a continuación.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/17.jpg"><img width="502" height="326" alt="1" src="http://blogs.itpro.es/octaviordz/files/2013/10/17.jpg" /></a></p>
+<p style="text-align:left;"><span>una vez instalado nuestro sistema en MDT creamos la secuencia de tareas Standard Client Task Squence</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/27.jpg"><img width="409" height="351" alt="2" src="http://blogs.itpro.es/octaviordz/files/2013/10/27.jpg" /></a></p>
+<p style="text-align:justify;"><span>una vez echo esto, primeramente nos dirigimos a nuestro DeploymentShare ubicado en la unidad donde se crea todo el árbol, hay vamos a utilizar $OEM$ la carpeta.</span></p>
+<p><span>aquí la explicación de $OEM$ y para que se utiliza.</span></p>
+<p><span>en pocas palabras las carpetas hacen la función de copiar la información a lugares en específicos cuando instalamos algún sistema operativo. para poder hacer uso de la información según sea el caso.</span></p>
+<p><span><span>$OEM$.-</span> toda la información que este dentro de esta carpeta se copiara al disco duro durante la instalación.</span></p>
+<p><span><span>$1.-</span> tola la información contenida en esta carpeta se copiara directamente a la raíz de la unidad en este caso
+<span>C:</span> como normalmente se instala.</span></p>
+<p><span><span>$$.-</span>Toda la información contenida en esta carpeta se copiara la carpeta de (Windows) siendo la ruta:
+<span>c:\windows.</span></span></p>
+<p><span>por lo que si nos fijamos cuando creamos nuestro Deploymentshare con MDT2012 nos vamos a la carpeta contenedora y vemos que pone la $OEM$ por default como se muestra la siguiente imagen.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/36.jpg"><img width="603" height="351" alt="3" src="http://blogs.itpro.es/octaviordz/files/2013/10/36.jpg" /></a></p>
+<p style="text-align:left;"><span>Dentro de esta carpeta entonces vamos a crear<span> $1</span> para poder integrar el archivo “Botones” cual adjunto con todos los parámetros necesarios para poder integrar
+ los iconos con Powershell.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/46.jpg"><img width="548" height="271" alt="4" src="http://blogs.itpro.es/octaviordz/files/2013/10/46.jpg" /></a></p>
+<p style="text-align:left;"><span>aquí esta el link para descargar la carpeta botones:</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/310.jpg"><img width="71" height="73" alt="3" src="http://blogs.itpro.es/octaviordz/files/2013/09/310.jpg" /></a></p>
+<p style="text-align:center;"><a href="http://sdrv.ms/15BozZY" target="_blank">http://sdrv.ms/15BozZY</a></p>
+<p style="text-align:left;"><span>una vez descomprimidos, los colocamos como se indica en la imagen anterior.</span></p>
+<p style="text-align:left;"><span>para poder ejecutar este proceso adecuadamente y que MDT reconozca a $OEM$ vamos a descargar un script y lo vamos a colocar en la sección de scripts dentro de nuestro DeploymentShare. información sacada
+ del blog de Michael Niehaus.</span></p>
+<p style="text-align:left;"><span>aquí el link de descarga:
+<span><a href="http://sdrv.ms/1cyguHG" target="_blank"><span>http://sdrv.ms/1cyguHG</span></a></span></span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/111.jpg"><img width="580" height="355" alt="11" src="http://blogs.itpro.es/octaviordz/files/2013/10/111.jpg" /></a></p>
+<p style="text-align:left;"><span>una vez echo esto nos posicionamos dentro de las propiedades de&nbsp;nuestra secuencia de tareas&nbsp;y crearemos una tarea quedando de la siguiente forma.</span></p>
+<p style="text-align:left;"><span>cscript.exe “%ScriptRoot%\CopyOEM.wsf”</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/121.jpg"><img width="730" height="446" alt="12" src="http://blogs.itpro.es/octaviordz/files/2013/10/121.jpg" /></a></p>
+<p style="text-align:left;"><span>ahora lo que haremos será copiar el siguiente código en bloc de notas y guardarlo con extensión
+<span>.ps1</span> de Powershell.</span></p>
+<p style="text-align:left;"><span>Set-ExecutionPolicy Unrestricted</span><br />
+<span>Import-Module C:\botones\CreateWindowsTile.psm1</span><br />
+<span>New-OSCWindowsTile -ShutdownTile</span><br />
+<span>New-OSCWindowsTile -RestartTile</span><br />
+<span>New-OSCWindowsTile -LogoffTile</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/9.jpg"><img width="587" height="412" alt="9" src="http://blogs.itpro.es/octaviordz/files/2013/10/9.jpg" /></a></p>
+<p style="text-align:left;"><span>el archivo creado lo vamos a colocar dentro de nuestro DeploymentShare en la carpeta</span>
+<span>Scripts</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/61.jpg"><img width="536" height="270" alt="6" src="http://blogs.itpro.es/octaviordz/files/2013/10/61.jpg" /></a></p>
+<p style="text-align:left;"><span>ahora dentro de nuestra secuencia de tareas damos clic derecho en propiedades y en la pestaña de Secuenciador de tareas para agregar el archivo
+<span>.ps1</span> de Powershell.</span></p>
+<p><span>cuando creamos nuestra secuencia de tareas nos vamos a propiedades para que nos aparezcan todos los pasos por default de lo que hará el proceso en este caso en la parte de
+<span>state restore</span></span></p>
+<p><span>Install Aplication.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/37.jpg"><img width="731" height="488" alt="3" src="http://blogs.itpro.es/octaviordz/files/2013/09/37.jpg" /></a></p>
+<div style="text-alocar dentro de nuestro DeploymentShare en la carpeta</span>
+<span>Scripts</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.ign:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/37.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>agregamos los archivos creados dando clic en ADD tal y como se muestra la imagen.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/47.jpg"><img width="392" height="297" class="aligncenter" alt="4" src="http://blogs.itpro.es/octaviordz/files/2013/09/47.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/47.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>escribimos el nombre del archivo</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/7.jpg"><img width="735" height="528" alt="7" src="http://blogs.itpro.es/octaviordz/files/2013/10/7.jpg" /></a></p>
+<p style="text-align:left;"><span>hacemos update a nuestro Deploymentshare tal y como se muestra la imagen.</span></p>
+<p style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/8.jpg"><img width="549" height="333" class="aligncenter" alt="8" src="http://blogs.itpro.es/octaviordz/files/2013/10/8.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/8.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>actualizamos la imagen y esperamos a que el proceso termine para después desplegarlo en una maquina virtual, como lo es mi caso dentro de VMware 9.0</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/74.jpg"><img width="706" height="169" class="aligncenter" alt="7" src="http://blogs.itpro.es/octaviordz/files/2013/09/74.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/74.jpg">&nbsp;</a></div>
+<span><br />
+creamos un Media para crear la imagen completa en .ISO de nuestro sistema operativo.</span>
+<p>&nbsp;</p>
+<p style="text-align:center;"><span><a href="http://blogs.itpro.es/octaviordz/files/2013/10/10.jpg"><img width="465" height="313" alt="10" src="http://blogs.itpro.es/octaviordz/files/2013/10/10.jpg" /></a></span></p>
+<p>&nbsp;</p>
+<p><span>hacemos un update a nuestro Media y corremos nuestra imagen .ISO, ahora esperamos el proceso de creación de nuestra maquina virtual de Windows 8 para ver los resultados deseados.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/122.jpg"><img width="702" height="343" class="aligncenter" alt="12" src="http://blogs.itpro.es/octaviordz/files/2013/09/122.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/122.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>aquí el proceso terminado, ahora si a montarlo en nuestra maquina virtual VMware 9.0</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/132.jpg"><img width="671" height="142" class="aligncenter" alt="13" src="http://blogs.itpro.es/octaviordz/files/2013/09/132.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/132.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/142.jpg"><img width="441" height="399" class="aligncenter" alt="14" src="http://blogs.itpro.es/octaviordz/files/2013/09/142.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/142.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/152.jpg"><img width="753" height="384" class="aligncenter" alt="15" src="http://blogs.itpro.es/octaviordz/files/2013/09/152.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/152.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>Inicia el proceso.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/161.jpg"><img width="618" height="298" class="aligncenter" alt="16" src="http://blogs.itpro.es/octaviordz/files/2013/09/161.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/161.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>Damos clic en Run The deployment Wizard para iniciar el proceso</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/172.jpg"><img width="637" height="332" class="aligncenter" alt="17" src="http://blogs.itpro.es/octaviordz/files/2013/09/172.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/172.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>Seleccionamos la secuencia de tareas que configuramos previamente</span>&nbsp;</p>
+<p><span>Le ponemos el nombre a la computadora, esto es como referencia.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/191.jpg"><img width="671" height="475" class="aligncenter" alt="19" src="http://blogs.itpro.es/octaviordz/files/2013/09/191.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/191.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>Le decimos que no restaure ya que es un Sistema Operativo limpio.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/20.jpg"><img width="749" height="444" class="aligncenter" alt="20" src="http://blogs.itpro.es/octaviordz/files/2013/09/20.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/20.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/211.jpg"><img width="561" height="392" class="aligncenter" alt="21" src="http://blogs.itpro.es/octaviordz/files/2013/09/211.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/211.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>en la parte de administrador en caso de que no tengamos configurada esta opción, le ponemos cualquiera, anotamos de acuerdo a nuestro horario y siguiente.</span>&nbsp;</p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/231.jpg"><img width="496" height="239" class="aligncenter" alt="23" src="http://blogs.itpro.es/octaviordz/files/2013/09/231.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/09/231.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>y listo nuestro Windows 8 instalado e integrado con estos iconos fundamentales para poder trabajar con ellos.</span></p>
+<p style="text-align:center;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/iconos.jpg"><img width="831" height="626" class="alignnone size-full wp-image-3026" alt="iconos" src="http://blogs.itpro.es/octaviordz/files/2013/10/iconos.jpg" /></a></p>
+<div style="text-align:left;"><a href="http://blogs.itpro.es/octaviordz/files/2013/10/iconos.jpg">&nbsp;</a></div>
+<p>&nbsp;</p>
+<p><span>bueno amigos espero y les sirva como referencia mi articulo, saludos a todos mis lectores y estamos con nuevos post.</span></p>
+<p><span><img class="wp-smiley" alt=":)" src="http://blogs.itpro.es/octaviordz/wp-includes/images/smilies/icon_smile.gif" />
+</span></p>
+<address><span>MAP L.I. Jesús Octavio Rodríguez de Santiago</span></address>
+<address><span>https://www.facebook.com/freelance.deployment</span></address>
+<address><span>http://www.freelance-it.com.mx</span></address>
+<address><span>@freelanceitags</span></address>
+<p>&nbsp;</p>
+
+</div>
+    
+    

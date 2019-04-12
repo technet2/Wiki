@@ -1,0 +1,62 @@
+---
+layout: default
+title: How to analyze a workflow when the OpsMgr Workflow Analyzer doesn’t work - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+One tool included in the <a href="http://www.microsoft.com/en-us/download/details.aspx?id=18222">
+<span style="color:#0066dd;">System Center Operations Manager 2007 R2 Authoring Resource Kit</span></a>&nbsp;was the Workflow Analyzer. Not only was this tool very useful in debugging your workflows whilst developing them, it was also very useful for those who had&nbsp;to
+ then debug them once they hit a runtime issue somewhere in the wild.
+<p>Unfortunately, we often found situations where it wouldn’t work. It was only developed for servers running US-English locale which left a good number of machines out of its reach. We then found that in many larger&nbsp;environments there were too many workflows
+ for it to handle and it failed in those circumstances too. As (bad) luck would have it, these sort of scenarios were often the ones that&nbsp;had the unusual workflow problems that were crying out for this kind of tool.</p>
+<p>Recently, I was working on a very unusual workflow failure case and decided that the Workflow Analyzer was the right tool for the job. Unfortunately the tool decided it was not the right tool for the job and crashed when&nbsp;I tried to use it. I wouldn’t normally
+ spend time troubleshooting troubleshooting tools, but in this case I was all out of suitable options for furthering the investigation and it seemed&nbsp;like the best idea.
+</p>
+<p>As standard OpsMgr tracing and testing had not helped&nbsp;get to the bottom of the problem, I decided to&nbsp;manually enable workflow tracing to help progress things. Here’s the Workflow Analyzer crash message:</p>
+<p><em><strong>[EventType clr20r3, P1 wfanalyzer.exe, P2 6.0.4900.0, P3 4ad83063, P4 system.windows.forms, P5 2.0.0.0, P6 4f681deb, P7 1521, P8 18, P9 system.invalidoperationexception, P10 NIL.]</strong></em>
+</p>
+<p>This indicated a problem within System.Windows.Forms (a UI part of the application) so I was confident a manual approach would work. But if we are going to do it manually we need to know how the Workflow Analyzer does it automatically and copy it, so what
+ does it do?</p>
+<p>First of all it puts an override in place for the rule/monitor you wish to trace. This override is called
+<b>TraceEnabled</b>, but unfortunately it isn’t<b> </b>exposed to us in the OpsMgr console so we have to a bit of manual override creation/editing to do. In order to make this easy for us we need to search on the rule/monitor we wish to trace in the OpsMgr
+ console, ensuring we are choosing the correct target for the machine this is failing on, and then create an override for the object that sets the Enable property to true. This will have no effect on the workflow if it is already enabled but we are using this
+ technique to help create our override in the MPs xml.</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-46-16-metablogapi/2843.clip_5F00_image002_5F00_75CAB796.jpg"><img title="clip_image002" alt="clip_image002" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-46-16-metablogapi/2275.clip_5F00_image002_5F00_thumb_5F00_0DEE21F2.jpg" width="600" height="312" style="border-top:0px solid;border-right:0px solid;border-bottom:0px solid;border-left:0px solid;display:inline;" /></a></p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-46-16-metablogapi/0068.clip_5F00_image004_5F00_68F06178.jpg"><img title="clip_image004" alt="clip_image004" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-46-16-metablogapi/5488.clip_5F00_image004_5F00_thumb_5F00_6C224960.jpg" width="600" height="615" style="border-top:0px solid;border-right:0px solid;border-bottom:0px solid;border-left:0px solid;display:inline;" /></a></p>
+<p>Once you have created the MP, export the MP and then open it in your favorite XML editor (Notepad will do). You will then see an override like this for your rule,</p>
+<p><em><span style="color:#0000a0;">&lt;Overrides&gt; <br />
+&lt; RulePropertyOverride ID=&quot;OverrideForRuleMomUIGeneratedRule06afb11860a042f9b0f5c7f25205431eForContextMicrosoftWindowsComputerc5241357d8304af5b9bdc54795a4a8c9&quot; Context=&quot;MicrosoftWindowsLibrary6172210!Microsoft.Windows.Computer&quot; ContextInstance=&quot;82c098da-8958-25ac-47b9-468c1c815fb0&quot;
+ Enforced=&quot;false&quot; Rule=&quot;MomUIGeneratedRule06afb11860a042f9b0f5c7f25205431e&quot; <strong>
+Property=&quot;Enabled&quot;</strong>&gt; <br />
+<strong>&lt;Value&gt;true&lt;/Value&gt;</strong> <br />
+&lt; /RulePropertyOverride&gt; <br />
+&lt; /Overrides&gt;</span></em> </p>
+<p>In order to turn this into a workflow trace enabling override you need to edit the property name from Enabled to TraceEnabled, everything else will stay the same.</p>
+<p><em><span style="color:#0000a0;">&lt;RulePropertyOverride ID=&quot;OverrideForRuleMomUIGeneratedRule06afb11860a042f9b0f5c7f25205431eForContextMicrosoftWindowsComputerc5241357d8304af5b9bdc54795a4a8c9&quot; Context=&quot;MicrosoftWindowsLibrary6172210!Microsoft.Windows.Computer&quot;
+ ContextInstance=&quot;82c098da-8958-25ac-47b9-468c1c815fb0&quot; Enforced=&quot;false&quot; Rule=&quot;MomUIGeneratedRule06afb11860a042f9b0f5c7f25205431e&quot;
+<strong>Property=&quot;TraceEnabled&quot;</strong>&gt; <br />
+<strong>&lt;Value&gt;true&lt;/Value&gt;</strong> <br />
+&lt; /RulePropertyOverride&gt;</span></em></p>
+<p>Save this MP, import it back into your OpsMgr environment and then wait for this to arrive at the agent you wish to trace. You can track this by watching for a 1210 event for that MP to be logged in the OpsMgr event log. Once it has arrived and you have
+ seen the subsequent 1210 event indicating a new configuration is active, you are ready to move to the next stage.</p>
+<p>Once the new config is loaded, OpsMgr will start sending out trace messages to anything who will listen. But we don’t have anyone listening yet as this is achieved by running the following command,</p>
+<p><strong>tracelogsm.exe -start &quot;WorkflowTrace&quot; -flag 0xFF -level 5 -ft 1 -rt -guid &quot;#c85ab4ed-7f0f-42c7-8421-995da9810fdd&quot; -b 1024 -f %windir%\temp\opsmgrtrace\WorkFlowTrace.etl</strong></p>
+<p>The location of tracelogsm.exe will vary by version and installation of OpsMgr, defaults are shown below</p>
+<p>OpsMgr 2007 R2 - %\ProgramFiles%\System Center Operations Manager 2007\Tools\</p>
+<p>OpsMgr 2012 Server - %\ProgramFiles%\System Center 2012\Operations Manager\Server\Tools\</p>
+<p>OpsMgr 2012 Agent - %\ProgramFiles%\System Center 2012\Operations Manager\Agent\Tools\</p>
+<p>OpsMgr 2012 R2 Server - %\ProgramFiles%\Microsoft System Center 2012 R2\Operations Manager\Server\Tools\</p>
+<p>OpsMgr 2012 R2 Agent - %\ProgramFiles%\Microsoft Monitoring Agent\Agent\Tools</p>
+<p>Also note that the output trace file location I chose above (%windir%\temp\opsmgrtrace\WorkFlowTrace.etl) is the location for the standard OpsMgr event trace logs on OpsMgr 2007 R2 in order to make the trace formatting more straightforward. If you are doing
+ this on an OpsMgr 2012 or an OpsMgr 2012 R2 server then depending on the OS you may need to use the path %windir%\Logs\OpsMgrTrace instead.</p>
+<p>That’s it. You now have workflow tracing in place and are ready to reproduce the problem and test your workflow. Each module will now be logging to the .etl file you specified above (e.g. %windir%\temp\opsmgrtrace\WorkFlowTrace.etl). Once you have repeated
+ the tests you needed to do you can convert the etl to a readable log in the standard way by running formattracing.cmd from the same OpsMgr Tools directory you ran tracelogsm.exe from, and you will find the WorkFlowTrace.log gets created which hopefully has
+ all the details you were after to help you solve your problem.</p>
+<p>One final thing you need to do is to stop the tracing once you are done and this is achieved by running tracelogsm.exe -stop &quot;WorkflowTrace&quot; and then deleting the override from your MP.</p>
+<p><em>Original author is <strong>Brian McDermott </strong>via </em><a href="http://blogs.technet.com/b/momteam/archive/2013/10/31/how-to-analyze-a-workflow-when-the-opsmgr-workflow-analyzer-doesn-t-work.aspx"><em>http://blogs.technet.com/b/momteam/archive/2013/10/31/how-to-analyze-a-workflow-when-the-opsmgr-workflow-analyzer-doesn-t-work.aspx</em></a></p>
+
+</div>
+    
+    

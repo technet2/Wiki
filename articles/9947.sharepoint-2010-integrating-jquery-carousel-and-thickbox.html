@@ -1,0 +1,169 @@
+---
+layout: default
+title: SharePoint 2010&#58; Integrating Jquery Carousel and ThickBox - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">Hi all,<br />
+<br />
+In this article, I will show how to integrate SharePoint Image Library to JQuery jcarousel&nbsp;with Thickbox and make very nice UI. &nbsp;We can use it in many places&nbsp;like to show Employee Images in Home Page of HR Site and Clicking on Image will zoom the image with
+ some animation effect, like<br />
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7752.1.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7752.1.JPG" style="border:0px solid;" /></a></div>
+</span><br />
+<span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">Clicking on any Image will open the Image like<br />
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5488.2.JPG" style="font-size:9pt;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5488.2.JPG" style="border:0px solid;" /></a></div>
+</span>
+<p><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">And the Very good thing is Image is coming from
+</span><strong><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">SharePoint 2010 Image Library</span></strong><span style="font-size:9pt;">.</span><br />
+<br />
+<span style="font-size:9pt;">For Implementing these effect&nbsp;I am&nbsp;using following Libraries.</span></p>
+<ul>
+<li style="font-size:9pt;"><a href="https://spcarousel.codeplex.com/"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">https://spcarousel.codeplex.com/</span></a><span style="font-family:calibri;"> (There is no download Link)</span>
+</li><li style="font-size:9pt;"><span style="font-size:9pt;">http://sorgalla.com/jcarousel</span>
+</li><li><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;"><a href="http://jquery.com/demo/thickbox/">http://jquery.com/demo/thickbox/</a></span>
+</li></ul>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">though I am using Managed Client Object Model to access SharePoint Library and Client Object Model does not support RunwithElevatedPriviledge,
+ that’s why I am accessing the Image Library anonymously.<br />
+<br />
+</span></p>
+<h2 style="margin:0in 0in 10pt;"><a name="Step_1_Create_Picture_Library_and_Enable_Anonymous_Access"></a><strong><span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"></span></strong>Step 1: Create Picture Library and Enable Anonymous Access<span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><strong></strong></span></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">Look at the following URL&nbsp;to Enable anonymous access in SharePoint 2010<br />
+</span><a href="http://www.topsharepoint.com/enable-anonymous-access-in-sharepoint-2010"><span style="font-size:9pt;line-height:115%;text-decoration:none;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">http://www.topsharepoint.com/enable-anonymous-access-in-sharepoint-2010</span></a><span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+<br />
+</span></p>
+<h2 style="margin:0in 0in 10pt;"><a name="Step_2_Create_a_aspx_page_which_return_the_URL_of_Images"></a>Step 2: Create a aspx page which return the URL of Images</h2>
+<p style="margin:0in 0in 10pt;"><strong><span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">How to Read Image URL</span></strong><strong><span style="font-size:9pt;line-height:115%;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+<br />
+</span></strong><strong><span style="font-size:9pt;line-height:115%;text-decoration:underline;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">WebForm1.aspx.cs</span></strong>
+</p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string RealUrl;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; string FinalURL=string.Empty;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; protected void Page_Load(object sender, EventArgs e)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; string siteUrl = &quot;</span><a href="http://localhost:123/"><span style="font-size:9pt;text-decoration:none;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">http://localhost:123</span></a><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&quot;;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ClientContext clientContext = new ClientContext(siteUrl);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SP.List oList = clientContext.Web.Lists.GetByTitle(&quot;PicLibrary&quot;); //PicLibrary is the Name of Document Library.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CamlQuery camlQuery = new CamlQuery();<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; camlQuery.ViewXml = &quot;&lt;View&gt;&lt;Query&gt;&lt;Where&gt;&lt;Geq&gt;&lt;FieldRef Name=&#39;ID&#39;/&gt;&quot; &#43;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &quot;&lt;Value Type=&#39;Number&#39;&gt;1&lt;/Value&gt;&lt;/Geq&gt;&lt;/Where&gt;&lt;/Query&gt;&lt;RowLimit&gt;100&lt;/RowLimit&gt;&lt;/View&gt;&quot;;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Microsoft.SharePoint.Client.ListItemCollection collListItem = oList.GetItems((camlQuery));</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientContext.Load(collListItem,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; listItems =&gt; listItems.Include(<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; item =&gt; item.File,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; item =&gt; item.Id,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; item =&gt; item[&quot;Title&quot;],<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; item =&gt; item[&quot;Description&quot;],<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; item =&gt; item[&quot;ImageCreateDate&quot;]));</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; clientContext.ExecuteQuery();</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;foreach (Microsoft.SharePoint.Client.ListItem listItem in collListItem)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; string imageUrl = siteUrl &#43; listItem.File.ServerRelativeUrl;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; RealUrl= imageUrl.Substring(0, imageUrl.LastIndexOf(&#39;/&#39;));<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;RealUrl= LargeImgUrl&#43; &quot;/_t/&quot; &#43; listItem.File.Name.Replace(&#39;.&#39;, &#39;_&#39;) &#43; &quot;.jpg&quot;;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (FinalURL== string.Empty)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FinalURL = RealUrl;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FinalURL = FinalURL &#43; &quot;|&quot; &#43; RealUrl;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Response.Write(Final);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }<br />
+<br />
+The above code return the URL of all the Images&nbsp;concatinated with &quot;|&quot;.<br />
+<br />
+<strong>Note:</strong> Remove all the stuffs from Design Page except Page attribute<br />
+<br />
+</span><strong><span style="font-size:9pt;text-decoration:underline;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">WebForm1.aspx</span></strong><strong><span style="font-size:9pt;text-decoration:underline;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+</span></strong><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+&lt;%@ Page Language=&quot;C#&quot; AutoEventWireup=&quot;true&quot; CodeBehind=&quot;WebForm1.aspx.cs&quot; Inherits=&quot;WebApplication2.WebForm1&quot; %&gt;&nbsp;</span><strong><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></strong></p>
+<span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+One of the very interesting thing in SharePoint Image Library is when you upload images its path will be like<br />
+</span><a href="http://localhost:123/PicLibrary/_t/1.jpg"><span style="font-size:9pt;text-decoration:none;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">http://localhost:123/PicLibrary/_t/1.jpg</span></a><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+when you click on image its path will change&nbsp;and&nbsp;image will be zoomed<br />
+</span><a href="http://localhost:123/PicLibrary/_w/1.jpg"><span style="font-size:9pt;text-decoration:none;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">http://localhost:123/PicLibrary/_w/1.jpg</span></a><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><strong><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">//Notice _t to _w change</span></strong><br />
+<br />
+<strong style="font-family:&#39;segoe ui&#39;,sans-serif;">Output:</strong><br />
+<span style="font-family:&#39;segoe ui&#39;,sans-serif;">http://localhost:123/PicLibrary/_t/1_jpg.jpg|http://localhost:123/PicLibrary/_t/10_jpg.jpg|http://localhost:123/PicLibrary/_t/11_jpg.jpg|http://localhost:123/PicLibrary/_t/12_jpg.jpg|http://localhost:123/PicLibrary/_t/13_jpg.jpg|http://localhost:123/PicLibrary/_t/14_jpg.jpg|http://localhost:123/PicLibrary/_t/15_jpg.jpg|http://localhost:123/PicLibrary/_t/2_jpg.jpg|http://localhost:123/PicLibrary/_t/3_jpg.jpg|http://localhost:123/PicLibrary/_t/4_jpg.jpg|http://localhost:123/PicLibrary/_t/5_jpg.jpg|http://localhost:123/PicLibrary/_t/6_jpg.jpg|http://localhost:123/PicLibrary/_t/7_jpg.jpg|http://localhost:123/PicLibrary/_t/8_jpg.jpg|http://localhost:123/PicLibrary/_t/9_jpg.jpg</span><br />
+<br />
+<br />
+<h2><a name="Step_3_Create_a_SharePoint_Web_Part_Application_Page_which_will_show_the_Image_Slider_and_Thick_Box"></a>Step 3: Create a SharePoint Web Part / Application Page which will show the Image Slider and Thick Box</h2>
+<p style="margin:0in 0in 12pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;"><br />
+Create a HTML Page with following Code: (You can create Web Part/User Control or Application Pages also)</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;</span><a href="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><span style="font-size:9pt;text-decoration:none;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd</span></a><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&quot;&gt;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&lt;html xmlns=&quot;</span><a href="http://www.w3.org/1999/xhtml"><span style="font-size:9pt;text-decoration:none;font-family:&#39;segoe ui&#39;,sans-serif;color:#0066dd;">http://www.w3.org/1999/xhtml</span></a><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&quot;
+ xml:lang=&quot;en-us&quot;&gt;<br />
+&lt;head&gt;<br />
+&lt;link href=&quot;../style.css&quot; rel=&quot;stylesheet&quot; type=&quot;text/css&quot; /&gt;<br />
+<br />
+&nbsp;&nbsp;&nbsp; &lt;script type=&quot;text/javascript&quot; src=&quot;jquery-1.4.2.min.js&quot;&gt;&lt;/script&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;script type=&quot;text/javascript&quot; src=&quot;jcarousel/jquery.jcarousel.min.js&quot;&gt;&lt;/script&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;jcarousel/tango/skin.css&quot; /&gt;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp; &lt;script type=&quot;text/javascript&quot; src=&quot;thickbox/thickbox.js&quot;&gt;&lt;/script&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;thickbox/thickbox.css&quot; /&gt;<br />
+&nbsp;&nbsp;&nbsp; <br />
+&nbsp;&nbsp;&nbsp; &lt;script type=&quot;text/javascript&quot;&gt;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">function mycarousel_itemLoadCallback(carousel, state)<br />
+{<br />
+&nbsp;&nbsp;&nbsp; if (state != &#39;init&#39;)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;<br />
+&nbsp;&nbsp;&nbsp; jQuery.get(&#39;WebForm1.aspx&#39;, function (data) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mycarousel_itemAddCallback(carousel, carousel.first, carousel.last, data);<br />
+&nbsp;&nbsp;&nbsp; });<br />
+};</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">function mycarousel_itemAddCallback(carousel, first, last, data) {<br />
+&nbsp;&nbsp;&nbsp; var items = data.split(&#39;|&#39;);<br />
+&nbsp;&nbsp;&nbsp; for (i = 0; i &lt; items.length; i&#43;&#43;) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; var item = jQuery(mycarousel_getItemHTML(items[i])).get(0);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; tb_init(item);<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; erif;color:#333333;">function mycarousel_itemLoadCallback(carousel, state)<br />
+{<br />
+&nbsp;&nbsp;&nbsp; if (state != &#39;init&#39;)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;<br />
+&nbsp;&nbsp;&nbsp; jQuery.get(&#39;WebForm1.aspx&#39;, function (data) {<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mycarousel_itemAddCallback(carousel, carousel.first, carousel.last, data);<br />
+&nbsp;&nbsp;&nbsp; });<br />
+};</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">function mycarousel_itemAddCallback(carousel, first, last, data) {<br />
+&nbsp;&nbsp;&nbsp; var items = data.split(&#39;|&#39;);<br />
+&nbsp;&nbsp;&nbsp; for (i = 0; i &lcarousel.add(i &#43; 1, item);<br />
+&nbsp;&nbsp;&nbsp; }<br />
+&nbsp;&nbsp;&nbsp; carousel.size(items.length);<br />
+};</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">function mycarousel_getItemHTML(item)
+<br />
+{<br />
+<span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&nbsp;&nbsp;&nbsp; var url_m = item.replace(‘/_t’, &#39;_w.jpg&#39;);<br />
+&nbsp;&nbsp;&nbsp; return &#39;&lt;a href=&quot;&#39; &#43; url_m &#43; &#39;&quot; title=&quot;&#39; &#43; url_m &#43; &#39;&quot;&gt;&lt;img src=&quot;&#39; &#43; url_m &#43; &#39;&quot; width=&quot;75&quot; height=&quot;75&quot; alt=&quot;&quot; border=&quot;0&quot;&nbsp; /&gt;&lt;/a&gt;&#39;;<br />
+</span>};</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">jQuery(document).ready(function ()
+<br />
+{<br />
+&nbsp;&nbsp;&nbsp; jQuery(&#39;#mycarousel&#39;).jcarousel<br />
+&nbsp;&nbsp;&nbsp; ({<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; visible: 6,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; itemLoadCallback: mycarousel_itemLoadCallback<br />
+&nbsp;&nbsp;&nbsp; });<br />
+});</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&lt;/script&gt;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&lt;/head&gt;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:9pt;font-family:&#39;segoe ui&#39;,sans-serif;color:#333333;">&lt;body&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;div id=&quot;wrap&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ul id=&quot;mycarousel&quot; class=&quot;jcarousel-skin-ie7&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ul&gt;<br />
+&nbsp;&nbsp;&nbsp; &lt;/div&gt;<br />
+&lt;/body&gt;<br />
+&lt;/html&gt;<br />
+</span></p>
+
+</div>
+    
+    

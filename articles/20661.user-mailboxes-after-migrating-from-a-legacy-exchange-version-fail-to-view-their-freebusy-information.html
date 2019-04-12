@@ -1,0 +1,97 @@
+---
+layout: default
+title: User Mailboxes after Migrating from a Legacy Exchange Version Fail to View their Free/Busy Information - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<strong><span style="text-decoration:underline;">Issue Description/ scenario</span></strong>: User mailboxes have been migrated from a legacy Exchange version (exchange 2003) to a current version, they can access all other features, but unable to view their
+ free/busy information or see other user Mailboxes free busy information, but they are able to see the FB information for mailboxes created in the new mailbox server:<br />
+<br />
+Figure 1:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8422.fb-not-available.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8422.fb-not-available.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="text-decoration:underline;">Root cause: </span>&nbsp;Exchange 2003 publishes free/busy information on public folders&#39; system folders, while Exchange 2007/2010 can use both public folder and the availability service. Public folders in 2007 are kept for
+ legacy Outlook (Outlook 2003) users, as Outlook 2003 does not have Availability services compatibility.<br />
+Now for some reasons, if the system folders were not migrated properly, this issue is inedible and or the First Administrative Group was deleted&nbsp;<strong>(ABSOLUTELY NOT RECOMMENDED).<br />
+</strong>Now, if this be the scenario, the PF hierarchy will be shifted to the Exchange Administrative Group (in 2007/2010,2013)<br />
+<br />
+Note: Migration from exchange 2003 to 2013 is not possible unless Exchange from 2003 has been migrated either to 2007 or 2010 [FYI]<br />
+<br />
+System folders view in exchange 2003 :<br />
+<br />
+Figure 2:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4174.system-folders.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4174.system-folders.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+Availability service snapshot :<br />
+<br />
+Figure 3:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5008.availability-_2D00_-Copy.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5008.availability-_2D00_-Copy.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+Image taken from TechNet&nbsp;<br />
+<br />
+&nbsp;Now, legacy Outlook users will look for their free busy information and get the information as unknown, as shown in Figure 1.<br />
+using&nbsp;<br />
+<br />
+The next logical step the user will perform is to clear the free/busy cache by running Outlook with the /cleanfreebusy switch. &nbsp;<br />
+<br />
+The next logical step would be to do a send/receive to sync the cached Outlook with the server , where the user will get the following error &quot;<br />
+<br />
+Figure 4:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6116.sendrecieveerror-_2D00_-Copy.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6116.sendrecieveerror-_2D00_-Copy.JPG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+Upon Viewing the Event Viewer the user will get the following event 8207 stating:<br />
+<br />
+<p class="western" style="margin-bottom:0.24in;border:none;padding:0in;line-height:0.24in;">
+<span style="font-size:9pt;background-color:#ffffff;font-family:Verdana,Arial,Helvetica,sans-serif;color:#333333;">Event ID : 8207&nbsp;<br />
+Raw Event ID : 8207&nbsp;<br />
+Record Nr. : 6&nbsp;<br />
+Category : General&nbsp;<br />
+Source : MSExchangeFBPublish&nbsp;<br />
+Type :&nbsp;Error&nbsp;</span></p>
+To resolve the issue, the first mandate is to have Public folder databases in the newer version of exchange (Which is Obvious)<br />
+<br />
+If you check the legacyExchangeDn attribute, it will point to the <strong>first administrative group</strong> for the migrated users .<br />
+<strong><br />
+Now the Thing about LDN or legacy Exchange Dn , is it is created during the birth of the object(mailbox in this case), and does not get modified , even if the user is migrated to a newer version, i.e. Exchange Administrative group ,instead of First Administrative
+ group.<br />
+</strong><br />
+Thus the migrated users will have the LDN as First Administrative group.<br />
+<br />
+Coming back to the resolution, check that the free/busy folder exists in the new version .<br />
+<br />
+This can be done by running the command : &nbsp;<span style="font-size:9pt;line-height:0.24in;font-family:Verdana,Arial,Helvetica,sans-serif;"><strong>get-publicfolder “\non_ipm_subtree\schedule&#43;&nbsp;free&nbsp;busy” -recurse&nbsp;<br />
+</strong></span><br />
+Figure 5:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7115.getpublic.JPG"><span style="font-size:16px;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7115.getpublic.JPG" style="border-width:0px;border-style:solid;" /></span></a><br />
+<br />
+<br />
+Now the resolution lies in creating a new folderative
+ group.<br />
+</strong><br />
+Thus the migrated users will have the LDr for the &quot;First Administrative Group&quot; under the &quot;\non_ipm_subtree&quot;, which btw , is the technical term for system folders.<br />
+<br />
+This can be done using the cmdlet :<br />
+<p class="western" style="margin-bottom:0.24in;border:none;padding:0in;line-height:0.24in;">
+<span style="font-size:9pt;font-family:Verdana,Arial,Helvetica,sans-serif;">new-publicfolder -name “EX:/o=mojorisin/ou=First Administrative Group” -path “\non_ipm_subtree\schedule&#43;&nbsp;free&nbsp;busy”<br />
+<strong><span style="text-decoration:underline;color:#ff0000;">Note:mojorisin is my org name . Change the Orgname according to your Organization.</span></strong></span></p>
+Post this , recreate a Outlook profile for a legacy moved mailbox and do a send receive.&nbsp;<br />
+<br />
+The user should be able to view the free/busy information now.<br />
+<br />
+Cheers&nbsp;<br />
+<br />
+Max<br />
+<br />
+<br />
+
+</div>
+    
+    

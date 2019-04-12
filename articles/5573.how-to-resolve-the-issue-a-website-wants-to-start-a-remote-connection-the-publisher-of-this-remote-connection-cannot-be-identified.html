@@ -1,0 +1,73 @@
+---
+layout: default
+title: How to Resolve the Issue&#58; “A website wants to start a remote connection. The publisher of this remote connection cannot be identified.” - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>“A website wants to start a remote connection. The publisher of this remote connection cannot be identified.”</p>
+<p>Often you receive this message when you try to run your remote applications, even though you have all the certificates in place and they are configured properly. You might ask “I have already signed my application with the trusted certificate and my web
+ single sign-on (SSO) is working fine, so why I am receiving this error message?”</p>
+<p>The answer: Although you have signed in the application by using the trusted certificate, the client computer needs the Secure Hash Algorithm 1 (SHA1) certificate thumbprints that represent trusted Remote Desktop Protocol (RDP) file publishers.</p>
+<p>There are two ways that you can configure your computers so that you don’t see this error message again.</p>
+<h2><a name="Method_1_Create_a_GPO_with_RDP_signing_settings_permanent_fix"></a>Method 1: Create a GPO with RDP signing settings (permanent fix)</h2>
+<p>You can create a Group Policy object (GPO) by using the following settings from your domain controller and push that policy to all the
+<b>client computers </b>that are trying to access the remote application.</p>
+<h3><a name="Locate_the_SHA1_thumbprint"></a>Locate the SHA1 thumbprint</h3>
+<p>1. To find the SHA1 thumbprint, click <b>Start</b>, click <b>Run</b>, type <b>
+mmc</b>, and then click <b>OK</b>.</p>
+<p>2. On the <b>File</b> menu, click <b>Add/Remove Snap-in</b>.</p>
+<p>3. In the <b>Available snap-ins </b>box, click <b>Certificates</b>, and then click
+<b>Add</b>.</p>
+<p>4. In the <b>Certificates snap-in</b> dialog box, select <b>Computer account</b>, and then click
+<b>Next</b>.</p>
+<p>5. In the <b>Select Computer</b> dialog box, click <b>Local computer: (the computer this console is running on)</b>, and then click
+<b>Finish</b>.</p>
+<p>6. In the <b>Add or Remove Snap-ins</b> dialog box, click <b>OK</b>.</p>
+<p>7. In the <b>Console</b> tree, expand <b>Certificates (Local Computer)</b>, expand
+<b>Personal</b>, and then click <b>Certificates</b>.</p>
+<p>8. Double-click the certificate that you want to use.</p>
+<p>9. In the <b>Certificate Properties</b> dialog box, on the <b>Details</b> tab, click
+<b>Thumbprint</b>. The thumbprint number will appear in the box (example: 25 1a 22 02 b3 6d b6 f0 64 0b db 8d b5 4a bb 99 0f bc ed af).</p>
+<p>10. Copy the thumbprint number, making sure that you don’t include the space in front of the number, and then click
+<strong>OK</strong>. (For example, if the number starts with &lt;space&gt;74…, start copying from the “74.”)</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/4571.clip_5F00_image001_5F00_66570130.png"><img title="clip_image001" alt="clip_image001" src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/5460.clip_5F00_image001_5F00_thumb_5F00_6C31A4C9.png" width="424" height="525" style="border:0px currentColor;display:inline;" /></a></p>
+<h3><a name="Add_the_SHA1_thumbprint_to_the_Group_Policy_setting"></a></h3>
+<h3><a name="Add_the_SHA1_thumbprint_to_the_Group_Policy_setting"></a>Add the SHA1 thumbprint to the Group Policy setting</h3>
+<p>1. On the domain controller, open the Group Policy Management Console (GPMC). You can open the GPMC in one of two ways:</p>
+<ul>
+<li>Click <b>Start</b>, point to <b>Administrative Tools</b>, and then click <b>Group Policy Management Console</b>.
+</li><li>Click <b>Start</b>, click <b>Run</b>, type <b>gpmc.msc</b> and then click <b>
+OK</b> or press ENTER. </li></ul>
+<p>2. Go to the location of the Group Policy setting: <b><i>&lt;computer&gt; </i>| <i>&lt; user&gt;</i>\Policies\Administrative Templates\Windows Components\Remote Desktop Services\Remote Desktop Connection Client</b>.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/6131.clip_5F00_image003_5F00_597CAB12.jpg"><img title="clip_image003" alt="clip_image003" src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/6153.clip_5F00_image003_5F00_thumb_5F00_525D6E9A.jpg" width="319" height="109" style="border:0px currentColor;display:inline;" /></a></p>
+<p>3. In the Settings pane, double-click <b>Specify SHA1 thumbprints of certificates representing trusted .rdp publishers</b>.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/7624.clip_5F00_image004_5F00_4B3E3222.png"><img title="clip_image004" alt="clip_image004" src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/5657.clip_5F00_image004_5F00_thumb_5F00_5910781D.png" width="582" height="135" style="border:0px currentColor;display:inline;" /></a></p>
+<p><b>4. </b>Click <b>Enabled</b>, and then in the <b>Comma-separated list of SHA1 trusted certificate thumbprints</b> box, enter the SHA1 thumbprint of the certificate that you use for signing your remote applications or RemoteApp programs (i.e., paste the
+ thumbprint number that you copied from the Certificates Properties page), and then click
+<b>OK</b>. </p>
+<p><strong>Note</strong>: Make sure that when you paste the number, there isn’t a space in front of it.<b></b></p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/4174.clip_5F00_image006_5F00_037CA93B.jpg"><img title="clip_image006" alt="clip_image006" src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/8206.clip_5F00_image006_5F00_thumb_5F00_7133E278.jpg" width="542" height="497" style="border:0px currentColor;display:inline;" /></a></p>
+<p>5. After enabling this policy setting on all the client computers, you should no longer receive the error message.</p>
+<h2><a name="Method_2_Change_logon_settings_temporary_fix"></a>Method 2: Change logon settings (temporary fix)</h2>
+<p>1. When you log on to the RD Web Access web page, you have an option to choose whether you are on a
+<i>public</i> or a <i>private</i> computer.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/0602.clip_5F00_image008_5F00_1C0C468B.jpg"><img title="clip_image008" alt="clip_image008" src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/2330.clip_5F00_image008_5F00_thumb_5F00_1AC7ADAC.jpg" width="628" height="338" style="border:0px currentColor;display:inline;" /></a></p>
+<p>2. Select <b>This is a private computer</b>, and then click <b>Sign in</b>.</p>
+<p>3. You will still see the prompt, but this time when the security warning appears, select the
+<b>Don’t ask me again for remote connections to this computer</b> check box, and then click
+<b>Connect</b>.</p>
+<p>4. The error message should disappear the next time you open the remote application or RemoteApp program.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/3010.clip_5F00_image009_5F00_4195C3EC.png"><img title="clip_image009" alt="clip_image009" src="http://blogs.msdn.com/cfs-file.ashx/__key/CommunityServer-Blogs-Components-WeblogFiles/00-00-00-65-40-metablogapi/3823.clip_5F00_image009_5F00_thumb_5F00_4F6809E7.png" width="470" height="321" style="border:0px currentColor;display:inline;" /></a></p>
+<br />
+<br />
+<p>Applies to:</p>
+<ul>
+<li>Windows Server 2008 R2 </li><li>Windows Server 2008 </li><li>Windows 7 </li><li>Windows Vista </li></ul>
+<p>Reference -: <a href="http://blogs.msdn.com/b/rds/archive/2011/04/05/how-to-resolve-the-issue-a-website-wants-to-start-a-remote-connection-the-publisher-of-this-remote-connection-cannot-be-identified.aspx">
+http://blogs.msdn.com/b/rds/archive/2011/04/05/how-to-resolve-the-issue-a-website-wants-to-start-a-remote-connection-the-publisher-of-this-remote-connection-cannot-be-identified.aspx</a></p>
+
+</div>
+    
+    

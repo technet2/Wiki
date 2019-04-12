@@ -1,0 +1,124 @@
+---
+layout: default
+title: Operations Manager Management Pack Authoring - Diagnostics and Recoveries - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+This document is part of the <a href="http://social.technet.microsoft.com/wiki/contents/articles/14255.system-center-operations-manager-management-pack-authoring-centv class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Operations Manager Management Pack Authoring - Diagnostics and Recoveries</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+This document is part of the <a href="http://social.technet.microsoft.com/wiki/contents/articles/14255.syser.aspx#Management_Pack_Authoring_Guide">
+Operations Manager Management Pack Authoring Guide</a>.&nbsp; The Microsoft System Center team has validated this procedure as of
+<strong>the original version</strong>.&nbsp; We will continue to review any changes and periodically provide validations on later revisions as they are made.&nbsp; Please feel free to make any corrections or additions to this procedure that you think would assist other
+ users.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Diagnostics">Diagnostics</a></li><li class="hierarchy-item"><a href="#Recoveries">Recoveries</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Recalculating_State">Recalculating State</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#When_Diagnostics_and_Recoveries_Run">When Diagnostics and Recoveries Run</a></li><li class="hierarchy-item"><a href="#Modules">Modules</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<p><em>Diagnostics</em> and <em>recoveries</em> are workflows that run when a monitor changes state. Diagnostics collect additional information about the detected problem. Recoveries try to resolve the problem. Each will typically run a command or script that
+ outputs information displayed in the Health Explorer in the Operations Console. </p>
+<p>The Operations console provides a wizard for creating both diagnostics and recoveries. The Authoring console lets both diagnostics and recoveries be created from the properties of a monitor, although the individual modules must be selected and configured.
+ Complete details on the concepts and use of modules in a management pack are provided in the Composition section of this guide. This section will provide a simplified discussion of these concepts specific to diagnostics and recoveries.</p>
+<h2 class="heading"><a name="Diagnostics"></a>Diagnostics</h2>
+<div id="sectionSection0" class="section">
+<p>Diagnostics are workflows that run after a monitor changes state and try to collect additional information about the issue. This information is provided to the user with the state change history in the properties of the monitor. If the
+<strong>enabled</strong> property of the diagnostic is set to true, then it is run automatically when the monitor changes state. If the
+<strong>disabled</strong> property of the diagnostic is set to false, then a link is provided to the user in the Operations console that they can click to run the diagnostic.</p>
+<p>Diagnostics are not intended to make any changes to the application or system that they are running on. Because they are running a script or command, however, there is no way for Operations Manager to make sure that these changes are not being made. It is
+ the responsibility of the management pack author to make sure that no such changes are being made. If changes to the application or system are required, then a recovery should be used.</p>
+<p><strong>Diagnostic</strong> </p>
+</div>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4152.AuthGuide_5F00_17_5F00_Diagnostic.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4152.AuthGuide_5F00_17_5F00_Diagnostic.jpg" height="79" width="287" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<h2 class="heading"><a name="Recoveries"></a>Recoveries</h2>
+<div id="sectionSection1" class="section">
+<p>Recoveries are workflows that run after a monitor changes state. Recoveries try to correct the issue, and return the monitor to a healthy state. Any output from the recovery is provided to the user with the state change history in the properties of the monitor
+ that the diagnostic is associated with. If the <strong>enabled</strong> property of the recovery is set to true, then the recovery is run automatically when the monitor changes state. If the
+<strong>disabled</strong> property of the recovery is set to false, then a link is provided to the user in the Operations console that they can click to run the recovery.</p>
+<p><strong>Recovery</strong> </p>
+</div>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2146.AuthGuide_5F00_18_5F00_Recovery.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2146.AuthGuide_5F00_18_5F00_Recovery.jpg" height="78" width="283" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<p>Recoveries are intended to change the application or system that they are running on. Therefore, significant consideration should be taken before they are configured to run automatically. A poorly planned recovery script could actually cause more problems
+ than it is intended to help. For example, the recovery may temporarily correct issue but not the underlying cause of the problem. In this case, the monitor may return to a healthy state because of the recovery, but then return to an error state when the issue
+ is again detected. The recovery would then run in response, and so on, until a user is able to intervene and correct the root problem. This kind of problem can be limited by disabling the recovery so that the user must run it instead of it running automatically.</p>
+<p>Another option is to run a recovery after a diagnostic. Using this strategy the diagnostic first collects additional information about the issue which the recovery then uses that information to determine whether it should run. This is implemented in the
+ Authoring console by configuring condition detection with the recovery. The condition detection uses output from the diagnostic to determine whether it should run.
+</p>
+<p><strong>Recovery running after a diagnostic</strong> </p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4572.AuthGuide_5F00_19_5F00_RecoveryAfterDiagnostic.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4572.AuthGuide_5F00_19_5F00_RecoveryAfterDiagnostic.jpg" height="89" width="549" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<div id="sectionSection1" class="section">
+<h3 class="subHeading"><a name="Recalculating_State"></a>Recalculating State</h3>
+<div class="subSection">
+<p>If a recovery is successful, then the monitor should return to a healthy state the next time that the monitor detects the required information. If the monitor runs a scheduled script for example, then the monitor will return to healthy the next time that
+ the script runs and the monitors detects the criteria for a healthy state. If the monitor relies on an event for its healthy state, the application is expectcfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4572.AuthGuide_5F00_19_5F00_RecoveryAfterDiagnostic.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4572.AuthGuide_5F00_19_5F00_RecoveryAfterDiagnostic.jpg" height="89" width="549" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<div id="sectionSection1" class="section">
+<h3 class="subHeading"><a name="Recalculating_State"></a>Recalculating State</h3>
+<div class="subSection">
+<p>If a recovery is successful, then the monitor should return to a healthy state the next time that the monitor detects the required information. If the monitor runs a scheduled script fored to create the required event in response to the recovery successfully correcting the problem. If
+ a monitor is configured to use a manual reset though, then the user will still be required to manually set it to a healthy state.</p>
+<p>A recovery can be configured to recalculate the state of the monitor immediately after it runs. This option has the same effect as the user selecting
+<strong>Recalculate Health</strong> for the monitor in the Operations console. Recalculating state only has an effect on monitors that run on a schedule such as a script and that have on demand detection defined. If the monitor does not have on demand detection
+ defined, then the option has no effect. The advantage of configuring a monitor to recalculate state is that it can return the monitor to a healthy state immediately instead of waiting for the schedule.
+</p>
+</div>
+</div>
+<h2 class="heading"><a name="When_Diagnostics_and_Recoveries_Run"></a>When Diagnostics and Recoveries Run</h2>
+<div id="sectionSection2" class="section">
+<p>Diagnostics and recoveries run in response to a change in a monitor’s state. They do not run every time their specified state is detected; only when the monitor changes to that state from another state. For example, a particular monitor might run a script
+ every few minutes to test a particular feature of an application. A diagnostic could be defined to run when the monitor’s health is critical. The diagnostic will only run when the monitor changes from a healthy or a warning state to a critical state when the
+ script first identifies a problem. Assuming the problem has not been corrected the next time that the script runs, the monitor will still be in a critical state. The diagnostic will not run though because no state change will have occurred. It will only run
+ when the monitor returns to a healthy state and then changes again to a critical state.</p>
+</div>
+<h2 class="heading"><a name="Modules"></a>Modules</h2>
+<div id="sectionSection3" class="section">
+<p>The concept of modules in a workflow is discussed in detail in the Composition section. Frequently, the Authoring console can provide wizards and other means of assistance to help the author with this complexity. The wizards create workflows by using the
+ same modules, although the user is provided with an easier interface. Recoveries and diagnostics can be configured from the Authoring console in the properties dialog box of the monitor, but their modules must be configured manually.</p>
+<p>The following table provides a listing of common modules that are used in diagnostics and recoveries:</p>
+</div>
+<table rules="all" cellpadding="0" cellspacing="0" style="border:thin solid #000000;width:599px;">
+<tbody>
+<tr>
+<td><span style="font-size:12px;"><strong>Module</strong></span></td>
+<td><span style="font-size:12px;"><strong>Used In</strong></span></td>
+<td><span style="font-size:12px;"><strong>Function</strong></span></td>
+</tr>
+<tr>
+<td><span style="font-size:12px;">Microsoft.Windows.ScriptProbeAction</span></td>
+<td><span style="font-size:12px;">Action</span></td>
+<td><span style="font-size:12px;">Runs a script in either VBScript or Jscript.</span></td>
+</tr>
+<tr>
+<td><span style="font-size:12px;">Microsoft.Windows.PowerShellPropertyBagProbe</span></td>
+<td><span style="font-size:12px;">Action</span></td>
+<td><span style="font-size:12px;">Runs a script in Windows PowerShell.</span></td>
+</tr>
+<tr>
+<td><span style="font-size:12px;">System.CommandExecuter</span></td>
+<td><span style="font-size:12px;">Action</span></td>
+<td><span style="font-size:12px;">Runs an executable on a command line.</span></td>
+</tr>
+<tr>
+<td><span style="font-size:12px;">System.ExpressionFilter</span></td>
+<td><span style="font-size:12px;">Condition Detection</span></td>
+<td><span style="font-size:12px;">Evaluates output from a diagnostic to determine whether recovery should be run.</span></td>
+</tr>
+</tbody>
+</table>
+<br />
+
+</div>
+    
+    

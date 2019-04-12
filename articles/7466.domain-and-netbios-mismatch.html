@@ -1,0 +1,52 @@
+---
+layout: default
+title: Domain and netbios mismatch - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<strong><span style="font-size:18px;">SBS 2011 Essentials domain name and netbios name mismatch</span></strong><br />
+<br />
+When migrating from SBS 2003 to SBS 2011 essentials you may find that you hit an error where you cannot join the clients with the connect computer wizard.&nbsp; If the netbios domain name is longer than 15 characters, the SBS 2003 will truncate the name and continue,
+ the SBS 2011 essentials will have issues running the wizard.<br />
+In addition there can be times when the netbios and the domain name end up with different characters and thus the wizard will fail as well:<br />
+<br />
+<em>The domain name is dom-name.local and the ner1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="fultbios domain name is DOMNAME. Works fine in all regards except when trying to run the ComputerConnector.exe program to add the existing domain computers to the SBS 2011 Essentials dashboard. ComputerConnector.exe
+ fails with an error saying “This computer is already connected to another Windows server.” Reviewing the CSetup.log file shows the following lines:<br />
+<br />
+<br />
+[02/10/2012 12:28:09 1ca4] NetJoinChecker::QueryNetJoinStatus - Compare domains xml: ServerDomain=dom-name ClientDomain=DOMNAME<br />
+[02/10/2012 12:28:09 1ca4] NetJoinChecker::QueryNetJoinStatus - Domain Joined, but to a different domain<br />
+[02/10/2012 12:28:09 1ca4] CSetup::RunTasks: Running Task: Id=-1 Description=Check Pending Reboot Index= 2<br />
+[02/10/2012 12:28:09 2594] CSetup::ReqsErrorDlgProc: IDD_PROPPAGE_REQS_ERROR Initialization<br />
+[02/10/2012 12:28:09 2594] NetJoin not valid, JoinStatus=4.<br />
+[02/10/2012 12:28:36 2594] wmain: End of CSetup: hr=0x80004005</em>
+<p>In order to work around this issue, you can edit the ServerInfo.Xml file on the client machine and complete the wizard.<br />
+<br />
+This solution (edit the xml file - see below) worked great, although timing was critical. You have to start the Connect Computer wizard, let it pause at the first screen, and then modify the xml file. After that, the wizard ran fine.</p>
+<p>1. On the client machine, edit the *ServerInfo.Xml* file at the <br />
+following location:<br />
+<br />
+*C:\Windows\Temp\Client Deployment Files\ServerInfo.Xml*<br />
+<br />
+2. Find the following contents:<br />
+<br />
+&lt;DomainNetBiosName&gt;*TEST*&lt;/DomainNetBiosName&gt;<br />
+<br />
+&lt;DomainDnsName&gt;*TestDomain.local*&lt;/DomainDnsName&gt;<br />
+<br />
+3. Manually change the *DomainNetBiosName *value per your network <br />
+settings.<br />
+<br />
+After that, please running CSetup from the temp folder above.<br />
+<br />
+At this time, the client should be able to run the connect computer&nbsp;wizard successfully.</p>
+<br />
+
+</div>
+    
+    

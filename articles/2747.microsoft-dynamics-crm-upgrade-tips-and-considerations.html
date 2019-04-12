@@ -1,0 +1,212 @@
+---
+layout: default
+title: Microsoft Dynamics CRM Upgrade Tips and Considerations - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>There are numerous sources of upgrade information, best practices, how-to&#39;s etc floating around. The main one you should read and consider is from the
+<a href="http://technet.microsoft.com/en-us/library/gg554717.aspx" target="_blank">
+Dynamics CRM 2011 implementation guide</a>. </p>
+<p>This article is not an in-depth exploration on how to conduct an upgrade (see the implementation guide i-r4"></divfor that), but more of the some of the decisions, issues, and thoughts you can consider for own upgrade. It is based on personal upgrade experience
+<a href="http://blog.sonomapartners.com/2011/04/upgrading-to-crm-2011-our-story.html">
+as told by Jim Steger</a>.</p>
+<p>First and foremost, you have to <strong>PLAN </strong>your upgrade.&nbsp;</p>
+<p><span style="line-height:25px;font-size:20px;font-family:&#39;segoe ui semibold&#39;,&#39;segoe ui&#39;,&#39;lucida grande&#39;,verdana,arial,helvetica,sans-serif;color:#3a3e43;">Skills &amp; Knowledge</span></p>
+<p>Before starting the upgrade you need to understand the following:</p>
+<ul>
+<li>Updates &amp; customizations
+<ul>
+<li>Script </li></ul>
+<ul>
+<li>Plug-ins </li></ul>
+<ul>
+<li>Custom web pages </li></ul>
+<ul>
+<li>Custom reporting (custom SQL) </li></ul>
+<ul>
+<li>Services </li><li>External integrations/applications </li><li>SharePoint </li></ul>
+</li></ul>
+<ul>
+<li>Hardware
+<ul>
+<li>Are you doing an in-place upgrade? </li></ul>
+<ul>
+<li>Is your hardware 64-bit capable? </li></ul>
+<ul>
+<li>an you bring up new servers or have to use the existing ones? </li></ul>
+</li></ul>
+<ul>
+<li>Components installed
+<ul>
+<li>IFD </li></ul>
+<ul>
+<li>Email Router </li></ul>
+<ul>
+<li>Outlook Add-in </li></ul>
+<ul>
+<li>Reporting Connector </li><li>3rd Party applications (such as ExactTarget, Hoovers, etc) </li></ul>
+<ul>
+<li>Etc </li></ul>
+</li></ul>
+<ul>
+<li>Logistics
+<ul>
+<li>How big is your current db? </li></ul>
+<ul>
+<li>How extensive is your customizations? </li></ul>
+<ul>
+<li>Have you done anything unsupported? </li></ul>
+<ul>
+<li>How much downtime can you allow for the upgrade? </li></ul>
+</li></ul>
+<div style="border:1px solid #000000;padding:5px;width:300px;float:right;margin:5px 5px 0px 0px;background-color:#eeeeee;">
+<p>Microsoft Dynamics CRM requires 64 bit hardware for the servers.&nbsp;If you need to upgrade your hardware, also consider moving to SQL Server 2008 R2.<br />
+<br />
+Even if upgrading to SQL Server 2008 R2 is not an option, consider migrating just reporting services to 2008 R2 version - the enhancements and new features are well worth it.</p>
+</div>
+<h2 style="display:inline;"><a name="Upgrade_Steps"></a>Upgrade Steps</h2>
+<p>Here is a sample upgrade high level steps:</p>
+<ul>
+<li>Backup the production db </li><li>Imported back up into a development environment </li><li>Regression tested the functionality in CRM 2011, noting everything that didn&#39;t work
+</li><li>Updated code, customizations, etc on dev (see recommendations, but focus on native customizations, script, and SQL changes)
+</li><li>Created solution package(s) for production deployment </li><li>Upgraded production db (for example, take a backup of the 4.0 database and import into your new production CRM 2011 environment if you bought new hardware)
+</li><li>Import dev solution changes </li><li>Configured new teams, field-level security, enabled auditing, setup document library
+</li><li>Configured email router, report connector </li><li>Tested, fixed issues </li><li>Took another backup of the database </li><li>Removed extra entities, attributes, etc for clean-up </li><li>Deployed Outlook to a smaller pilot group </li><li>Rolled out Outlook to rest of the organization </li><li>Upgrading remaining code (see recommendation below) </li></ul>
+<h2><a name="Recommendations_Tips"></a>Recommendations / Tips</h2>
+<ul>
+<li>Try to limit focus of the upgrade
+<ul>
+<li>You will have needs to include new functionality and approaches, but the more you can just update what you currently have, the easier it is to pinpoint issues from the upgrade, as opposed to issues from new code/functionality.
+</li></ul>
+<ul>
+<li>For instance, if you plan to clean up business unit and security role setup, you may want to wait on those updates until AFTER you have upgraded,, so that you can be sure things worked as they should after the upgrade, as opposed to it being part of the
+ clean up. </li></ul>
+<ul>
+<li>Another example is altering the schema. There may be a couple of areas that would be prime for a custom activity or you may want to change the relationship. Againl, it may be easier to upgrade everything as is, get people working and then make those changes,
+ as there is less to test and it will take less time to get the upgraded completed.
+</li></ul>
+</li></ul>
+<ul>
+<li>Do a Test Upgrade in a development environment
+<ul>
+<li>Use the new Solution Dependency Tracking, assembly, &amp; Web Resource lists
+<ul>
+<li>CRM will upgrade all script and images into web resources. I went through this list to understand all the code in the system
+</li></ul>
+<ul>
+<li>Similarly, all plug-ins now display in the solution. This made it really easy to see what was in the system.
+</li></ul>
+</li></ul>
+<ul>
+<li>This also allows you to test the upgrade and functionality to give you a baseline.
+</li></ul>
+</li></ul>
+<ul>
+<li>Use as much of the native functionality as you can
+<ul>
+<li>If you used to have code for a filtered lookup, field level security scripts or sub-grids on form, consider using the native approaches now.
+</li><li>Further consider replacing custom audit code with the native audit. Same for custom document library links with the native SharePoint document library functionality.
+</li></ul>
+</li><li>Take copious notes!
+<ul>
+<li>Be sure to take careful notes of the following:
+<ul>
+<li>Entities updated, including ones you want to audit </li></ul>
+<ul>
+<li>Entities, plug-ins, etc removed. </li></ul>
+</li><li>Finally keep a log of all the steps you need to do for the upgrade.
+<ul>
+<li>This is critical to avoid forgetting steps during the actual upgrade </li></ul>
+</li></ul>
+</li></ul>
+<ul>
+<li>Consider upgrading custom code in this order:
+<ul>
+<li>Scripts
+<ul>
+<li>Some scripts may have trouble working after the upgrade. Try to update those using the new SDK client model.
+</li></ul>
+</li></ul>
+<ul>
+<li>SQL (reporting)
+<ul>
+<li>Note that deletionstatecode and owninguser fields are deprecated. As such, any custom reporting scripts using those fields will need to be updated to work.
+</li></ul>
+</li></ul>
+<ul>
+<li>Everything else (plugins, etc) </li></ul>
+<ul>
+<li>Reasoning:
+<ul>
+<li>The scripts and SQL needed some TLC to work properly, but the plug-ins and external applications using the SDK should work against the old end points!
+</li></ul>
+<ul>
+<li>This gives you a chance go back and move to the new WCF end points, after the upgrade, and you there do not need to hold up the entire upgrade for this work to be complete and it means you will have less issues with regression testing.
+</li></ul>
+</li></ul>
+</li></ul>
+<ul>
+<li>Don&#39;t forget the new security privileges
+<ul>
+<li>Custom security roles aren&#39;t updated with some of the more core pieces you will need access, such as read privileges to Web Resources, Charts, Dashboards
+</li></ul>
+<ul>
+<li>Note the native security roles are updated with the base privileges. </li></ul>
+</li></ul>
+<ul>
+<li>Remove ALL isv.config links prior to upgrade and put them back in yourself in development
+<ul>
+<li>The ribbon XML is extremely complicated to follow and the naming convention of the upgraded nodes ili>The scripts and SQL needed some TLC to work properly, but the plug-ins and external applications using the SDK should work against the old end points!
+</li></ul>
+<ul>
+<li>This gives you a chance go back and move to the new WCF end points, after the upgrade, and you there do not need to hold up the entire upgrade for this work to be complete and it means you will have less issues with regression testing.
+</li></ul>
+</li></ul>
+</li></ul>
+<ul>
+<li>Don&#39;t forget the new security privileges
+<ul>
+<li>Custom security roles aren&#39;t updated with some of the more core pieces you will need access, such as read privileges to Web Resources, Charts, Dashboards
+</li></ul>
+<ul>
+<li>Notes systematic, but not super clear.&nbsp;You may find yourself fighting random issues more due to trying to update existing upgraded XML, instead of just adding
+ the nodes yourself. </li></ul>
+<ul>
+<li>Along those lines, give yourself some time to work with the ribbon. That was probably one of the areas that takes the most time to update.
+</li></ul>
+</li></ul>
+<ul>
+<li>Clean out your WorkflowLogBase and AsyncOperationBase tables (if they are large) of any processed workflow instances prior to the import.
+<ul>
+<li>CRM 2011 will attempt to upgrade every workflow process instance to WF4.0 and it takes a really long time, depending on the volume of workflow instances. If you don&#39;t need some of those old process instances, then remove them prior to import/upgrade.
+</li></ul>
+</li></ul>
+<ul>
+<li>Bring up a new environment if at all possible.
+<ul>
+<li>Many budgets may not allow it, but it simplifies testing and allows you to work out all the connection/authentication type things that can crop up on you. Further, and most importantly, you have a very easy rollback situation in case things get dire during
+ the actual rollout. </li></ul>
+</li></ul>
+<ul>
+<li>Have users help test both in dev and immediately after the rollout!
+<ul>
+<li>This goes without saying, but some of your power users will uncover functionality, issues, etc that you probably didn&#39;t know was being used
+</li></ul>
+</li></ul>
+<p><strong></strong></p>
+<h2><a name="Additional_Resources"></a><strong>Additional Resources</strong></h2>
+<p><br />
+</p>
+<ul>
+<li>This article was based on the experience of <a href="http://www.sonomapartners.com/" target="_blank">
+Sonoma Partners</a> internal upgrade documented in&nbsp;<a href="http://blog.sonomapartners.com/2011/04/upgrading-to-crm-2011-our-story.html" target="_blank">this blog post</a>.
+</li><li><a href="http://technet.microsoft.com/en-us/library/gg554717.aspx" target="_blank">Dynamics CRM 2011 implementation guide</a>
+</li><li><a class="ExistingPageLink" href="/wiki/contents/articles/2724.upgrade-microsoft-dynamics-crm.aspx" title="Click to view the page titled: Upgrade Microsoft Dynamics CRM">Upgrade Overview</a> </li></ul>
+<a class="ExistingPageLink" href="/wiki/contents/articles/2486.microsoft-dynamics-crm-overview.aspx" title="Click to view the page titled: Microsoft Dynamics CRM Overview">Return to Dynamics CRM Overview</a>
+<p>&nbsp;</p>
+
+</div>
+    
+    

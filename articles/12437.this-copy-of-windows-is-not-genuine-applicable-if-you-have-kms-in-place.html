@@ -1,0 +1,82 @@
+---
+layout: default
+title: This copy of Windows is not genuine (Applicable if you have KMS in place) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="line-height:12.8px;">Applies to: &nbsp;Windows Server 2008, Windows Server 2008 R2</span><br />
+<br />
+If you ever come across Windows activation error on servers such as <strong>This copy of Windows is not genuine</strong> (if you have KMS in place for license activation), please follow the steps given below to activate the OS again.</p>
+<ul>
+<li><span style="text-indent:-0.25in;">1)</span><span style="text-indent:-0.25in;font-family:&#39;times new roman&#39;;font-size:7pt;">&nbsp; &nbsp; &nbsp;
+</span><span style="text-indent:-0.25in;">Use &#39;telnet&#39; to check the port connectivity from source machine to Destination KMS server</span>
+</li></ul>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>E.G. </p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span><strong>telnet&nbsp;&nbsp;Destination_KMS_Server_Hostname 1688</strong></p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>(port 1688 is default KMS port)</p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>OR </p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span><strong>telnet &nbsp;Destination_KMS_Server_IPAddress &nbsp;1688</strong></p>
+<p><span class="Apple-tab-span" style="white-space:pre;">I</span>f you get blank screen on cmd, that confirms that KMS server is reachable<br />
+<br />
+</p>
+<ul>
+<li><span style="text-indent:-0.25in;">2)</span><span style="text-indent:-0.25in;font-family:&#39;times new roman&#39;;font-size:7pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="text-indent:-0.25in;">If you cannot see blank screen, i.e. KMS (Destination KMS server) is not reachable from source &nbsp;machine.</span>
+</li></ul>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>Add local host entry for Destination_KMS_Server_IPAddress on source machine</p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>E.G . <strong>10.20.30.40 Destination_KMS_Server_Hostname&nbsp;<br />
+</strong><br />
+<span class="Apple-tab-span" style="white-space:pre;"></span><strong>P.S.</strong> 10.20.30.40 is KMS server IP Adsress&nbsp;<br />
+<br />
+</p>
+<ul>
+<li><span style="text-indent:-0.25in;">3)</span><span style="text-indent:-0.25in;font-family:&#39;times new roman&#39;;font-size:7pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="text-indent:-0.25in;">Get the network port opened consulting your firewall team</span>
+</li></ul>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>E.G. </p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>Source: &nbsp;Source Machine IP Address</p>
+<p><span class="Apple-tab-span" style="white-space:pre;"></span>Target: &nbsp;Destination_KMS_Server_IPAddress (10.20.30.40)</p>
+<p><span class="Apple-tab-span" style="white-space:pre;">P</span>ort: 1688</p>
+<p><span class="Apple-tab-span" style="white-space:pre;">B</span>i-directional acess: Yes<br />
+<br />
+</p>
+<ul>
+<li><span style="text-indent:-0.25in;">4)</span><span style="text-indent:-0.25in;font-family:&#39;times new roman&#39;;font-size:7pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="text-indent:-0.25in;">Open up elevated cmd &nbsp;( run as admin ) and enter following &nbsp;commands sequentially:</span>
+</li></ul>
+<p style="margin-left:0.5in;"><span class="Apple-tab-span" style="white-space:pre;"></span><em>In the case where the KMSClient OS is Windows Server 2008 R2</em></p>
+<ol style="list-style-type:lower-alpha;">
+<li><strong>icacls %windir%\ServiceProfiles\NetworkService\AppData\Roaming\Microsoft\SoftwareProtectionPlatform /grant &quot;BUILTIN\Administrators:(OI)(CI)(F)&quot; &quot;NT AUTHORITY\SYSTEM:(OI)(CI)(F)&quot; &quot;NT Service\sppsvc:(OI)(CI)(R,W,D)&quot; &quot;NETWORK SERVICE:(OI)(CI)(F)&quot;</strong>
+</li><li><strong>net stop sppsvc &amp;&amp; net start sppsvc</strong> </li></ol>
+<p style="margin-left:0.5in;"><span class="Apple-tab-span" style="white-space:pre;"></span><em>In the case where the KMSClient OS is Windows Server 2008 (Non R2)</em></p>
+<ol style="list-style-type:lower-alpha;">
+<li><strong>&nbsp;icacls %windir%\serviceprofiles\networkservice\appdata\roaming\microsoft\softwarelicensing /grant &quot;BUILTIN\Administrators:(OI)(CI)(F)&quot; &quot;NT AUTHORITY\SYSTEM:(OI)(CI)(F)&quot; &quot;NT Service\slsvc:(OI)(CI)(R,W,D)&quot;
+</strong></li></ol>
+<p style="margin-left:0.25in;">b.&nbsp; &nbsp;<strong>net stop slsvc &amp;&amp; net start slsvc</strong><br />
+<br />
+</p>
+<ul>
+<li><span style="text-indent:-0.25in;">5)</span><span style="text-indent:-0.25in;font-family:&#39;times new roman&#39;;font-size:7pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="text-indent:-0.25in;">Now&nbsp; Run following commands (run as admin)</span>
+</li></ul>
+<p style="margin-left:0.5in;"><strong>cscript slmgr.vbs /SKMS Destination_KMS_Server_Hostname
+</strong></p>
+<p style="text-indent:0.5in;">You should see following message</p>
+<p style="text-indent:0.5in;">Microsoft (R) Windows Script Host Version 5.8</p>
+<p style="text-indent:0.5in;">Copyright (C) Microsoft Corporation. All rights reserved.</p>
+<p style="margin-left:0.5in;">Key Management Service machine name set to <strong>Destination_KMS_Server_Hostname</strong> successfully.<br />
+&nbsp;</p>
+<p style="text-indent:0.5in;"><strong>cscript slmgr.vbs /ato</strong></p>
+<p style="text-indent:0.5in;">Microsoft (R) Windows Script Host Version 5.8</p>
+<p style="text-indent:0.5in;">Copyright (C) Microsoft Corporation. All rights reserved.</p>
+<p style="text-indent:0.5in;">Activating Windows Server(R), ServerEnterprise edition (620e2b3d-09e7-42fd-802a-</p>
+<p style="text-indent:0.5in;">17a13652fe7a) ...</p>
+<p style="text-indent:0.5in;">Product activated successfully<br />
+<br />
+<strong>- End of the Article -</strong></p>
+
+</div>
+    
+    

@@ -1,0 +1,82 @@
+---
+layout: default
+title: Een analoge klok maken in een Windows Store Applicatie (nl-NL) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><em style="font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;font-size:13px;">Dit voorbeeld gebruikt xaml en C# om een analoge klok te maken in een windows store applicatie. Xaml laat u toe de hoek van lijnen weergeven
+ op een scherm te laten variëren. Ik heb een ellips gebruikt als achtergrond van de klok. We zullen drie lijnen tekenen voor de uur, seconden en minuuiv></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class=t wijzer op een analoge klok. Een roterende transformatie veranderd de lijn in een seconde, minuten en uur
+ wijzer. De transformatie zal een lijn tekenen van de centrum van een cirkel in de hoek die nodig is om de tijd weer te geven. Voor seconden en minuten vermeerder je de waarde met 6 om de hoek te krijgen voor de minuten wijzer transformatie. Voor uren vermeerder
+ met 30 om de hoek te krijgen voor de uur transformatie. Ik heb een dispatch timer gebruikt om de hoek van de wijzers aan te passen aan de huidige tijd. De dispatch timer zal een event starten elke seconde welke we vervolgens gebruiken om de hoek van de wijzer
+ aan te passen. De klok kan verbeterd worden door gebruik te maken van een afbeelden van een klok ipv een ellips.</em><em>&nbsp;</em></p>
+<p>De XAML:<span style="font-size:12.1px;">&nbsp;</span></p>
+<pre class="xaml" style="border-width:2px 1px;border-style:solid;padding:10px;line-height:15px;font-style:italic;">&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Grid</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Background</span>=<span class="xaml__attr_value">&quot;{StaticResource&nbsp;ApplicationPageBackgroundThemeBrush}&quot;</span><span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Grid</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Width</span>=<span class="xaml__attr_value">&quot;300&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Height</span>=<span class="xaml__attr_value">&quot;300&quot;</span><span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Ellipse</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Width</span>=<span class="xaml__attr_value">&quot;300&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Height</span>=<span class="xaml__attr_value">&quot;300&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Fill</span>=<span class="xaml__attr_value">&quot;Blue&quot;</span><span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;</span><span class="xaml__tag_end" style="color:maroon;font-weight:bold;">&lt;/Ellipse&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__comment" style="color:green;">&lt;!--&nbsp;Second&nbsp;&nbsp;--&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Rectangle</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Margin</span>=<span class="xaml__attr_value">&quot;150,0,149,150&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;rectangleSecond&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__attr_name" style="color:red;">Stroke</span>=<span class="xaml__attr_value">&quot;White&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Height</span>=<span class="xaml__attr_value">&quot;120&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">VerticalAlignment</span>=<span class="xaml__attr_value">&quot;Bottom&quot;</span><span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Rectangle</span>.RenderTransform<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;RotateTransform</span>&nbsp;x:<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;secondHand&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">CenterX</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__attr_name" style="color:red;">CenterY</span>=<span class="xaml__attr_value">&quot;120&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Angle</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">/&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Rectangle.RenderTransform&gt;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_end" style="color:maroon;font-weight:bold;">&lt;/Rectangle&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__comment" style="color:green;">&lt;!----&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__comment" style="color:green;">&lt;!--&nbsp;Minute&nbsp;&nbsp;--&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Rectangle</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Margin</span>=<span class="xaml__attr_value">&quot;150,49,149,151&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;rectangleMinute&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__attr_name" style="color:red;">Stroke</span>=<span class="xaml__attr_value">&quot;LightGreen&quot;</span><span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Rectangle</span>.RenderTransform<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;RotateTransform</span>&nbsp;x:<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;minuteHand&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">CenterX</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__attr_name" style="color:red;">CenterY</span>=<span class="xaml__attr_value">&quot;100&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Angle</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">/&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Rectangle.RenderTransform&gt;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xamlxaml__tag_start" style="color:maroon;font-weight:bold;">&lt;RotateTransform</span>&nbsp;x:<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;minuteHand&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">CenterX</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__tag_end" style="color:maroon;font-weight:bold;">&lt;/Rectangle&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__comment" style="color:green;">&lt;!----&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__comment" style="color:green;">&lt;!--&nbsp;Hour&nbsp;&nbsp;--&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Rectangle</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Margin</span>=<span class="xaml__attr_value">&quot;150,80,149,150&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;rectangleHour&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__attr_name" style="color:red;">Stroke</span>=<span class="xaml__attr_value">&quot;LightYellow&quot;</span><span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;Rectangle</span>.RenderTransform<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&gt;&nbsp;
+</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">&lt;RotateTransform</span>&nbsp;x:<span class="xaml__attr_name" style="color:red;">Name</span>=<span class="xaml__attr_value">&quot;hourHand&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">CenterX</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__attr_name" style="color:red;">CenterY</span>=<span class="xaml__attr_value">&quot;70&quot;</span>&nbsp;<span class="xaml__attr_name" style="color:red;">Angle</span>=<span class="xaml__attr_value">&quot;0&quot;</span>&nbsp;<span class="xaml__tag_start" style="color:maroon;font-weight:bold;">/&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Rectangle.RenderTransform&gt;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_end" style="color:maroon;font-weight:bold;">&lt;/Rectangle&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__comment" style="color:green;">&lt;!----&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_end" style="color:maroon;font-weight:bold;">&lt;/Grid&gt;</span>&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="xaml__tag_end" style="color:maroon;font-weight:bold;">&lt;/Grid&gt;</span></pre>
+<p>De C# code:</p>
+<pre class="csharp" style="border-width:2px 1px;border-style:solid;padding:10px;line-height:15px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DispatcherTimer&nbsp;timer&nbsp;=&nbsp;<span class="cs__keyword" style="font-weight:bold;">new</span>&nbsp;DispatcherTimer();&nbsp;
+&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cs__keyword" style="font-weight:bold;">public</span>&nbsp;MainPage()&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cs__keyword" style="font-weight:bold;">this</span>.InitializeComponent();&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timer.Interval&nbsp;=&nbsp;TimeSpan.FromSeconds(<span class="cs__number" style="color:red;">1</span>);&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timer.Tick&nbsp;&#43;=&nbsp;timer_Tick;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timer.Start();&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cs__keyword" style="font-weight:bold;">void</span>&nbsp;timer_Tick(<span class="cs__keyword" style="font-weight:bold;">object</span>&nbsp;sender,&nbsp;<span class="cs__keyword" style="font-weight:bold;">object</span>&nbsp;e)&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;secondHand.Angle&nbsp;=&nbsp;DateTime.Now.Second&nbsp;*&nbsp;<span class="cs__number" style="color:red;">6</span>;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;minuteHand.Angle&nbsp;=&nbsp;DateTime.Now.Minute&nbsp;*&nbsp;<span class="cs__number" style="color:red;">6</span>;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hourHand.Angle&nbsp;=&nbsp;(DateTime.Now.Hour&nbsp;*&nbsp;<span class="cs__number" style="color:red;">30</span>)&nbsp;&#43;&nbsp;(DateTime.Now.Minute&nbsp;*&nbsp;<span class="cs__number" style="color:red;">0.5</span>);&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</pre>
+<hr />
+<h2>Andere talen<a name="Other_Languages" target="blank"></a></h2>
+<p>Dit artikel is ook verkrijgbaar in de volgende talen:</p>
+<ul>
+<li>
+<div><a href="http://social.technet.microsoft.com/wiki/contents/articles/18761.create-an-analog-clock-in-a-windows-store-application.aspx"></a><span>Engels:&nbsp;</span><a href="http://social.technet.microsoft.com/wiki/contents/articles/18761.create-an-analog-clock-in-a-windows-store-application.aspx">Create
+ an Analog Clock in a Windows Store Application</a>&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+</li></ul>
+
+</div>
+    
+    

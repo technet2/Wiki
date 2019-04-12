@@ -1,0 +1,49 @@
+---
+layout: default
+title: Time Services for a Domain Controller on Hyper-V - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+If you only have one domain controller and it is Virtualized on Hyper-V, what is the proper way to configure Windows Time?<br />
+<br />
+First, make sure time sync to the host machine is turned on in the Integration Services.&nbsp;
+<br />
+Next, on your Domain Controller add the following registry key: <br />
+<div class="reCodeBlock" style="overflow-y:auto;">
+<div><span><code>reg add HKLM\SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\VMICTimeProvider /v Enabled /t reg_dword /d 0</code></span></div>
+</div>
+&nbsp;<br />
+This ensures that the domain controller only syncs its time from the host OS when being restored from a saved state.<br />
+<br />
+Next, inside the guest, run the following commands from an Elevated command prompt:
+<br />
+<div class="reCodeBlock" style="overflow-y:auto;">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">1.</code><span><code>net stop w32time</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">2.</code><span><code>w32tm /unregister</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">3.</code><span><code>w32tm /register</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">4.</code><span><code>Net start w32time</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">5.</code><span><code>w32tm /config /update
+ /manualpeerlist:&quot;0.pool.ntp.org,0x8 1.pool.ntp.org,0x8 2.pool.ntp.org,0x8 3.pool.ntp.org,0x8&quot; /syncfromflags:MANUAL</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">6.</code><span><code>w32tm /config /update</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">7.</code><span><code>net stop w32time &amp;&amp;
+ net start w32time</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">8.</code><span><code>w32tm /resync /rediscover</code></span></div>
+</div>
+<br />
+Line 1 stops the time service<br />
+Line 2 Completely removes all time settings from the registry - you may have to run this twice, or you may get an access denied.&nbsp; If you get an access denied, just run it again.
+<br />
+Line 3 Re-creates the Registry Settings<br />
+Line 4 Starts the service<br />
+Line 5 Sets the server to sync with the NTP servers pool.ntp.org<br />
+Line 6 Updates the configuration<br />
+Line 7 Restarts the service so the new settings take effect.<br />
+Line 8 Syncs the clock to your new NTP servers.&nbsp; - This needs to return &quot;The command completed successfully.&quot;&nbsp; If it does not, something went wrong with one of the steps above.
+<br />
+<br />
+
+</div>
+    
+    

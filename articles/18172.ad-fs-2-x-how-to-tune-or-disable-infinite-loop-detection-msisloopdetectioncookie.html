@@ -1,0 +1,52 @@
+---
+layout: default
+title: AD FS 2.x&#58; How to Tune or Disable Infinite Loop Detection (MSISLoopDetectionCookie) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>AD FS 2.x, by default, writes a cookie to web passive clients named <strong>MSISLoopDetectionCookie</strong>. This cookie holds a timestamp value and a number of tokens issued value so that AD FS can keep track of how often and how many times a passive client
+ has visited the Federation Service within a specific timespan.<br />
+<br />
+If a passive client visits the Federation Service for a token <strong>five (5)</strong>
+<strong>times within 20 seconds</strong>, AD FS detects this based on the data in the MSISLoopDetectionCookie cookie, and throws an exception, landing the passive client on the AD FS error page as follows:<br />
+<br />
+<strong><em>MSIS7042: The same client browser session has made &#39;{0}&#39; requests in the last &#39;{1}&#39; seconds. Contact your administrator for details.</em></strong><br />
+<br />
+Entering into infinite loops is often caused by a misbehaving relying party application that is not successfully consuming the token issued by AD FS, and the application is sending the passive client back to AD FS, repeatedly, for a new token. AD FS is willing
+ to issue the passive client a new token each time, as long as they do not exceed 5 requests within 20 seconds. Else, they will land on the AD FS error page as described above.<br />
+<br />
+Also, there may be corner cases where user behavior can trigger this exception. For example, a user may be going back and forth between multiple claims-based relying party applications, and they may be utilizing their browser&#39;s Back button in order to navigate.
+ By using the Back button for navigation, the user may trigger a token request to the AD FS server. If the user uses the Back button in the browser rapidly, the user may cause AD FS to throw the infinite loop detection exception.<br />
+<br />
+The steps below describe how to either tune or disable the loop detection mechanism in AD FS 2.x.
+<strong>Microsoft does not recommend disabling the loop detection feature</strong>, since it is protecting users from entering into infinite loop scenarios. Microsoft recommends tuning the thresholds of the loop detection feature if you feel you must make a
+ change to the way loop detection is functioning in AD FS.<br />
+&nbsp;<br />
+<span style="text-decoration:underline;">Default values:</span><br />
+<strong><em>enabled=&quot;true&quot;<br />
+timeIntervalInSeconds=&quot;20&quot;<br />
+maximumTokensIssuedInInterval=&quot;5&quot;</em></strong><br />
+&nbsp;<br />
+<span style="text-decoration:underline;">Minimum values for the thresholds:</span><br />
+<strong><em>timeIntervalInSeconds=&quot;5&quot;<br />
+maximumTokensIssuedInInterval=&quot;1&quot;</em></strong><br />
+&nbsp;</p>
+<h2><a name="Steps"></a>Steps</h2>
+<p>&nbsp;</p>
+<ol>
+<li>Explore to the<strong> inetpub</strong> directory (typically C:\inetpub) </li><li>Explore to <strong>\adfs\ls</strong> </li><li>Edit <strong>web.config</strong> in Notepad </li><li>Scroll to the <strong>&lt;microsoft.identityServer.web&gt;</strong> section and add the following element to the configuration:
+</li></ol>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p><strong><em>&lt;loopDetection enabled=&quot;true&quot; timeIntervalInSeconds=&quot;20&quot; maximumTokensIssuedInInterval=&quot;5&quot; /&gt;</em></strong></p>
+</blockquote>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5. Replace the values above with your desired values<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6. Save and close web.config<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 7. Test your infinite loop scenario to ensure the desired results</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

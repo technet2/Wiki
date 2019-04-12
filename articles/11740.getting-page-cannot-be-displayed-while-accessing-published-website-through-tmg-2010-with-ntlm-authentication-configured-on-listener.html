@@ -1,0 +1,102 @@
+---
+layout: default
+title: Getting Page cannot be Displayed while Accessing Published Website through TMG 2010 with NTLM Authentication Configured on Listener - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<br />
+I came across a issue where we were&nbsp; &quot;&nbsp;Getting page cannot be displayed while accessing published website through TMG 2010 with NTLM authentication configured on Listener&quot;<br />
+<br />
+On TMG Firewall we have NTLM/ BASIC Selected on listener and Delegation was set as KCD (Kerberos Constraint Delegation).<br />
+<br />
+So collected TMG Data Packager in repro mode and also Fiddler Trace on External Client .<br />
+<br />
+TMG Data Packager can be downloaded from here : <br />
+<br />
+<a href="http://www.microsoft.com/en-us/download/details.aspx?displaylang=en&amp;id=17730">http://www.microsoft.com/en-us/download/details.aspx?displaylang=en&amp;id=17730</a>&nbsp;<br />
+<br />
+How to use it :<br />
+<br />
+<a href="http://blogs.technet.com/b/yuridiogenes/archive/2009/03/13/using-isabpa-for-proactively-and-reactively-work-with-isa-server-part-1-of-2.aspx">http://blogs.technet.com/b/yuridiogenes/archive/2009/03/13/using-isabpa-for-proactively-and-reactively-work-with-isa-server-part-1-of-2.aspx</a><br />
+&nbsp;<br />
+<a href="http://blogs.technet.com/b/yuridiogenes/archive/2009/05/07/using-isabpa-for-proactive-and-reactive-work-with-isa-server-part-2-of-2.aspx">http://blogs.technet.com/b/yuridiogenes/archive/2009/05/07/using-isabpa-for-proactive-and-reactive-work-with-isa-server-part-2-of-2.aspx</a>&nbsp;<br />
+<br />
+Here is what we saw in Data:<br />
+<br />
+In TMG Logs / Tracing &nbsp;we see :<br />
+<p><span style="font-family:calibri;"><strong><span style="background-color:yellow;font-size:9pt;color:red;">ISA cannot authenticate client b/c client&#39;s request doesn&#39;t contain authorization headers.</span></strong><strong>
+</strong></span></p>
+<p><span style="font-size:9pt;font-family:calibri;color:#1f497d;">&quot;</span><span style="font-family:calibri;"><strong><span style="font-size:9pt;color:red;">The server requires authorization to fulfill the request. Access to the Web server is denied. Contact
+ the server administrator. &quot; for error code WINERROR=&nbsp;&nbsp;&nbsp; 2FB1</span></strong> <strong>
+(12209)</strong></span></p>
+<br />
+So TMG was looking for Auth headers and they were not present and is denying the traffic.
+<br />
+<br />
+Then we&nbsp;analyzed Fiddler Trace and this is what we saw :
+<p><span style="font-size:10pt;color:#1f497d;"><span style="font-family:calibri;">GET
+</span><span style="color:black;"><a href="https://www.nwtraders.com/">https://www.nwtraders.com/</a></span><span style="font-family:calibri;"> HTTP/1.1</span></span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Accept: */*</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Accept-Language: en-us</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; InfoPath.2; MS-RTC LM 8;
+ Tablet PC 2.0; CIBA; MS-RTC EA 2)</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Accept-Encoding: gzip, deflate</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Connection: Keep-Alive</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Cookie: s_vi=[CS]v1|25C8953C851D2842-600001276000354C[CE]</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Host: <span style="color:black;">
+<a href="https://www.nwtraders.com/"><span style="font-size:13px;color:#0066dd;">https://www.nwtraders.com</span></a></span></span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">&nbsp;</span></p>
+<p><strong><span style="background-color:yellow;font-size:10pt;font-family:calibri;color:#1f497d;">HTTP/1.1 401 Unauthorized ( The server requires authorization to fulfill the request. Access to the Web server is denied. Contact the server administrator.&nbsp;
+ )</span></strong></p>
+<p><strong><span style="background-color:yellow;font-size:10pt;font-family:calibri;color:#1f497d;">WWW-Authenticate: Negotiate</span></strong></p>
+<p><strong><span style="background-color:yellow;font-size:10pt;font-family:calibri;color:#1f497d;">WWW-Authenticate: Kerberos</span></strong></p>
+<p><strong><span style="background-color:yellow;font-size:10pt;font-family:calibri;color:#1f497d;">WWW-Authenticate: NTLM</span></strong></p>
+<p><span style="font-family:calibri;"><strong><span style="background-color:yellow;font-size:10pt;color:#1f497d;">WWW-Authenticate: Basic realm=&quot;<span style="color:black;"><a href="http://www.nwtraders.com/"><span style="font-size:13px;color:#0066dd;">www.nwtraders.com</span></a></span>&quot;</span></strong><strong>
+</strong></span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Connection: Keep-Alive</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Pragma: no-cache</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Cache-Control: no-cache</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Content-Type: text/html</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Content-Length: 2073</span></p>
+<p><span style="font-size:10pt;font-family:calibri;color:#1f497d;">Proxy-Support: Session-Based-Authentication</span><span style="font-family:calibri;color:#1f497d;">&nbsp;</span></p>
+<p><span style="font-family:calibri;color:#1f497d;">We see <strong>WWW-Authenticate header as Negotiate and then Kerberos
+</strong>and by default <strong>IE&nbsp;7</strong> above will use <strong>Kerberos</strong> as initial auth method and as Client is on External network and cannot get the Kerb Ticket and that is the reason for its failure.</span><span style="font-family:calibri;color:#1f497d;">&nbsp;</span></p>
+<p><span style="font-family:calibri;color:#1f497d;">So to fix this issue we need to run script from KB&nbsp;<span style="font-family:calibri;color:#1f497d;">&nbsp;</span><a href="http://support.microsoft.com/kb/927265"><span style="color:black;"><strong>http://support.microsoft.com/kb/927265</strong></span></a><span style="font-family:calibri;color:#1f497d;">&nbsp;</span>&nbsp;on
+ TMG </span></p>
+<p><span style="font-family:calibri;color:#1f497d;">What this script does is that it makes NTLM as default behavior. Here is what it says:</span><span style="font-family:calibri;color:#1f497d;">&nbsp;</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">1.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">2.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">&#39; This script sets authentication schemes that ISA will return for Integrated authentication.</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">3.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;&#39;</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">4.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">5.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">const USE_ONLY_NTLM_FOR_WINDOWS_AUTH_default = 0 &#39; Use Negotiate and Kerberos, too.</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">6.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">const USE_ONLY_NTLM_FOR_WINDOWS_AUTH_Always&nbsp; = 1</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">7.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">8.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">Const SE_VPS_GUID = &quot;{143F5698-103B-12D4-FF34-1F34767DEabc}&quot;</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">9.<span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;times new roman&#39;;">&nbsp;
+</span></span><span style="font-size:10pt;font-family:consolas;color:#333333;">Const SE_VPS_NAME = &quot;UseOnlyNTLMForWindowsAuth&quot;</span></p>
+<p style="background-color:white;margin:0cm 15pt 0pt 46.2pt;line-height:18pt;"><span style="font-size:10pt;font-family:consolas;color:#333333;">10.
+</span><span style="font-size:10pt;font-family:consolas;color:#333333;">Const SE_VPS_VALUE = 1</span></p>
+<br />
+<br />
+<strong>Author:<br />
+<br />
+Junaid Ahmad Jan<br />
+<br />
+Security Support Escalation Engineer<br />
+<br />
+MSD Security Team<br />
+</strong><br />
+
+</div>
+    
+    

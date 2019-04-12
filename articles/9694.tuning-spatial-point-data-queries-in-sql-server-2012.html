@@ -1,0 +1,359 @@
+---
+layout: default
+title: Tuning Spatial Point Data Queries in SQL Server 2012 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1 style="margin:24pt 0in 0pt;"><span style="font-family:&#39;segoe ui&#39;;color:#333333;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1884.SQL_5F00_h_5F00_rgb.png"><img alt=" " width="466" height="110" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1884.SQL_5F00_h_5F00_rgb.png" style="border-width:0px;border-agment-6615">
+<div class=style:solid;" /></a></span></h1>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><br />
+<br />
+<br />
+<a name="_Toc311816507"><span style="font-family:cambria;font-size:24px;color:#365f91;">Tuning Spatial Point&nbsp;Data Queries in SQL Server</span></a><span style="font-family:cambria;font-size:24px;color:#365f91;"> 2012</span></span></p>
+<span style="font-family:calibri;">
+<p style="margin:0in 0in 10pt;">Written by: Ed Katibah, Milan Stojic, Michael Rys, Nicholas Dritsas</p>
+</span>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Technical reviewers: Chuck Heinzelman</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Introduction"></a><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Introduction</span></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Spatial Point Data queries require particular tuning efforts to enhance performance and improve overall application through put.&nbsp; SQL Server 2012 introduces a few key new features and improvements
+ to assist you in that goal.</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Below, we go over a few key best practices and suggestions on how to achieve that.</span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Optimize_the_primary_key_clustered_index"></a><a name="_Toc311816509"><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Optimize the primary key clustered index</span></a></h2>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">To create an index on a spatial column, the table must provide a primary key.&nbsp; SQL Azure extends this requirement by requiring that each table have a clustered primary key.</span></p>
+<h3 style="margin:10pt 0in 0pt;"><a name="Spatial_indexing_basics"></a><span style="font-family:cambria;font-size:16px;color:#4f81bd;">Spatial indexing basics</span></h3>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;">Spatial query execution with an index contains two parts: primary filter (spatial index lookup) and secondary filter (original spatial predicate). So with the queries like “STDistance() &lt; x”,
+ SQL Server will:</span></p>
+<ul>
+<li>identify a candidate set of cells </li><li>run an index seek over the spatial index (primary filter) </li><li>join candidate values with the base table to get the actual spatial objects </li><li>filter any false positives by performing the spatial operation (secondary filter)
+</li></ul>
+<p>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8132.Figure-1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8132.Figure-1.png" style="border-width:0px;border-style:solid;" /></a><span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></p>
+<p><span style="font-family:calibri;">The secondary filter can be avoided by using Filter(@)=1 operation instead of STIntersects(@x)=1. The query performance can be much better but false positives are possible in the result. If the spatial query is not too large,
+ for HHHH spatial index, tolerance will be around 100-200m when using the Geography data type.
+</span></p>
+<p><span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">STDistance(@x) &lt; @range</span><span style="font-family:calibri;"> operator can be replaced with
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">Filter(@x.BufferWithTolerance(@range,1,1)) =
+</span></p>
+<p><span style="font-family:calibri;">If returning some false positives is not an option, IO performance of the base table can still be optimized.</span></p>
+<p><span style="font-family:calibri;">Any spatial index is already optimized to minimize IO. Cells are places in a specific pattern so that spatially closer cells sit physically close to each other. The following picture illustrates the cell pattern used (a
+ Hilbert space-filling curve is used in SQL Server). </span></p>
+<p><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8424.Figure-2.png"><img alt=" " width="492" height="386" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8424.Figure-2.png" style="border-width:0px;border-style:solid;width:476px;height:369px;" /></a></span></p>
+<p>&nbsp;<span style="font-family:calibri;">Therefore, the reading pattern for an index seek over spatial index might look like:</span></p>
+<p>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3617.Figure-3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3617.Figure-3.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p><span style="font-family:calibri;">However, as the join to the base table is needed to get actual spatial objects, the IO pattern for the clustered index seek (the base table) might look like:</span></p>
+<p>&nbsp;<span> </span><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2046.Figure-4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2046.Figure-4.png" style="border-width:0px;border-style:solid;" /></a>
+</p>
+<p>&nbsp;<span style="font-family:calibri;">This IO pattern will result in reading many more pages from the disk and will have high overall impact on spatial query performance.</span></p>
+<p>&nbsp;<span style="font-family:calibri;">So, in order to get better IO performance for the clustered index seek, the Primary Key needs to be correlated with spatial index cell pattern. This can be achieved by adding point coordinates components to the clustered
+ index.</span></p>
+<p>&nbsp;<span style="font-family:calibri;">For our sample data, here is how the original table containing the point column was specified:</span></p>
+<p><span style="font-size:9.5pt;font-family:consolas;color:blue;">CREATE</span><span style="font-size:9.5pt;font-family:consolas;">
+<span style="color:blue;">TABLE</span> <span style="color:teal;">[dbo]</span><span style="color:gray;">.</span><span style="color:teal;">[Points]</span><span style="color:gray;">(<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[id]</span>&nbsp;&nbsp; <span style="color:teal;">[int]</span> <span style="color:gray;">NOT</span>
+<span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[type]</span> <span style="colois can be achieved by adding point coordinates components to the clustered
+ index.</span></p>
+<p>&nbsp;<span style="font-family:calibri;">For our sample data, here is how the original table containing the point column was specified:</span></p>
+<p><span style="font-size:9.5pt;font-family:consolas;color:blue;">CREATE</span><span style="font-size:9.5pt;font-family:consolas;">
+<span style="color:blue;">TABLE</span> <span style="color:teal;">[dbo]</span><span style="color:gray;">.</span><span style="color:teal;">[Points]</span><span style="color:gray;">(<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:ter:teal;">[int]</span> <span style="color:gray;">NOT</span>
+<span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[geo]</span> <span style="color:teal;">[geography]</span> <span style="color:gray;">
+NULL<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;color:blue;">&nbsp; PRIMARY</span><span style="font-size:9.5pt;font-family:consolas;">
+<span style="color:blue;">KEY</span> <span style="color:blue;">CLUSTERED</span>&nbsp;<br />
+</span><span style="font-size:9.5pt;font-family:consolas;color:gray;">&nbsp;&nbsp;&nbsp; (</span><span>&nbsp;<br />
+</span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[id]</span> <span style="color:blue;">ASC</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:teal;">
+[type]</span> <span style="color:blue;">ASC<br />
+</span></span><span style="font-size:9.5pt;font-family:consolas;color:gray;">));</span></p>
+<p><span style="font-family:calibri;">Spatial indexes reference the primary key to access the base table rows.&nbsp; Query performance can often be significantly enhanced by creating a clustered index on the primary key which incorporates the individual ordinates
+ of the underlying point coordinate.&nbsp; This technique allows the primary key to be “spatially” ordered thereby minimizing the number of disk seeks required to fetch the rows of base table data requested by the spatial index.</span></p>
+<p><span style="font-family:calibri;">On occasion, the individual point coordinate ordinates can be found in their own columns in the base table along with the column of points (spatial object).&nbsp; When this is the case, the individual point ordinates can be referenced
+ directly in the clustered primary key DDL.&nbsp; When this is not the case, the table schema can be expanded to include two persisted computed columns which contain the individual ordinates of the underlying point coordinates.&nbsp;
+</span></p>
+<p><span style="font-family:calibri;">It is important to note that the new point ordinate columns must be the first two columns referenced in the clustered primary key. For geometry coordinates, they should be in the x, y order.&nbsp; For geography data they should
+ be in latitude, longitude order.</span></p>
+<p><span style="font-family:calibri;">For the sample data table, it is necessary to expand the schema as follows, creating two new computed persisted columns using spatial methods and redefining the clustered primary key index with these two new columns (note
+ the use of the built-in </span><span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">Lat</span><span style="font-family:calibri;"> and
+</span></span><span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">Long</span><span style="font-family:calibri;"> methods to extract the individual ordinates):</span></span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">TABLE</span> [dbo]<span style="color:gray;">.</span>[Points]<span style="color:gray;">(<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; [id]&nbsp;&nbsp; [int]
+<span style="color:gray;">NOT</span> <span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; [type] [int]
+<span style="color:gray;">NOT</span> <span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; [geog] [geography] NOT
+<span style="color:gray;">NULL,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="background-color:yellow;">
+[geo_lat]&nbsp; <span style="color:blue;">AS </span><span style="color:gray;">(</span>[geog]<span style="color:gray;">.</span>[Lat]<span style="color:gray;">)</span> &nbsp;<span style="color:blue;">PERSISTED</span>
+<span style="color:gray;">NOT</span> <span style="color:gray;">NULL,</span></span><span style="color:gray;"> -- *<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="background-color:yellow;">
+[geo_lon]&nbsp; <span style="color:blue;">AS </span><span style="color:gray;">(</span>[geog]<span style="color:gray;">.</span>[Long]<span style="color:gray;">)</span>
+<span style="color:blue;">PERSISTED</span> <span style="color:gray;">NOT</span> <span style="color:gray;">
+NULL,</span></span><span style="color:gray;"> -- *<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">&nbsp; PRIMARY</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">KEY</span> <span style="color:blue;">CLUSTERED</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp; (<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color:yellow;">
+[geo_lat] <span style="color:blue;">ASC</span><span style="color:gray;">,</span></span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color:yellow;">
+[geo_lon] <span style="color:blue;">ASC</span><span style="color:gray;">,</span></span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [id] <span style="color:blue;">
+ASC</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [type]
+<span style="color:blue;">ASC<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">));</span><span>
+</span></p>
+<p><span style="font-family:calibri;">* not null due to use in primary key</span></p>
+<p><span style="font-family:calibri;">NOTE: <span style="color:#1f497d;">Persistence of the x,y / lat,long points for the spatial object as the first columns in the clustered key adds 16 bytes to the key, which is then duplicated in both the base table as well
+ as the spatial index itself, as well as every non-clustered index added to the table. The regular guidance for clustered index keys is to keep them as small as possible. Even though this could potentially improve spatial index performance, users should be
+ aware of the potential negative consequences. </span></span></p>
+<h2 style="margin:10pt 0in 0pt;"><a name="Optimize_the_spatial_index"></a><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Optimize the spatial index</span></h2>
+<p><span style="font-family:calibri;">The default spatial index has traditionally been recommended with grids all set to MEDIUM based on a general spatial workload.&nbsp; This was original index definition:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">SPATIAL</span> <span style="color:blue;">INDEX</span> [table_geog_sidx]&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+ON</span> [dbo]<span style="color:gray;">.</span>[table]<span style="color:gray;">(</span>[geog]<span style="color:gray;">)<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">USING</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; GEOGRAPHY_GRID&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WITH
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">GRIDS
+<span style="color:gray;">=(</span>LEVEL_1 <span style="color:gray;">=</span> MEDIUM<span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_2 <span style="color:gray;">
+=</span> MEDIUM<span style="color:gray;">,<br />
+&nbsp;</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"ont-family:&#39;courier new&#39;;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WITH
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">GRIDS
+<span style="color:gray;">=(</span>LEVEL_1 <span style="color:gray;">=</span> MEDIUM<span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_2 <span style="color:gray;">
+=</span> MEDIUM<span style="color:gray;">,<br />
+&nbsp;</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</s>LEVEL_3 <span style="color:gray;">
+=</span> MEDIUM<span style="color:#808080;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_4 <span style="color:gray;">
+=</span> MEDIUM<span style="color:gray;">),</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CELLS_PER_OBJECT
+<span style="color:gray;">=</span> 16; <br />
+<br />
+</span><span style="font-family:calibri;">Spatial query performance can often be improved significantly by selecting spatial index options which differ from default settings for specific spatial shapes and distributions.&nbsp; In the case of point data, it has been
+ found in most, if not in all, cases that spatial indexes with all grid levels set to HIGH outperform other configurations.&nbsp; Since we are dealing with point data, the CELLS_PER_OBJECT setting is irrelevant and can be set to any legal value (1-8192) without
+ effect. Here is the spatial index reconfigured to grid levels with the optimal setting for points, all HIGH:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">SPATIAL</span> <span style="color:blue;">INDEX</span> [table_geog_sidx]&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+ON</span> [dbo]<span style="color:gray;">.</span>[table]<span style="color:gray;">(</span>[geog]<span style="color:gray;">)<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">USING</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; GEOGRAPHY_GRID&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; WITH
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">GRIDS
+<span style="color:gray;">=(</span>LEVEL_1 <span style="color:gray;">=</span> <span style="background-color:yellow;">
+HIGH</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_2 <span style="color:gray;">
+=</span> <span style="background-color:yellow;">HIGH</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_3 <span style="color:gray;">
+=</span> <span style="background-color:yellow;">HIGH</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">LEVEL_4 <span style="color:gray;">
+=</span> <span style="background-color:yellow;">HIGH</span><span style="color:gray;">),</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; CELLS_PER_OBJECT
+<span style="color:gray;">=</span> 16; </span></p>
+<p>&nbsp;<br />
+<a name="_Toc311816511"><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Consider using a spherical Earth model&nbsp; if using geography data type</span></a>
+</p>
+<p>&nbsp;<span style="font-family:calibri;">If you are using SQL Azure or SQL Server 2012 and your accuracy requirements for the spatial results do not require that an ellipsoidal model be used, additional query performance can potentially be gleaned by using a spherical
+ model as the basis for the underlying spatial coordinate system due to the simpler mathematics involved in calculations. Additionally, the
+<strong>STDistance</strong>(), <strong>STLength</strong>() and <strong>ShortestLineTo</strong>() methods are optimized to run faster on a sphere than on an ellipsoid.</span></p>
+<p>&nbsp;<span style="font-family:calibri;">In SQL Server 2012 and SQL Azure, there is a new entry for a unit sphere in the&nbsp;
+</span><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">sys.spatial_reference_systems</span><span style="font-family:calibri;"> view. This new entry has a spatial reference identifier (SRID) = 104001 and is listed as a unit sphere.</span></p>
+<p>&nbsp;<span style="font-family:calibri;">The native units of measure output when using the unit sphere are radians. To compute measures in real world values, such as length and area in meters, simply multiply results by the radius of the desired output sphere
+ as follows: </span></p>
+<ul>
+<li>For linear measure (length, distance, buffer distance):&nbsp;&nbsp; length * (sphere radius)
+</li><li>For area measure:&nbsp;&nbsp; area * (sphere radius) * (sphere radius) </li></ul>
+<p>&nbsp;<span style="font-family:calibri;">In the case of our sample data, the original coordinate system was specified as World Geodetic Reference System of 1984 (WGS84).&nbsp; In SQL Server and SQL Azure, this is identified as spatial reference identifier (SRID) 4326.
+ This is the most common coordinate system for use with the geography data type (most commercial spatial data uses these coordinate systems, as do GPS receivers). For many web mapping programs which reference WGS84 (Bing Maps, Google Maps, etc.), a radius of
+ 6,378,137 meters is used for their underlying spherical spatial reference system (“Spherical Mercator”).</span></p>
+<p>&nbsp;<span style="font-family:calibri;">To update the SRID for each point object to the unit sphere reference system in the sample spatial table, the following T-SQL can be used (note the use of the
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">STSrid </span><span style="font-family:calibri;">method):
+</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">UPDATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> Points<br />
+</span><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;
+<span style="color:blue;">SET</span> geog<span style="color:gray;">.</span><span style="background-color:yellow;">STSrid
+<span style="color:gray;">=</span> 104001</span></span></p>
+<p>&nbsp;<br />
+<span style="font-family:cambria;font-size:18ps, etc.), a radius of
+ 6,378,137 meters is used for their underlying spherical spatial reference system (“Spherical Mercator”).</span></p>
+<p>&nbsp;<span style="font-family:calibri;">To update the SRID for each point object to the unit sphere reference system in the sample spatial table, the following T-SQL can be used (note the use of the
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">STSrid </span><span style="font-family:calibri;">method):
+</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">UPDATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> Points<br />
+</span><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;
+<span style="color:blue;">SET</spx;color:#4f81bd;">Performance testing</span></p>
+<p>&nbsp;<span style="font-family:calibri;">To test these tuning recommendations, a customer-driven scenario was used along with their data.&nbsp; To provide an idea of the scope of the query, the following stored procedure is provided as an example:</span></p>
+<p>&nbsp;<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">/****** Object:&nbsp; StoredProcedure [dbo].[TEST]&nbsp;&nbsp;&nbsp; Script Date: 12/13/2011 3:14:50 PM ******/<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SET</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">ANSI_NULLS</span> <span style="color:blue;">ON<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">GO</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SET</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">QUOTED_IDENTIFIER</span> <span style="color:blue;">ON<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">GO</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">ALTER</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">PROCEDURE</span> [dbo]<span style="color:gray;">.</span>[TEST]<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">AS<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">BEGIN<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp; -- SET NOCOUNT ON added to prevent extra result sets from<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp; -- interfering with SELECT statements.<br />
+&nbsp;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp;--set statistics time on<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:green;">&nbsp; --set statistics IO on</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+SET</span> <span style="color:blue;">NOCOUNT</span> <span style="color:blue;">ON</span><span style="color:gray;">;<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+DECLARE</span> @Location <span style="color:blue;">geography</span><span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; @continent
+<span style="color:blue;">integer<br />
+<br />
+&nbsp;</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;<span style="color:blue;">SELECT</span> @Location
+<span style="color:gray;">=</span> CI<span style="color:gray;">.</span>city_center_coordinates<span style="color:gray;">,<br />
+</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; @continent
+<span style="color:gray;">=</span> CO<span style="color:gray;">.</span>continent_id<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+FROM</span> dbo<span style="color:gray;">.</span>geo2_city <span style="color:blue;">
+AS</span> CI<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">INNER</span>
+<span style="color:gray;">JOIN</span> dbo<span style="color:gray;">.</span>geo2_country
+<span style="color:blue;">AS</span> CO <span style="color:blue;">ON</span> CO<span style="color:gray;">.</span>country_id
+<span style="color:gray;">=</span> CI<span style="color:gray;">.</span>country_id<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> CI<span style="color:gray;">.</span>city_id <span style="color:gray;">
+=</span> 9395<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> CI<span style="color:gray;">.</span>rec_status
+<span style="color:gray;">&gt;</span> <span style="color:gray;">-</span>1<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> CO<span style="color:gray;">.</span>rec_status
+<span style="color:gray;">&gt;</span> <span style="color:gray;">-</span>1&nbsp;<br />
+<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+SET</span> @location <span style="color:gray;">=</span> <span style="color:blue;">geography</span><span style="color:gray;">::</span>Point<span style="color:gray;">(</span>@location<span style="color:gray;">.</span>Lat<span style="color:gray;">,</span> @location<span style="color:gray;">.</span>Long<span style="color:gray;">,</span>
+ 4326<span style="color:gray;">)</span></span></p>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color:yellow;color:blue;">
+SELECT</span><span style="background-color:yellow;"> GI<span style="color:gray;">.</span>geo_id<span style="color:gray;">,</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span>STDistance<span style="color:gray;">(</span>@Location<span style="color:gray;">)<br />
+</span></span></span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;"><span style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FROM
+</span>db_core<span style="color:gray;">.</span>dbo<span style="color:gray;">.</span>geo_informations2
+<span style="color:blue;">AS</span> GI <span style="color:blue;">with</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,<br />
+</span></span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue;">INDEX</span><span style="color:gray;">(</span>SIndx_geography_informations2<span style="color:gray;">))</span>&nbsp;<br />
+</span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="color:gray;">INNER</span> <span style="color:gray;">JOIN</span>&nbsp; dbo<span style="color:gray;">.</span>product_hotels
+<span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">)</span>
+<span style="color:blue;">AS</span> PH&nbsp;<br />
+</span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="color:blue;">ON </span><span style="color:gray;">(</span>PH<span style="color:gray;">.</span>hotel_id
+<span style="color:gray;">=</span> GI<span style="color:gray;">.</span>geo_id<span style="color:gray;">)</span>&nbsp;<br />
+</span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:blue;">WHERE</span> GI<span style="color:gray;">.</span>geo_type
+<span style="color:gray;">=</span> 7<br />
+</span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> PH<span style="color:gray;">.</span>rec_status
+<span style="color:gray;">=</span>&nbsp;1<br />
+</span><span style="background-color:yellow;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> PH<span style="color:gray;">.</span>region_id
+<span style="color:gray;">=</span> 2</span>&nbsp;</p>
+</span>
+<p><span style="line-height:115%;font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:gray;">AND</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span>STDistance<span style="color:gray;">(</span>@Location<span style="color:gray;">)</span>
+<span style="color:gray;">&lt;</span> <span style="color:gray;">10000<br />
+</span><span style="color:blue;">END</span>&nbsp;&nbsp;&nbsp;&nbsp; </span></p>
+<p>&nbsp;<span style="font-family:calibri;">For discussion clarity, the following T-SQL, pre-optimization, captures the core spatial query used in the stored procedure (the SQL Server spatial methods are highlighted). This corresponds to the T-SQL illustrated in
+ the light blue box, above.</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> p<span style="color:gray;">.</span>geo_id<span style="color:gray;">,</span> p<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">)<br />
+&nbsp; </span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"><span style="color:blue;">FROM</span> Points
+<span style="color:blue;">AS</span> p <span style="color:blue;">WITH</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,</span>&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+INDEX</span><span style="color:gray;">(</span><span style="background-color:aqua;">SIndx_geography_informations</span><span style="color:gray;">))</span> –- original, non-optimized index&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">)</span>
+<span style="color:gray;">&lt;</span> <span style="color:gray;">10000</span> -<span style="color:green;">– 10KM (10,000 meters)</span>
+</span></p>
+<p><span style="font-family:calibri;">When the coordinate system was changed from SRID=4326 to SRID=104001, it was necessary to rewrite the query as follows to accommodate the coordinate system units change and assure that the new, optimized spatial index was
+ used:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> GI<span style="color:gray;">.</span>geo_id<span style="color:gray;">,</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location)
+<span style="background-color:lime;">* 6378137</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+FROM</span> Points_UnitSphere <span style="color:blue;">AS</span> GI <span style="color:blue;">
+WITH</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,</span>&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+INDEX</span><span style="color:gray;">(</span><span style="background-color:aqua;">geo_info_HHHH_sidx</span><span style="color:gray;">))</span> –- optimized index&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">)</span>
+<span style="background-color:lime;">* 6378137</span> <span style="color:gray;">&lt;</span>
+<span style="color:gray;">10000</span> <span style="color:green;">– 10KM </span></span></p>
+<p><span style="font-family:calibri;">Adding the multiplication in the WHERE clause causes the spatial index to be ignored in the query plan (in fact, the query compiler complains about the use of the spatial index hint, when written in this fashion).&nbsp; To alleviate
+ this issue, the query can be rewritten as follows:</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> p<span style="color:gray;">.</span>id<span style="color:gray;">,</span> p<span style="color:gray;">.</span>info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location)
+<span style="background-color:lime;">* 6378137</span>&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp; <span style="color:blue;">
+FROM</span> Points_UnitSphere <span style="color:blue;">AS</span> p <span style="color:blue;">
+WITH</span><span style="color:gray;">(</span><span style="color:blue;">nolock</span><span style="color:gray;">,</span>&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+INDEX</span><span style="color:gray;">(</span><span style="background-color:aqua;">geo_info_HHHH_sidx</span><span style="color:gray;">))</span>&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+WHERE</span> GI<span style="color:gray;">.</span>geo_info<span style="color:gray;">.</span><span style="background-color:yellow;">STDistance</span><span style="color:gray;">(</span>@Location<span style="color:gray;">) &lt;</span>
+<span style="background-color:lime;">10000/6378137</span> <span style="color:green;">
+-- 10KM </span></span></p>
+<p>&nbsp;<br />
+<a name="_Toc311816513"><span style="font-family:cambria;font-size:18px;color:#4f81bd;">Conclusions</span></a>
+</p>
+<p>&nbsp;<span style="font-family:calibri;">Quick summary of the potential techniques to improve spatial point data performance:
+</span></p>
+<ul>
+<li>For point data, create an “all HIGH” manual grid spatial index </li><li>Use the Filter operation to avoid secondary filter, or </li><li>Create a clustered primary key on point table using point coordinate components
+</li><li>For the Geography data type, using a spherical Earth model instead of ellipsoidal model
+</li><li>Use the spatial_window_max_cells query hint to fine tune query performance </li></ul>
+<p><span style="font-family:calibri;">Prior to optimization, use of the SQL Server STDistance method in the SELECT and WHERE clauses returned an average performance of 30 milliseconds.</span></p>
+<p><span style="font-family:calibri;">After optimization (new table with point clustered primary key, new point index and use of the sphere-optimized methods), use of the SQL Server STDistance method in the SELECT and WHERE clauses returned an average performance
+ of 18 milliseconds. </span></p>
+<table cellspacing="0" cellpadding="0" border="1" style="border:medium none currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" style="background-color:#d9d9d9;padding:0in 5.4pt;border:1pt solid windowtext;width:4.2in;">
+<p><strong><span style="font-family:calibri;">Description</span></strong></p>
+</td>
+<td valign="top" style="background-color:#d9d9d9;border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:windowtext windowtext windowtext #000000;padding:0in 5.4pt;width:2.25in;">
+<p><strong><span style="font-family:calibri;">Execution Time in ms (average*)</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:4.2in;background-color:transparent;">
+<p><span style="font-family:calibri;">Original Spatial Query</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:2.25in;background-color:transparent;">
+<p><span style="font-family:calibri;">30</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 1pt 1pt;border-style:none solid solid;border-color:#000000 windowtext windowtext;padding:0in 5.4pt;width:4.2in;background-color:transparent;">
+<p><span style="background-color:lime;font-family:calibri;">Optimized Spatial Query</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 windowtext windowtext #000000;padding:0in 5.4pt;width:2.25in;background-color:transparent;">
+<p><span style="background-color:lime;font-family:calibri;">18</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><em><span style="font-family:calibri;">* each query for this test was executed 1,000 times for determination of the average time</span></em></p>
+<hr />
+<h2><a name="Other_Languages"></a>Other Languages</h2>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/9779.sql-server-2012-ja-jp.aspx">SQL Server 2012 での空間ポイントデータクエリのチューニング (ja-JP)</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/ru-ru/contents/articles/10055.sql-server-2012.aspx">Опти&#1084;изация запросов к пространственны&#1084; данны&#1084; в SQL Server 2012 (ru-RU)</a>
+</li></ul>
+
+</div>
+    
+    

@@ -1,0 +1,166 @@
+---
+layout: default
+title: Extienda su red a Azure con VPN de sitio a sitio de manera rápida y económica (es-MX) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Referencias">Referencias:</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<hr />
+<br />
+<br />
+&nbsp;Artículo traducido de:&nbsp;<a href="https://blogs.technet.microsoft.com/dj/2018/01/08/extend-your-network-to-azure-with-site-to-site-vpn-quick-and-cheap/">https://blogs.technet.microsoft.com/dj/2018/01/08/extend-your-network-to-azure-with-site-to-site-vpn-quick-and-cheap/</a><br />
+<br />
+<h2><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a><a name="Introducción"></a>Introducción:</h2>
+<br />
+&nbsp;Había pasado un tiempo desde que trabajé originalmente con las opciones de VPN de Azure, así que recientemente decidí volver a analizarlo. Al igual que muchos de ustedes, tengo computadoras en mi casa que son mi &quot;Laboratorio&quot; y pensé que sería genial poder
+ conectar la red de &quot;laboratorio&quot; de mi casa a Azure para poder mover más fácilmente los recursos de mi laboratorio a la nube. . Solo para comenzar, quería poder tener un controlador de dominio en Azure y tenerlo conectado a mi laboratorio también. Después
+ de investigar y volver a familiarizarme, descubrí una buena solución que no cuesta mucho ni toma mucho tiempo.<br />
+<br />
+Encontré varios blogs o artículos escritos sobre todo tipo de métodos de conexión a Azure. Lo reduje a unos pocos que eran similares a lo que quería hacer. Lo que encontré fue que para hacer que la mina funcionara como yo quería, necesitaba usar ciertas piezas
+ de diferentes publicaciones sobre el tema. Haré referencia a algunas de esas fuentes en esta publicación. Aquí está mi experiencia con este proceso y cómo pude hacerlo funcionar bien.<br />
+<br />
+Primero, aquí están los principales puntos de datos que debemos definir antes de comenzar:<br />
+<br />
+<p style="font-size:14px;margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;color:#454545;background-color:#ffffff;">
+<span style="font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;border:0px;">On Prem Lab Network</span>:</p>
+<ul>
+<li>IP Subnet: 192.168.1.0 / 24 (255.255.255.0) </li><li>RRAS Server: 192.168.1.202 </li></ul>
+<p style="font-size:14px;margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;color:#454545;background-color:#ffffff;">
+<span style="font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;border:0px;">Azure</span>:</p>
+<ul>
+<li>Resource Group: My-Resource-Group </li><li>Virtual Network:
+<ul>
+<li>Address Space: 172.10.0.0 / 16 (255.255.0.0) </li><li>Subnet – “Backend”: 172.10.1.0 / 24 (255.255.255.0) </li><li>Subnet – “GatewaySubnet”: 172.10.0.0 / 24 (255.255.255.0) </li></ul>
+</li><li>Virtual Network Gateway: </li><li>Connection: </li><li>Local Network Gateway:
+<ul>
+<li>IP Address: 1.1.1.1 (Public IP of On Prem Lab) </li><li>Address Space: 192.168.1.0 / 24 (255.255.255.0) </li></ul>
+</li></ul>
+<p style="margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;background-color:#ffffff;">
+<span style="font-size:14px;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;color:#454545;">Pasos:</span></p>
+<p style="color:#454545;font-size:14px;margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;background-color:#ffffff;">
+<span>1. Crear un grupo de recursos de Azure</span></p>
+<ol>
+<li>&nbsp;En Azure Portal, haga clic en Grupos de recursos. Luego haga clic en Agregar.
+</li><li>&nbsp;Complete &quot;Nombre del grupo de recursos&quot;, elija su suscripción, seleccione ubicación y haga clic en Crear.
+</li></ol>
+<div>
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2061.createRG.png" style="font-size:12.1px;"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2061.createRG.png" style="border-width:0px;border-style:solid;" /></a></div>
+&nbsp;<br />
+</div>
+<p style="margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;background-color:#ffffff;">
+<span style="font-size:14px;color:#454545;"><br />
+2. Crear red virtual</span></p>
+<ol>
+<li>En Azure Portal, haga clic en Redes virtuales. Luego haga clic en Agregar. </li><li>&nbsp;Campos de relleno:
+<ol>
+<li>Nombre: My-Virtual-LAN </li><li>Espacio de direcciones: 172.10.0.0 / 16 (255.255.0.0) </li><li>Nombre de subred: Backend </li><li>Rango de dirección de subred: 172.10.1.0 / 24 (255.255.255.0) </li><li>Grupo de recursos: use Existing&gt; My-Resource-Group </li><li>Ubicación: (Misma ubicación que el grupo de recursos) </li></ol>
+</li><li>&nbsp;Ahora crea las subredes: </li></ol>
+<ol>
+<ol>
+<li>Haga clic en la Nueva red virtual que acaba de crear. </li><li>Ahora haga clic en &quot;Subredes&quot; en el lado izquierdo. </li><li>Ahora a la derecha, haga clic en &quot;&#43; Subred de puerta de enlace&quot;. </li><li>Completar:
+<ol>
+<li>Nombre: GatewaySubnet </li><li>Rango de direcciones: 172.10.0.0 / 24 (255.255.255.0) </li></ol>
+</li><li>Haga clic en Crear. </li></ol>
+</ol>
+<span style="font-size:14px;color:#454545;"><br />
+3. Crear una puerta de enlace de red virtual<br />
+</span><br />
+<ol>
+<li>En Azure Portal, haga clic en Virtual Network Gateway. Luego haga clic en Agregar.
+</li><li>Ahora haga clic en Agregar. </li><li>Campos de relleno:
+<ol>
+<li>Nombre: My-Virtual-Gateway </li><li>Red virtual: será una red creada en el paso anterior. </li><li>Dirección IP pública: elija de la lista o haga clic en Agregar IP. </li><li>Tipo de puerta de enlace: VPN </li><li>Tipo de VPN: Basado en la ruta </li><li>Ubicación: Igual que arriba. </li><li>Haga clic en Crear. (Puede tomar un poco de tiempo para terminar.) </li></ol>
+</li></ol>
+<span style="font-size:14px;color:#454545;"><br />
+<span style="white-space:pre;"></span>4. Crear una puerta de enlace de red local.</span><br />
+<ol>
+<li>En Azure Portal, haga clic en Local Network Gateway. Luego haga clic en Agregar.
+</li><li>Campos de relleno:
+<ol>
+<li>Nombre: Mi-Local-Red-Puerta de enlace </li><li>Dirección IP: IP pública de su hogar / laboratorio </li><li>Espacio de direcciones: 192.168.1.0 / 24 (255.255.255.0) (su red doméstica) </li><li>Grupo de recursos: Grupo de recursos creado anteriormente </li><li>Ubicación: Misma ubicación </li><li>Haga clic en Crear. </li></ol>
+</li></ol>
+<br />
+<span style="white-space:pre;"></span>5. Crear una conexión VPN<br />
+<ol>
+<li>En Azure Portal, h Iaga clic en su puerta de enlace de red local (My-Local-Network-Gateway)
+</li><li>Haga clic en Conexiones. </li><li>Haga clic en Agregar. </li><li>Campo de relleno:
+<ol>
+<li>Tendrá que especificar las<strong> puertas de enlace LAN locales</strong> y <strong>
+virtuales </strong>que creamos en el <strong>Paso 3</strong> y el <strong>Paso 4</strong>, para la<strong> Puerta de enlace de red virtual</strong> y la
+<strong>Puerta de enlace de red local</strong>, respectivamente. </li><li>Clave compartida: es importante usar una clave aleatoria de 32 bits. Esto se puede generar fácilmente con algo como powershell o como esta herramienta. Genere una clave de 32 bandejas y colóquela en el campo Shared Key PSK. También conserve la llave porque
+ la necesitará más adelante en este tutorial. </li><li>Haga clic en Crear. </li></ol>
+</li></ol>
+<span style="font-size:14px;color:#454545;"><br />
+6. Esto completa la configuración de Azure. Siguiente Comenzar la configuración RRAS.<br />
+</span><br />
+<span style="font-size:14px;color:#454545;">7. En cualquier máquina con Windows en su red doméstica o de laboratorio, instale la función RRAS.</span><br />
+<ol>
+<li>Powershell: Install-windowsfeature -name directaccess-vpn -IncludeManagementTools
+</li></ol>
+<br />
+<span style="font-size:14px;color:#454545;">8. Configurar RRAS:</span><br />
+<span style="font-size:14px;color:#454545;"><br />
+9. Aparecerá el asistente de configuración del <strong>servidor de enrutamiento y acceso remoto</strong>.</span><br />
+<ol>
+<li>Bienvenido al Asistente de configuración del servidor de enrutamiento y acceso remoto: haga clic en Siguiente
+</li><li>Configuración: seleccione <strong>Conexión segura entre dos redes privadas</strong>, haga clic en Siguiente
+</li><li>Conexiones de marcado a petición: seleccione <strong>Sí</strong>, haga clic en
+<strong>Siguiente </strong></li><li>Asignación de dirección IP: seleccione Automáticamente, haga clic en <strong>
+Siguiente </strong></li><li>Completando el Asistente de configuración del servidor de enrutamiento y acceso remoto: haga clic en Finalizar
+</li></ol>
+<span style="font-size:14px;color:#454545;"><br />
+Aparecerá el asistente de interfaz:</span><br />
+<br />
+<ol>
+<li>Bienvenido al Asistente de interfaz de marcado a petición: haga clic en <strong>
+Siguiente </strong></li><li>Nombre de interfaz: escriba <strong>Azure S2S</strong>, haga clic en <strong>
+Siguiente </strong></li><li>Tipo de conexión: Seleccione <strong>Conectar usando red privada virtual (VPN)</strong>, haga clic en
+<strong>Siguiente </strong></li><li>Tipo de VPN: Seleccione <strong>IKEv2</strong>, haga clic en <strong>Siguiente
+</strong></li><li>Dirección de destino: ingrese la dirección IP pública de Azure Virtual Network Gateway, haga clic en
+<strong>Siguiente </strong></li><li>Protocolos y seguridad: compruebe los paquetes de<strong> ruta de IP</strong> en esta interfaz, haga clic en
+<strong>Siguiente </strong></li><li>&nbsp;Rutas estáticas para redes remotas: haga clic en <strong>Agregar </strong>
+<ul>
+<li>Ruta estática: seleccione Soporte remoto de red usando IPv4: </li><li>Destino: 172.10.1.0 </li><li>Máscara de red: 255.255.255.0 </li><li>Métrica: 1 </li><li>Haga clic en <strong>Aceptar </strong></li><li>Haga clic en <strong>Siguiente </strong></li></ul>
+</li><li>Credenciales de marcación: escriba Azure para el nombre de usuario, haga clic en Siguiente
+</li><li>Completar el asistente de interfaz de marcado a petición: haga clic en Finalizar
+</li></ol>
+<br />
+En la ventana <strong>Enrutamiento y acceso remoto</strong>, seleccione <strong>Servidor RRAS
+</strong>-&gt; <strong>Interfaces de red</strong>. Haga clic derecho en <strong>Azure S2S</strong> y seleccione
+<strong>Propiedades</strong>.<br />
+<br />
+Seleccione la pestaña Seguridad y en Autenticación seleccione Usar clave previamente compartida para la autenticación. Escriba la clave previamente compartida que se ingresó en la conexión
+<strong>VPN en Azure</strong>. Haga clic en <strong>Aceptar</strong>.<br />
+<br />
+Haga clic con el botón derecho en la interfaz de red de <strong>Azure S2S</strong> y haga clic en
+<strong>Conectar</strong>.<br />
+<br />
+Después de que se conecta, abra un símbolo del sistema y haga ping a cualquier IP en cualquier VM en su nueva red de Azure 172.10.1.x. Deberías obtener una respuesta.<br />
+<br />
+Ahora cualquier máquina virtual Azure que ponga en 172.10.1.x podrá comunicarse directamente con sus sistemas en las instalaciones.<br />
+<br />
+Para que cualquier sistema en las instalaciones se comunique con las máquinas virtuales de Azure, deberá configurar una ruta estática en su enrutador doméstico. En esta configuración, creé una ruta estática en mi enrutador configurado de esta manera:<br />
+<br />
+<ol>
+<li>Red: 172.10.0.0 </li><li>Máscara de red: 255.255.0.0 </li><li>Gateway: 192.168.1.202 (IP interna de su servidor RRAS) </li><li>Métrica: 1 </li></ol>
+&nbsp;<br />
+Estos fueron los pasos que tomé para conectar mis redes. En particular, utilicé estos 2 artículos como referencias, así que pensé que debería incluir un enlace aquí. En mi situación, combiné algunos de estos dos artículos y un poco de mi propio giro. Creo que
+ de esta manera funcionó mejor para mí. Yo encuentro esto útil.<br />
+<br />
+<h2 style="font-size:14px;margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;color:#454545;background-color:#ffffff;">
+<a name="Referencias"></a>Referencias:</h2>
+<p style="font-size:14px;margin:0px 0px 25px;padding:0px;vertical-align:baseline;border:0px;color:#454545;background-color:#ffffff;">
+<a target="_blank" href="https://blogs.technet.microsoft.com/jletsch/2016/03/15/lets-configure-azure-site-to-site-vpn-with-rras-in-azure-resource-manager/" rel="noopener" style="font-family:inherit;font-weight:inherit;font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;border:0px;color:#0072c6;">https://blogs.technet.microsoft.com/jletsch/2016/03/15/lets-configure-azure-site-to-site-vpn-with-rras-in-azure-resource-manager/</a></p>
+<div class="oembed-wrapper" style="font-size:14px;margin:0px 0px 1.5em;padding:0px;vertical-align:baseline;border:0px;color:#454545;background-color:#ffffff;">
+<a href="https://scomandothergeekystuff.com/2016/09/19/creating-a-site-to-site-vpn-with-azure-resource-manager-arm-and-windows-2012r2/" style="font-family:inherit;font-weight:inherit;font-style:inherit;margin:0px;padding:0px;vertical-align:baseline;border:0px;color:#0072c6;">Creating
+ a Site-to-Site (S2S) VPN with Azure Resource Manager (ARM) and Windows&nbsp;2012R2</a></div>
+<div class="back-to-top-wrap" style="font-size:14px;margin:-75px 0px 0px;padding:35px 0px 10px;vertical-align:baseline;border:0px;line-height:1;top:509.594px;right:0px;width:66px;color:#454545;text-align:center;">
+<br />
+</div>
+<hr />
+
+</div>
+    
+    

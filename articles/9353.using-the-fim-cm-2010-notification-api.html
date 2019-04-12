@@ -1,0 +1,1068 @@
+---
+layout: default
+title: Using the FIM CM 2010 Notification API - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>This article describes how to use the FIM CM Notification API to send an e-mail message to a distribution list when a certificate enrolled through the FIM CM portal enters its renewal period.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Background">Background</a></li><li class="hierarchy-item"><a href="#E-mail_Body">E-mail Body</a></li><li class="hierarchy-item"><a href="#Detecting_the_Renewal_Event">Dntent-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Using the FIM CM 2010 Notification API</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p>This article describes how to use the FIM CM Notification API to send an e-mail message to a distribution list when a certificate enrolled through the FIM CM portal enters its renewal period.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Background">Background</a></li><li claetecting the Renewal Event</a></li><li class="hierarchy-item"><a href="#Processing_the_Renewal_Request">Processing the Renewal Request</a></li><li class="hierarchy-item"><a href="#Optimisations">Optimisations</a></li><li class="hierarchy-item"><a href="#Compilation_Installation_and_Configuration">Compilation, Installation and Configuration</a></li><li class="hierarchy-item"><a href="#Testing">Testing</a></li><li class="hierarchy-item"><a href="#Final_word">Final word</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<h2><a name="Background"></a>Background</h2>
+<p>Back in 2005, Microsoft acquired Canadian firm Alacris, primarily for its idNexus smart card management software. After rebranding the product as Microsoft Certificate Lifecycle Manager during its beta period, it was merged with Microsoft’s meta-directory
+ product, MIIS 2003 and released under the banner of ILM 2007; the certificate management component was known as Certificate Lifecycle Manager 2007.
+<br />
+<br />
+The focus of Certificate Lifecycle Manager 2007 (CLM 2007) remained the management of smart cards, but a session at TechEd North America in 2008 by Brian Komar with the tongue-in-cheek title of Using Microsoft Identity Lifecycle Manager 2007 Certificate Management
+ for Something Other than Smart Cards highlighted other possibilities for the product. One of the scenarios discussed in the session, which can still be viewed here
+<a href="http://channel9.msdn.com/Events/TechEd/NorthAmerica/2008/IDA355" target="_blank">
+http://channel9.msdn.com/Events/TechEd/NorthAmerica/2008/IDA355</a>, was using CLM 2007 to enrol web server certificates. The main benefit of using CLM 2007 to enrol the certificates was that it allowed an e-mail notification to be sent when the certificate
+ entered its renewal period.<br />
+<br />
+Brian’s session didn’t go in to too much detail about how the e-mail was generated or how the body of the e-mail could be customised, but I thought there would be enough information out on the Internet and maybe even some example code, that would allow me to
+ get the scenario working. Rather surprisingly I found very little information other than the Notification API documentation on MSDN (<a href="http://msdn.microsoft.com/en-us/library/windows/desktop/bb468066(v=vs.85).aspx" target="_blank">http://msdn.microsoft.com/en-us/library/windows/desktop/bb468066(v=vs.85).aspx</a>),
+ so I set myself a challenge. The objective was to send an e-mail to a distribution group whenever a web server certificate enrolled through CLM 2007’s successor, FIM Certificate Management 2010 (FIM CM), entered its renewal period. The body of the e-mail would
+ provide the subject name of the certificate, the name of the host where the certificate was installed and any useful information about the certificate due to expire. In addition, only the published FIM CM APIs would be used. This latter requirement introduced
+ some inefficiency into the solution and I’ll describe how these may be overcome later in this article.</p>
+<h2><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a><a name="FIM_CM_2010_Basics"></a>FIM CM 2010 Basics</h2>
+<p>In order to keep the length of this article to a minimum, I don’t want to go into too much detail about how to set up FIM CM or how to configure the delivery of e-mail notifications. To gain a better understanding of what installation and configuration steps
+ are required, I recommend reviewing the tutorials on Dmitrii Lezine’s blog (<a href="http://cloudidentityblog.com/2011/02/01/implementing-fim-2010-certificate-management-part-1/" target="_blank">http://cloudidentityblog.com/2011/02/01/implementing-fim-2010-certificate-management-part-1/</a>).
+ I also recommend watching Brian Komar’s TechEd session mentioned earlier, as this goes into the basics of configuration for enrolling web server certificates. The main idea behind Brian’s approach is to use a dedicated user account as an enrolment agent and
+ configure the account with the e-mail address of a distribution list that contains administrators who can respond to the renewal e-mail notification.<br />
+<br />
+<strong>IMPORTANT:</strong> Before I started the development work, I made sure I could get FIM CM to deliver a standard e-mail message, which may be configured using the Renewal Policy section of a management policy. Once that was successful, the distribution
+ method configured in the Renewal Policy was changed to ‘Do not distribute’ and responsibility for delivering the e-mail message was then down to the add-in. In doing this, it was easier to determine whether any problems were down to general FIM CM configuration
+ or down to the code and its configuration. I highly recommend adopting the same approach if you use this add-in, as it will save a lot of troubleshooting time!</p>
+<h2><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a><a name="FIM_CM_2010_Database_Basics"></a>FIM
+ CM 2010 Database Basics</h2>
+<p>For a bit of background I will quickly cover what happens when a web server certificate is enrolled through FIM CM in relation to the underlying SQL Server tables. An understanding of what happens under the covers is necessary to appreciate how the solution
+ works. <br />
+Activities in FIM CM, such as certificate enrolment, are policy-based. The policy is expressed within a profile template which holds details of the workflows to be used at each stage in a certificate’s life, the templates to be used when enrolling certificates
+ and an indication as to whether the profile template is for a smart card or a software certificate.
+<br />
+When creating a new request for a certificate, a row is added to the Requests table. Several columns are populated including a unique identifier for the request (request_uuid) and a column containing information gathered from data collection items (req_reg_data).
+ When the certificate request is submitted, rows are added to the Profiles, ProfileCertificates and Certificates tables and the row recently added to the Requests table is updated. An abbreviated view of the database tables and the relationship between them
+ is illustrated below: <br />
+<br />
+</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1346.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE-1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1346.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE-1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<e. Several columns are populated including a unique identifier for the request (request_uuid) and a column containing information gathered from data collection items (req_reg_data).
+ When the certificate request is submitted, rows are added to the Profiles, ProfileCertificates and Certificates tables and the row recently added to the Requests table is updated. An abbreviated view of the database tables and the relationship between them
+ is illustrated below: <br />
+<br />
+</p>
+<p style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1346.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE-1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1346.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE-1.png">
+<div style="text-align:left;">&nbsp;</div>
+</a>
+<p>&nbsp;</p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1346.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE-1.png">
+<div>&nbsp;</div>
+</a>
+<p>A row is added to the Profiles table to indicate which profile template is to be used when the request is processed. The row gets a unique identifier (profile_uuid) and references the unique identifier of the profile template to be used in the request (pr_profile_template_uuid);
+ several other columns are also populated. After the row is added to the Profiles table, the Requests table is updated, with the req_profile_uuid column of the new request being updated with the value of profile_uuid from the Profiles table. In doing this,
+ FIM CM knows which profile template to use when enrolling certificates for the request.<br />
+<br />
+When a certificate or certificates are issued (remember that a profile template can contain one or more certificate templates), a row is added to the Certificates table for each certificate and includes a unique identifier (cert_id), the certificate’s common
+ name (cert_issued_common_name) and the certificate’s renewal date (cert_renew); several other columns are also populated. A row is also added to the ProfileCertificates table for each certificate and records the certificate’s unique identifier (pc_cert_id)
+ and the profile from which it was derived (pc_profile_uuid); this latter value matches the value held in the req_profile_uuid column of the Requests table and the profile_uuid column of the Profiles table.<br />
+<br />
+This activity is illustrated in the following diagrams. Note that some data is held as XML and as a result is not easily extracted unless using the FIM CM APIs. To begin with, a new enrolment request is created in the FIM CM portal and as a result a new row
+ is added to the Requests table:</p>
+<table width="630" border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="6" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:472.7pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;color:white;">dbo.REQUESTS</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:63.8pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">request_uuid
+</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:70.9pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_data (XML)</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:111pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_reg_data (XML)</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:78.2pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_profile_uuid</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:49.6pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_type</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:99.2pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_target_user_uuid</span></strong><strong>
+</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:63.8pt;background-color:transparent;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">abc-123-989</span></strong></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:70.9pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">&lt;XML&gt;</span></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:111pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Host Name=<br />
+&nbsp;&nbsp; </span><span style="font-size:9pt;font-family:calibri,sans-serif;">APPSRV1</span></p>
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Common Name=<br />
+&nbsp;&nbsp; </span><span style="font-size:9pt;font-family:calibri,sans-serif;">www.contoso.com</span></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:78.2pt;background-color:transparent;">
+<p><span style="font-family:&#39;times new roman&#39;;font-size:16px;">&nbsp;</span></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:49.6pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">1 (Enroll)</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:99.2pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">bfe-789-456</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>After the request is successfully submitted and executed within the FIM CM portal, rows are added to the Profiles, ProfileCertificates and Certificates tables:</p>
+<table border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="2" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:207.8pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;color:white;">dbo.PROFILES</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:70.5pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">profile_uuid</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:137.3pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">pr_profile_template_uuid</span></strong>
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:70.5pt;background-color:transparent;">
+<p><span style="background-color:yellow;font-size:9pt;font-family:calibri,sans-serif;">aaa-444-121</span>
+</p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:137.3pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">ptu-333-901</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="2" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:144.65pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;color:white;">dbo.PROFILECERTIFICATES</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:79.25pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;">pc_profile_uuid</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:style="font-size:9pt;font-family:calibri,sans-serif;">ptu-333-901</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="2" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:144.65pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;color:white;">dbo.PROFILECERTIFICATES</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:79.25pt;">
+<p><strong><span style="font-size:9pt;font-family:0cm 5.4pt;width:65.4pt;">
+<p><span style="font-family:calibri;"><strong><span style="font-size:9pt;">pc_cert_id</span></strong>
+</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:79.25pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri;">aaa-444-121</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:65.4pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri;">21</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<table border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="3" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:320.15pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;color:white;">dbo.CERTIFICATES</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:44.4pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;">cert_id</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:147.1pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;">cert_issued_common_name</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:128.65pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri;">cert_renew</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:44.4pt;background-color:transparent;">
+<p><strong><span style="font-size:9pt;font-family:calibri;">21</span></strong></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:147.1pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri;">www.contoso.com</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:128.65pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri;">2014-02-17 18:45:07.000</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;<span style="font-family:calibri;">The Requests table is also updated to include a reference to the Profile used to enrol certificates:</span></p>
+<table width="630" border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="6" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:472.7pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;color:white;">dbo.REQUESTS</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:63.8pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">request_uuid
+</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:70.9pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_data (XML)</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:111pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_reg_data (XML)</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:78.2pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_profile_uuid</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:49.6pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_type</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:99.2pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_target_user_uuid</span></strong><strong>
+</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:63.8pt;background-color:transparent;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">abc-123-989</span></strong></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:70.9pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">&lt;XML&gt;</span></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:111pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Host Name=<br />
+</span><span style="font-size:9pt;font-family:calibri,sans-serif;">&nbsp;&nbsp; APPSRV1</span></p>
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Common Name=<br />
+</span><span style="font-size:9pt;font-family:calibri,sans-serif;">&nbsp;&nbsp; www.contoso.com</span></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:78.2pt;background-color:transparent;">
+<p><span style="background-color:yellow;font-size:9pt;font-family:calibri,sans-serif;">aaa-444-121</span>
+</p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:49.6pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">1 (E0000 #4f81bd;padding:0cm 5.4pt;width:111pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Host Name=<br />
+</span><span style="font-size:9pt;font-family:calibri,sans-serif;">&nbsp;&nbsp; APPSRV1</span></p>
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Common Name=<br />
+</span><span style="font-size:9pt;font-family:calibri,sans-serif;">&nbsp;&nbsp; www.contoso.com</span></p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:78.2pt;background-color:transparent;">
+<p><span style="background-color:yellow;font-size:9pt;font-family:calibri,sans-serif;">aaa-444-121</span>
+</p>
+</td>
+<td valign="top" style="border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:49.6pt;background-color:transparent;">
+<p><snroll)</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:99.2pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">bfe-789-456</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>When a renewal request is generated by FIM CM due to a certificate entering its renewal period, a new request row is added to the Requests table. The req_data column contains the unique identifier of the profile from which the certificate was derived. This
+ information may be used to tie the renewal request to the original enrolment request that contains some important data collection items. These are added to the body of the e-mail message along with other information to help identify the certificate that needs
+ to be renewed.</p>
+<table width="630" border="1" cellspacing="0" cellpadding="0" style="margin:auto auto auto 5.4pt;border:currentcolor;border-collapse:collapse;">
+<tbody>
+<tr>
+<td valign="top" colspan="6" style="background-color:#4f81bd;padding:0cm 5.4pt;border:1pt solid #4f81bd;width:472.7pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;color:white;">dbo.REQUESTS</span></strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt 1pt;border-style:none none solid solid;border-color:#000000 #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:63.8pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">request_uuid
+</span></strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:70.9pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_data (XML)</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:111pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_reg_data (XML)</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:78.2pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_profile_uuid</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 0px 1pt;border-style:none none solid;border-color:#000000 #000000 #4f81bd;padding:0cm 5.4pt;width:49.6pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_type</span></strong><strong>
+</strong></p>
+</td>
+<td valign="top" style="background-color:#b8cce4;border-width:0px 1pt 1pt 0px;border-style:none solid solid none;border-color:#000000 #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:99.2pt;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">req_target_user_uuid</span></strong><strong>
+</strong></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:0px 0px 0px 1pt;border-style:none none none solid;border-color:#000000 #000000 #000000 #4f81bd;padding:0cm 5.4pt;width:63.8pt;background-color:transparent;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">abc-123-989</span></strong></p>
+</td>
+<td valign="top" style="padding:0cm 5.4pt;border:0px #000000;width:70.9pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">&lt;XML&gt;</span></p>
+</td>
+<td valign="top" style="padding:0cm 5.4pt;border:0px #000000;width:111pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Host Name=<br />
+&nbsp;&nbsp; </span><span style="font-size:9pt;font-family:calibri,sans-serif;">APPSRV1</span></p>
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Common Name=<br />
+&nbsp;&nbsp; </span><span style="font-size:9pt;font-family:calibri,sans-serif;">www.contoso.com</span></p>
+</td>
+<td valign="top" style="padding:0cm 5.4pt;border:0px #000000;width:78.2pt;background-color:transparent;">
+<p><span style="background-color:yellow;font-size:9pt;font-family:calibri,sans-serif;">aaa-444-121</span>
+</p>
+</td>
+<td valign="top" style="padding:0cm 5.4pt;border:0px #000000;width:49.6pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">1 (Enroll)</span></p>
+</td>
+<td valign="top" style="border-width:0px 1pt 0px 0px;border-style:none solid none none;border-color:#000000 #4f81bd #000000 #000000;padding:0cm 5.4pt;width:99.2pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">bfe-789-456</span></p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="border-width:1pt 0px 1pt 1pt;border-style:solid none solid solid;border-color:#4f81bd #000000 #4f81bd #4f81bd;padding:0cm 5.4pt;width:63.8pt;background-color:transparent;">
+<p><strong><span style="font-size:9pt;font-family:calibri,sans-serif;">5df-686-849</span></strong></p>
+</td>
+<td valign="top" style="border-width:1pt 0px;border-style:solid none;border-color:#4f81bd #000000;padding:0cm 5.4pt;width:70.9pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">Profile UUID=<br />
+</span><span style="background-color:yellow;font-size:9pt;font-family:calibri,sans-serif;">&nbsp;&nbsp; aaa-444-121</span></p>
+</td>
+<td valign="top" style="border-width:1pt 0px;border-style:solid none;border-color:#4f81bd #000000;padding:0cm 5.4pt;width:111pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">&lt;XML&gt;</span></p>
+</td>
+<td valign="top" style="border-width:1pt 0px;border-style:solid none;border-color:#4f81bd #000000;padding:0cm 5.4pt;width:78.2pt;background-color:transparent;">
+<p><span style="font-family:&#39;times new roman&#39;;font-size:16px;">&nbsp;</span></p>
+</td>
+<td valign="top" style="border-width:1pt 0px;border-style:solid none;border-color:#4f81bd #000000;padding:0cm 5.4pt;width:49.6pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">3 (Renew)</span></p>
+</td>
+<td valign="top" style="border-width:1pt 1pt 1pt 0px;border-style:solid solid solid none;border-color:#4f81bd #4f81bd #4f81bd #000000;padding:0cm 5.4pt;width:99.2pt;background-color:transparent;">
+<p><span style="font-size:9pt;font-family:calibri,sans-serif;">bfe-789-456</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>So now seems like a good time to explain where all the information for the body of the e-mail message will come from.</p>
+<h2><a name="E-mail_Body"></a>E-mail Body</h2>
+<p>In the e-mail body, I wanted to include enough information for the expiring certificate to be identified and to indicate on which server the certificate was installed, so I decided on the following:</p>
+<ul>
+<li>Certificate common name, e.g. www.contoso.com </li><li>Host name of the server where the certificate is installed, e.g. APPSRV1 </li><li>Certificate serial number </li><li>Certificate thumbprint </li><li>Certificate template name </li></ul>
+<p>Some of this information has already been identified as being stored in one of the SQL Server tables, such as cert_issued_common_name, but other information, such as the host name of the server where the certificate is installed, is not maintained by FIM
+ CM at all. In fact, after reviewing the FIM CM APIs, only the last three items in the list are accessible; the common name, while stored in the Certificates table is not presented through the APIs.
+<br />
+In order to address the issue of certificate common name and host name, I decided to add them as data collection items in the profile template definition and require them to be entered by the administrator creating the enrolment request. The values are stored
+ in the req_reg_data column in the Requests table and are held in XML format. <br />
+Now that I’ve covered the basics of how FIM CM handles requests and where the data for the notification e-mail will be sourced, it is time to look at the code. I will discuss how the renewal request is detected and how to go about collecting all the information
+ to send the reminder e-mail to the distribution list.</p>
+<h2 style="margin:10pt 0cm 0pt;"><a name="Detecting_the_Renewal_Event"></a>Detecting the Renewal Event</h2>
+<p>&nbsp;I’ll now start to discuss the code that accompanies this post. The MSDN article,
+<em>How to: Register for an Event Using a Notification Handler</em> (<a href="http://msdn.microsoft.com/en-us/library/windows/desktop/bb468051.aspx" target="_blank">http://msdn.microsoft.com/en-us/library/windows/desktop/bb468051.aspx</a>), describes how to
+ amend web.config to register for particular FIM CM events. In a default installation of FIM CM, web.config is located in C:\Program Files\Microsoft Forefront Identity Manager\2010\Certificate Management\web. The section to be amended is called ClmNotifications.
+ The extract below shows a single registration for the DistributeSecrets event, which is the event that is triggered when a certificate enters its renewal period.<br />
+<br />
+&lt;ClmNotifications&gt; <br />
+&nbsp;&nbsp;&nbsp; &lt;add event=&quot;DistributeSecrets&quot; class=&quot;Technet.Clm.RenewalNotification.OnDistributeSecrets,Technet.Clm.RenewalNotification&quot; /&gt;
+<br />
+&lt;/ClmNotifications&gt;</p>
+<p style="margin:6pt 0cm 10pt;">In order to handle the event, the code must implement a notification handler class. This must implement two methods:
+<span style="font-family:&#39;courier new&#39;;">Initialize</span> and <span style="font-family:&#39;courier new&#39;;">
+Notify</span>. It is not necessary for the Initialize method to perform any processing, but it provides an opportunity to pass in a configuration string via the initializationData attribute of the notification registration. Note that this attribute is not used
+ in the example above.</p>
+<p>The <span style="font-family:&#39;courier new&#39;;">Notify</span> method must also be implemented. It is passed a Notification object that contains several properties. Of interest to us are
+<span style="font-family:&#39;courier new&#39;;">NotificationType</span> and <span style="font-family:&#39;courier new&#39;;">
+Request</span>. The notification type property indicates what type of event has been triggered. If the event is not a
+<span style="font-family:&#39;courier new&#39;;">DistributeSecrets</span> event, it can be ignored. The
+<span style="font-family:&#39;courier new&#39;;">Request</span> property is a reference to the FIM CM request object that triggered the event. This is passed as a parameter to the
+<span style="font-family:&#39;courier new&#39;;">ProcessRequest</span> method of the ClmRenewal class, which contains all the code necessary to find the original enrolment request, extract the data collection items for Host Name and certificate Common Name, and send
+ an e-mail for each certificate in the associated profile template.</p>
+<h2><a name="Processing_the_Renewal_Request"></a>Processing the Renewal Request</h2>
+<p>After enabling .NET Remoting in the <span style="font-family:&#39;courier new&#39;;">Initialise</span> method, which takes its configuration from the application’s .config file, the next step is to find the original enrolment request, as this will contain details
+ of the two data collection items. This is where the code becomes inefficient.<br />
+<br />
+The <span style="font-family:&#39;courier new&#39;;">GetEnrolRequest</span> method is called, passing in the profile UUID from the Request object provided in the notification. The profile UUID identifies the profile used in the original enrolment request. If you recall
+ the earlier discussion of the records that are written to the various FIM CM database tables, you will remember that a new record is written to the Profiles table in response to a new enrolment request being written to the Requests table. A column in the Requests
+ table (req_profile_uuid) is then updated with the profile UUID of the record in the Profiles table. In doing this, the request and the profile are linked together.<br />
+<br />
+In order to find the original enrolment request, which contains the data collection items, using only the FIM CM APIs, the following steps need to be performed:</p>
+<ol>
+<li>Use the Provisioning API’s <span style="font-family:&#39;courier new&#39;;">FindOperations.FindRequests</span> method to retrieve all rows from the Requests table where the target of the request is the enrolment agent account.
+</li><li>Loop through each of the returned request objects and look for a match between the profile UUID, passed as a parameter to the
+<span style="font-family:&#39;courier new&#39;;">GetEnrolRequest</span> method, and the value held in the req_profile_uuid column; this will be the request we’re after. Note that the req_profile_uuid column is not accessed directly; it is exposed by the FIM CM APIs
+ as the NewProfileUuid property of a request object. </li></ol>
+<p>In scoping the search operation in step 1, additional criteria are specified, in order to minimise the number of records returned and which must subsequently be searched through:</p>
+<ul>
+<li>Retrieve only enrolment request records </li><li>Retrieve only completed requests </li><li>Retrieve only those records between when FIM CM was installed and today </li></ul>
+<p>Having found the original enrolment request, the next step is to obtain the profile record using the profile UUID from the Request object provided in the notification. This is easily obtainable using the FindOperations.GetProfile method of the Provisioning
+ API. The original enrolment request and the profile are passed to the SendNotification method.
+<br />
+SendNotification obtains all the certificates associated with the profile using the Provisioning API’s FindOperations.FindCertificates method, calling the SendEmail method for each certificate returned. The enrolment request object is also passed to SendEmail
+ so that the data collection items can be extracted and added to the body of the e-mail message. The data collection items are taken from the DataCollection property of the request. An e-mail message is sent for each certificate in the profile.</p>
+<h2 style="margin:10pt 0cm 0pt;"><a name="Optimisations"></a>Optimisations</h2>
+<p>The code that retrieves the original enrolment request is inefficient as there is no way using the FIM CM APIs to retrieve a record from the Requests table based on a value in the req_profile_uuid column. The obvious way around this is to go direct to the
+ tables using SQL statements, e.g.</p>
+<p style="margin:0cm 0cm 10pt;"><span style="font-family:&#39;courier new&#39;;">SELECT request_uuid<br />
+&nbsp; FROM dbo.Requests<br />
+&nbsp;WHERE req_profile_uuid = request.OldProfileUuid</span></p>
+<p>Having obtained the request UUID, the corresponding request object can then be obtained via the
+<span style="font-family:&#39;courier new&#39;;">FindOperations.GetRequest</span> method of the Provisioning API; the data collection items may then be extracted in the same manner as described previously.<br />
+<br />
+I mentioned earlier that the common name of the certificate is not exposed by any of the FIM CM APIs, so I included it as a data collection item. A further optimisation that negates the need to capture the subject name of the certificate is to read it directly
+ from the Certificates table, again using SQL, e.g.<br />
+<br />
+<span style="font-family:&#39;courier new&#39;;">SELECT c.cert_issued_common_name <br />
+&nbsp; FROM dbo.Certificates AS c, dbo.ProfileCertificates AS pc&nbsp;<br />
+&nbsp;WHERE pc.pc_profile_uuid = request.OldProfileUuid <br />
+&nbsp;&nbsp; AND pc.pc_cert_id = c.cert_id</span><br />
+<br />
+Retrieving the certificate detail in this way has another advantage. I originally envisaged that the profile used to enrol a certificate through the FIM CM portal would contain only one certificate template, but this need not be the case. If a profile contained
+ two or more certificate templates whose validity period was different, an e-mail message would be generated for all certificates in the profile. By retrieving the certificate’s subject name in this way, access is also gained to the cert_renew column of the
+ Certificates table which could be checked to see if it was this particular certificate that caused the renewal notification in the first place. If it was, the e-mail message would be sent, if it wasn’t, sending an e-mail message for this certificate could
+ be skipped.<br />
+<br />
+I have yet to implement either of the optimisations outlined above and it is left as an exercise for the enthusiastic reader! However, when I do find the time to complete this work, I’ll update this article with the revised code.</p>
+<h2><a name="Compilation_Installation_and_Configuration"></a>Compilation, Installation and Configuration</h2>
+<p>The source code for the add-in can be found at the end of this article. To create a compiled DLL, perform the following tasks:</p>
+<ol>
+<li>Create a new Visual Studio 2010 C# class library project, making sure the version of .NET framework is set to 3.5.
+</li><li>Name the project &#39;TechNet.Clm.RenewalNotification&#39;. </li><li>Click File / Save All… and save the project to a folder. </li><li>Highlight all the text in the default Class1.cs file and replace it by pasting in the code from this article.
+</li><li>Rename the Class1.cs file to be TechNet.Clm.RenewalNotification.cs. </li><li>Add references to the project for Microsoft.Clm.Provision.dll and Microsoft.Clm.Notification.dll; it may be necessary to copy these files from the server running FIM CM and putting them in a temporary folder on the computer where Visual Studio is installed.
+</li><li>Add a reference to the project for System.Configuration </li><li>Build the project.&nbsp; </li></ol>
+<p>The add-in’s configuration file can also be found at the end of this article. This will need a certain amount of customisation, as described below.</p>
+<ol>
+<li>Update the URL of the FIM CM server. In the example below, my FIM CM server is called FIMCM1. Note that if you have the FIM CM portal configured for HTTPS, you’ll need to make sure to specify https:// in the URL rather than http:// and also ensure that
+ the name of the server matches the subject name in the certificate protecting the FIM CM portal. So you might need to specify the URL as http://FQDN/certificatemanagement...
+</li><li>Update the EnrolmentAgentUuid setting. The value for this setting can be found in the UserNameCache table of the FIMCertificateManagement database. Find the account you are using as the enrolment agent in the unc_user_nt4_name column and copy and paste
+ the unc_user_uuid value into the DLL.config file. If the enrolment agent account is not present, it can be added to the table by enrolling a certificate for that user using the FIM CM portal.
+</li><li>Update the MailHost and MailHostPort settings to match the FQDN and port of the e-mail server.
+</li><li>Update the MailFrom and MailTo settings. The MailFrom value can be anything you like as long as it is a valid e-mail address. However, MailTo needs to be the e-mail address of the distribution list configured against the enrolment agent account.
+</li><li>Update the MailSubject setting to something appropriate. </li><li>Update the MailBody setting to contain the text you want to appear in the body of the e-mail message. The replaceable parameter %Data_Collection_Items will be substituted for the Host Name and certificate Subject Name defined as data collection items in
+ the management policy. %Serial_Number, %Thumbprint and %Certificate_Template are self-explanatory.
+</li></ol>
+<p>&lt;client&gt; <br />
+&nbsp;&nbsp;&nbsp; &lt;wellknown type=&quot;Microsoft.Clm.Provision.FindOperationsByCulture, Microsoft.Clm.Provision&quot; url=&quot;http://fimcm1/certificatemanagement/remoterequests3.rem&quot; /&gt;
+<br />
+&nbsp;&nbsp;&nbsp; &lt;wellknown type=&quot;Microsoft.Clm.Provision.RequestOperationsByCulture, Microsoft.Clm.Provision&quot; url=&quot;http://fimcm1/certificatemanagement/remoterequests2.rem&quot; /&gt;
+<br />
+&nbsp;&nbsp;&nbsp; &lt;wellknown type=&quot;Microsoft.Clm.Provision.PermissionOperationsByCulture, Microsoft.Clm.Provision&quot; url=&quot;http://fimcm1/certificatemanagement/remoterequests4.rem&quot; /&gt;
+<br />
+&nbsp;&nbsp;&nbsp; &lt;wellknown type=&quot;Microsoft.Clm.Provision.ExecuteOperationsByCulture, Microsoft.Clm.Provision&quot; url=&quot;http://fimcm1/certificatemanagement/remoterequests5.rem&quot; /&gt;
+<br />
+&lt;/client&gt; <br />
+<br />
+The DLL and the DLL.config files need to be copied to two separate locations:</p>
+<ul>
+<li>C:\Program Files\Microsoft Forefront Identity Manager\2010\Certificate Management\web\bin
+</li><li>C:\Program Files\Microsoft Forefront Identity Manager\2010\Certificate Management\bin
+</li></ul>
+<p>It may be necessary to stop the Forefront Identity Manager CM Update Service before copying the files.<br />
+&nbsp;<br />
+Finally, the web.config file needs amending to register for the DistributeSecrets event and to configure .NET remoting. The changes required are shown below.
+<br />
+<br />
+&lt;ClmNotifications&gt; <br />
+&nbsp;&nbsp;&nbsp; &lt;add event=&quot;DistributeSecrets&quot;&nbsp;class=&quot;Technet.Clm.RenewalNotification.OnDistributeSecrets,Technet.Clm.RenewalNotification&quot; /&gt;
+<br />
+&lt;/ClmNotifications&gt; <br />
+<br />
+&lt;system.runtime.remoting&gt; <br />
+&nbsp;&nbsp;&nbsp; &lt;application&gt; <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;service&gt; <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;wellknown mode=&quot;Singleton&quot; type=&quot;Microsoft.Clm.BusinessLayer.RemoteRequests, Microsoft.Clm.BusinessLayer&quot; objectUri=&quot;remoterequests.rem&quot; /&gt;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;wellknown mode=&quot;SingleCall&quot; type=&quot;Microsoft.Clm.Provision.RequestOperationsByCulture, Microsoft.Clm.Provision&quot; objectUri=&quot;remoterequests2.rem&quot; /&gt;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;wellknown mode=&quot;SingleCall&quot; type=&quot;Microsoft.Clm.Provision.FindOperationsByCulture, Microsoft.Clm.Provision&quot; objectUri=&quot;remoterequests3.rem&quot; /&gt;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;wellknown mode=&quot;SingleCall&quot; type=&quot;Microsoft.Clm.Provision.PermissionOperationsByCulture, Microsoft.Clm.Provision&quot; objectUri=&quot;remoterequests4.rem&quot; /&gt;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;wellknown mode=&quot;SingleCall&quot; type=&quot;Microsoft.Clm.Provision.ExecuteOperationsByCulture, Microsoft.Clm.Provision&quot; objectUri=&quot;remoterequests5.rem&quot; /&gt;&nbsp;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/service&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ...</p>
+<h2><a name="Testing"></a>Testing</h2>
+<p>In order to test the add-in, enrol a certificate for the enrolment agent account using the FIM CM portal. After the certificate has been successfully enrolled, use SQL Server Management Studio to open the Certificates table. Find the certificate that was
+ just enrolled (it is likely to be the last one in the list) and amend the cert_renew date to a time that ensures the certificate is in its renewal period. During development of the add-in, I used a certificate template with a 4 hour validity period and a 3
+ hour renewal period, so I adjusted the cert_renew date back by 2 hours to ensure that the certificate would be within its renewal period. Restart the Forefront Identity Manager CM Update Service. This will make the service look for expiring certificates and
+ run the add-in to deliver an e-mail message. Event messages are written to the FIM Certificate Management event log, which can be found under the Applications and Services Logs node in Event Viewer.<br />
+<br />
+Once the add-in has delivered an e-mail message successfully through manual amendment of the cert_renewal date, it needs to be tested using the normal run cycle of the Forefront Identity Manager CM Update Service. By default, this runs every 5 hours, but its
+ frequency can be reduced to a minimum of 1 hour by amending the Microsoft.Clm.Service.exe.config file that can be found in C:\Program Files\Microsoft Forefront Identity Manager\2010\Certificate Management\Bin. The setting to amend is called Microsoft.Clm.Service.Interval.
+ The value is expressed in milliseconds, so an interval of 1 hour needs a value of 3600000. Additional information about configuring the FIM CM Service can be found here:
+<a href="http://technet.microsoft.com/en-us/library/ee534907(v=ws.10).aspx">http://technet.microsoft.com/en-us/library/ee534907(v=ws.10).aspx</a>.
+<br />
+<br />
+If everything works successfully, the result will be an e-mail message similar to the one shown below:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0842.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communitysimum of 1 hour by amending the Microsoft.Clm.Service.exe.config file that can be found in C:\Program Files\Microsoft Forefront Identity Manager\2010\Certificate Management\Bin. The setting to amend is called Microsoft.Clm.Service.Interval.
+ The value is expressed in milliseconds, so an interval of 1 hour needs a valerver-wikis-components-files/00-00-00-00-05/0842.TechNet-_2D00_-Using-the-FIM-CM-Notification-API-_2D00_-FIGURE2.png" style="border-width:0px;border-style:solid;" /></a></p>
+<h2><a name="Final_word"></a>Final word</h2>
+<p>During the introduction, I mentioned that I was unable to find any examples of using the Notification API in this manner out on the Internet. As a consequence, the approach I’ve taken may not be the most optimal and I may be playing fast-and-loose with FIM
+ CM! However, by sticking to the published APIs, I hope the risk of this has been minimised.
+<br />
+It is several years since I plied my trade as a developer, so I’m sure the code could be improved significantly and I’ll be happy to take feedback from anyone with suggestions for change.<br />
+<br />
+<strong>C# Source Code, TechNet.Clm.RenewalNotification.cs<br />
+</strong></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Collections.Generic;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Collections.ObjectModel;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Configuration;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Diagnostics;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Linq;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Net;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Net.Mail;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Reflection;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Runtime.Remoting;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Text;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Microsoft.Clm.Shared;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Microsoft.Clm.Shared.Requests;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Microsoft.Clm.Shared.Profiles;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Microsoft.Clm.Shared.Notifications;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">Microsoft.Clm.Provision;</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">namespace</code>
+<code style="color:#000000;">TechNet.Clm.RenewalNotification</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Notification handler class</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">class</code>
+<code style="color:#000000;">OnDistributeSecrets : INotificationSink</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">void</code>
+<code style="color:#000000;">INotificationSink.Initialize(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">data)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Initialize must be implemented, even if it does nothing</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">void</code>
+<code style="color:#000000;">INotificationSink.Notify(Notification notification)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(notification.NotificationType != NotificationType.DistributeSecrets)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-we><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ClmRenewal.LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;Unexpected
+ notification received: {0}.&quot;</code><code style="color:#000000;">, notification.NotificationType), EventLogEntryType.Information, 2);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+ApplicationException(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;Unexpected notification received: {0}.&quot;</code><code style="color:#000000;">, notification.NotificationType));</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Process the notification</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ClmRenewal.LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;Notification
+ received: {0}&quot;</code><code style="color:#000000;">, notification.NotificationType), EventLogEntryType.Information, 2);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ClmRenewal.ProcessRequest(notification.Request);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Renewal handler class</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">internal</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+class</code> <code style="color:#000000;">ClmRenewal</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">ProcessRequest(Request request)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:blue;">&quot;Started custom renewal notification processing.&quot;</code><code style="color:#000000;">,
+ EventLogEntryType.Information, 1);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;Renewal
+ Uuid is {0}, OldProfileUuid is {1}.&quot;</code><code style="color:#000000;">, request.Uuid, request.OldProfileUuid), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Initialise remoting</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Initialise();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;A
+ problem occurred initialising remoting: {1}&quot;</code><code style="color:#000000;">, ex.Message), EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Get the enrolment request for which the renewal was triggered</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Request ClmEnrolRequest =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">IsFound = GetEnrolRequest(request.OldProfileUuid, </code>
+<code style="color:#006699;font-weight:bold;">ref</code> <code style="color:#000000;">
+ClmEnrolRequest);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(!IsFound)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">IsFound = GetEnrolRequest(request.OldProfileUuid, </code>
+<code style="color:#006699;font-weight:bold;">ref</code> <code style="color:#000000;">
+ClmEnrolRequest);</code></span></span></div>
+<div style="background-8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:blue;">&quot;No enrolment requests were found.&quot;</code><code style="color:#000000;">,
+ EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;A
+ problem occurred trying to read the enrolment request: {1}&quot;</code><code style="color:#000000;">, ex.Message), EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Get the profile</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Profile ClmProfile =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ClmProfile = FindOperations.GetProfile(request.OldProfileUuid);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Found Profile for OldProfileUUID {0}&quot;</code><code style="color:#000000;">,
+ request.OldProfileUuid),EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;There was a problem obtaining the profile identified by &#39;{0}&#39;.{1}{2}&quot;</code><code style="color:#000000;">,
+ request.OldProfileUuid, Environment.NewLine, ex.Message), EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Send notification email</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">SendNotification(ClmEnrolRequest, ClmProfile);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:blue;">&quot;Finished custom renewal notification processing.&quot;</code><code style="color:#000000;">,
+ EventLogEntryT&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&ype.Information, 1);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Set the .NET Remoting configuration</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">Initialise()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ExeConfigurationFileMap fileMap =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+ExeConfigurationFileMap();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">fileMap.ExeConfigFilename = Assembly.GetExecutingAssembly().Location &#43;
+</code><code style="color:blue;">&quot;.config&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Config file: {0}&quot;</code><code style="color:#000000;">, fileMap.ExeConfigFilename),
+ EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">System.Configuration.Configuration config;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code><code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Failed to open config file. {0}&quot;</code><code style="color:#000000;">,
+ ex.Message), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#000000;">ex;&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">RemotingConfiguration.Configure(config.FilePath,
+</code><code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Failed to configure remoting. {0}&quot;</code><code style="color:#000000;">,
+ ex.Message), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#000000;">ex;&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Find the original enrolment request</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+bool</code> <code style="color:#000000;">GetEnrolRequest(Guid profileUuid, </code>
+<code style="color:#006699;font-weight:bold;">ref</code> <code style="color:#000000;">
+Request clmRequest)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Set filters for rerieveing requests</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">RequestType[] RequestTypes =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+RequestType[1] { RequestType.Enroll };</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">RequestStatus[] RequestStatuses =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+RequestStatus[1] { RequestStatus.Completed };</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Guid[] OriginatorUsersUuid =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Guid[0];</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">RequestType[] RequestTypes =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+RequestType[1] { RequestType.Enroll };</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Guid[] TargetUsersUuid =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Guid[1] { </code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Guid(GetEnrolmentAgentUuid()) };</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DateTime dt1 =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+DateTime(2011, 1, 1);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DateTime dt2 = DateTime.Now;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Retrieved enrolment agent account UUID: {0}&quot;</code><code style="color:#000000;">,
+ TargetUsersUuid[0]), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ReadOnlyCollection&lt;Request&gt; ClmEnrolRequests =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ClmEnrolRequests = FindOperations.FindRequests(RequestTypes, RequestStatuses, OriginatorUsersUuid, TargetUsersUuid,
+ dt1, dt2);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;A problem was encountered retrieving enrolment requests.{0}{1}&quot;</code><code style="color:#000000;">,
+ Environment.NewLine, ex.Message), EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#000000;">ex;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;Enrolment
+ request count: {0}&quot;</code><code style="color:#000000;">, ClmEnrolRequests.Count), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Look at each request object to find the one with the correct profile UUID</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(Request request </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">ClmEnrolRequests)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(request.NewProfileUuid.Equals(profileUuid))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">clmRequest = request;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(request.NewProfileUuid.Equals(profileUuid))</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nb style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#006699;font-weight:bold;">false</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Gather the certificate(s) affected by the renewal request and send a notification for each</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">SendNotification(Request request, Profile profile)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ReadOnlyCollection&lt;Microsoft.Clm.Shared.Certificates.X509ClmCertificate&gt; ProfileCertificates =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ProfileCertificates = FindOperations.FindCertificates(profile);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Failure when retrieving profile certificates.{0}{1}&quot;</code><code style="color:#000000;">,
+ Environment.NewLine, ex.Message), EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Number of profile certificates found is {0}.&quot;</code><code style="color:#000000;">,
+ ProfileCertificates.Count), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(Microsoft.Clm.Shared.Certificates.X509ClmCertificate X509Certificate
+</code><code style="color:#006699;font-weight:bold;">in</code> <code style="color:#000000;">
+ProfileCertificates)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Processing profile certificate with serial number {0}.&quot;</code><code style="color:#000000;">,
+ X509Certificate.SerialNumber), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">SendEmail(request, X509Certificate);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Send an e-mail message about each certificate needing renewal</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">SendEmail(Request request, Microsoft.Clm.Shared.Certificates.X509ClmCertificate certificate)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// SMTP options</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">Host = GetConfigItem(</code><code style="color:blue;">&quot;MailHost&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Int16 Port = Convert.ToInt16(GetConfigItem(</code><code style="color:blue;">&quot;MailHostPort&quot;</code><code style="color:#000000;">));</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Mail options</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">To = GetConfigItem(</code><code style="color:blue;">&quot;MailTo&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">From = GetConfigItem(</code><code style="color:blue;">&quot;MailFrom&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsyle="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Mail options</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">Subject = GetConfigItem(</code><code style="color:blue;">&quot;MailSubject&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">Body = GetConfigItem(</code><code style="color:blue;">&quot;MailBody&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Replace placeholders with values</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">DataCollectionItems = </code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DataCollection dc = request.DataCollection;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(DataCollectionItem dci </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">dc)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">DataCollectionItems &#43;= String.Format(</code><code style="color:blue;">&quot;{0}: {1}{2}&quot;</code><code style="color:#000000;">,
+ dci.Name, dci.Value, Environment.NewLine);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Body = Body.Replace(</code><code style="color:blue;">&quot;%Data_Collection_Items&quot;</code><code style="color:#000000;">, DataCollectionItems);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Body = Body.Replace(</code><code style="color:blue;">&quot;%Serial_Number&quot;</code><code style="color:#000000;">, certificate.SerialNumber);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Body = Body.Replace(</code><code style="color:blue;">&quot;%Thumbprint&quot;</code><code style="color:#000000;">, certificate.Thumbprint);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Body = Body.Replace(</code><code style="color:blue;">&quot;%Certificate_Template&quot;</code><code style="color:#000000;">, certificate.TemplateCommonName);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Create and send mail message</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MailMessage mm =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+MailMessage(From, To, Subject, Body);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">SmtpClient sc =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+SmtpClient(Host, Port);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sc.Send(mm);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">catch</code>
+<code style="color:#000000;">(Exception ex)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><n><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">sc.Send(mm);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffffspan><code style="color:#000000;">LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;An
+ error occurred sending the e-mail message: {0}&quot;</code><code style="color:#000000;">, ex.Message), EventLogEntryType.Error, 0);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">LogMessage(String.Format(</code><code style="color:blue;">&quot;Message sent for certificate with serial number {0}&quot;</code><code style="color:#000000;">,
+ certificate.SerialNumber), EventLogEntryType.Information, 0);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Get the UUID of the enrolment agent account from the configuration file</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+string</code> <code style="color:#000000;">GetEnrolmentAgentUuid()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">GetConfigItem(</code><code style="color:blue;">&quot;EnrolmentAgentUuid&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Read a setting from the configuration file</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+string</code> <code style="color:#000000;">GetConfigItem(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">key)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ExeConfigurationFileMap fileMap =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+ExeConfigurationFileMap();</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">fileMap.ExeConfigFilename = Assembly.GetExecutingAssembly().Location &#43;
+</code><code style="color:blue;">&quot;.config&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Configuration config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">config.AppSettings.Settings[key].Value;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#808080;">/// Write an entry to the event log</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">LogMessage(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">message, EventLogEntryType type, </code><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">id)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Debug.Print(message);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(!EventLog.SourceExists(</code><code style="color:blue;">&quot;TechNet.Clm.RenewalNotification&quot;</code><code style="color:#000000;">))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">EventLog.CreateEventSource(</code><code style="color:blue;">&quot;TechNet.Clm.RenewalNotification&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;FIM Certificate Management&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Set DebugLevel to 4 in the .config file to get all messages</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(Convert.ToInt16(type) &gt;= Convert.ToInt16(GetConfigItem(</code><code style="color:blue;">&quot;DebugLevel&quot;</code><code style="color:#000000;">)))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">EventLog.WriteEntry(</code><code style="color:blue;">&quot;TechNet.Clm.RenewalNotification&quot;</code><code style="color:#000000;">,
+ message, type, id);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p><strong>Application configuration file, TechNet.Clm.RenewalNotification.dll.config<br />
+</strong></p>
+<strong>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;?</code><code style="color:#006699;font-weight:bold;">xml</code>
+<code style="color:#808080;">version</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1.0&quot;</code>
+<code style="color:#808080;">encoding</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;utf-8&quot;</code>
+<code style="color:#000000;">?&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">configuration</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weiication configuration file, TechNet.Clm.RenewalNotification.dll.config<br />
+</strong></p>
+<strong>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="backgrght:bold;">system.runtime.remoting</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">application</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">channels</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">channel</code>
+<code style="color:#808080;">ref</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;http&quot;</code>
+<code style="color:#808080;">useDefaultCredentials</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code>
+<code style="color:#808080;">port</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;0&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">clientProviders</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">formatter</code>
+<code style="color:#808080;">ref</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;binary&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">clientProviders</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">channel</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">channels</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">client</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">wellknown</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Microsoft.Clm.Provision.FindOperationsByCulture, Microsoft.Clm.Provision&quot;</code>
+<code style="color:#808080;">url</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests3.rem">http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests3.rem</a>&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">wellknown</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Microsoft.Clm.Provision.RequestOperationsByCulture, Microsoft.Clm.Provision&quot;</code>
+<code style="color:#808080;">url</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests2.rem">http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests2.rem</a>&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">wellknown</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Microsoft.Clm.Provision.PermissionOperationsByCulture, Microsoft.Clm.Provision&quot;</code>
+<code style="color:#808080;">url</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests4.rem">http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests4.rem</a>&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">wellknown</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Microsoft.Clm.Provision.ExecuteOperationsByCulture, Microsoft.Clm.Provision&quot;</code>
+<code style="color:#808080;">url</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests5.rem">http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests5.rem</a>&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">client</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbnbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">wellknown</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Microsoft.Clm.Provision.ExecuteOperationsByCulture, Microsoft.Clm.Provision&quot;</code>
+<code style="color:#808080;">url</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;<a href="http://fimcm1.corp.contoso.com/certificatemanagement/remoterequests5.rem">htsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">application</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">system.runtime.remoting</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">appSettings</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DebugLevel&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;4&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;EnrolmentAgentUuid&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;fa04f13e-2482-48fb-9a1f-c9e518c605f0&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MailHost&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;smtp.corp.contoso.com&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MailHostPort&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;25&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MailFrom&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;webadmin@corp.contoso.com&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MailTo&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;webteam@corp.contoso.com&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MailSubject&quot;</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Certificate Expiry Notification&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">add</code>
+<code style="color:#808080;">key</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MailBody&quot;</code>
+<code style="color:#000000;">value=&quot;This is an automated message generated by the Forefront Identity Manager 2010 Certificate Management system.</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">A certificate identified by the details below has entered its renewal period:</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">%Data_Collection_Items</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Serial Number: %Serial_Number</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Thumbprint: %Thumbprint</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Certificate Template: %Certificate_Template</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Further details about the certificate can be obtained through the FIM CM portal by selecting &#39;Find a certificate&#39; from</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">the &#39;Manage Users And Certificates&#39; section of the portal home page (<a href="http://clm.contoso.com/certificatemanagement">http://clm.contoso.com/certificatemanagement</a>).</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Renew the certificate promptly to ensure that there is no interruption of service.</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">PLEASE NOTE: No further notifications regarding the status of this certificate will be issued.&quot; /&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">appSettings</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">configuration</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+</strong>
+<p><br />
+</p>
+
+</div>
+    
+    

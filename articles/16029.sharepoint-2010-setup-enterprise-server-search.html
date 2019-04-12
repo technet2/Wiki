@@ -1,0 +1,52 @@
+---
+layout: default
+title: SharePoint 2010&#58; Setup Enterprise Server Search - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Point_amp_click_installation"></a><strong>Point &amp; click installation</strong></h1>
+Start SharePoint Server Search (link on the right side) and click [OK].<br />
+Click New (top, left), Search Service Application and fill out the page as follows:<br />
+Name: Search Service<br />
+Search Service Account: &lt;domain&gt;\svcSPESearch.<br />
+<br />
+Application Pool for Search Admin Web Service<br />
+Application pool name: Search Service Admin.<br />no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div clas
+Configurable: &lt;domain&gt;\svcSPESearchA<br />
+<br />
+Application Pool for Search Query and Site Settings Web Service<br />
+Application pool name: Search Service Settings.<br />
+Configurable: &lt;domain&gt;\svcSPESearchS<br />
+<br />
+Click [OK], [OK].<br />
+Click Search Service, [Modify] (if the application hangs at “loading…”; refresh the page).<br />
+Under Databases, click Crawl Database: Search_Service_CrawlStoreDB_&lt;GUID&gt;, Edit Properties.<br />
+Under Edit Crawl Database change Database Name to: <br />
+&lt;ENVIRONMENTPREFIX&gt;_SharePoint_service_EnterpriseSearch_CrawlStore and click [OK].<br />
+<br />
+Under Databases, click Property Database: Search_Service_PropertyStoreDB_&lt;GUID&gt;, Edit Properties.<br />
+Under Edit Property Database change Database Name to:<br />
+&lt;ENVIRONMENTPREFIX&gt;_SharePoint_service_EnterpriseSearch_PropertyStore and click [OK].<br />
+<br />
+Click [Apply Topology Changes] (lasts &gt;10 minutes) and Central Administration (navigationmenu top, left).<br />
+&nbsp;<br />
+<h1><a name="Rename_the_admin_database"></a><strong>Rename the admin database</strong></h1>
+Backup the &quot;old&quot; admin database.<br />
+Create a new database with the new name. (&lt;ENVIRONMENTPREFIX&gt;_SharePoint_service_EnterpriseSearch_Admin)<br />
+Restore old admin database to the newly created.<br />
+<br />
+Run the following PS script on the SharePoint server with a user that is db_owner on both the “old” and the new database:<br />
+$searchapp = Get-SPEnterpriseSearchServiceApplication | Where-Object {$_.name -eq &quot;Search&quot;}<br />
+$searchapp.Pause()<br />
+$searchapp | Set-SPEnterpriseSearchServiceApplication -DatabaseName &quot;&lt;ENVIRONMENTPREFIX&gt;_SharePoint_service_EnterpriseSearch_Admin&gt;&quot; -DatabaseServer &quot;&lt;DATABASE SERVER NAME&gt;&quot;<br />
+Get-SPDatabase | where {$_.name -match &#39;&lt;OLD ADMIN DB NAME&gt;&#39;} | foreach {$_.Delete()};<br />
+<br />
+
+</div>
+    
+    

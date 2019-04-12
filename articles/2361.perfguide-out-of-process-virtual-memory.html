@@ -1,0 +1,97 @@
+---
+layout: default
+title: PerfGuide&#58; Out of Process Virtual Memory - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Process_Virtual_Memory_Concept">Process Virtual Memory Concept</a></li><li class="hierarchy-item"><a href="#Determine_the_Maximum_amount_of_Virtual_Address_Space">Determine the Maximum amount of Virtual Address Space</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Windows_Virtual_Memory_Minimum_Too_Low">Windows - Virtual ent-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">PerfGuide: Out of Process Virtual Memory</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Process_Virtual_Memory_Concept">Process Virtual Memory Concept</a></li><li class="hierarchy-item"><a href="#Determine_the_Maximum_amount_of_Virtual_Address_Space">Determine the Maximum amount of Virtual Address Space</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"Memory Minimum Too Low</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Troubleshooting">Troubleshooting</a></li><li class="hierarchy-item"><a href="#Treating_the_Symptoms">Treating the Symptoms</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#More_Information">More Information</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+You have arrived here because you have identified hat one or more of your processes are crashing due to an out of memory condition on your Windows computer. If this is not correct, then return to the
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/the-microsoft-pfe-performance-guide-perfguide-start-here.aspx">
+<span style="color:#0066dd;">Start of the Performance Guide</span></a>.</p>
+<h3><a name="Process_Virtual_Memory_Concept"></a>Process Virtual Memory Concept</h3>
+<p>Processes are not aware of physical hardware. Each process is given its own, private, virtual address space which is a finite amount of virtual memory. This allows the Windows operating system to more efficiently manage physical memory resources (RAM and
+ disk (page file)). If a process attempts to exceed it&#39;s virtual address space, then it will crash with an out of memory exception.</p>
+<h3><a name="Determine_the_Maximum_amount_of_Virtual_Address_Space"></a>Determine the Maximum amount of Virtual Address Space</h3>
+<p>Each process has a finite amount of virtual address space that it cannot exceed. The amount of virtual memory per process depends on if it was compiled as 32-bit or 64-bit. x86 is the 32-bit implementation of Windows. x64 is the current 64-bit implementation
+ of Windows.</p>
+<ul>
+<li>x86 processes have 2 GB of virtual address space by default </li><li>x86 processes with the /3GB operating system switch, but without large address aware have 2 GB of virtual address space.
+</li><li>x86 processes with the /3GB operating system switch, with large address aware have 3 GB of virtual address space.
+</li><li>x86 processes with the /3GB operating system swtich, large address aware, and the /USERVA switch have virtual address space equal to the amount specified by the /USERVA switch.
+</li><li>x86 processes with large address aware and running on an x64 operating system have 4 GB of virtual address space.
+</li><li>x64 processes have 8 TB of virtual address space. </li></ul>
+<p><strong>Important:</strong> Use caution before implementing the /3GB operating switch because it takes away virtual memory from the Windows kernel and can result in system-wide hangs.</p>
+<p><a href="http://msdn.microsoft.com/en-us/library/c1h23y6c(VS.71).aspx"><span style="color:#0066dd;">Dumpbin.exe</span></a> (Windows SDK) can determine if a 32-bit executable (EXE) supports large address spaces with the following command:<br />
+dumpbin /headers &lt;path to EXE&gt;</p>
+<p>The following WMI command will show the maximum virtual address space that a process can have on the computer. This command will work on Windows XP/2003 and greater:<br />
+<span style="font-family:&#39;courier new&#39;;">wmic PATH Win32_OperatingSystem GET MaxProcessMemorySize</span></p>
+<p>Sample output of this command for a Windows 7 x64 computer is: <br />
+<span style="font-family:&#39;courier new&#39;;">MaxProcessMemorySize <br />
+8589934464 </span></p>
+<p><a href="http://live.sysinternals.com/vmmap.exe"><span style="color:#0066dd;">VMMap.exe</span></a> (SysInternals) can attach to a live process and show the&nbsp;virtual memory usage. This can tell you the maximum amount of virtual memory the process can address
+ and is helpful in diagnosing virtual memory fragmentation. When the virtual address space of a process does not have enough contiguous memory to accommodate a virtual memory allocation request, then it will crash. For example, a process might have 500 MB of
+ free virtual memory, but might not have a contiguous block of 64 MB to accommodate a new Gen 0 memory block request from the .NET memory manager.<br />
+<br />
+</p>
+<h4><a name="Windows_Virtual_Memory_Minimum_Too_Low"></a>Windows - Virtual Memory Minimum Too Low</h4>
+<p>When the Windows operating system reports that it is low on &quot;virtual memory&quot; and mentions increasing the paging file, then&nbsp;it means that the System Commit Charge&nbsp;has reached the System Commit Limit. The paging file is commonly referred to as &quot;virtual&quot; RAM,
+ hense this reference. Unfortunately,&nbsp;the&nbsp;concept of process and kernel&nbsp;virtual memory&nbsp;is unrelated to the system commit limit. If you suspect a system commit issue, then go to &quot;<a href="http://social.technet.microsoft.com/wiki/contents/articles/perfguide-out-of-system-committed-memory.aspx">PerfGuide:
+ Out of System Committed Memory</a>&quot; to troubleshoot.<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/4010.OutOfCommitLimit.gif" style="border:0px solid;" />&nbsp;</p>
+<h3><a name="Troubleshooting"></a>Troubleshooting</h3>
+<p>If the &quot;\Process(*)\Virtual Bytes&quot; performance counter shows more than 80% of the maximum amount of virtual address space of a process, then the process is likely close to running out of virtual memory with a few exceptions - processes like 32-bit SQL Server
+ commonly consume nearly 100% of its virtual address space on purpose. Also, out of [virtual] memory crashes might be logged to the Application event log such as
+<a href="http://msdn.microsoft.com/en-us/library/ee851764.aspx#Issue_OOM"><span style="color:#0066dd;">System.OutOfMemory</span></a> exceptions for .NET applications. To troubleshoot this issue:</p>
+<ol>
+<li><strong>Is a Virtual Memory Leak:</strong> Monitor the “\Process(*)\Virtual Bytes” counter for each process over a long period of time (typically over a week) to determine if it is gradually leaking memory over time. It is normal for an application to use
+ more memory as it is under load,p;</p>
+<h3><a name="Troubleshooting"></a>Troubleshooting</h3>
+<p>If the &quot;\Process(*)\Virtual Bytes&quot; performance counter shows more than 80% of the maximum amount of virtual address space of a process, then the process is likely close to running out of virtual memory with a few exceptions - processes like 32-bit SQL Server
+ commonly consume nearly 100% of its virtual address space on purpose. Also, out of [virtual] memory crashes might be logged to the Application event log such as
+<a href="http://msdn.microsoft.com/en-us/library/ee851764.aspx#Issue_OOM"><span style="color:#0066dd;">System.OutOfMemory</span></a> exceptions for .NET applications. To troubleshoot this issue:</p>
+<ol>
+<li><strong>Is a Virtual Memory Leak:</strong> Monitor the “\Process(*)\Virtual Bytes” counter for each pr but it should release the memory when it is done. Gradually, memory that is not released accumulates until the process it out of virtual memory.
+</li><li><strong>Use </strong><a href="http://live.sysinternals.com/vmmap.exe"><span style="color:#0066dd;">VMMap.exe</span></a><strong> (SysInternals):</strong> to show the virtual memory usage of the process. It can give clues to where memory is generally being&nbsp;allocated.&nbsp;This
+ information can greatly help developers of the application. </li><li><strong>Create Several Process Memory Dumps (*.dmp):</strong> There is many tools in the industry that are able to create process memory dumps such as ADPlus.exe (part of the Debugging Tools for Windows) and DebugDiag. A process memory dump is a snapshot
+ of the memory usage of a process. This is similar to taking a photograph of an event. If several process dumps (each with a significant change in memory usage) of a process&nbsp;are analyzed by a Windows debugging expert, then it may be possible to determine where
+ memory is being allocated unnecessarily. Please contact Microsoft Support Services for assistance with analysis of process memory dumps and/or consider the “Advanced User Mode Debugging” and “Advanced .NET Debugging”&nbsp;workshops offered by Microsoft Premier
+ Field Engineering (PFE). </li><li><strong>Use </strong><a href="http://www.microsoft.com/downloads/en/details.aspx?FamilyID=28bd5941-c458-46f1-b24d-f60151d875a3&amp;displaylang=en"><span style="color:#0066dd;">DebugDiag</span></a><strong>:</strong> DebugDiag is a free tool from Microsoft&nbsp;designed
+ to assist in troubleshooting issues such as hangs, slow performance, memory leaks or fragmentation, and crashes in any user-mode process. Use it to create several process memory dumps (*.dmp) (each with significant change in memory usage) and automatically
+ analyze the differences between the dump files. If you need assistance with process memory dump analysis, then go to step 3.
+</li></ol>
+<h3><a name="Treating_the_Symptoms"></a>Treating the Symptoms</h3>
+<p>If all of the above troubleshooting steps have been exhausted, then the symptoms of process out of virtual memory issues can be treated with one or more of the following:</p>
+<ol>
+<li><strong>Use Large Address Aware for 32-bit Application:</strong> Enable the large address aware property/header of the process to allow it the option of using more than 2 GB of virtual address space. The benefits of large address aware are shown in the
+ “Determine the Maximum amount of Virtual Address Space” section of this document.
+</li><li><strong>Migrate or Recompile&nbsp;to x64 (64-bit):</strong> x64 applications have 8 TB of private virtual address space which should be enough to accommodate the memory needs of most applications.
+</li><li><strong>Distribute to Multiple Processes:</strong> Each process has its own virtual address space, so consider moving heavy memory consuming functions to separate processes.
+</li><li><strong>Defragment Virtual Memory:</strong> High virtual memory fragmentation can prevent a memory allocation from finding contiguous address space. Memory managers like the
+<a href="http://msdn.microsoft.com/en-us/library/aa366750(VS.85).aspx"><span style="color:#0066dd;">Low Fragmentation Heap</span></a> can help.
+<ol>
+<li><strong>Microsoft .NET applications</strong> are automatically defragmented by the .NET garbage collector (GC), but it can only defragment .NET managed structures. Unmanaged structures that have pointers to memory cannot be moved by the GC preventing proper
+ defragmentation. </li></ol>
+</li></ol>
+<p><strong>Note:</strong> Keep in mind that processes are not aware of physical resources, so changing the amount of RAM or page file size has no effect on process virtual address space.
+</p>
+<h5><a name="More_Information"></a>More Information</h5>
+<p><strong>Vital Signs Workshop:</strong> Microsoft Services offers an&nbsp;instructor led workshop called, &quot;Vital Signs&quot;, which goes in depth into Windows architecture focused on Windows performance analysis. If you are interested, then contact your Microsoft Technical
+ Account Manager (TAM). If you do not have a Microsoft Premier Support contract, then consider the great benefits of having one by going to our Microsoft Services Premier Support web site at:
+<a href="http://www.microsoft.com/microsoftservices/en/us/support_premier.aspx"><span style="color:#0066dd;">http://www.microsoft.com/microsoftservices/en/us/support_premier.aspx</span></a></p>
+
+</div>
+    
+    

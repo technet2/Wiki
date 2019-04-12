@@ -1,0 +1,264 @@
+---
+layout: default
+title: Sql Server Transaction Isolation Levels (tr-TR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+Merhaba değerli okurlar. <br />
+<br />
+Bu makalemde sizlere transaction ile ilgili oldukça önemli konu olan Isolation Levels &#39;ı anlatacağım.Daha önceki makalelerimde transaction ı nasıl kullanacağımılass="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-namezı neden kullanacağımızı detaylı olarak anlatmıştım.Bu makalemde anlatacağım konu transaction ları
+ izolasyon etme seviyelerinden bahsedeceğim.Yani diğer bir deyişle aynı anda aynı veriler üzerinde çalışan transaction ların nasıl çalışacaklarını veya nasıl sonuçlar alacaklarını belirleyebildiğimiz seviyelerden bahsedeceğim.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+Öncelikle native yani tüm veri tabanı sistemlerinin kabul ettiği 4 adet isolation level lar vardır.Fakat MSSQL Server ise bize bunlara ek olarak 2 adet isolation level sağlamaktadır.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>1-)Read Uncommited(level 0)</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>2-)Read Commited(level 1)</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>3-)Repeatable Read(level 2)</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>4-)Serializable(level 3)</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><br />
+</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+Bunlara ek olarak Mssql in bizlere sağladıkları ise ;</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>1-)Read Commited&nbsp;Snapshot&nbsp;Isolation</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>2-)Snapshot Transaction Isolation</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong><br />
+</strong></p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+Yukarıdaki isolation level ları incelemeden önce ortak zamanlı erişim sorunlarını anlatmak istiyorum arkadaşlar.Nedir ortak zamanlı erişim sorunları?Aynı anda birden fazla transaction ın veya session ın aynı veri üzerine erişmek istemesi ve işlem yapmak istemesi
+ sırasında ortaya çıkabilecek olan sorunlardır.4 adet sorun karşımıza çıkmaktadır.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>1-) Lost Updates:</strong>Aynı anda birden fazla transaction aynı anda bir veri üzerinde güncelleme yapmak istediği zaman en son işlem yapan transaction ın kaydı geçerli olur.Bu yüzden veri kaybı yaşanır.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>2-)Dirty Reads:</strong>Bir transaction ın bir veri üzerinde yapmış fakat commit etmemiş olduğu bilgileri diğer transaction tarafından gerçek kayıtmış gibi okuması durumudur.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>3-)Non-Repeatable Reads:</strong>Bir transaction bir veriyi okusun ve kendi içinde işleme soksun.Bu transaction commit etmeden başka bir transaction bu veriyi okusun.Daha sonra işlem yapan transaction tekrar veriyi okumak istediğinde veri aynı veri
+ olmayacağı için sorun yaşanmaktadır.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<strong>4-)Phantom Reads:</strong>Aynı anda çalışan transaction düşünelim.Bir transaction bir tablodaki verilerin tamamını çeksin ve kendi içindeki işleme soksun.Bu sırada da diğer transaction aynı tabloya veri ekleme işlemi yapsın.Daha sonra ilk transaction
+ tekrar verileri çekmek istediğinde yeni eklenen veriler hayalet veri olarak görünür.</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+İşte tüm bu sorunlara çözüm olarak isolation level lar vardır.Hadi gelin şimdi onları inceleyelim arkadaşlar.<br />
+<br />
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<h2 style="color:#000000;font-family:&#39;Times New Roman&#39;;line-height:normal;"><a name="Read_Uncommited"></a><strong>Read Uncommited</strong></h2>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">&nbsp; &nbsp; &nbsp; Bir veri üzerinde bir kullanıcı transaction yaparken diğer kullanıcılarında değişikliğe uğramış fakat commit edilmemiş verileri görebilmesini sağlayan level&#39;dır.Bu durum bize performans sağlar fakat verimizin güvenliğini elimizden
+ alır neredeyse.Çünkü ya yapılan transaction commit edilmezse yani bir hata oluşur ve tüm yaptığı işlemleri rollback yaparsa ne olacak ? İşte bu durumda ortaya çıkan soruna&nbsp;<strong>Dirty Read</strong>&nbsp;denilir.Yani kısacası bir transaction i
+İşte tüm bu sorunlara çözüm olarak isolation level lar vardır.Hadi gelin şimdi onları inceleyelim arkadaşlar.<br />
+<br />
+</p>
+<p style="margin:0px;color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+</p>
+<h2 style="color:#000000;font-family:&#39;Times New Roman&#39;;line-height:normal;"><a name="Reşlemi yapılırken
+ commit edilmese dahi diğer kullanıcılar transaction ın yaptığı işlemlerin sonucunu transaction sırasında görebilirler.Dirty reads,lost updates,non-repeatables reads ve phantom reads sorunları vardır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">Peki bu level ı nasıl kullanacağım ?&nbsp;</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;">SET</span><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;">&nbsp;<span style="color:#0000ff;">TRANSACTION</span>&nbsp;<span style="color:#0000ff;">ISOLATION</span>&nbsp;<span style="color:#0000ff;">LEVEL</span>&nbsp;<span style="color:#0000ff;">READ</span>&nbsp;<span style="color:#0000ff;">COMMITTED</span></span></p>
+</div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;"><br />
+</span></p>
+</div>
+<div>
+<p style="margin:0px;">Yukarıdaki gibi sql komutu ile oldukça basit bir şekilde aktif hale getirebiliriz.<br />
+<br />
+</p>
+</div>
+<div></div>
+<h2><a name="Read_Commited"></a><strong>Read Commited</strong></h2>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">&nbsp; &nbsp; &nbsp;Bu level da ise eğer bir veri üzerinde transaction uygulanıyorsa diğer transactionların bu veriye erişmesini engeller.Sql server&#39;ın default level ı budur arkadaşlar.Daha önce denediniz mi bilmiyorum fakat eğer bir veri üzerinde bir
+ tansaction işlemi yapılıyor ise sql server da o veriye erişim engellenir.Peki bu sırada diğer sorgular veya transactionlar ne olacak ? Veri üzerindeki transaction&#39;ın sonlanmasını beklemekten başka hiç bir şansları yok :)Read Uncommited ın ortaya çıkardığı
+ dirty read sorununu ortadan kaldırır.Fakat losts updates sorunu vardır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<div>
+<p style="margin:0px;">Peki bu level ı nasıl kullanacağım ?&nbsp;</p>
+</div>
+<div></div>
+<div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:14px;font-family:&#39;Courier New&#39;;color:#0000ff;">SET</span><span style="font-size:10pt;line-height:14px;font-family:&#39;Courier New&#39;;">&nbsp;<span style="color:#0000ff;">TRANSACTION</span>&nbsp;<span style="color:#0000ff;">ISOLATION</span>&nbsp;<span style="color:#0000ff;">LEVEL</span>&nbsp;<span style="color:#0000ff;">READ</span>&nbsp;<span style="color:#0000ff;">UNCOMMITTED</span></span></p>
+</div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:14px;font-family:&#39;Courier New&#39;;color:#0000ff;"><br />
+</span></p>
+</div>
+<div>
+<p style="margin:0px;">Yukarıdaki gibi sql komutu ile oldukça basit bir şekilde aktif hale getirebiliriz.<br />
+<br />
+</p>
+</div>
+<div></div>
+<h2><a name="Repeatable_Read"></a><strong>Repeatable Read</strong></h2>
+</div>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;"><strong>&nbsp; &nbsp; &nbsp;</strong>Diyelim ki bir transaction işlemleri arasında bir veriyi çekti ve işlem yapmaya başladı.İşlemini tamamlamadan yani commit edilmeden bir başka transaction veya kullanıcı o verideki değeri değiştirdi.Transaction işlemlerini
+ yaparken tekrardan o veriyi okuyup değerini almak istedi.Eee veri eski veri değil. Doğal olarak transaction&#39;ın işlemlerinin sonucu yanlış çıkacaktır.İşte bu sorunu ortadan kaldırmak için bu level kullanılmaktadır.Yani kısaca bir transaction tarafından kullanılan
+ veri diğer transaction tarafından okunamaz.Fakat buradaki asıl amaç bir transaction tarafından okunan ve kullanılan verinin&nbsp;<span style="text-decoration:underline;">değiştirilmemesidir.</span>Bu sayede dirty reads,lost updates,non-repeatables reads sorunları
+ ortadan kalkar.Fakat phantom reads sorunu vardır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;"><strong><span style="text-decoration:underline;"><br />
+</span></strong></p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<div>
+<p style="margin:0px;">Peki bu level ı nasıl kullanacağım ?&nbsp;</p>
+</div>
+<div></div>
+<div>
+<div></div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;">SET</span><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;">&nbsp;<span style="color:#0000ff;">TRANSACTION</span>&nbsp;<span style="color:#0000ff;">ISOLATION</span>&nbsp;<span style="color:#0000ff;">LEVEL</span>&nbsp;<span style="color:#0000ff;">REPEATABLE</span>&nbsp;<span style="color:#0000ff;">READ</span></span></p>
+</div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:14px;font-family:&#39;Courier New&#39;;color:#0000ff;"><br />
+</span></p>
+</div>
+<div>
+<p style="margin:0px;">Yukarıdaki gibi sql komutu ile oldukça basit bir şekilde aktif hale getirebiliriz.<br />
+<br />
+</p>
+</div>
+<div></div>
+<h2><a name="Serializable"></a><strong>Serializable</strong></h2>
+</div>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">&nbsp; &nbsp; Veri ekleme,silme ve güncelleme yapan transaction boyunca veri erişime kapanır.Bu sayede hiç bir ortak zamanlı sorun ortada kalmaz.Fakat işlemler çok fazla birikir.Bu da bize performans sorunu yaşatır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">Peki bu level ı nasıl kullanacağım ?&nbsp;</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;">SET</span><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;">&nbsp;<span style="color:#0000ff;">TRANSACTION</span>&nbsp;<span style="color:#0000ff;">ISOLATION</span>&nbsp;<span style="color:#0000ff;">LEVEL</span>&nbsp;<span style="color:#0000ff;">SERIALIZABLE</span></span></p>
+</div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;"><br />
+</span></p>
+</div>
+<div>
+<p style="margin:0px;">Yukarıdaki gibi sql komutu ile oldukça basit bir şekilde aktif hale getirebiliriz.<br />
+<br />
+</p>
+</div>
+<h2><a name="Read_Commited_Snapshot_Isolation"></a><strong>Read Commited&nbsp;Snapshot&nbsp;Isolation</strong></h2>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;"><strong>&nbsp; &nbsp; &nbsp;&nbsp;</strong>Bu level da Read Commited level da oluşan&nbsp;<strong>Shared Lock&nbsp;</strong>durumu ortadan kalkar.Yani bir transaction bir veride güncelleme yaparken bir başka transaction bu veriyi okuyabilir.Bir transaction içerisinde
+ kalmış ve commit edilmemiş verilerin&nbsp;<strong>tempdb</strong>&nbsp;veritabanına&nbsp;<strong>snapshot&nbsp;</strong>larını kaydeder.Böylece diğer transactionların verileri okuması sağlanmaktadır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">Kullanılabilmesi için database seviyesinde&nbsp;<span style="font-size:11px;background-color:white;font-family:Verdana;"><em style="font-weight:bold;">READ_COMMITTED_SNAPSHOT&nbsp;</em></span>parametresinin&nbsp;<strong>&quot;on&quot;</strong>&nbsp;konumunda olması
+ gerekmektedir.Default olarak&nbsp;<strong>&quot;off&quot;</strong>&nbsp;ayarlanıktır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;"><span style="font-size:11px;font-family:Verdana;"><br />
+</span></p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;">ALTER</span><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;">&nbsp;<span style="color:#0000ff;">DATABASE</span>&nbsp;Northwind&nbsp;<span style="color:#0000ff;">SET</span>&nbsp;<span style="color:#0000ff;">READ_COMMITTED_SNAPSHOT</span>&nbsp;<span style="color:#0000ff;">ON</span></span></p>
+</div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;"><br />
+</span></p>
+</div>
+<div>
+<p style="margin:0px;">Olarak kullanılır.</p>
+</div>
+</div>
+<h2 style="color:#000000;font-family:&#39;Times New Roman&#39;;line-height:normal;"><a name="Snapshot_Transaction_Isolation"></a><strong>Snapshot Transaction Isolation</strong></h2>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">&nbsp; &nbsp; Bir üstteki level dan tek farkı burada yapılan konfigurasyonun transaction bazında olmasıdır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">Kullanımında öncelikle database seviyesinde ayar yapılması gerekir.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;"></div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;">ALTER</span><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;2 style="color:#000000;font-family:&#39;Times New Roman&#39;;line-height:normal;"><a name="Snapshot_Transaction_Isolation"></a><strong>Snapshot Transaction Isolation</strong></h2>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">&nbsp; &nbsp; Bir üstteki level dan tek farkı burada yapılan konfigurasyonun transaction bazında olmasıdır.</p>
+</div>
+<div style="color:#000000;font-family:&#39;Times New Roman&#39;;font-size:medium;">
+<p style="margin:0px;">Kullanımında öncelikle database seviyesinde ayar yapılması gerekir.</p>
+</div>
+<div style="color:#000000;font-fami;">&nbsp;<span style="color:#0000ff;">DATABASE</span>&nbsp;Northwind&nbsp;<span style="color:#0000ff;">SET</span>&nbsp;<span style="color:#0000ff;">ALLOW_SNAPSHOT_ISOLATION</span>&nbsp;<span style="color:#0000ff;">ON</span></span></p>
+</div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;"><br />
+</span></p>
+</div>
+<div>
+<p style="margin:0px;">Daha sonra ise transaction seviyesinde ayarlama yapılması gerekmektedir.</p>
+</div>
+<div></div>
+<div></div>
+<div>
+<p style="margin:0px;"><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;color:#0000ff;">SET</span><span style="font-size:10pt;line-height:15.3333px;font-family:&#39;Courier New&#39;;">&nbsp;<span style="color:#0000ff;">TRANSACTION</span>&nbsp;<span style="color:#0000ff;">ISOLATION</span>&nbsp;<span style="color:#0000ff;">LEVEL</span>&nbsp;<span style="color:#0000ff;">SNAPSHOT</span></span></p>
+</div>
+<div></div>
+<div>
+<p style="margin:0px;">Umarım faydalı olmuştur.Bir sonraki makalemde görüşmek dileğiyle.<br />
+<br />
+Koray Düzgün.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6507.tat.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/350x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6507.tat.jpg" style="border-width:0px;border-style:solid;" /></a></p>
+</div>
+</div>
+
+</div>
+    
+    

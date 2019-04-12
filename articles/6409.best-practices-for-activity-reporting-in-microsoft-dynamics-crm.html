@@ -1,0 +1,211 @@
+---
+layout: default
+title: Best Practices for Activity Reporting in Microsoft Dynamics CRM - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hi></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Best Practices for Activity erarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Activitypointer_ndash_The_ldquo_Anchor_rdquo">Activitypointer &ndash; The &ldquo;Anchor&rdquo;</a></li><li class="hierarchy-item"><a href="#Activityparty_ndash_The_people">Activityparty &ndash; The people</a></li><li class="hierarchy-item"><a href="#The_specific_activity_type_views">The specific activity type views</a></li><li class="hierarchy-item"><a href="#Planning_your_report">Planning your report</a></li><li class="hierarchy-item"><a href="#Common_Mistakes">Common Mistakes</a></li><li class="hierarchy-item"><a href="#Best_Practices">Best Practices</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+So you want to report on your activities in CRM&mdash;and that is a great idea.
+Activities such as appointments, phone calls, tasks, and e-mails are core CRM
+functionality and a great indicator of how your users are interacting with your
+customers, and how actively your users are adopting CRM.</p>
+<p>For basic activity reporting, such as activity lists or viewing a count of
+activities by type by user, consider using the out of the box views and charts.
+</p>
+<p>For example, if I want to see the number of activities by type and priority,
+I can just go to the Activity view in CRM and select the &ldquo;Activities by Type and
+Priority&rdquo; chart.</p>
+<p>If you are not familiar with creating charts in CRM 2011, check out Kevin
+Wessels&rsquo; <a href="http://blog.customereffective.com/blog/2011/03/gain-real-time-actionable-insights-with-enriched-chart-features-in-crm-2011.html" target="_blank">Introduction to charts in CRM 2011</a>.</p>
+<p>I recommend using the views and charts whenever possible, because it is fast,
+it is dynamic, and it can easily be added to your CRM 2011 dashboard.</p>
+<p>However, if you find you want a report that requires more advanced formatting
+or that can be published to additional formats, such as Word or PDF documents,
+another option is to create a SQL Server Reporting Services (SSRS) report.</p>
+<p>The point of this post is not to introduce you to SSRS.  If you don&rsquo;t have
+experience creating SSRS reporting, I recommend checking out resources like the
+<a href="http://msdn.microsoft.com/en-us/library/gg328097.aspx" target="_blank">report development section of the CRM 2011 SDK.</a></p>
+<p>The point of this post is to discuss the unique challenges of working with
+activity data in reports.  To understand how to work with activities in SQL
+queries, you need to first understand how activity data is stored.</p>
+<h1><a name="Activitypointer_ndash_The_ldquo_Anchor_rdquo"></a><span style="font-size:24px;">Activitypointer &ndash; The &ldquo;Anchor&rdquo;</span></h1>
+<p>In the Microsoft CRM SQL databases, activity records are stored in an anchor
+entity view called filteredactivitypointer.  This view contains the fields that
+are common to all activity types.  This includes fields such as activityid,
+scheduled start, scheduled end, actual end, actualduration, subject, and
+description (the &ldquo;body&rdquo;).  This entity also includes a field
+called Activitytypecode.  This indicates what type of activity the record
+is.</p>
+<p> </p>
+<h1><a name="Activityparty_ndash_The_people"></a><span style="font-size:24px;">Activityparty &ndash; The people</span></h1>
+<p>Any people, leads, or accounts linked to an activity will be stored in the
+filteredactivityparty view.  This is a related entity that enables you to add
+multiple recipients/attendees/customers to activities.  When you create an
+appointment, for example, and have 3 required attendees, 2 optional attendees, a
+regarding company, an owner, and a organizer, a total of 8 activity party
+records are created.  Activity party includes fields like partyid (the GUID of
+the record related to the actity), partyobjecttypecode (the entity type code of
+the related record), and activity id.  The filteredactivityparty view also
+includes some of the fields from the filteredactivitypointer view, such as
+scheduledstart, scheduledend.</p>
+<p>One important thing to understand about activities and activity parties is
+that some activity parties are stored in both filteredactivitypointer and
+filteredactivityparty.  The ownerid and the regarding objectid are fields in
+filteredactivitypointer, but they also are stored as activity parties related to
+the activity.</p>
+<p>This is important to understand, because many people overcomplicate their
+activity reports and views because they misunderstand this&mdash;if you want to see
+any activities where you are the owner, the regarding object, or a
+recipient/attendee, don&rsquo;t do something like this:</p>
+<p>select distinct a .activityid from filteredactivitypointer a inner join
+filteredactivityparty p on a.activityid = p.activityid where a.ownerid = @user
+or a.regardingobjectid = @user or p.partyid = @user</p>
+<p>instead, do this:</p>
+<p>select distinct activityid from filteredactivityparty where partyid =
+@user.</p>
+<p>Since all people or accounts related to an activity are stored in the
+filteredactivityparty view, you can limit your query person filter to the
+activityparty entity, and make your query more efficient.  This is why the
+default &ldquo;My Activity&rdquo; views in CRM filter the activity list by the related
+activity parties, and they get not only the records owned by the selected user,
+but also the records where that user is an attendee or recipient or regarding
+object.</p>
+<h1><a name="The_specific_activity_type_views"></a><span style="font-size:x-large;">The specific activity type views</span></h1>
+<p>As we discussed earlier, the fields that are common to all activity types are
+stored in the FilteredActivityPointer Anchor entity view.  These fields are also
+available  = p.activityid where a.ownerid = @user
+or a.regardingobjectid = @user or p.partyid = @user</p>
+<p>instead, do this:</p>
+<p>select distinct activityifrom the specific entity type views, such as FilteredEmail, Filtered
+PhoneCall, Filtered Task, Filtered Appointment (and the poor lonely FilteredFax
+entity view).</p>
+<p>These views also contain the fields that are unique to a specific activity
+type, such as custom fields you might have added to the appointment entity, and
+status reasons that are unique to the activity type (for example, there is a
+&ldquo;sent&rdquo; status on e-mails, but not appointments).</p>
+<h1><a name="Planning_your_report"></a><span style="font-size:24px;">Planning your report</span></h1>
+<p>So as you begin to design your report, there are a couple of questions you
+should ask:</p>
+<p>1.  What records do I want to return?  Is this a report covering all activity
+types, just one type of activity? Should this show all activity statuses, just
+open/scheduled, just closed, or both?</p>
+<p>2.  How should this data be filtered?  Do I want to see it for a single user,
+a group of users, a set date range, or a date range selectable by user?</p>
+<p>3.  How will this data be consumed?  Is somebody going to look at it on the
+screen, in a dashboard, export to a spreadsheet, or print out a pdf?</p>
+<h1><a name="Common_Mistakes"></a><span style="font-size:24px;">Common Mistakes</span></h1>
+<p>1.  Over complicating the query.  If you just want to have a count of
+activities by person, there is no reason to join activity party to activity
+pointer and union together the filteredemail, filteredtask, filteredphonecall,
+and filteredappointment views.  Overcomplicated queries are the main reason why
+activity reports are frequently slow or time out.</p>
+<p>2.  Misunderstanding how dates in activities work.  There are  a number of
+date fields in filteredactivitypointer&mdash;scheduledstart, scheduledend,
+actualstart, and actualend.  No one of these date fields are consistently
+populated on all activity types.  For example, tracked emails will typically
+just have an actualend date, and not a scheduledend or scheduledstart, and only
+closed appointments have an actualend date.  This is one of the main reasons why
+dates in activity reports and views do not work as expected.</p>
+<p>To account for this, I recommend using a case in your sql query to
+accommodate various date fields being null.  For example</p>
+<p><span style="background-color:#ffff00;">(case when actualend is not null then
+actualend</span></p>
+<p><span style="background-color:#ffff00;">when actualend is null and
+scheduledend is not null then scheduledend</span>
+</p>
+<p><span style="background-color:#ffff00;">else scheduledstart</span>
+</p>
+<p><span style="background-color:#ffff00;">end) as date</span>
+</p>
+<p><span style="background-color:#ffff00;"></span><span>This approach
+puts priority on the actual close date, so if the activity is closed, it will
+count that as the date of the activity, but if not, will use one of the
+scheduled dates.  </span>
+</p>
+<p>It is also very important to understand what your audience expects to see as
+the date of an activity&mdash;if they expect the date of an activity to be what it was
+scheduled as on their calendar, but they close the activity two weeks after the
+appointment, if you select actualend as the date of the activity in the report,
+the results won&rsquo;t match their expectation.
+</p>
+<p>3.  Misunderstanding how dates in SSRS report parameters in CRM work
+</p>
+<p>Consider this common scenario&mdash;the user wants to enter a start date and an end
+date and show all activities that fall between @start and @end.  So, at first
+glance, you assume that the report query should say something like this:
+</p>
+<p><span style="background-color:#ffff00;">&ldquo;where date between @start and
+@end&rdquo;</span>
+</p>
+<p>Not so fast.  You first need to understand that when you populate a date
+parameter in an SSRS report in CRM, it assumes the time of day when you are
+running the report.  So, for example, if you run the report at 3:30 PM on
+January 5, 2011 and say start date is January 2 and end date is January 4, you
+are really saying between January 2 at 3:30 PM and January 4 at 3:30 PM.  Any
+activities earlier in the day on the second and the end of the day on the fourth
+will not be returned.
+</p>
+<p>The right way to do it is to adjust your parameter values so the start date
+is the beginning of the day and your end date is the end of the day.  For
+example:
+</p>
+<p><span style="background-color:#ffff00;">&ldquo;Where date BETWEEN DATEADD(dd,
+DATEDIFF(dd, 0, @start), 0) AND DATEADD(minute, 1438, DATEADD(dd, DATEDIFF(dd,
+0, @end), 0)))&rdquo;</span>
+</p>
+<p><span></span><span>In this example I am using dateadd to
+set the @start parameter to the beginning of the day specified, and using
+dateadd to add 1,438 minutes to the start time of the @end parameter.  All
+activities between these dates will be returned.</span>
+</p>
+<p>4.  Lacking a clear focus
+</p>
+<p>Once you start building your report, it can sometimes grow beyond the
+original scope and purpose of the report.  Users will want to add additional
+fields and be able to group or sort by different fields to use the report to
+answer different questions.  This is fine, but be careful that in doing that you
+don&rsquo;t overcomplicate the report.
+</p>
+<p>The best reports serve a specific purpose and are consumed in a specific
+way.  Reports that are exported to PDF should not have more fields than will fit
+in one page width.  If you keep adding fields to the report, your query will run
+more slowly, and you may exceed the number of rows that will fit on one page.
+</p>
+<p>Formatting of reports is driven by the way the report will be used.  Column
+layouts that look good in PDF don&rsquo;t often look good when exported to Excel, and
+Excel optimized layouts may not look good when exported to Word.  If you try to
+make the report exportable in all formats, you frequently will wind up with a
+report that doesn&rsquo;t look very good in any format
+</p>
+<p>Also, many times the users want the report to handle every niche scenario,
+so, for example, if there is a custom field that just exists on appointment
+records, they will want to include it in an activity report.  This small change
+can make a big difference in report execution performance, as it means having to
+join or union in the filteredappointment view in your query.  If you have
+additional custom fields on other specific entities, that makes it even slower.
+</p>
+<p>Best practice is to limit your fields in the report to just the minimum
+necessary for the main use case for the report, and if there are any entity
+specific fields needed for other scenarios, you may want to build additional
+reports that just focus on those activity types.
+</p>
+<h1><a name="Best_Practices"></a><span style="font-size:24px;">Best Practices</span></h1>
+<p>
+</p>
+<ol>
+    <li>Whenever possible use views and charts for activity reports</li>
+    <li>Whenever possible, report from the filtered views</li>
+    <li>Whenever possible, use the FilteredActivityPointer entity view for activity
+    reports rather than unioning the specific entity views.</li>
+    <li>Build report people filters from the FilteredActivityParty entity view</li>
+    <li>Create your report with a clear focus, not an open-ended &ldquo;all things to all
+    people&rdquo; activity report</li>
+</ol></div>
+    
+    

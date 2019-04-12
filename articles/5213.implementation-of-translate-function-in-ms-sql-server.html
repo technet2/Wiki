@@ -1,0 +1,200 @@
+---
+layout: default
+title: Implementation of Translate Function in MS SQL Server - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-size:10px;">Translate Function:</span></p>
+<p><span style="font-size:10px;">In Oracle/PLSQL, the translate function replaces a sequence of characters in a string with another set of characters. However, it replaces a single character at a time. For example, it will replace the 1st character in the string_to_replace
+ with the 1st character in the replacement_string. Then it will replace the 2nd character in the string_to_replace with the 2nd character in the replacement_string, and so on.</span></p>
+<p><span style="font-size:10px;">The syntax for the translate function is:</span></p>
+<p><span style="font-size:10px;">translate( string1, string_to_replace, replacement_string )</span></p>
+<p><span style="font-size:10px;">string1 is the string to replace a sequence of characters with another set of characters.</span></p>
+<p><span style="font-size:10px;">string_to_replace is the string that will be searched for in string1.</span></p>
+<p><span style="font-size:10px;">replacement_string - All characters in the string_to_replace will be replaced with the corresponding character in the replacement_string.</span></p>
+<p><span style="font-size:10px;">Eaxmples :</span></p>
+<p><span style="font-size:10px;">translate(&#39;1tech23&#39;, &#39;123&#39;, &#39;456&#39;);&nbsp;would return &#39;4tech56&#39;<br />
+translate(&#39;222tech&#39;, &#39;2ec&#39;, &#39;3it&#39;);&nbsp;would return &#39;333tith&#39;</span></p>
+<p><span style="font-size:10px;">I have implemented the same for MS SQL Server. The syntax would be similar as of translate in Oracle.</span></p>
+<p><span style="font-size:10px;">Syntax : Translate(Data,DataToReplace,ReplacedWithData)</span></p>
+<p><span style="font-size:10px;">Data : Is the string can be of VARCHAR(MAX)<br />
+DataToReplace : Is the characters can be of VARCHAR(100)<br />
+ReplacedWithData :&nbsp; Is the characters can be of VARCHAR(100)<br />
+<br />
+</span></p>
+<p>&nbsp;</p>
+<div class="reCodeBlock" style="overflow-y:auto;border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">USE AdventureWorks</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">GO</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">IF OBJECT_ID (N</code><code style="color:blue;">&#39;dbo.Translate&#39;</code><code style="color:#000000;">, N</code><code style="color:blue;">&#39;FN&#39;</code><code style="color:#000000;">)
+</code><code style="color:#006699;font-weight:bold;">IS</code> <code style="color:#808080;">
+NOT</code> <code style="color:#808080;">NULL</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">DROP</code>
+<code style="color:#006699;font-weight:bold;">FUNCTION</code> <code style="color:#000000;">
+dbo.Translate;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">GO</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">FUNCTION</code> <code style="color:#000000;">
+dbo.Translate (@Data </code><code style="color:#006699;font-weight:bold;">VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">), @DataToReplace
+</code><code style="color:#006699;font-weight:bold;">VARCHAR</code><code style="color:#000000;">(100), @ReplacedWithData
+</code><code style="color:#006699;font-weight:bold;">VARCHAR</code><code style="color:#000000;">(100))</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">RETURNS</code>
+<code style="color:#006699;font-weight:bold;">VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">DECLARE</code>
+<code style="color:#000000;">@TranslaedData </code><code style="color:#006699;font-weight:bold;">VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">;</code><code style="color:#006699;font-weight:bold;">WITH</code>
+<code style="color:#000000;">CTE(PosToReplace,Data,DataToReplace,ReplacedWithData)
+</code><code style="color:#006699;font-weight:bold;">AS</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">1,</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(@Data
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+Data,</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:#ff1493;">SUBSTRING</code><code style="color:#000000;">(@DataToReplace,1,1)
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+DataToReplace,</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:#ff1493;">SUBSTRING</code><code style="color:#000000;">(@ReplacedWithData,1,1)
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+ReplacedWithData</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">UNION</code>
+<code style="color:#808080;">ALL</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">SELECT</code>
+<code style="color:#000000;">C.PosToReplace&#43;1 </code><code style="color:#006699;font-weight:bold;">AS</code>
+<code style="color:#000000;">PosToReplace , </code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:#ff1493;">REPLACE</code><code style="color:#000000;">(C.Data,C.DataToReplace,C.ReplacedWithData)
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+Data,</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:#ff1493;">SUBSTRING</code><code style="color:#000000;">(@DataToReplace,PosToReplace&#43;1,1)
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+DataToReplace,</code><code style="color:#ff1493;">CAST</code><code style="color:#000000;">(</code><code style="color:#ff1493;">SUBSTRING</code><code style="color:#000000;">(@ReplacedWithData,PosToReplace&#43;1,1)
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#006699;font-weight:bold;">
+VARCHAR</code><code style="color:#000000;">(</code><code style="color:#006699;font-weight:bold;">MAX</code><code style="color:#000000;">))
+</code><code style="color:#006699;font-weight:bold;">AS</code> <code style="color:#000000;">
+ReplacedWithData</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">CTE C</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#000000;">C.PosToReplace &lt;= LEN(@DataToReplace)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">SELECT</code>&nbsp;
+<code style="color:#000000;">@TranslaedData = C.Data </code><code style="color:#006699;font-weight:bold;">FROM</code>
+<code style="color:#000000;">CTE C </code><code style="color:#006699;font-weight:bold;">WHERE</code>
+<code style="color:#000000;">C.PosToReplace = LEN(@DataToReplace)&#43;1</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">RETURN</code>
+<code style="color:#000000;">@TranslaedData&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">END</code></span></div>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size:10px;">Perhaps these can be modified easily.</span></p>
+<p><span style="font-size:10px;">I am also including the code snippet so other users can also benifit from it.</span></p>
+<p><span style="font-size:10px;">Note : This is my first contribution at Gallery. Please let mw know about this if you have any suggestions i am very much open to hear it from you guys.</span></p>
+<p><span style="font-size:10px;">Thanks,<br />
+Hasham<br />
+------------------------------------------------------------------------------------------------------------<br />
+Above code is not looking for lowercase or uppercase. Below code will work for all.<br />
+</span></p>
+<p><span style="font-size:10px;"><span style="font-size:10px;">Thanks,<br />
+Krushna<br />
+</span><br />
+</span></p>
+<table align="left" style="background-color:#b8cce4;color:#b8cce4;">
+<tbody>
+<tr>
+<td style="background-color:#b8cce4;">&nbsp;
+<p><span style="background-color:#00b050;">IF OBJECT_ID (N&#39;dbo.fn_translate&#39;, N&#39;FN&#39;) IS NOT NULL<br />
+&nbsp;&nbsp;&nbsp; DROP FUNCTION dbo.fn_translate;<br />
+GO<br />
+-- ============================================================&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+-- Author&nbsp;&nbsp;:&nbsp;Krushna Kadam<br />
+-- Create date&nbsp;:&nbsp;4-Apr-2012<br />
+-- Description&nbsp;:&nbsp;Function to return the translated value of provided diacritics.<br />
+-- Spec ID&nbsp;&nbsp;:&nbsp;Spec #657&nbsp; <br />
+-- ============================================================&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+CREATE FUNCTION dbo.fn_translate <br />
+( @string_in NVARCHAR(4000))<br />
+RETURNS NVARCHAR(4000)<br />
+AS<br />
+BEGIN</span></p>
+<p><span style="background-color:#00b050;">DECLARE @string_1 NVARCHAR(4000)<br />
+DECLARE @string_2 NVARCHAR(4000)</span></p>
+<p><span style="background-color:#00b050;">IF (@string_1 IS NULL OR @string_2 IS NULL)<br />
+BEGIN<br />
+&nbsp;SET @string_1=&#39;ªµºÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜYßàáâãäåæçèéêëìíîï¿ñòóôõöùúûüÿ¿øØÞðÐ¿¿¿¿Ýý¿ÿ&#39;<br />
+&nbsp;SET @string_2=&#39;auoAAAAAAACEEEEIIIINOOOOOUUUUYSaaaaaaaceeeeiiiiDnooooouuuuyyoODdDOoSsYyYy&#39;<br />
+END</span></p>
+<p><span style="background-color:#00b050;">DECLARE @string_out NVARCHAR(4000)<br />
+DECLARE @string&nbsp;&nbsp;CHAR(1)<br />
+DECLARE @i&nbsp;&nbsp;&nbsp;SMALLINT<br />
+DECLARE @pos&nbsp;&nbsp;SMALLINT</span></p>
+<p><span style="background-color:#00b050;">DECLARE @list TABLE (&nbsp;indx&nbsp;SMALLINT,<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;CHAR(1),<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;trans&nbsp;BIT)</span></p>
+<p><span style="background-color:#00b050;">IF LEN(@string_1) != LEN(@string_2)<br />
+BEGIN<br />
+&nbsp;SELECT @string_out = NULL<br />
+&nbsp;RETURN @string_out<br />
+END</span></p>
+<p><span style="background-color:#00b050;">SELECT @string_out = &#39;&#39;,<br />
+@i = 1,<br />
+@pos = 0</span></p>
+<p><span style="background-color:#00b050;">WHILE @i &lt;= LEN(@string_in)<br />
+BEGIN<br />
+&nbsp;INSERT INTO @list VALUES (@i,SUBSTRING(@string_in, @i, 1),0)<br />
+&nbsp;SELECT @i = @i &#43; 1<br />
+END</span></p>
+<p><span style="background-color:#00b050;">SELECT @i = 1</span></p>
+<p><span style="background-color:#00b050;">WHILE @i &lt;= LEN(@string_1)<br />
+BEGIN<br />
+&nbsp;UPDATE @list<br />
+&nbsp;SET string = SUBSTRING(@string_2, @i, 1),<br />
+&nbsp;&nbsp;trans = 1<br />
+&nbsp;WHERE ASCII(string) = ASCII(SUBSTRING(@string_1, @i, 1))<br />
+&nbsp;AND trans = 0</span></p>
+<p><span style="background-color:#00b050;">&nbsp;SELECT @i = @i &#43; 1<br />
+END</span></p>
+<p><span style="background-color:#00b050;">SELECT @pos = MAX(indx),<br />
+@i = 1<br />
+FROM @list</span></p>
+<p><span style="background-color:#00b050;">WHILE @i &lt;= @pos<br />
+BEGIN<br />
+&nbsp;SELECT @string = string<br />
+&nbsp;FROM @list<br />
+&nbsp;WHERE indx = @i</span></p>
+<p><span style="background-color:#00b050;">&nbsp;SELECT @string_out = @string_out &#43; @string</span></p>
+<p><span style="background-color:#00b050;">&nbsp;SELECT @i = @i &#43; 1<br />
+END</span></p>
+<p><span style="background-color:#00b050;">RETURN @string_out</span></p>
+<p><span style="background-color:#00b050;">END</span></p>
+<p><span style="background-color:#00b050;">GO<br />
+</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p><br />
+<br />
+<br />
+<br />
+<br />
+</p>
+
+</div>
+    
+    

@@ -1,0 +1,211 @@
+---
+layout: default
+title: Unsafe C# with Pointers - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+Pointers are very fascinating things in C and C&#43;&#43;. A pointer is a variable valued with the memory address another variable. They maintain a common rule, like a variable or constant we need to define a pointer in order to store the variable or constant&#39;s address.&nbsp;Pointers
+ are very efficient, because we directly access to memory location with out code and much closer to the machine language. C# provides Pointer facility to us. But the limitation we have in C# pointers is we can hold only the memory address of value types and
+ arrays. Sometimes this is an advantage because there is no real need of holding memory address of reference types as they might cause us deadlocks. We define pointers in C# as they are defined in C / C&#43;&#43;
+<code>[type] *[variable-name];</code> for example, <code>int *x;</code> Let&#39;s see an example, where we declare an instlass="post-name">Unsafe C# with Pointers</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+
+
+
+Pointers are very fascinating things in C and C&#43;&#43;. A pointer is a variable valued with the memory address another variable. They maintain a common rule, like a variable or constant we need ance data
+<code>int a = 15;</code> then declare a pointer which holds the memory location of the instance data
+<code>a</code>. So the code goes like:<br />
+<br />
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<pre style="margin:0px;line-height:125%;"><span style="color:#2b91af;">int</span> a = 15;
+<span style="color:#2b91af;">int</span> *pointer = &amp;a;
+</pre>
+</div>
+<br />
+Remember, the followings are also valid, the place of <code>*</code> really doesn&#39;t matter:<br />
+<br />
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<pre style="margin:0px;line-height:125%;"><span style="color:#2b91af;">int</span> a = 15;
+<span style="color:#2b91af;">int</span>* pointer = &amp;a;
+</pre>
+</div>
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<pre style="margin:0px;line-height:125%;"><span style="color:#2b91af;">int</span> a = 15;
+<span style="color:#2b91af;">int</span> * pointer = &amp;a;
+</pre>
+</div>
+<br />
+But to maintain the code quality and naming conventions we use <code>int *pointer</code>. Now lets make this example real and try to make a console application with this.<br />
+<br />
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<pre style="margin:0px;line-height:125%;"><span style="color:#0000ff;">using</span> System;
+
+<span style="color:#0000ff;">namespace</span> TestPointer
+{
+    <span style="color:#0000ff;">class</span> <span style="color:#2b91af;">Program</span>
+    {
+        <span style="color:#0000ff;">static</span> <span style="color:#0000ff;">void</span> Main(<span style="color:#2b91af;">string</span>[] args)
+        {
+             <span style="color:#2b91af;">int</span> a = 15;
+             <span style="color:#2b91af;">int</span>* pointer = &amp;a;
+             Console.WriteLine(a);
+             Console.WriteLine((<span style="color:#2b91af;">int</span>)pointer);
+             Console.ReadLine();
+        }
+    }
+}
+</pre>
+</div>
+<p>This will return a compile time error, saying:</p>
+<p><a href="https://programmium.files.wordpress.com/2015/04/first-error.png"><img class="alignleft wp-image-836 size-full" alt="first error" src="https://programmium.files.wordpress.com/2015/04/first-error.png" width="405" height="114" /></a> &nbsp; &nbsp;<br />
+<br />
+C# compiler never allows pointer operations by default, however using <code>unsafe</code> keywords we can define
+<code>unsafe</code> context where pointers can be used. So let&#39;s define it.</p>
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<table>
+<tbody>
+<tr>
+<td>
+<pre style="margin:0px;line-height:125%;"> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19</pre>
+</td>
+<td>
+<pre style="margin:0px;line-height:125%;"><span style="color:#0000ff;">using</span> System;
+
+<span style="color:#0000ff;">namespace</span> TestPointer
+{
+    <span style="color:#0000ff;">class</span> <span style="color:#2b91af;">Program</span>
+    {
+        <span style="color:#0000ff;">static</span> <span style="color:#0000ff;">void</span> Main(<span style="color:#2b91af;">string</span>[] args)
+        {
+            <span style="color:#2b91af;">int</span> a = 15;
+            Console.WriteLine(a);
+            <span style="color:#0000ff;">unsafe</span>
+            {
+                <span style="color:#2b91af;">int</span>* pointer = &amp;a;
+                Console.WriteLine((<span style="color:#2b91af;">int</span>)pointer);
+            }
+            Console.ReadLine();
+        }
+    }
+}
+</pre>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Now you can see, from line 13 to 14 we are using pointers and we should define unsafe context for those two lines. It&#39;s not a good practice to make unsafe context for all code. Now if we want to run this code, we again get another error:</p>
+<p><a href="https://programmium.files.wordpress.com/2015/04/second-error.png"><img class="alignnone size-full wp-image-837" alt="second error" src="https://programmium.files.wordpress.com/2015/04/second-error.png" width="335" height="76" /></a>
+<br />
+<br />
+As mentioned above C# compiler does not allow unsafe codes, we have mentioned the compiler, that we have a
+<code>unsafe</code> part in our code by defining <code>unsafe</code> context now we have to instruct compiler to compile the code with
+<code>unsafe</code>. If you use <code>csc.exe</code> to compile the code with command prompt, you have to call
+<code>csc.exe</code> with <code>/unsafe</code> parameter. So if you want to compile code with command prompt, say,
+<code>csc.exe /unsafe TestPointer.cs</code> Or can use project properties, and under the &quot;Build&quot; tab of the project properties has &quot;Allow Unsafe code&quot;<br />
+<br />
+<a href="https://programmium.files.wordpress.com/2015/04/allow-unsafe-code.png"><img class="alignnone size-full wp-image-838" alt="allow unsafe code" src="https://programmium.files.wordpress.com/2015/04/allow-unsafe-code.png" width="365" height="281" /></a>
+<br />
+<br />
+If we run the above code after saving the project properties,<br />
+<br />
+<a href="https://programmium.files.wordpress.com/2015/04/output.png"><img class="alignnone size-full wp-image-839" alt="output" src="https://programmium.files.wordpress.com/2015/04/output.png" width="501" height="178" /></a>
+<br />
+<br />
+<strong><span style="text-decoration:underline;">using <code>fixed</code></span></strong>
+<br />
+<br />
+Garbage collector automatically erase the instance variable <code>a</code> after it becomes unusable. Since objects in the memory are movable this makes garbage collection possible, but when we perform a pointer operation, the data should be in a fixed memory
+ location, so we use <code>fixed</code> keyword.&nbsp;Remember you can&#39;t use local variables, value parameters, and variables created by dereferencing pointers under fixed context, as the location of the variable is already fixed (you can refer more
+<a href="https://msdn.microsoft.com/en-u
+<br />
+<br />
+If we run the above code after saving the project properties,<br />
+<br />
+<a href="https://programmium.files.wordpress.com/2015/04/output.png"><img class="alignnone size-full wp-image-839" alt="output" src="https://programmium.files.wordpress.com/2015/04/output.png" width="501" height="178" /></a>
+<br />
+<br />
+<strong><span style="text-decoration:underline;">using <code>fis/library/aa664772%28v=vs.71%29.aspx" target="_blank">
+here</a>) Let&#39;s have a look at the example,</p>
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<pre style="margin:0px;line-height:125%;"><span style="color:#0000ff;">class</span> <span style="color:#2b91af;">Program</span>
+{
+    <span style="color:#0000ff;">unsafe</span> <span style="color:#0000ff;">static</span> <span style="color:#0000ff;">void</span> Main(<span style="color:#2b91af;">string</span>[] args)
+    {
+        <span style="color:#0000ff;">fixed</span> (<span style="color:#2b91af;">int</span> * pointer = &amp;Line.color)
+        {
+            Console.WriteLine((<span style="color:#2b91af;">int</span>)pointer);
+        }
+
+        Line line = <span style="color:#0000ff;">new</span> Line();
+        <span style="color:#0000ff;">fixed</span> (<span style="color:#2b91af;">int</span>* pointer = &amp;line.a)
+        {
+            Console.WriteLine((<span style="color:#2b91af;">int</span>)pointer);
+        }
+
+        Console.ReadLine();
+    }
+}
+
+<span style="color:#0000ff;">class</span> <span style="color:#2b91af;">Line</span>
+{
+    <span style="color:#0000ff;">public</span> <span style="color:#0000ff;">static</span> <span style="color:#2b91af;">int</span> color;
+    <span style="color:#0000ff;">public</span> <span style="color:#2b91af;">int</span> a;
+}
+</pre>
+</div>
+<br />
+But the below code will return a compile time error.<br />
+<br />
+<div style="border-width:0.1em 0.1em 0.1em 0.8em;border-style:solid;border-color:gray;padding:0.2em 0.6em;width:auto;overflow:auto;background:none 0% 0% repeat scroll #ffffff;">
+<pre style="margin:0px;line-height:125%;"><span style="color:#0000ff;">class</span> <span style="color:#2b91af;">Program</span>
+{
+    <span style="color:#0000ff;">unsafe</span> <span style="color:#0000ff;">static</span> <span style="color:#0000ff;">void</span> Main(<span style="color:#2b91af;">string</span>[] args)
+    {
+        <span style="color:#2b91af;">int</span> a;
+        <span style="color:#0000ff;">fixed</span> (<span style="color:#2b91af;">int</span> * pointer = &amp;a)
+        {
+            Console.WriteLine((<span style="color:#2b91af;">int</span>)pointer);
+        }
+
+        Console.ReadLine();
+    }
+}
+</pre>
+</div>
+<p>As we are using a already fixed variable.<br />
+<br />
+<span style="text-decoration:underline;"><strong>C</strong></span><span style="text-decoration:underline;"><strong>onclusion</strong></span>
+<br />
+<br />
+Really there is no need for using pointers in C#, unless you are using an assembly from C&#43;&#43; that uses pointer. But as a programmer in C# you should know C# has the ability to perform pointer operation. Happy coding.</p>
+
+</div>
+    
+    

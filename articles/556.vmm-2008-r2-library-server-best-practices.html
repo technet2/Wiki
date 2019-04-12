@@ -1,0 +1,114 @@
+---
+layout: default
+title: VMM 2008 R2&#58; Library Server Best Practices - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+This article provides best practice recommendations for the library server in System Center Virtual Machine Manager (VMM) 2008 and VMM 2008 R2.<br />
+<br />
+<strong style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:17.77777862548828px;background-color:#ffffff;">Note: This article is based on VMM 2008 &nbsp;and might not apply to VMM 2012 (R2)</strong><br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Installation">Installation</a></li><li class="hierarchy-item"><a href="#Location">Location</a></li><li class="hierarchy-item"><a href="#Branch_Offices">Branch Offices</a></li><li class="hierarchy-item"><a href="#Management">Management</a></li><li class="hierarchy-item"><a href="#Networking">Networking</a></li><li class="hierarchy-item"><a href="#High_Availability">High Availability</a></li><li class="hierarchy-item"><a href="#Security">Security</a></li><li class="hierarchy-item"><a href="#PowerShell_Scripts">PowerShell Scripts</a></li><li class="hierarchy-item"><a href="#Additional_References">Additional References</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<div>
+<h2><a name="Installation"></a><span style="font-size:20px;">Installation</span></h2>
+<ul>
+<li>Before you install VMM, review the supported hardware configuration for the library server in the TechNet Library (see
+<a href="http://technet.microsoft.com/en-us/library/cc764302.aspx"><span style="color:#669966;">System Requirements: VMM Library Server</span></a>).
+</li><li>When you install VMM, you must create a new default library share on the VMM server or select a pre-configured share on the VMM server.
+<span style="background-color:#ffff00;">NOTE:&nbsp;In VMM 2008 and VMM 2008 R2, you cannot remove this library share, so give the location careful consideration. After Setup completes, you can add other library shares to the default library server or you can add
+ other library servers and shares on remote file servers or hosts.</span> If you are going to use a share on the VMM serverother than the default, make sure that you create the library share on a volume that is separate from where you installed the VMM server
+ installation files. This can help with both performance and storage capacity (depending on disk configuration). (Source: SCVMM team blog
+<a href="http://blogs.technet.com/scvmm/archive/2009/01/05/scvmm-2008-installation-step-by-step.aspx">
+<span style="color:#669966;">SCVMM 2008 Installation. Step-by-Step</span></a>) </li><li>For better performance, when you are managing more than 150 hosts, it is recommended that you add one or more computers as library servers (separate from the VMM server) and that you do not use the default library share on the VMM server. (Source: TechNet
+ Library – <a href="http://technet.microsoft.com/en-us/library/cc764302.aspx"><span style="color:#669966;">System Requirements: VMM Library Server</span></a>)&nbsp; Instead, you can use a dedicated file server (can be a physical or virtual machine) or a virtual machine
+ host. (Using a virtual machine host is recommended more for a branch office situation – where bandwidth may be more limited. For more information, see the “Branch Offices” section of this article).
+</li><li>For redundancy, install the library on a volume that uses RAID-5 or RAID-1&#43;0. The more spindles that are used, the better the performance.
+</li></ul>
+<h2><a name="Location"></a><span style="font-size:20px;">Location</span><span style="font-size:20px;"></span></h2>
+<ul>
+<li>Place the library server and shares in the same physical location as the virtual machine hosts that they will service. To enhance performance and reduce network traffic during virtual machine creation, it’s important to have your hosts located close ( in
+ the network bandwidth sense) to the library servers where you store the files that you use to create virtual machines. Resources (such as virtual hard disk files and ISO images) that are stored in the library can be very large. When they are transferred to
+ a virtual machine host during virtual machine creation, this can create a significant traffic load on the network. (Note that the files are transferred directly from library to hosts. The VMM Server coordinates the job, but is not involved in the file transfers.)
+</li><li>To scale out as your virtual environment grows, add more library servers and library shares. Each library server can have multiple library shares. As mentioned in the previous bullet, it’s important to store the files that you use to create virtual machines
+ with fast network connections to&nbsp;the hosts you will use to stage virtual machine creation.
+</li><li>If you use a SAN, have a library server on the same SAN as the virtual machine hosts that use the library server. By doing so, the library server and the hosts can all access the same logical unit numbers (LUNs) on the SAN, which allows for faster file
+ transfers. (Source: TechNet Library: <a href="http://technet.microsoft.com/en-us/library/cc764266.aspx">
+<span style="color:#669966;">Planning for the VMM Library</span></a>) </li></ul>
+<h2><a name="Branch_Offices"></a><span style="font-size:20px;">Branch Offices</span><span style="font-size:20px;"></span></h2>
+<ul>
+<li>It is a best practice to locate hosts and library servers at each branch office that are managed by a centralized VMM server. In this way, users in branch offices can build virtual machines by using resources from a local library server instead of copying
+ multi-GB files from a centralized library server over a WAN. In addition, distributed VMM libraries can also help ensure the availability of files during WAN outages or server failures. (Source: TechNet Library:
+<a href="http://technet.microsoft.com/en-us/library/cc764266.aspx"><span style="color:#669966;">Planning for the VMM Library</span></a>)<strong></strong>
+</li><li>In branch offices (often with limited resources), you can locate the library server on the locahnet.microsoft.com/en-us/library/cc764266.aspx">
+<span style="color:#669966;">Planning for the VMM Library</span></a>) </li></ul>
+<h2><a name="Branch_Offices"></a><span style="font-size:20px;">Branch Offices</span><span style="font-size:20px;"></span></h2>
+<ul>
+<li>It is a best practice to locate hosts and library servers at each branch office that are managed by a centralized VMM server. In this way, users in branch offices can build virtual machines by using resources from a local library server instead of copying
+ multi-GB files from a centralized library server over a WAN. In addition, distributed VMM libraries can also help ensure the availability of files during WAN outages or server failures. (Source: TechNet Library:
+<a hrel virtual machine host. With this configuration, you avoid the network traffic that would typically be involved in file transfers. For increased I/O performance,
+ locate the library server on a separate volume (and spindles) than the virtual machine host.
+</li></ul>
+<h2><a name="Management"></a><span style="font-size:20px;">Management</span></h2>
+<ul>
+<li>To easily manage library resources – and to help prevent large file copy operations across WAN links, you can organize your library servers into custom library groups. For example, you can use library groups to associate library servers with a nearby host
+ group. (The library group property can only be set after a library server is added by using the library group property of library servers.) When you create a new virtual machine and you choose a base .vhd from the library, you can scope your choices to library
+ servers associated with the host group where you want to place the virtual machine.
+</li><li>Aligning library servers with library groups and host groups is especially beneficial when your library server is connected to the same SAN as the hosts in a host group. By using descriptive library group and host group names (such as, SAN_A), you can then
+ readily identify which library servers and hosts are connected to the same SAN and therefore can take advantage of faster file transfers on the SAN. When you are selecting an object (template, virtual hard disk, or virtual machine) to create a new virtual
+ machine, you can filter the objects by a specific library group name. When you are selecting a host on which to place the virtual machine, you can filter the available hosts by the aligned host group name. (Source: TechNet Library:
+<a href="http://technet.microsoft.com/en-us/library/cc764266.aspx"><span style="color:#669966;">Planning for the VMM Library</span></a>)
+</li></ul>
+<h2><a name="Networking"></a><span style="font-size:20px;">Networking</span></h2>
+<ul>
+<li>If you connect to a library server from hosts across a LAN, the library server should be as close to the hosts as possible on the network. It is a best practice to connect all computers in a VMM configuration with at least a 100-Mb Ethernet connection.
+ Using a gigabit Ethernet connection will improve performance especially when combined with a more powerful processor than the recommended processor on the VMM server.
+<a href="http://technet.microsoft.com/en-us/library/dd548289.aspx"><span style="color:#669966;">Hardening the VMM Library Servers</span></a>)
+</li></ul>
+<h2><a name="High_Availability"></a><span style="font-size:20px;">High Availability</span></h2>
+<ul>
+<li>If possible, make the library servers and shares highly available.
+<ul>
+<li>VMM 2008 supports using highly-available file servers and shares that are hosted by a failover cluster that is created in Windows Server 2008 Enterprise Edition or Windows Server 2008 Datacenter Edition. (Note that VMM 2008 is not aware of failover clusters
+ created in Windows Server 2003.) </li><li>VMM 2008 R2 supports using highly available file servers and shares hosted by a failover cluster created in Windows Server 2008 Enterprise Edition or Windows Server 2008 Datacenter Edition, or in Windows Server 2008 R2 Enterprise Edition or Windows Server
+ 2008 R2 Datacenter Edition. </li></ul>
+</li></ul>
+<p><strong>&nbsp;&nbsp;&nbsp; Note</strong>&nbsp;&nbsp; VMM does not support using a failover cluster that contains the VMM server as a highly available library server.</p>
+<h2><a name="Security"></a><span style="font-size:20px;">Security</span></h2>
+<br />
+<br />
+(Source: TechNet Library: <a href="http://technet.microsoft.com/en-us/library/dd548289.aspx">
+<span style="color:#669966;">Hardening the VMM Library Servers</span></a>) </div>
+<ul>
+<li>When you add a library server to VMM, use either SMB packet signing or IPSec to help secure the agent deployment process. When you add a library server, VMM remotely installs a VMM agent on the managed computer. The VMM agent deployment process uses both
+ the Server Message Block (SMB) ports and the Remote Procedure Call (RPC) port (TCP port 135) and the DCOM port range. To help secure the process, you can use either SMB packet signing or IPsec.
+</li><li>In the file system, restrict access to library shares to VMM administrators who manage resources used in virtual machine creation.<br />
+<br />
+Use delegated administration in VMM to limit VMM administrative rights on library servers to only those administrators who manage the resources on them. You can create delegated administrator roles to delegate the administration of library servers within an
+ organization, geographical location, department, or group. The user roles will provide full administrative rights on all objects within the assigned host groups and on assigned library servers. Alternatively, you might create a delegated administrator role
+ that allows one administrator to maintain all library servers throughout your organization.
+</li><li>Apply updates to the operating systems and applications on virtual hard disks, ISO image files, and virtual machines that are stored in the library with the same rigor that you do on deployed virtual machines. Because the stored images and virtual machines
+ are not in use, automatic update utilities such as Microsoft Update do not send update notifications.
+</li><li>Follow security best practices for hardening Windows Server–based file servers. For security guidelines for computers that perform the File Services role in Windows Server 2008, see
+<a href="http://technet.microsoft.com/en-us/library/cc264468.aspx"><span style="color:#669966;">chapter 7 of the Windows Server 2008 Security Guide</span></a>.
+</li></ul>
+<div>
+<h2><a name="PowerShell_Scripts"></a><span style="font-size:20px;">PowerShell Scripts</span></h2>
+<ul>
+<li>It is a best practice to store your VMM PowerShell scripts in the library. In VMM, you can view and run your Windows PowerShell scripts from the library by using the View PowerShell script and Run PowerShell script actions in Library view. These features
+ are available only if you store your PowerShell scripts in the library. (Note that you do not have to store scripts in the library to run them from the command line.)
+</li></ul>
+<h2><a name="Additional_References"></a><span style="font-size:20px;">Additional References</span></h2>
+<ul>
+<li>To easily locate topics about the library server in the Microsoft TechNet Library, go to the tag cloud page -
+<a title="http://technet.microsoft.com/en-us/library/tags-cloud.aspx" href="http://technet.microsoft.com/en-us/library/tags-cloud.aspx">
+<span style="color:#669966;">http://technet.microsoft.com/en-us/library/tags-cloud.aspx</span></a>, click the
+<strong>vmm </strong>tag, and then click the <strong>library</strong> tag. </li><li><a href="http://technet.microsoft.com/en-us/library/ee354214.aspx"><span style="color:#669966;">Infrastructure Planning and Design Guide for System Center VMM 2008 R2 and VMM 2008</span></a>.
+</li></ul>
+<div></div>
+</div>
+
+</div>
+    
+    

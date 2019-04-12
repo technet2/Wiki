@@ -1,0 +1,80 @@
+---
+layout: default
+title: DFSR Troubleshooting&#58; Handy quick tips - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#DFS_Configuration">DFS Configuration</a></li><li class="hierarchy-item"><a href="#Checking_The_Backlog">Checking The Backlog</a></li><li class="hierarchy-item"><a href="#Check_the_DFS_Replication_status">Check the DFS Replication status</a></li><li class="hierarchy-item"><a href="#How_to_delete_the_particular_Replication_Group">How to delete the particular Replication Group</a></li><li class="hierarchy-item"><a href="#Replicated_Folder_list_from_a_particular_Replication_Group></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">DFSR Troubleshooting: Handy quick tips</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#DFS_Configuration">DFS Configuration</a></li><li class="hierarchy-item"><a href="#Checking_The_Backlog">Checking The B">Replicated Folder list from a particular Replication Group</a></li><li class="hierarchy-item"><a href="#Force_Replication">Force Replication</a></li><li class="hierarchy-item"><a href="#Last_update_DC_name">Last update DC name</a></li><li class="hierarchy-item"><a href="#Test_the_Namespace_servers">Test the Namespace servers</a></li><li class="hierarchy-item"><a href="#Checking_domain_controller_configuration">Checking domain controller configuration</a></li></ul><div class="hierarchy-list-footer"> </div></div><span style="font-size:12px;">&nbsp;</span></p>
+<h1><a name="DFS_Configuration"></a>DFS Configuration</h1>
+<p><code><span style="font-size:14px;">dfsrdiag DumpMachineCfg /Mem:&lt;Server_Name&gt;</span></code></p>
+<h1><a name="Checking_The_Backlog"></a>Checking The Backlog</h1>
+<p><code><span style="font-size:14px;">dfsrdiag backlog /rgname:&quot;RedMon-FS01 - RedMon-FS02&quot; /rfname:Folder_name /sendingmember:RedMon-FS01 /receivingmember:RedMon-FS02</span></code>&nbsp;</p>
+<h1><a name="Check_the_DFS_Replication_status"></a>Check the DFS Replication status</h1>
+<code><span style="font-size:14px;">Wmic /namespace:\\root\microsoftdfs path dfsrreplicatedfolderinfo get replicationgroupname,replicatedfoldername,state<br />
+<br />
+<br />
+<br />
+&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5468.DFS1.PNG">
+<img width="552" height="58" alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5468.DFS1.PNG" style="border-width:0px;border-style:solid;width:671px;height:84px;" /></a><br />
+<br />
+<br />
+<br />
+</span></code>•0: Uninitialized <br />
+•1: Initialized <br />
+•2: Initial Sync <br />
+•3: Auto Recovery <br />
+•4: Normal<br />
+•5: In Error<br />
+<span style="color:#3a3e43;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:14px;"><br />
+Using PowerShell</span>
+<p>Get-WmiObject -Namespace &quot;root\MicrosoftDFS&quot; -Class DfsrReplicatedFolderInfo | Select-Object ReplicatedFolderName,ReplicationGroupName,state
+<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2818.dfs3.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2818.dfs3.PNG" style="border-width:0px;border-style:solid;" /></a></p>
+<h1><a name="How_to_delete_the_particular_Replication_Group"></a>How to delete the particular Replication Group</h1>
+<p><span><code><span style="font-size:14px;">dfsradmin RG Delete /Rgname:&quot;BTS_CORE&quot;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</span></code></span></p>
+<h1><a name="Replicated_Folder_list_from_a_particular_Replication_Group"></a>Replicated Folder list from a particular Replication Group</h1>
+<p><code><span style="font-size:14px;">dfsradmin RF List /RgName:&quot;RedMon-FS01 - RedMon-FS02&quot; /Attr:All</span></code>&nbsp;</p>
+<h1><a name="Force_Replication"></a>Force Replication</h1>
+<p><code><span style="font-size:14px;">dfsrdiag syncnow /partner:RedMon-FS01 /RGName:&quot;RedMon-FS01 - RedMon-FS02&quot; /Time:1</span></code></p>
+<p><code><span style="font-size:14px;">DFSRDIAG POLLAD /MEM:%computername%</span></code></p>
+<code></code>
+<p><code></code></p>
+<h1><a name="Last_update_DC_name"></a>Last update DC name</h1>
+<p><code><span style="font-size:14px;">WMIC /namespace:\\root\mic<br />
+<br />
+rosoftdfs path DfsrReplicationGroupConfig get LastChangeSource</span></code>&nbsp;</p>
+<h1><a name="Test_the_Namespace_servers"></a>Test the Namespace servers</h1>
+<code>DFSDiag /TestDFSConfig /DFSRoot:\\Contoso\Apac$<br />
+<br />
+<h1><a name="Checking_domain_controller_configuration"></a>Checking domain controller configuration</h1>
+<p>DFSDIAG /TestDCs</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7144.dfs2.PNG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7144.dfs2.PNG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="color:#3a3e43;line-height:28.6px;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:22px;">Check the namespace integrity</span></p>
+DFSDiag /testdfsintegrity /dfsroot:\\Contoso.com\Apac$<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5811.dfs4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5811.dfs4.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+____End___<br />
+<br />
+</code><br />
+<br />
+
+</div>
+    
+    

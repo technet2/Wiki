@@ -1,0 +1,208 @@
+---
+layout: default
+title: SharePoint 2013&#58; Architecture Technique (fr-FR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+</p>
+J’estime que toute personne, pour son ego personnelle, peux se considérer comme il se veut. Mais avant de parler architecture, il"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SharePoint 2013: Architecture Technique (fr-FR)</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align: faut déjà savoir écrire document d’architecture&nbsp;technique.&nbsp; Ce blog post a pour but de décrire l’architecture technique d’une plateforme
+ Sharepoint qui sera mise en place via un projet.&nbsp; Pour tout développement dans le cadre de Sharepoint 2010, la société en question, doit imposer que les bonnes pratiques en matière de développement Sharepoint soient suivies.&nbsp;
+<br />
+Ces bonnes pratiques sont disponibles sur le site de Microsoft. <br />
+<ul>
+<li>http://msdn.microsoft.com/en-us/Sharepoint/ff660756&nbsp; </li><li>http://msdn.microsoft.com/en-us/library/gg552614.aspx&nbsp; </li></ul>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+&nbsp;</p>
+<h1 class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+</h1>
+<h1 class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+<a name="Architecture_Overview"></a>Architecture Overview</h1>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+La toute première chose à déterminer est l’architecture que l’on à choisie pour son projet. Vous pouvez voir toutes sortes de topologies sur le site suivant&nbsp;:&nbsp;<a href="http://www.microsoft.com/en-us/download/details.aspx?id=30377" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;font-weight:bold;">http://www.microsoft.com/en-us/download/details.aspx?id=30377</a>&nbsp;&nbsp;<br />
+Les aspects les plus importants à respecter sont&nbsp;:</p>
+<ul style="text-align:justify;padding:0px;border-width:0px;list-style-type:none;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;">
+<li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Les nombres d’utilisateurs </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Les nombres d’utilisateurs concurrents </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* La taille des fichiers (surtout pour l’architecture de la recherche) </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Si l’on veut une continuité (NLB) </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* … </li></ul>
+<strong style="text-align:justify;padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;"><span style="text-decoration:underline;"><br clear="all" />
+</span></strong><span style="text-align:justify;font-size:14px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;"></span>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;"><span style="text-decoration:underline;">Exemple Demande&nbsp;:</span></strong><br />
+Supposons que la demande est tellement large et que y’aura plus de 1000 utilisateurs et approximatif 1TB en données et on veut une certaine continuité. On peut considérer cette topologie. Il faut surtout savoir détailler votre «&nbsp;choix&nbsp;» &nbsp;</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:center;">
+<img alt=" " src="http://gknzcfc.net/style/how-to-write-a-technical-architecturel-document-for-sharepoint_clip_image001.png" width="250" height="278" style="border:0px solid;padding:0px;margin:0px;vertical-align:baseline;" /></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;"><span style="text-decoration:underline;">Exemple détaillé de votre choix&nbsp;:</span></strong></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Cette architecture contient 3 serveurs Sharepoint et 1 SQL server 2008 R2. Il y a 2 serveurs Sharepoint frontaux et un serveur Sharepoint applicatif.&nbsp; Du load balancing est prévu au niveau des serveurs frontaux par le principe de Network Load balancing (NLB).&nbsp;
+ Cette technique est activée au niveau de l’OS et tient compte du nombre de serveurs présents concernés par le load balancing.<br />
+Si un des 3 serveurs Sharepoint devait tomber, la charge de travail serait redistribuée sur les 2 serveurs restants.&nbsp; Dans le cas où le serveur applicatif&nbsp; tombe, il est possible de redémarrer la console d’administration Sharepoint depuis un des 2 serveurs
+ frontaux.&nbsp; Dans le cas où un serveur frontal tombe, l’index de recherche sera complété sur le serveur frontal restant.&nbsp; Au niveau de l’utilisation de Sharepoint (moteur de recherche) il y aura potentiellement une dégradation puisqu’il y a moins de ressources
+ système pour effectuer le même travail.&nbsp; La plateforme ne pourra pas gérer la même charge qu’avant (nombre de connexions simultanées).&nbsurs Sharepoint frontaux et un serveur Sharepoint applicatif.&nbsp; Du load balancing est prévu au niveau des serveurs frontaux par le principe de Network Load balancing (NLB).&nbsp;
+ Cette technique est activée au niveau de l’OS et tient compte du nombre de serveurs présents concernés par le load balancing.<br />
+Si un des 3 serveurs Sharepoint devait tomber, la charge de travail serait redistribuée sur les 2 serveurs restants.&nbsp; Dans le cas où le serveur applicatif&nbsp; tombe, il est possible de redémarrer la console d’administration Sharepoint depuis un des 2 serveurs
+ frontaux.&nbsp; Dans le cas où un serveur frontal tombe, l’index de recherche sera complété sur le serveur frontal restant.&nbsp; Au niveau de l’utilisation de Sharepoint (moteur de recherche) il y aura potentiellement une dégradation puisqu’il y a moins de ressources
+ système pour effectuer le même travail.&nbsp; La plateforme ne pourra pas gérer la même charge qu’p; La plateforme Sharepoint reste néanmoins disponible en attendant que le problème qui a causé la dégradation soit réglé.</p>
+<strong style="text-align:justify;padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;"><span style="text-decoration:underline;"><br clear="all" />
+</span></strong><span style="text-align:justify;font-size:14px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;"></span>
+<ul style="text-align:justify;padding:0px;border-width:0px;list-style-type:none;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;">
+<li class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;font-weight:bold;">
+<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;"><span style="text-decoration:underline;">Architecture &nbsp;Contraints</span></strong>
+</li></ul>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Après avoir cité votre choix en architecture, il faut aussi dire en toute honnêteté les points à faire attentions. Voici quelques exemples des contraintes dont la solution sharepoint doit tenir compte :</p>
+<ul style="text-align:justify;padding:0px;border-width:0px;list-style-type:none;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;">
+<li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Chaque logiciel installé doit être compatible avec Windows 2008 R2 64 bit </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Chaque logiciel installé de la Platform SharePoint doit être compatible avec Microsoft System Center * Operations Manager (SCOM) &nbsp;ou de System Center Configuration Manager (SSCM)
+</li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Chaque logiciel installé de la Platform SharePoint doit pouvoir tourner dans une machine virtuelle VMWare ou Hyper-V
+</li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Si une base de données doit être intégrée dans l&#39;infrastructure de SharePoint, elle doit pouvoir tourner sur version SQL server 2008 R2 64 bit.&nbsp; .
+</li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+* Si une page web doit être disponible pour les utilisateurs, elle doit être compatible avec Internet Explorer 7 ou plus et/ou Firefox 4.0 ou plus
+</li></ul>
+<h2 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:14px;vertical-align:baseline;text-align:justify;">
+&nbsp;</h2>
+<span style="text-decoration:underline;"><br clear="all" />
+</span><span style="text-align:justify;font-size:14px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;"></span>
+<h1 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+&nbsp;</h1>
+<h1 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+<a name="Design_Overview"></a><span style="text-decoration:underline;">Design Overview</span></h1>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Les bonnes practices de MSFT ou par expérience professionnelle doivent-être détaillé dans ce point.&nbsp;</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;"><span style="text-decoration:underline;">3.1 Database</span></strong></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Si je dois donner un exemple, il faut déjà se mettre d’accord sur la nomenclature des bases des données. Il faut déterminer pour chaque base de données une structure assez claire.</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Par exemple&nbsp;: Technology_Scope_DatabaseType_DB</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Voici quelques exemples:<br />
+SPS2010_Farm_ManagedMetadataService_DB&nbsp;<br />
+SPS2010_Farm_PowerPointService_DB&nbsp;<br />
+SPS2010_Farm_ProfileService_Profile_DB&nbsp;<br />
+SPS2010_Farm_ProfileService_Social_DB&nbsp;<br />
+SPS2010_Farm_ProfileService_Sync_DB</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;"><span style="text-decoration:underline;">3.2 Team Fondation Server</span></strong></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Il faut définir un endroit centralisé et un outil de base pour le développement en Sharepoint est Visual Studio 2010 (C#).&nbsp;&nbsp;<br />
+Toutes les sources du projet doivent être répertoriées dans notre outil de gestion de sources Team Foundation Server (TFS).&nbsp; Tout déploiement se fait via des « features » (.wsp) qui sont générés sur base des sources dans TFS.&nbsp; Ces features sont ensuite packagés
+ afin d’être déployés.</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<span class="style1" style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;font-weight:bold;color:#0099ff;"><br />
+<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;"><span style="text-decoration:underline;">3.3 Url convention.</span></strong></span></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Il faut aussi définir qu’il y’a une certaine définition au niveau des noms que l’on va donner aux sites sharepoint. Ceci est surtout pour éviter d’avoir des sites du genre&nbsp;:<br />
+<a href="http://house.sppirate.net/SitePages/newcar.aspx" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;font-weight:bold;">http://house.sppirate.net/SitePages/newcar.aspx</a>&nbsp;<br />
+<a href="http://portal/" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;font-weight:bold;">http://portal/</a>&nbsp;<br />
+<a href="http://srv-spsql-gkm:8888/" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;font-weight:bold;">http://srv-spsql-gkm:8888/</a></p>
+<br clear="all" style="text-align:justify;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;" />
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">&nbsp;</strong></p>
+<h1 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+<a name="Infrastructure_Design"></a>Infrastructure Design</h1>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Normalement, l’infrastructure de votre projet devrait mettre à disposition plusieurs environnements : Un environnement de production et un environnement de test conformément aux règles.&nbsp;<br />
+Il sera préférable de&nbsp;<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;"><span style="text-decoration:underline;">décrire</span></strong>&nbsp;tous les environnements de votre projet de dire comment ces environnements
+ seront utilisés. &nbsp;Je vais vous montrer comment faire la distinction, par des exemples concrets.</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;"><span stya,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Normalement, l’infrastructure de votre projet devrait mettre à disposition plusieurs environnements : Un environnement de production et un environnement de test conformément aux règles.&nbsp;<br />
+Il sera préférable de&nbsp;<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;"><span style="text-decoration:underline;">décrire</span></strong>&nbsp;tous les environnements de votre projet de dire comment ces environnements
+ seront utilisés. &nbsp;Je vais vous montrer comment faire la distinction, par des exemples concrets.</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;le="text-decoration:underline;">Exemple Test&nbsp;:&nbsp;</span></strong><br />
+L’environnement de test est constitué de 2 serveurs virtuels ou tous les composants sont installés sur un même serveur excepté la base de données.<br />
+Le serveur de base de données SQL serveur 2008 est dédié à l’environnement de test.<br />
+Cet environnement sert essentiellement à tester la solution fournie par le tiers effectuant le développement.</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong class="style1" style="padding:0px;border-width:0px;margin:0px;color:#0099ff;vertical-align:baseline;"><span style="text-decoration:underline;">Exemple Production</span></strong>:<br />
+A priori, cet environnement est constitué de 5 serveurs virtuels. 2 serveurs front end, 1 cluster de base de données SQL Serveur 2008, dédié uniquement à Sharepoint.<br />
+En plus des serveurs il faut prévoir de l’espace disque dédié à l’archivage Sharepoint.<br />
+Dans le cas où il est décidé de choisir Microsoft System Center Data Protection Manager (DPM) comme logiciel de backup Sharepoint, il faudra aussi prévoir un serveur dédié à DPM.</p>
+<h1 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+</h1>
+<h1 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:36px;vertical-align:baseline;text-align:justify;">
+<a name="Capacity_Planning"></a>Capacity Planning</h1>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Comme pour chaque projet il faut également prévoir une section pour vos biens matériels dans votre document architecture. Bien évidemment il ne faut jamais sortir hors de son budget ni de son Baseline défini par le chef de projet.&nbsp;<br />
+Un exemple sera:&nbsp;</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<span class="style1" style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;font-weight:bold;color:#0099ff;">Serveur Applicatif&nbsp;:</span></p>
+<ul style="text-align:justify;padding:0px;border-width:0px;list-style-type:none;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;">
+<ol>
+<li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+Biprocesseur Quad core </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+16Go mémoire RAM </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+80Go de disque dur </li></ol>
+</ul>
+<p class="style1" style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0099ff;font-size:14px;vertical-align:baseline;font-weight:bold;text-align:justify;">
+Serveur SQL&nbsp;:</p>
+<ul style="text-align:justify;padding:0px;border-width:0px;list-style-type:none;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;">
+<ol>
+<li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+Biprocesseur Dual core </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+16Go mémoire RAM </li><li style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;">
+Taille du disque dur à définir (60Go (SQL server) &#43; taille database) =&gt; 120Go </li></ol>
+</ul>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Egalement dans capacity planning aussi parler des aspects comme&nbsp;:</p>
+<h3 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:14px;vertical-align:baseline;text-align:justify;">
+&nbsp;</h3>
+<h3 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:14px;vertical-align:baseline;text-align:justify;">
+<a name="Monitoring"></a>Monitoring</h3>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;"><span style="text-decoration:underline;">Par exemple&nbsp;:</span></strong>&nbsp;Le monitoring des serveurs de la solution Sharepoint se fait via des Sharepoint
+ Server Applications et l’utilitaire SCOM ou SSCM.</p>
+<h3 style="padding:0px;border-width:0px;margin:0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#0199ff;font-size:14px;vertical-align:baseline;text-align:justify;">
+<a name="Backup"></a>Backup</h3>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<strong style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;"><span style="text-decora39;,&#39;segoe ui&#39;,vtion:underline;">Voici quelques besoins auxquels tout utilitaire de backup de la plateforme Sharepoint doit pouvoir répondre en
+ exemple :</span></strong></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+1)<em> Il est indispensable d’avoir un utilitaire de backup qui tienne compte des spécificités des Sharepoint 2010.</em>&nbsp; Comme l’essentiel des données se trouve dans les bases de données SQL Server 2008 R2, il ne suffit pas de simplement restaurer une base
+ de données.&nbsp;&nbsp; La fonctionnalité de backup doit permettre de restaurer, par exemple, une collection de site, voir même un site ou un document.&nbsp; Ces éléments se trouvent dans une base de données de type « Content ».</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+2) Sharepoint, c’est du dotNet, ce qui implique que les pages sont compilés et mis en mémoire.&nbsp; Si un serveur Sharepoint est redémarré, il perd toutes les pages qui étaient en mémoire.&nbsp; Cela prend, en fonction du volume, un certain temps pour recompiler toutes
+ les pages afin qu’elles soient à nouveau disponible en mémoire.&nbsp; Une ferme Sharepoint ne s’arrête par conséquent qu’exceptionnellement.&nbsp; Il y a, en plus, des activités de base 24h sur 24 et 7 jours sur 7.&nbsp; L’utilitaire de backup doit pouvoir être en mesure
+ de faire des « hot backups » de la ferme Sharepoint.<br />
+<em>La version SP1 de Sharepoint Enterprise 2010 permet de recouvrir un site ou une collection de site via la corbeille. &nbsp;Comme il y a des quotas sur les corbeilles, à moins de s’en rendre compte rapidement, il n’est pas toujours possible de récupérer ce qui
+ a été détruit par erreur via la corbeille.&nbsp; Un backup le permet.<br />
+<br />
+3) La démarche de sauvegardes dans SharePoint 2013 en ce qui concerne la Corbeille à légèrement changée, notamment en ce qui concerne la corbeille de second niveaux.<br />
+<br />
+R<span>estaurer une collection de sites supprimée dans SharePoint 2013 - Voici des commandes que j&#39;ai enfin trouvées : Restore-SPDeletedSite [-Identity] &lt;SPDeletedSitePipeBind&gt; [-AssignmentCollection &lt;SPAssignmentCollection&gt;] [-Confirm [&lt;SwitchParameter&gt;]]
+ [-ContentDatabase &lt;SPContentDatabasePipeBind&gt;] [-WebApplication &lt;SPWebApplicationPipeBind&gt;] [-WhatIf [&lt;SwitchParameter&gt;]]<br />
+<br />
+Lorsqu’une collection de sites (c’est-à-dire, un objet SPSite) est supprimée par inadvertance dans SharePoint 2013, celle-ci est stockée dans l’objet SPDeletedSite, pas dans l’objet SPSite.
+<a href="http://technet.microsoft.com/fr-fr/library/ff678226.aspx">http://technet.microsoft.com/fr-fr/library/ff678226.aspx</a>&nbsp;</span></em></p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+&nbsp;&nbsp;&nbsp;</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+Avec toutes ces infos, vous serez capable de créer votre «&nbsp;document d’architecture technique&nbsp;» et ferez un grand pas vers l’architecture..</p>
+<p style="padding:0px;border-width:0px;margin:15px 0px;font-family:&#39;segoe wp&#39;,&#39;segoe ui&#39;,verdana,arial,helvetica,sans-serif;color:#444444;font-size:14px;vertical-align:baseline;text-align:justify;">
+<span class="style3" style="padding:0px;border-width:0px;margin:0px;vertical-align:baseline;font-weight:bold;background-color:#ffffff;color:#ff0000;">Prière de faire attention&nbsp;:&nbsp;«&nbsp;Ce contenu est typiquement destiné pour les&nbsp;novices
+ architect en SharePoint,&nbsp;il se peut que d’autre manière existent pour créer un tel document, mais moi je vous offre juste un «&nbsp;guideline&nbsp;» pour vous aider&nbsp;»..</span></p>
+
+</div>
+    
+    

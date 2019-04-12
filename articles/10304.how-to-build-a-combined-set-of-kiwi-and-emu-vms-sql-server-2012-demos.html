@@ -1,0 +1,63 @@
+---
+layout: default
+title: How to Build a Combined Set of KIWI and EMU VMs (SQL Server 2012 Demos) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+This article describes how to modify the KIWI VM build (for SQL Server 2012 demos) so that it uses a separate, central domain controller VM shared with other VMs. The only VM from the EMU set of VMs that is modified is EMU-DC (KIWI needs to be added to the
+ domain).<br />
+<br />
+Let&#39;s call this modified version of the KIWI virtual machine KIWI.V2.<br />
+<br />
+<strong>Note</strong>: the VM that you use to build KIWI.V2 will need to be a separate activated VM (sysprepped) from the one used to build EMU-DC. You will not be able to join the domain otherwise.<br />
+<br />
+<strong>System requirements</strong>: be aware that if you want to run all VMs at the same time, this will require 12-15GB of free RAM (not including some left over for the host OS). Otherwise, you can spin up the domain controller &#43; KIWI or one of the EMU
+ sets one at a time.&nbsp;<br />
+<br />
+<br />
+<strong>Steps</strong>:<br />
+<ul>
+<li>Create the EMU VMs following this wiki article:&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/6198.how-to-build-sql-server-2012-alwayson-hyper-v-virtual-machines-for-demos-emu-build.aspx" target="_blank">http://social.technet.microsoft.com/wiki/contents/articles/6198.how-to-build-sql-server-2012-alwayson-hyper-v-virtual-machines-for-demos-emu-build.aspx</a>&nbsp;
+</li><li>Reference the KIWI build from this wiki article:&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/3402.how-to-build-a-sql-server-2012-hyper-v-virtual-machine-kiwi-build.aspx" target="_blank">http://social.technet.microsoft.com/wiki/contents/articles/3402.how-to-build-a-sql-server-2012-hyper-v-virtual-machine-kiwi-build.aspx</a>
+<ul>
+<li>As you build KIWI, use the following modifications:
+<ul>
+<li>Configure network adapter to use IP: 192.168.31.8, subnet: 255.255.255.0, default gateway: 192.168.31.2, DNS: 192.168.31.2
+<ul>
+<li>Note: 192.168.31.2 is EMU-DC </li></ul>
+</li><li>At end of existing &quot;Base OS Setup and Configuration&quot; section, start EMU-DC and join KIWI to the contoso domain
+<ul>
+<li>note: both EMU-DC and KIWI need to have an internal network adapter configured and set to the same VLAN number in hyper-v settings
+</li></ul>
+</li><li>Note that EMU-DC already has a CONTOSO\sqlservice account setup. Wherever the KIWI steps call for using this domain account, continue to do so but keep in mind that EMU-DC needs to be spun up and accessible when KIWI is running
+</li></ul>
+</li></ul>
+</li></ul>
+<div><strong>VM configuration &amp; startup notes</strong>:<br />
+</div>
+<ul>
+<li>Make sure CONTOSO domain machines have an internal NIC configured in Hyper-V that is on same VLAN number for domain networking
+</li><li>Follow configuration steps in EMU wiki for additional network configuration for those machines
+</li></ul>
+<p><strong>Potential issues:<br />
+<br />
+</strong>If you&nbsp;are trying to log&nbsp;into a VM with domain credentials and see an error message about the trust relationship to the DC, here is a workaround. Log into the VM using local Administrator account, same Password;1. Next, open a command prompt and reset
+ the machine account password:<br />
+<br />
+netdom resetpwd /server:emu-dc /userd:contoso\administrator /password:Password;1<br />
+<br />
+Finally, log out and test the domain login again. It should now work.</p>
+<div><br />
+<strong>Machine diagram</strong>:<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3482.KIWIComboPackDiagram.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3482.KIWIComboPackDiagram.png" style="border:0px solid currentColor;" /></a><br />
+</div>
+<hr />
+<p>Return to&nbsp;<a title="Wiki" href="http://social.technet.microsoft.com/wiki/contents/articles/6979.sql-server-2012-developer-training-kit-virtual-machine.aspx">SQL Server 2012 Developer Training Kit Virtual Machine</a> wiki.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

@@ -1,0 +1,171 @@
+---
+layout: default
+title: Buscando lista de grupo do AD de acordo com nome da Rede - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3107.ad_2D00_2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/300x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3107.ad_2D00_2.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Olá leitor(a), hoje eu vou falar um pouco sobre como desenvolver no seu aplicativo Web a busca todos os grupos da rede para um determinado usuário. Esse código funciona também no Windows Forms.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Vou tentar explicar o meu exemplo antes de mostrar o código, não irei me alongar muito no artigo. O meu sistema Web tem um banco de dados com usuários e grupos, eu preciso comparar esses usuários aos grupos pertecentes no Active Directory
+ (AD), se houver algum grupo igual no banco de dados então o usuário entra no sistema, ou seja, ele utiliza o mesmo usuário logado no Windows. Pra isso, seu Windows deve estar em uma rede coorporativa; isto é; com o Active Directory ativado em um servidor da
+ rede.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Esse código que vou mostrar busca a lista de grupos daquele usuário logado e compara com o banco de dados pegando a lista de grupos. O objetivo aqui não é mostrar a conexão com o banco de dados ou select, quero mostrar as poucas linhas para
+ consultar no AD (Active Directory).</p>
+<p><strong>Utilizado</strong>: Visual Studio, linguagem C#, tipo do projeto Web.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; O primeiro passo é importar duas dlls na própria ferramenta da Microsoft. Para isso, clique com o botão direito do mouse em cima da basta References, depois escolha a opção Add References. Busque então por:
+</p>
+<p><span>System.DirectoryServices</span></p>
+<p><span>System.DirectoryServices.AccountManagement.</span></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8267.ad_2D00_1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8267.ad_2D00_1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figura 1 – Buscando as dlls</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Depois de importar as dlls, vamos colocar a mão na massa.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Como no load da página o programa já pega os dados da rede, vamos precisar criar dois métodos separados e um principal que chama eles passando os parâmetros. Lembre-se que para pegar os dados da rede, é necessário ter pelo menos o nome da
+ rede no arquivo de configuração ou no código fixo.</p>
+<p>Listagem 1 – Pegando o nome da rede e atribuindo os valores na variável dominio.</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;">DirectoryEntry</span><span style="font-size:9.5pt;font-family:Consolas;"> dominio =
+<span style="color:blue;">new</span> <span style="color:#2b91af;">DirectoryEntry</span>(<span style="color:#a31515;">&quot;LDAP://&quot;</span> &#43; System.Configuration.<span style="color:#2b91af;">ConfigurationManager</span>.AppSettings[<span style="color:#a31515;">&quot;NomeRede&quot;</span>].ToString());</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span>&nbsp;</span></p>
+<p>Listagem 2 – Buscando a lista de grupo na rede passando o nome do usuário e a variável dominio.</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;">List</span><span style="font-size:9.5pt;font-family:Consolas;">&lt;<span style="color:blue;">string</span>&gt; _listaDeGrupoDoUsuario = BuscaListadeGrupo(BuscaUsuarioDominio(txtUsuario.Text, dominio));</span></p>
+<p>Listagem 3 – Buscando a lista de membros</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">public</span><span style="font-size:9.5pt;font-family:Consolas;">
+<span style="color:#2b91af;">List</span>&lt;<span style="color:blue;">string</span>&gt; BuscaListadeGrupo(<span style="color:#2b91af;">DirectoryEntry</span> de)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">
+List</span>&lt;<span style="color:blue;">string</span>&gt; memberof = <span style="color:blue;">
+new</span> <span style="color:#2b91af;">List</span>&lt;<span style="color:blue;">string</span>&gt;();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+foreach</span> (<span style="color:blue;">object</span> oMember <span style="color:blue;">
+in</span> de.Properties[<span style="color:#a31515;">&quot;memberOf&quot;</span>])</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; memberof.Add(oMember.ToString());</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+return</span> memberof;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Com a variável preenchida na listagem 4, para buscar a lista de grupos no AD fica fácil. Busca pegar uma lista da propriedade memberOf, adicionar a uma variável do tipo list e retornar.</p>
+<p>Listagem 4 – Busca o objeto no AD.</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+public</span> <span style="color:#2b91af;">DirectoryEntry</span> BuscaUsuarioDominio(<span style="color:blue;">string</span> sam,
+<span style="color:#2b91af;">DirectoryEntry</span> root)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; try</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+using</span> (<span style="color:#2b91af;">DirectorySearcher</span> searcher = <span style="color:blue;">
+new</span> <span style="color:#2b91af;">DirectorySearcher</span>(root, <span style="color:blue;">
+string</span>.Format(<span style="color:#a31515;">&quot;(sAMAccountName={0})&quot;</span>, sam)))</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">
+SearchResult</span> sr = searcher.FindOne();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+if</span> (!(sr == <span style="color:blue;">null</span>)) <span style="color:blue;">
+return</span> sr.GetDirectoryEntry();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+return</span> <span style="color:blue;">null</span>;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+catch</span> (<span style="color:#2b91af;">Exception</span> ex)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><span style="font-size:9.5pt;font-family:Consolas;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+throw</span> ex;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</span></p>
+<p style="text-indent:35.4pt;">Esse método (listagem 3) recebe o nome do usuário e a variável domínio. O código verificar se existe o domínio informado e o nome da pessoa. Se o código encontrar pelo menos um, então a variável é preenchida e retornada ao método
+ anterior, mostrado na listagem 3.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Depois de retornar os dados, você pode procurar um determinado grupo ou todos, como achar melhor. A lista de grupos do usuário pode ser buscada com uma lista de comando. Veja a listagem 5.</p>
+<p>Listagem 5 – Buscando um determinado grupo</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">var</span><span style="font-size:9.5pt;font-family:Consolas;"> _grupoEncontrado = _listaDeGrupoDoUsuario.AsParallel().Where</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="font-size:9.5pt;font-family:Consolas;">(s =&gt; s.Contains(<span style="color:#a31515;">&quot;Internet&quot;</span>)).ToList();</span></p>
+<p><span>&nbsp;</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Esse código verifica se a lista existe algum grupo parecido com o nome “Internet”. O resultado é retornado na variável “_grupoEncontrado”. Caso queira buscar alguns grupos, faça um for e busque usando esse comando, linha por linha.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Peço desculpas porque não poderei colocar aqui o resultado encontrado, mas garanto para você que se fizer igualzinho o que fiz vai funcionar perfeitamente. Segue todo o código na listagem 6 mostrando todo o código.</p>
+<p>Listagem 6 – Todo o código</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:black;">Private void Load(){</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;">DirectoryEntry</span><span style="font-size:9.5pt;font-family:Consolas;"> dominio =
+<span style="color:blue;">new</span> <span style="color:#2b91af;">DirectoryEntry</span>(<span style="color:#a31515;">&quot;LDAP://&quot;</span> &#43; System.Configuration.<span style="color:#2b91af;">ConfigurationManager</span>.AppSettings[<span style="color:#a31515;">&quot;NomeRede&quot;</span>].ToString());</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;">List</span><span style="font-size:9.5pt;font-family:Consolas;">&lt;<span style="color:blue;">string</span>&gt; _listaDeGrupoDoUsuario = BuscaListadeGrupo(BuscaUsuarioDominio(txtUsuario.Text, dominio));</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p><span>&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">public</span><span style="font-size:9.5pt;font-family:Consolas;">
+<span style="color:#2b91af;">List</span>&lt;<span style="color:blue;">string</span>&gt; BuscaListadeGrupo(<span style="color:#2b91af;">DirectoryEntry</span> de)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">{</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;color:#2b91af;">List</span><span style="font-size:9.5pt;font-family:Consolas;">&lt;<span style="color:blue;">string</span>&gt; memberof =
+<span style="color:blue;">new</span> <span style="color:#2b91af;">List</span>&lt;<span style="color:blue;">string</span>&gt;();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+foreach</span> (<span style="color:blue;">object</span> oMember <span style="color:blue;">
+in</span> de.Properties[<span style="color:#a31515;">&quot;memberOf&quot;</span>])</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; memberof.Add(oMember.ToString());</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+return</span> memberof;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">public</span><span style="font-size:9.5pt;font-family:Consolas;">
+<span style="color:#2b91af;">DirectoryEntry</span> BuscaUsuarioDominio(<span style="color:blue;">string</span> sam,
+<span style="color:#2b91af;">DirectoryEntry</span> root)</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">{</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;color:blue;">try</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+using</span> (<span style="color:#2b91af;">DirectorySearcher</span> searcher = <span style="color:blue;">
+new</span> <span style="color:#2b91af;">DirectorySearcher</span>(root, <span style="color:blue;">
+string</span>.Format(<span style="color:#a31515;">&quot;(sAMAccountName={0})&quot;</span>, sam)))</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">
+SearchResult</span> sr = searcher.FindOne();</span></p>
+<p><span style="font-size:9.5pt;font
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;color:blue;">try</span>
+</p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+using</span> (<span style="color:#2b91af;">DirectorySearcher</span> searcher = <span style="color:blue;">
+new</span> <span style="color:#2b91af;">DirectorySearcher</span>(root, <span style="color:blue;">
+string</span>.Format(<span style="color:#a31515;">&quot;(sAMAccountName={0})&quot;</span>, sam)))</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&-family:Consolas;">&nbsp;</span></p>
+<p style="margin:0cm 0cm 0.0001pt 35.4pt;text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;color:blue;">if</span><span style="font-size:9.5pt;font-family:Consolas;"> (!(sr ==
+<span style="color:blue;">null</span>)) <span style="color:blue;">return</span> sr.GetDirectoryEntry();</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+return</span> <span style="color:blue;">null</span>;</span></p>
+<p style="margin:0cm 0cm 0.0001pt 35.4pt;text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;color:blue;">catch</span><span style="font-size:9.5pt;font-family:Consolas;"> (<span style="color:#2b91af;">Exception</span> ex)</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">{</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:blue;">
+throw</span> ex;</span></p>
+<p style="text-indent:35.4pt;"><span style="font-size:9.5pt;font-family:Consolas;">}&nbsp;&nbsp;&nbsp;&nbsp;
+</span></p>
+<p><span style="font-size:9.5pt;font-family:Consolas;">}</span></p>
+<p><span style="font-family:Consolas;font-size:13px;"><br />
+</span><span style="font-size:12.1px;">Espero que te ajude e resolva o seu problema. Qualquer dúvida pode entrar em contato pelo site
+</span><a href="http://www.mauriciojunior.org/" style="font-size:12.1px;">www.mauriciojunior.org</a><span style="font-size:12.1px;">.&nbsp;</span></p>
+<p><span style="color:#2a2a2a;line-height:18px;background-color:#ffffff;font-family:calibri;">This article was originally written by:<br />
+<br />
+<strong>Maurício Júnior</strong><br />
+MCP, MCAD, MVP Microsoft<br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/4083.aspx" style="color:#00749e;">www.mauriciojunior.org</a><br />
+</span><a href="http://blog.mauriciojunior.org/" target="_blank" style="color:#00749e;font-family:calibri;line-height:18px;background-color:#ffffff;">blog.mauriciojunior.org&nbsp;<img alt=" " title="This link is external to TechNet Wiki. It will open in a new window." src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;&nbsp;<img alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" title="This link is external to TechNet Wiki. It will open in a new window." style="overflow:hidden;border-width:0px;border-style:solid;" />&nbsp;</a><span style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;line-height:16px;background-color:#ffffff;">&nbsp;</span><br />
+<br />
+</p>
+
+</div>
+    
+    

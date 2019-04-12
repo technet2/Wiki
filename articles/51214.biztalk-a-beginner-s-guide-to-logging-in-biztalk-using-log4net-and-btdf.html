@@ -1,0 +1,372 @@
+---
+layout: default
+title: BizTalk&#58;A Beginners Guide To Logging In BizTalk Using log4net and BTDF - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="text-align:justify;"><a name History
+                    </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div>="Top"></a>&nbsp;<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#What_is_log4net">What is log4net?</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Scope">Scope</a></li><li class="hierarchy-item"><a href="#What_is_BTDF">What is BTDF?</a></li><li class="hierarchy-item"><a href="#Implementation">Implementation</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Creating_log4net_Configuration_File">Creating log4net Configuration File</a></li><li class="hierarchy-item"><a href="#Configuring_BTDF_Project">Configuring BTDF Project</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Including_log4net_during_deployment">Including log4net during deployment</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Integrating_log4net_in_Orchestration">Integrating log4net in Orchestration.</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Testing">Testing</a></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div>&nbsp;</div>
+<h1 style="text-align:justify;"><a name="Introduction"></a>Introduction</h1>
+<p style="text-align:justify;">Often is the requirement in software development that the developer traces the flow of the developed application to track any bugs or issues that are raised during the testing or production run. At other times the requirement can
+ be that the developer wants to track some mission-critical data to files or to a custom database for future use or simply they are required to audit the request responses processed by the application. The solution to that is using a good logging framework
+ to track the data. One such well-known logging framework is log4net which helps the developers to log well-formatted events to various sinks like text files, databases etc.</p>
+<h2 style="text-align:justify;"><a name="What_is_log4net"></a>What is log4net?</h2>
+<p style="text-align:justify;">log4net is the MicroSoft .Net framework port of the Apache log4j framework which is used as a logging utility for Java applications. log4net allows developers to log the events to various targets like files, database stores etc.(see
+ References section for the link to the documentation).</p>
+<p style="text-align:justify;"><a href="#Top">↑Back To Top</a></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="Scope"></a>Scope</h1>
+<p style="text-align:justify;">This article discusses the use of the log4net framework for the tracking of events in the BizTalk application. log4net can be used to track the steps of flow of the orchestration in the BizTalk application by using intelligent
+ logging milestones in expression shapes which will let the developers know where the control is at a given point of time. These events can be logged to a text file which can be tailed using any tailing application to view the logging in the real time. This
+ serves as an addendum to the already present debugging feature like Orchestration Debugger. log4net can be used to save the messages processed by BizTalk orchestration to an audit database if that is the business requirement(not covered in current scope as
+ it is not an ideal way to audit messages). The sample discussed in this article will use the BizTalk Deployment Framework to accommodate and automate the deployment of the log4net configuration components as a part of the deployment process.</p>
+<h1 style="text-align:justify;"><a name="What_is_BTDF"></a>What is BTDF?&nbsp;</h1>
+<p style="text-align:justify;">BTDF is an open source deployment framework used for deploying BizTalk applications on local dev boxes as well as different environments. It provides many facilities that can be used to club together the task that require being
+ performed pre and post-deployment of the BizTalk deployment e.g restarting of the concerned Host Instances, IIS reset etc. Another advantage of BTDF is that it is very flexible and can be configured to do a lot of tasks before, during and after the deployment
+ of BizTalk application. All these tasks can be packaged up as a single MSI file and can be installed in the target environment. It also provides facility to define the variables related to different environments in a spreadsheet which simplifies the task of
+ manually maintaining the binding files for the BizTalk application for multiple environments. These are some of the features of BTDF. BTDF has proven to be a very reliable tool for creating buildMSIi for BizTalk. It is a necessary weapon in the arsenal of
+ a professional working on BizTalk platform.&nbsp;<br />
+This article uses the latest version 5.7 that is released. To learn more about the installation of the btdf and step by step guide for configuring the BTDF, refer following link. The link discusses the steps taken for BizTalk 2016 and Visual Studio 2015 , but
+ same can be followed for other versions of BizTalk.<br />
+<a href="https://social.technet.microsoft.com/wiki/contents/articles/47821.step-by-step-guide-for-installation-and-configuration-of-btdf-for-biztalk-2016-and-visual-studio-2015.aspx" target="_blank">Step by Step Guide For Installation and Configuration of BTDF
+ for BizTalk 2016 and Visual Studio 2015</a>&nbsp;&nbsp;</p>
+<p style="text-align:justify;"><a href="#Top">↑Back To Top</a></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="Implementation"></a>Implementation</h1>
+<p style="text-align:justify;">Following are various steps that are involved in setting up complete logging utility for a BizTalk application using log4net and BTDF.</p>
+<h2 style="text-align:justify;"><a name="Creating_log4net_Configuration_File"></a>Creating log4net&nbsp; Configuration File&nbsp;</h2>
+<p style="text-align:justify;">In order to define what sinks that will be used to log the details from the orchestrations/helper classes/ pipeline components, the first task is to create the configuration file for the log4net . In order to use it with the BTDF
+ framework, the file is named as &lt;BizTalk ApplicationName&gt;ztalk-2016-and-visual-studio-2015.aspx" target="_blank">Step by Step Guide For Installation and Configuration of BTDF
+ for BizTalk 2016 and Visual Studio 2015</a>&nbsp;&nbsp;</p>
+<p style="text-align:justify;"><a href="#Top">↑Back To Top</a></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="Implementation"></a>Implementation</h1>
+<p style="text-align:justify.log4net and should be placed in the&nbsp; visual studio solution folder for the same application. It can be included in the solution Items using the solution folder as shown in sample screen shot below.</p>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6724.Log4net1.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6724.Log4net1.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p style="text-align:justify;">Following is a sample configuration file that is shown in the above screenshot. The comments in the config file explain the important concepts.</p>
+<p style="text-align:justify;"><span style="white-space:pre;"></span></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;text-align:justify;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">log4net</code>
+<code style="color:#808080;">debug</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">root</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">level</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;*&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">appender-ref</code>
+<code style="color:#808080;">ref</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;EventLogAppender&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">root</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;!-- Logger which will call the Rolling File appender and Create the Log file</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">Minimum Logging Level is DEBUG--&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">logger</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;BTDFTestProject&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">level</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DEBUG&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">appender-ref</code>
+<code style="color:#808080;">ref</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;RollingFileAppender&quot;</code><code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">logger</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;!--Rolling File Appender deined below will create a log file by Name BTDFTestLroject.log at the location configured in file</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">node. appendToFile allows to add multiple log entries to the same file. maximumFileSize governs the maximum size of log file after
+ which</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">the appender will archive the current log file and create a new log file of same name--&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">appender</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;RollingFileAppender&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;log4net.Appender.RollingFileAppender&quot;</code>
+<code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">file</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;E:\logstore\BTDFTestProject.Log&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">appendToFile</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DatePattern</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;dd-MM-yyyy&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">maxSizeRollBackups</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;10&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">maximumFileSize</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1MB&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">staticLogFileName</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;true&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">layout</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;log4net.Layout.PatternLayout&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;!--Governs the pattern in which the data will be written. The OrchestrationInstanceiD helps to correlat the
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">messages in the DTA database--&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">conversionPattern</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;%date [%thread] %-5level OrchestrationInstanceId: %property{InstanceId} %logger Message: %message%newline&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">layout</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;de><span><code style="color:#000000;">messages in the DTA database--&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#0000font-weight:bold;">appender</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;!--Event Log Appender is used to log events to the windows event log. This appender can be used to create custom
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">applkication logs if required.--&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">appender</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;EventLogAppender&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;log4net.Appender.EventLogAppender&quot;</code>
+<code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">layout</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;log4net.Layout.PatternLayout&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">conversionPattern</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;%date [%thread] %-5level OrchestrationInstanceId: %property{InstanceId} %logger Message: %message%newline&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">layout</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;!--Defines that the logger will use the user under which the process is running</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">in BizTalk terms it is either the Host Instance associated with the orchestration or the Handler processing the ports(in case of
+ custom pipelien components)--&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">secutrityContext</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;logh4net.Util.WindowsSecurityContext&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">credentials</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Process&quot;</code><code style="color:#000000;">&gt;&lt;/</code><code style="color:#006699;font-weight:bold;">credentials</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">secutrityContext</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">&lt;!--Defines that the minimum level for which the entry will be logged to eventy log is Error--&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">filter</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;log4net.Filter.LevelRangeFilter&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">levelMin</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ERROR&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">levelMax</code>
+<code style="color:#808080;">value</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FATAL&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">filter</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">appender</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">log4net</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<h2 style="text-align:justify;"><a name="Configuring_BTDF_Project"></a>Configuring BTDF Project</h2>
+<p style="text-align:justify;">In order to facilitate the deployment of the configuration file created above, it is necessary to configure the *.btdfproj file. Following are the settings that need to be done.</p>
+<h3 style="text-align:justify;"><a name="Including_log4net_during_deployment"></a>Including log4net during deployment<e style="color:#006699;font-weight:bold;">filter</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">appender</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;/h3>
+<p style="text-align:justify;"><span style="font-size:12.1px;">&nbsp;This can be done by adding following line in the PropertyGroup Defining the deployment conditions.</span></p>
+<p style="text-align:justify;"><span style="font-size:12.1px;white-space:pre;"></span></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;text-align:justify;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Includelog4net</code><code style="color:#000000;">&gt;True&lt;/</code><code style="color:#006699;font-weight:bold;">Includelog4net</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p style="text-align:justify;"><span style="font-size:12.1px;">A typical Property Group defining the deployment conditions would look as follows.</span></p>
+<p style="text-align:justify;"><span style="font-size:12.1px;"></span></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;text-align:justify;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">PropertyGroup</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Configuration</code>
+<code style="color:#808080;">Condition</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;&#39;$(Configuration)&#39; == &#39;&#39;&quot;</code><code style="color:#000000;">&gt;Debug&lt;/</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Platform</code>
+<code style="color:#808080;">Condition</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;&#39;$(Platform)&#39; == &#39;&#39;&quot;</code><code style="color:#000000;">&gt;x86&lt;/</code><code style="color:#006699;font-weight:bold;">Platform</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SchemaVersion</code><code style="color:#000000;">&gt;1.0&lt;/</code><code style="color:#006699;font-weight:bold;">SchemaVersion</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ProjectName</code><code style="color:#000000;">&gt;BTDFTestProject&lt;/</code><code style="color:#006699;font-weight:bold;">ProjectName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ProjectVersion</code><code style="color:#000000;">&gt;1.0&lt;/</code><code style="color:#006699;font-weight:bold;">ProjectVersion</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IncludeVirtualDirectories</code><code style="color:#000000;">&gt;True&lt;/</code><code style="color:#006699;font-weight:bold;">IncludeVirtualDirectories</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">UsingMasterBindings</code><code style="color:#000000;">&gt;True&lt;/</code><code style="color:#006699;font-weight:bold;">UsingMasterBindings</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RequireXmlPreprocessDirectives</code><code style="color:#000000;">&gt;False&lt;/</code><code style="color:#006699;font-weight:bold;">RequireXmlPreprocessDirectives</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ApplyXmlEscape</code><code style="color:#000000;">&gt;True&lt;/</code><code style="color:#006699;font-weight:bold;">ApplyXmlEscape</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SkipIISReset</code><code style="color:#000000;">&gt;False&lt;/</code><code style="color:#006699;font-weight:bold;">SkipIISReset</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Includelog4net</code><code style="color:#000000;">&gt;True&lt;/</code><code style="color:#006699;font-weight:bold;">Includelog4net</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IncludeComponents</code><code style="color:#000000;">&gt;True&lt;/</code><code style="color:#006699;font-weight:bold;">IncludeComponents</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">PropertyGroup</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p style="text-align:justify;"><span style="font-size:12.1px;">The BTDF installation process is a 32 bit process and when the btdf configures the log4net for the application, it creates the registry key in the Registry corresponding to the 32 bit process (SYSWOW64
+ 32) but if the host instances processing the orchestration are 64 bit, then a registry key need to be created which corresponds to the 64 bit host instances. A custom post deployment target needs to be created for this task. It can be created as a sample shown
+ below.</span></p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;text-align:justify;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Target</code>
+<code style="color:#808080;">Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;CustomPostDeployTarget&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">CallTarget</code>
+<code style="color:#808080;">Targets</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;CreateLog4Net64BitRegKey&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Target</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Target</code>
+<code style="color:#808080;">Name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;CreateLog4Net64BitRegKey&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Exec</code>
+<code style="color:#808080;">Command</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;&quot;$(SystemRoot)\Sysnative\cscript.exe&quot; /nologo &quot;$(DeployTools)\WriteRegValue.vbs&quot; $(Log4netRegKey) &quot;@(Log4netFile)&quot;&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Target</code><code style="color:#000000;">&gt;</code></span></span></div>
+</div>
+<div style="text-align:justify;">*Note: quotes used inside the <strong>Command=&quot;&quot;</strong> need to be escaped using
+<strong>&amp;quot;&nbsp;</strong><strong><br />
+</strong></div>
+<p style="text-align:justify;">The registry entries created by the BTDF in both the 32 bit and the 64 bit registry folders are shown below.</p>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5008.Log4net3.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5008.Log4net3.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p style="text-align:justify;"><span style="white-space:pre;"></span>Fig: BizTalk App Entry in 32 bit node&nbsp;</p>
+<p style="t:bold;">Target</code><code style="color:#000000;">&gt;</code></span></span></div>
+</div>
+<div style="text-align:justify;">*Nottext-align:justify;"><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2514.Log4net4.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2514.Log4net4.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p style="text-align:justify;"><span style="white-space:pre;"></span>Fig: BizTalk App Entry in 64 bit node</p>
+<h2 style="text-align:justify;"><a name="Integrating_log4net_in_Orchestration"></a>Integrating log4net in Orchestration.</h2>
+<p style="text-align:justify;">Following steps describes how to integrate log4net framework into an orchestration..</p>
+<ol>
+<li>Add the references to the log4net assemblies to the Orchestration Project as shown below.<br />
+<br />
+<span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3173.Log4net5.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3173.Log4net5.JPG" style="border-width:0px;border-style:solid;" /></a>
+<br />
+<br />
+</span></li><li>&nbsp;Create the variables for the logger and for the logger properties collection as shown in sample screen shot below.<br />
+<br />
+<span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7282.Log4net6.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7282.Log4net6.JPG" style="border-width:0px;border-style:solid;" /></a>
+<br />
+<br />
+</span><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5023.Log4net7.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5023.Log4net7.JPG" style="border-width:0px;border-style:solid;" /></a></span><br />
+<br />
+</li><li>The variables created above can be initiated as shown below.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">varLogger = log4net.Ext.Serializable.SLogManager.GetLogger(</code><code style="color:blue;">&quot;BTDFTestProject&quot;</code><code style="color:#000000;">, log4net.helpers.CallersTypeName.Name);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">varLogger.RegistryConfigurator();</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">varInstanceId = TestOrch(Microsoft.XLANGs.BaseTypes.InstanceId);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">varLogProperties.Set(</code><code style="color:blue;">&quot;InstanceId&quot;</code><code style="color:#000000;">, varInstanceId);</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">varLogger.Debug(varLogProperties,</code><code style="color:blue;">&quot;Logger Initiated&quot;</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">varLogger.DebugFormat(varLogProperties,&nbsp;</code><code style="color:blue;">&quot;Logger Logging {0} level using Format String for Instance Id {1}&quot;</code><code style="color:#000000;">,
+</code><code style="color:blue;">&quot;Debug&quot;</code><code style="color:#000000;">, varInstanceId);</code></span></div>
+</div>
+</li><li style="text-align:justify;">The logger can be passed to the helper classes which are called from the orchestration. For example, method from following class is called from the TestOrch orchestration. The method just logs a sample string and then throws an
+ Exception which can be caught in the TestOrch orchestration to demonstrate the event logging capability of log4net. The helper class is as follows.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Collections.Generic;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Linq;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Text;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Threading.Tasks;</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">namespace</code>
+<code style="color:#000000;">BTDFTestProject.Components</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+OrchestrationHelper</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">static</code> <code style="color:#006699;font-weight:bold;">
+void</code> <code style="color:#000000;">InvokeException(log4net.ILog logger,t-weight:bold;">namespace</code>
+<code style="color:#000000;">BTDFTestProject.Components</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+OrchestrationHelper</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span> </code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+instanceId)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">logger.Info(</code><code style="color:blue;">&quot;This Call is Initiated from the Helper Class Library for Instance Id &quot; &#43;&nbsp;</code><code style="color:#000000;">instanceId);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">throw</code>
+<code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+System.Exception(&quot;Throwing Exception from the helper to show event logging ability of log4net&quot;) ;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</code></span><span style="font-size:12.1px;">&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+The call made to InvokeException function from the orchestration is as follows.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">varLogger.Info(varLogProperties,
+</code><code style="color:blue;">&quot;Finished Executing Map&quot;</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">varLogger.InfoFormat(varLogProperties,&nbsp;</code><code style="color:blue;">&quot;Sending Response for Instance Id : {0}&quot;</code><code style="color:#000000;">, varInstanceId);</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">BTDFTestProject.Components.OrchestrationHelper.InvokeException(varLogger,varInstanceId);</code></span></div>
+</div>
+</li><li>The Logging placed in the exception block of the TestOrch is as follows.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">varLogger.Error(varLogProperties,</code><code style="color:blue;">&quot;Exception Thrown. Error:&quot;</code>
+<code style="color:#000000;">&#43; ex.Message);</code></span></div>
+</div>
+</li></ol>
+<p style="text-align:justify;">This completes the set up of the logger with the application.</p>
+<p style="text-align:justify;"><a href="#Top">↑Back To Top</a></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="Testing"></a>Testing</h1>
+<p style="text-align:justify;">The orchestration was triggered using the BizTalk WCF Service and following are the observations.</p>
+<p style="text-align:justify;">&nbsp;log4net config File was Deployed at the location specified while installing the BTDF msi.</p>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3858.Log4net8.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3858.Log4net8.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;</p>
+<p style="text-align:justify;">Following log was created at the location specified in the log4net file.</p>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4377.LogFileCreated.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4377.LogFileCreated.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;</p>
+<p style="text-align:justify;">The events logged in the log file are as follows.&nbsp;</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;text-align:justify;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#009900;">2018</code><code style="color:#009900;">-02</code><code style="color:#009900;">-17</code>
+<code style="color:#009900;">03:</code><code style="color:#009900;">49:</code><code style="color:#009900;">09</code><code style="color:#000000;">,</code><code style="color:#009900;">673</code>
+<code style="color:#000000;">[</code><code style="color:#009900;">65</code><code style="color:#000000;">] DEBUG OrchestrationInstanceId:
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code>
+<code style="color:#000000;">BTDFTestProject.Orchestration.TestOrch Message: Logger Initiated</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#009900;">2018</code><code style="color:#009900;">-02</code><code style="color:#009900;">-17</code>
+<code style="color:#009900;">03:</code><code style="color:#009900;">49:</code><code style="color:#009900;">09</code><code style="color:#000000;">,</code><code style="color:#009900;">825</code>
+<code style="color:#000000;">[</code><code style="color:#009900;">65</code><code style="color:#000000;">] DEBUG OrchestrationInstanceId:
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code>
+<code style="color:#000000;">BTDFTestProject.Orchestration.TestOrch Message: Logger Logging Debug
+</code><code style="color:#009900;">level</code> <code style="color:#000000;">using Format String for Instance Id
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#009900;">2018</code><code style="color:#009900;">-02</code><code style="color:#009900;">-17</code>
+<code style="color:#009900;">03:</code><code style="color:#009900;">49:</code><code style="color:#009900;">18</code><code style="color:#000000;">,</code><code style="color:#009900;">693</code>
+<code style="color:#000000;">[</code><code style="color:#009900;">65</code><code style="color:#000000;">] INFO&nbsp; OrchestrationInstanceId:
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code>
+<code style="color:#000000;">BTDFTestProject.Orchestration.TestOrch Message: Finished Executing Map</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#009900;">5</code><code style="color:#000000;2018</code><code style="color:#009900;">-02</code><code style="color:#009900;">-17</code>
+<code style="color:#009900;">03:</code><code style="color:#009900;">49:</code><code style="color:#009900;">18</code><code style="color:#000000;">,</code><code style="color:#009900;">695</code>
+<code style="color:#000000;">[</code><code style="color:#009900;">65</code><code style="color:#000000;">] INFO&nbsp; OrchestrationInstanceId:
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code>
+<code style="color:#000000;">BTDFTestProject.Orchestration.TestOrch Message: Sending Response for Instance Id :
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#009900;">2018</code><code style="color:#009900;">-02</code><code style="color:#009900;">-17</code>
+<code style="color:#009900;">03:</code><code style="color:#009900;">49:</code><code style="color:#009900;">18</code><code style="color:#000000;">,</code><code style="color:#009900;">706</code>
+<code style="color:#000000;">[</code><code style="color:#009900;">65</code><code style="color:#000000;">] INFO&nbsp; OrchestrationInstanceId: (null) BTDFTestProject.Orchestration.TestOrch Message: This Call is Initiated from the Helper Class Library for Instance Id
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#009900;">2018</code><code style="color:#009900;">-02</code><code style="color:#009900;">-17</code>
+<code style="color:#009900;">03:</code><code style="color:#009900;">49:</code><code style="color:#009900;">18</code><code style="color:#000000;">,</code><code style="color:#009900;">773</code>
+<code style="color:#000000;">[</code><code style="color:#009900;">65</code><code style="color:#000000;">] ERROR OrchestrationInstanceId:
+</code><code style="color:#009900;">05</code><code style="color:#000000;">d</code><code style="color:#009900;">3</code><code style="color:#000000;">e</code><code style="color:#009900;">6</code><code style="color:#000000;">f</code><code style="color:#009900;">3</code><code style="color:#000000;">-ffe</code><code style="color:#009900;">5</code><code style="color:#009900;">-4</code><code style="color:#000000;">ef</code><code style="color:#009900;">1</code><code style="color:#000000;">-be</code><code style="color:#009900;">11</code><code style="color:#009900;">-7</code><code style="color:#000000;">fce</code><code style="color:#009900;">83089</code><code style="color:#000000;">fd</code><code style="color:#009900;">2</code>
+<code style="color:#000000;">BTDFTestProject.Orchestration.TestOrch Message: Exception Thrown. Error:Throwing Exception from the helper to demonstarte event logging capability of log</code><code style="color:#009900;">4</code><code style="color:#000000;">net</code></span></div>
+</div>
+<br />
+<div style="text-align:justify;">At the same time the following is a screenshot for the error logged in the event log.&nbsp;</div>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2727.eventlog.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.eventlog.JPG" style="border-width:0px;border-style:solid;" />
+</a></span></p>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="#Top">↑Back To Top</a></span></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="Conclusion"></a><span style="white-space:pre;">Conclusion</span></h1>
+<p style="text-align:justify;">From the results of the testing, it can be concluded that the logging for events in BizTalk artefacts like orchestrations , helper classes can be set up easily using the log4net framework and BTDF very easily.</p>
+<p style="text-align:justify;"><a href="#Top">↑Back To Top</a></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="See_Also"></a>See Also</h1>
+<p style="text-align:justify;">A great place to start learning about the BizTalk product is&nbsp;<a href="https://social.technet.microsoft.com/wiki/contents/articles/2/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.eventlog.JPG" style="border-width:0px;border-style:solid;" />
+</a></span></p>
+<p style="text-align:justify;"><span style="white-space:pre;"><a href="#Top">↑Back To Top</a></span></p>
+<hr style="text-align:justify;" />
+<h1 style="text-align:justify;"><a name="Conclusion"></a><span style="white-space:pre;">Conclusion</span></h1>
+<p style="text-align:justify;">From the results of the testing, it can be concluded that the logging for events in BizTalk artefacts like orchestrations , helper classes can be set up easily using the log4net framework and BTDF very easily.</p>
+<p style="text-align:jus240.biztalk-server-resources-on-the-technet-wiki.aspx" target="_blank">BizTalk Server Resources
+ on the TechNet Wiki</a>&nbsp;</p>
+<p style="text-align:justify;"><a href="#Top">↑Back To Top</a></p>
+<hr style="text-align:justify;" />
+<p style="text-align:justify;"><span style="color:#3a3e43;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:22px;">References</span></p>
+<p style="text-align:justify;">Information available at following websites was referred while writing this article.</p>
+<ol>
+<li><a href="https://logging.apache.org/log4net/" target="_blank">What is Apache log4net</a>&nbsp;
+</li><li><a href="http://www.tfabraham.com/BTDFDocs/V5_0/DeploymentFrameworkForBizTalkDocs.html" target="_blank">Deployment Framework for BizTalk Server V5.0</a>
+</li></ol>
+<hr style="text-align:justify;" />
+
+</div>
+    
+    

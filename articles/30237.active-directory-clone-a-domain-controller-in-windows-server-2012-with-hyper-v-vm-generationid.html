@@ -1,0 +1,621 @@
+---
+layout: default
+title: Active Directory - Clone a Domain Controller in Windows Server 2012 with Hyper-V (VM-GenerationID) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Preamble_VM-GenerationID">Introduction : VM-GenerationID</a></li><li class="hierarchy-item"><a href="#Prerequisites">1) Prerequisites</a></li><li class="hierarchy-item"><a href="#Prepare_the_source_DC">2) Prepare the source DC</a></li><li class="hierarchy-item"><a href="#Export_of_the_prepared_VM_and_import_in_the_new_VM">3) Export of the prepared VM and import in the new VM</a></li><li class="hierarchy-item"><a href="#Detailed_cloning_process">4) Detailed cloning process</a></li><li class="hierarchy-item"><a href="#Cloning_went_wrong">5) Cloning went wrong ?</a></li><li class="hierarchy-item"><a href="#Conclusion">6) Conclusion</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Preamble_VM-GenerationID"></a>Introduction : VM-GenerationID</h1>
+<p style="background-color:white;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">One of the obvious reasons&nbsp;for virtualization is the independence of virtual machines&nbsp;from hardware. It is very simple to clone
+ a Virtual Machine (<a href="http://social.technet.microsoft.com/wiki/contents/articles/20580.aspx#VM">VM</a>) in a virtualized infrastructure.<br />
+</span><br />
+<span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">But can we clone any VM?<br />
+</span><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;"><br />
+It’s not easy to answer this question. The smart answer, as usual, would be: &quot;</span><em style="color:#2a2a2a;line-height:107%;font-family:&#39;Segoe UI&#39;,sans-serif;font-size:10pt;">It depends</em><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">&quot;.<br />
+</span><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;"><br />
+Before the 2012 version of Windows Server, cloning a VM hosting&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#AD_DS">AD DS</a> (Active Directory Domain Services) was forbidden. Indeed, cloning or restoring
+ a <a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#Domain_Controller">
+Domain Controller</a> could cause a &quot;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#USN">USN</a> rollback&quot;.<br />
+</span><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;"><br />
+One of the major benefits introduced in Microsoft Windows 2012 Server is the&nbsp;</span><strong style="color:#2a2a2a;line-height:107%;font-family:&#39;Segoe UI&#39;,sans-serif;font-size:10pt;">VM-GenerationID</strong><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">.<br />
+</span><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;"><br />
+The ID is an identifier encoded in 128 bits and provided by the hypervisor through a specific driver.<br />
+</span><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;"><br />
+You can check inside a VM if you’ll be able to clone a Domain Controller. Let’s explore the device manager of a VM hosted by&nbsp;</span><strong style="color:#2a2a2a;line-height:107%;font-family:&#39;Segoe UI&#39;,sans-serif;font-size:10pt;">Hyper-V</strong><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">&nbsp;hypervisor
+ running on a Windows 8 machine. You can see below how this test lab was created.</span></p>
+<p style="line-height:1.4;font-size:13.19px;background-color:white;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">If you see the device &quot;Microsoft Hyper-V Generation Counter&quot;, your hypervisor will be able
+ to manage the <strong>VM-GenerationID</strong>&nbsp;and you will be able to clone a Domain Controller.</span></p>
+<div style="line-height:1.4;font-size:13.19px;"><span></span></div>
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-pOOVdILYbno/UQT6Kd-cJyI/AAAAAAAAArs/yTOiZBDMjqw/s1600/deviceManagerGenerationCounter.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-pOOVdILYbno/UQT6Kd-cJyI/AAAAAAAAArs/yTOiZBDMjqw/s1600/deviceManagerGenerationCounter.png" width="640" height="465" /></a></div>
+<br />
+<div style="line-height:1.4;font-size:13.19px;"><span></span></div>
+<p style="background:white none repeat scroll 0% 0%;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">The&nbsp;<strong>VM-GenerationID</strong>&nbsp;is generated and stored on the Domain Controller as an&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#attribute">attribute</a>
+ of the&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#Active_Directory">Active Directory</a> database. This attribute is&nbsp;<strong><span style="text-decoration:underline;">not</span></strong>&nbsp;replicated.</span></p>
+<p style="background:white none repeat scroll 0% 0%;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">The&nbsp;<strong>VM-GenerationID</strong>&nbsp;is recorded in the Active Directory database NTDS.dit as the attribute&nbsp;<strong>msDS-GenerationID</strong>.</span></p>
+<p style="background:white none repeat scroll 0% 0%;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">You can see it by logging on the&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#DC">DC</a>
+ you want to check and display its attributes. You can easily do this via&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#ADUC">ADUC</a> or
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#ADAC">
+ADAC</a>.</span></p>
+<div style="line-height:1.4;font-size:13.19px;"><span></span></div>
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-V9zmjQsl0b0/UQT8ntNl9MI/AAAAAAAAAsM/Ux_ddmrPvok/s1600/msDS-GenerationID.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-V9zmjQsl0b0/UQT8ntNl9MI/AAAAAAAAAsM/Ux_ddmrPvok/s1600/msDS-GenerationID.png" width="355" height="400" /></a></div>
+<br />
+<br />
+<h1><a name="Prerequisites"></a>1) Prerequisites&nbsp;</h1>
+<span style="text-decoration:underline;"><br />
+</span><span style="line-height:1.4;font-size:13px;"></span>
+<p style="margin-bottom:12pt;background:white none repeat scroll 0% 0%;"><span style="line-height:107%;font-size:13px;color:#2a2a2a;">For it to be cloned a DC should meet the following prerequisites:<br />
+<br />
+</span></p>
+<ul>
+<li><span style="font-size:13px;">As mentioned above, your hypervisor&nbsp;<span style="text-decoration:underline;">must</span>&nbsp;support VM-GenerationID. It is the case with Hyper-V running on Windows 8 and on Windows Server 2012</span>
+</li><li><span style="font-size:13px;">The DC source&nbsp;<span style="text-decoration:underline;">must</span>&nbsp;be running on Windows Server 2012&nbsp;</span>
+</li><li><span style="font-size:13px;">The DC source&nbsp;<span style="text-decoration:underline;">cannot</span>&nbsp;host the&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#PDC_Emulator">PDC emulator</a> role. In addition,
+ the DC which hosts this role&nbsp;<span style="text-decoration:underline;">must</span>&nbsp;be available and must be running on Windows Server 2012</span>
+</li></ul>
+<p style="margin-bottom:12pt;background:white none repeat scroll 0% 0%;"><span style="line-height:107%;font-size:13px;color:#2a2a2a;"><br />
+However, you must have at least two DCs in your infrastructure to begin cloning a DC.</span></p>
+<span style="text-decoration:underline;"><br />
+</span>
+<h1><a name="Prepare_the_source_DC"></a>2) Prepare the source DC</h1>
+<div style="line-height:1.4;font-size:13.19px;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">To clone a DC, the first thing you will have to do is prepare it to be cloned. The first step is to add your source
+ DC to the security group &quot;<strong><span style="font-size:13px;color:#2a2a2a;">Cloneable</span></strong>
+<strong>Domain Controllers</strong>&quot;. You have several options to do this.<br />
+<br />
+The first with the ADAC or even ADUC.</span><br />
+<br />
+</div>
+<div style="line-height:1.4;font-size:13.19px;"><br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-z0R_1iE8C1g/UQUAwbdal9I/AAAAAAAAAs4/kSFMgdAFWyw/s1600/1_addTOGroupADAC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-z0R_1iE8C1g/UQUAwbdal9I/AAAAAAAAAs4/kSFMgdAFWyw/s1600/1_addTOGroupADAC.png" width="320" height="277" /></a></div>
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-RCnInF8fI10/UQUAwFQcHZI/AAAAAAAAAss/SXZ71c9mx34/s1600/1_addTOGroup.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-RCnInF8fI10/UQUAwFQcHZI/AAAAAAAAAss/SXZ71c9mx34/s1600/1_addTOGroup.png" width="320" height="250" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-Lx6Hkj3WEMQ/UQUAwTPBirI/AAAAAAAAAsw/MEjQqbuUe1k/s1600/2_cloneableDC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-Lx6Hkj3WEMQ/UQUAwTPBirI/AAAAAAAAAsw/MEjQqbuUe1k/s1600/2_cloneableDC.png" width="320" height="174" /></a></div>
+<div style="line-height:1.4;font-size:13.19px;"><br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-6UHIqwbJVHg/UQUAwntlFrI/AAAAAAAAAs8/P9TuKo0V-tA/s1600/3_added.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-6UHIqwbJVHg/UQUAwntlFrI/AAAAAAAAAs8/P9TuKo0V-tA/s1600/3_added.png" width="320" height="131" /></a></div>
+<div style="line-height:1.4;font-size:13.19px;"><br />
+</div>
+<div style="line-height:1.4;font-size:13.19px;">The second way is to do it via&nbsp;<strong><strong><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">PowerShell</span></strong></strong>.</div>
+<br />
+<pre style="padding:0px;border:1px dashed #cccccc;width:646.46px;height:auto;line-height:20px;overflow:auto;font-family:arial;font-size:12px;background-color:#f0f0f0;"><code> Add-ADGroupMember &quot;Cloneable Domain Controllers&quot; &quot;CN=DC02,OU=Domain Controllers,DC=LABO,DC=COM&quot; </code></pre>
+<br />
+<span style="line-height:1.4;font-size:13px;"></span><span style="font-size:13px;"><span style="line-height:107%;font-size:10pt;color:#2a2a2a;">OK, our source DC is now a member of the security group &quot;<strong><span style="font-size:13px;color:#2a2a2a;">Cloneable</span></strong>
+<strong>Domain Controllers</strong>&quot;. Let’s continue&nbsp;preparing it.</span><span style="line-height:1.4;font-size:13px;"></span><br />
+<br />
+<a href="http://technet.microsoft.com/en-us/library/hh831734.aspx" style="color:#888888;line-height:1.4;font-size:13.19px;">TechNet tells us</a></span><span style="line-height:107%;font-size:10pt;color:#2a2a2a;">&nbsp;that we need to launch the first command before
+ starting the cloning process. Indeed, we need to determine what programs and services are not present on the default supported list &quot;<strong>DefaultDCCloneAllowList.xml</strong>&quot; or a user-defined inclusion list named&nbsp; &quot;<strong>CustomDCCloneAllowList.xml</strong>&quot;
+ and therefore not supported by the cloning process because it has not been evaluated for cloning impact.</span><br />
+<br />
+<pre style="padding:0px;border:1px dashed #cccccc;width:646.46px;height:auto;line-height:20px;overflow:auto;font-family:arial;font-size:12px;background-color:#f0f0f0;"><code> Get-ADDCCloningExcludedApplicationList </code></pre>
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-O9FnROkMkbI/UQUD8rRMKvI/AAAAAAAAAts/p8ekL2mxZfA/s1600/21_getADDCCLoningExcludedApplicationList.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-O9FnROkMkbI/UQUD8rRMKvI/AAAAAAAAAts/p8ekL2mxZfA/s1600/21_getADDCCLoningExcludedApplicationList.png" width="640" height="323" /></a></div>
+<br />
+<span style="line-height:1.4;font-size:13px;"></span><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">The result of the command is pretty clear in this case: &quot;<strong>No excluded applications were detected</strong>&quot;.
+ At this stage, we can proceed; however, in some cases, you need to run the second command to generate your own .xml file containing the list of applications or services you want to add (because supported).<br />
+<br />
+Here is an example (launched on a lab test running ESXi 5.1).</span><span style="line-height:1.4;font-size:13px;"></span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-cUqUFaDX7cQ/UQUDy6QuQOI/AAAAAAAAAtk/M2V8qeNLEds/s1600/4_listExcluded.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-cUqUFaDX7cQ/UQUDy6QuQOI/AAAAAAAAAtk/M2V8qeNLEds/s1600/4_listExcluded.png" width="640" height="322" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<br />
+<span style="line-height:1.4;font-size:13px;">We type the second command to generate the .xml file.</span><br />
+<br />
+<pre style="padding:0px;border:1px dashed #cccccc;width:646.46px;height:auto;line-height:20px;overflow:auto;font-family:arial;font-size:12px;background-color:#f0f0f0;"><code> Get-ADDCCloningExcludedApplicationList -GenerateXml </code></pre>
+<br />
+<br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-nGcis93Fgpc/UQUEbDh6kqI/AAAAAAAAAt4/AGTcLSgnqdI/s1600/5_generatedXML.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-nGcis93Fgpc/UQUEbDh6kqI/AAAAAAAAAt4/AGTcLSgnqdI/s1600/5_generatedXML.png" width="640" height="290" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;">We can find the generated .xml file &quot;<strong>CustomDCCloneAllowList.xml</strong>&quot; in &quot;<strong>C:\Windows\NTDS\</strong>&quot;.</div>
+<div class="separator" style="line-height:1.4;cloningExcludedApplicationList -GenerateXml </code></pre>
+<br />
+<br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-nGcis93Fgpc/UQUEbDh6kqI/AAAAAAAAAt4/AGTcLSgnqdI/s1600/5_generatedXML.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-nGcis93Fgpc/UQUEbDh6kqI/AAAAAAAAAt4/AGTcLSgnqdI/s1600/5_generatedXML.png" width="640" height="290" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;ear:both;font-size:13.19px;"><br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-82LoLYvZkGU/UQUEa2D6-4I/AAAAAAAAAt0/0XrXJbf2OSg/s1600/6_XML.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-82LoLYvZkGU/UQUEa2D6-4I/AAAAAAAAAt0/0XrXJbf2OSg/s1600/6_XML.png" width="640" height="422" /></a></div>
+<br />
+<br />
+<span style="line-height:1.4;font-size:13px;">To complete the warm-up, we have to launch one last command:</span><br />
+<br />
+<pre style="padding:0px;border:1px dashed #cccccc;width:646.46px;height:auto;line-height:20px;overflow:auto;font-family:arial;font-size:12px;background-color:#f0f0f0;"><code> New-ADDCCloneConfigFile -Static -IPv4Address &quot;192.168.1.12&quot; -IPv4DNSResolver &quot;192.168.1.10&quot; -IPv4SubnetMask &quot;255.255.255.0&quot; -CloneComputerName &quot;DC03&quot; -IPv4DefaultGateway &quot;192.168.1.1&quot; -SiteName &quot;Default-First-Site-Name&quot; </code></pre>
+<br />
+<br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-VRlJTy3eZhI/UQUGUPiH3TI/AAAAAAAAAuk/Y5zho4imTsc/s1600/22_NewADDCCloneConfigFile.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-VRlJTy3eZhI/UQUGUPiH3TI/AAAAAAAAAuk/Y5zho4imTsc/s1600/22_NewADDCCloneConfigFile.png" width="640" height="458" /></a></div>
+<br />
+<span style="line-height:1.4;font-size:13px;">This command will generate a new .xml file: &quot;</span><strong style="line-height:1.4;font-size:13.19px;">DCCloneConfig.xml</strong><span style="line-height:1.4;font-size:13px;">&quot;. By entering this command, we have
+ specified the future cloned DC name and its network configuration.</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-AyqqV6287D4/UQUHZEecIMI/AAAAAAAAAuw/Iwu_mhcCvEM/s1600/Untitled.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-AyqqV6287D4/UQUHZEecIMI/AAAAAAAAAuw/Iwu_mhcCvEM/s1600/Untitled.png" width="640" height="398" /></a></div>
+<br />
+<span style="line-height:1.4;font-size:13px;">The cloned DC must be on the same site.</span><br />
+<br />
+<span style="line-height:1.4;font-size:13px;">Let&#39;s edit the configuration file of the DC02 virtual machine:</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-Yur6okzOhrs/UQUJf-ErYyI/AAAAAAAAAv8/vV9-VhiiyvU/s1600/generationIDDC02a.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-Yur6okzOhrs/UQUJf-ErYyI/AAAAAAAAAv8/vV9-VhiiyvU/s1600/generationIDDC02a.png" width="640" height="118" /></a></div>
+<br />
+<br />
+<span style="line-height:1.4;font-size:13px;">We find the number &quot;</span><strong style="line-height:1.4;font-size:13.19px;">genreration_id</strong><span style="line-height:1.4;font-size:13px;">&quot; with this hexadecimal value : &quot;</span><strong style="line-height:1.4;font-size:13.19px;">5683b796635a6015<span style="background-color:blue;color:lime;">936e3117daa5b751</span></strong><span style="line-height:1.4;font-size:13px;">&quot;.</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-JMrDO29K0i4/UQUJV64q8BI/AAAAAAAAAvk/pFI9oLQuSjI/s1600/generationIDDC02.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-JMrDO29K0i4/UQUJV64q8BI/AAAAAAAAAvk/pFI9oLQuSjI/s1600/generationIDDC02.png" width="640" height="26" /></a></div>
+<br />
+<br />
+<span style="line-height:1.4;font-size:13px;">The value for the msDS-GenerationId attribute is 51 B7 A5 DA 17 31 6E 93. By inverting the value found in the xml file of the virtual machine,&nbsp;<span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">same
+ value is found:</span>&nbsp;</span><strong style="line-height:1.4;font-size:13.19px;"><span style="background-color:blue;color:lime;">936e3117daa5b751 -&gt;&nbsp;</span></strong><strong style="line-height:1.4;font-size:13.19px;"><span style="background-color:blue;color:lime;">51b7a5da17316e93</span></strong><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-MzAMXPrUSKQ/UQUJWNTqqFI/AAAAAAAAAvo/AzcLji70T8w/s1600/generationIDDC02b.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-MzAMXPrUSKQ/UQUJWNTqqFI/AAAAAAAAAvo/AzcLji70T8w/s1600/generationIDDC02b.png" width="568" height="640" /></a></div>
+<br />
+<br />
+<h1><a name="Export_of_the_prepared_VM_and_import_in_the_new_VM"></a>3) Export of the prepared VM and import in the new VM</h1>
+<span style="text-decoration:underline;"><br />
+</span><span style="line-height:1.4;font-size:13px;">Shut down the DC&nbsp;</span><strong style="line-height:1.4;font-size:13.19px;">DC02&nbsp;</strong><span style="line-height:1.4;font-size:13px;">we just prepared.</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-EEbi0Ff6nP0/UQULDG-R_1I/AAAAAAAAAwg/Gyglw8gbmpo/s1600/23_shutdownDC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-EEbi0Ff6nP0/UQULDG-R_1I/AAAAAAAAAwg/Gyglw8gbmpo/s1600/23_shutdownDC.png" width="311" height="320" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;">In Hyper-V,&nbsp;<strong>select the</strong>span><span style="line-height:1.4;font-size:13px;">Shut down the DC&nbsp;</span><strong style="line-height:1.4;font-size:13.19px;">DC02&nbsp;</strong><span style="line-height:1.4;font-size:13px;">we just prepared.</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-EEbi0Ff6nP0/UQULDG-R_1I/AAAAAAAAAwg/Gyglw8gbmpo/s1600/23_shutdownDC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-EEbi0Ff6nP0/UQULDG-R_1I/AAAAAAAAAwg/Gyglw8gbmpo/s1600/23_shutdownDC.png" width="311" height="320" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:cente&nbsp;VM to export (DC02 in this case) and choose the option &quot;<strong>Export...</strong>&quot;</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;"><br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-IT3yRqNl--s/UQULTk-Y49I/AAAAAAAAAw4/JmilhSP8GQg/s1600/24_ExportDC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-IT3yRqNl--s/UQULTk-Y49I/AAAAAAAAAw4/JmilhSP8GQg/s1600/24_ExportDC.png" width="640" height="426" /></a></div>
+<br />
+<br />
+<span style="line-height:1.4;font-size:13px;">Then, simply specify where you want to export your VM.</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-buz581eqmNQ/UQULS3XM0SI/AAAAAAAAAwo/Q9-sB2vbiaE/s1600/25_specifyWhere.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-buz581eqmNQ/UQULS3XM0SI/AAAAAAAAAwo/Q9-sB2vbiaE/s1600/25_specifyWhere.png" width="400" height="132" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;">Created, for this lab, an Export folder under the folder Labo on G:\ disk which is, actually,
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/30521.set-up-a-virtual-infrastructure-at-home-with-windows-8-hyper-v-manager-and-a-synology-ds412j.aspx">
+a virtual disk hosted by a Synology NAS</a><span style="color:#000000;">.</span></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;"><br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-pUpv0wfAWEA/UQULTJI9JdI/AAAAAAAAAws/_mPXvJI4dz0/s1600/26_selectFolder.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-pUpv0wfAWEA/UQULTJI9JdI/AAAAAAAAAws/_mPXvJI4dz0/s1600/26_selectFolder.png" width="400" height="175" /></a></div>
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-3ZIJhO8o16w/UQULTmdMwFI/AAAAAAAAAw8/0PzPjSVCRx4/s1600/27_exportVM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-3ZIJhO8o16w/UQULTmdMwFI/AAAAAAAAAw8/0PzPjSVCRx4/s1600/27_exportVM.png" width="400" height="132" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;"><br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;">Let the export finish.</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-b9s2SddOUJM/UQULUHK7qUI/AAAAAAAAAxI/_ANF0NFcDRM/s1600/28_exportedStructure.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-b9s2SddOUJM/UQULUHK7qUI/AAAAAAAAAxI/_ANF0NFcDRM/s1600/28_exportedStructure.png" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;">A .vhdx has been exported.</div>
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-wixic0bWxnY/UQULUTjXgqI/AAAAAAAAAxE/840KqoYw7HE/s1600/29_vhdx.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-wixic0bWxnY/UQULUTjXgqI/AAAAAAAAAxE/840KqoYw7HE/s1600/29_vhdx.png" width="320" height="70" /></a></div>
+<br />
+<br />
+<span style="line-height:1.4;font-size:13px;">And the .xml&nbsp;configuration&nbsp;file.</span><br />
+<br />
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-BKVo2ZNlvcU/UQUMK4da4_I/AAAAAAAAAxk/XIsZwW1Oikc/s1600/30_xml.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-BKVo2ZNlvcU/UQUMK4da4_I/AAAAAAAAAxk/XIsZwW1Oikc/s1600/30_xml.png" width="320" height="66" /></a></div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;">
+<p style="background:white none repeat scroll 0% 0%;"><span style="line-height:107%;font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">Now let’s move on to the import step. Select your node and &quot;<strong>Import Virtual Machine...</strong>&quot;.</span></p>
+</div>
+<div class="separator" style="line-height:1.4;clear:both;font-size:13.19px;text-align:center;">
+<br />
+</div>
+<div style="line-height:1.4;font-size:13.19px;margin-bottom:8px;background-color:white;">
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-zSJz1KMbhc0/UQUMj1d40eI/AAAAAAAAAyQ/IpgIbuSZPfM/s1600/32_importVM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-zSJz1KMbhc0/UQUMj1d40eI/AAAAAAAAAyQ/IpgIbuSZPfM/s1600/32_importVM.png" width="237" height="320" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+The import process is very simple &quot;<strong>Next &gt;</strong>&quot;</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-GFib7dz26-k/UQUMj4U7wAI/AAAAAAAAAyE/oWEn7Bv-zek/s1600/33_step1.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-GFib7dz26-k/UQUMj4U7wAI/AAAAAAAAAyE/oWEn7Bv-zek/s1600/33_step1.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+&quot;<strong>Browse</strong>&quot;.</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-zIasYdhzqqU/UQUMj6FE2ZI/AAAAAAAAAyI/JURV4geEQj8/s1600/34_locateFolder.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-zIasYdhzqqU/UQUMj6FE2ZI/AAAAAAAAAyI/JURV4geEQj8/s1600/34_locateFolder.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Select the cloned VM root folder, here, for the example DC02.&nbsp;</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-7MXpvHFJbzI/UQUMkUwO7MI/AAAAAAAAAyM/Mj7M3ddEZyg/s1600/35_selectFolder.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-7MXpvHFJbzI/UQUMkUwO7MI/AAAAAAAAAyM/Mj7M3ddEZyg/s1600/35_selectFolder.png" width="400" height="175" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;">&nbsp;&quot;</span><strong style="color:black;line-height:normal;font-family:&#39;Times New Roman&#39;;font-size:medium;">Next &gt;</strong><span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;">&quot;.</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="sMkUwO7MI/AAAAAAAAAyM/Mj7M3ddEZyg/s1600/35_selectFolder.png" width="400" height="175" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;">&nbsp;&quot;</span><strong style="color:black;line-height:normal;font-family:&#39;Times New Roman&#39;;font-size:medium;">Next &gt;</strong><span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;">&quot;.</span></div>
+<div class="separator" styleparator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-JPjSw0DH83E/UQUMknx55DI/AAAAAAAAAyU/iVTOJUfbtDc/s1600/36_locatedFolder.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-JPjSw0DH83E/UQUMknx55DI/AAAAAAAAAyU/iVTOJUfbtDc/s1600/36_locatedFolder.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Hyper-V detect a VM and &nbsp;&quot;<strong>Next &gt;</strong>&quot; ;-)</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-r1CkFCK--tQ/UQUMk6hjPMI/AAAAAAAAAyo/t4USiihCy4w/s1600/37_selectVM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-r1CkFCK--tQ/UQUMk6hjPMI/AAAAAAAAAyo/t4USiihCy4w/s1600/37_selectVM.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">We want Hyper-V to create a new unique ID &quot;<strong>Next &gt;</strong></span><span style="color:black;">&quot;.</span>
+</p>
+<span style="font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"></span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-OBNDuKCJrXE/UQUMk5HkhFI/AAAAAAAAAyg/8Tvx_i-CcAQ/s1600/38_chooseImportType.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-OBNDuKCJrXE/UQUMk5HkhFI/AAAAAAAAAyg/8Tvx_i-CcAQ/s1600/38_chooseImportType.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Store the VM where you want &quot;<strong>Next &gt;</strong><span style="font-size:small;font-family:&#39;Times New Roman&#39;;color:black;">&quot;</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-dQS82ZZNMUU/UQUMlDM-EnI/AAAAAAAAAyk/7FS89duie5E/s1600/39_chooseFolderForVM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-dQS82ZZNMUU/UQUMlDM-EnI/AAAAAAAAAyk/7FS89duie5E/s1600/39_chooseFolderForVM.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Store the .vhdx. &quot;<strong>Next &gt;</strong><span style="font-size:small;font-family:&#39;Times New Roman&#39;;color:black;">&quot;</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-dZEcCoFNC1Y/UQUMl60PExI/AAAAAAAAAy8/xcG9JKy_TN4/s1600/40_chooseFoldersToStoreVHDx.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-dZEcCoFNC1Y/UQUMl60PExI/AAAAAAAAAy8/xcG9JKy_TN4/s1600/40_chooseFoldersToStoreVHDx.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">Done! Check the review of the import and click on &quot;<strong>Finish</strong>&quot;.</span></p>
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:cm;"><img alt=" " src="http://2.bp.blogspot.com/-dZEcCoFNC1Y/UQUMl60PExI/AAAAAAAAAy8/xcG9JKy_TN4/s1600/40_chooseFoldersToStoreVHDx.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">Done! Check the review of the import and click on &quot;<strong>Finish</strong>&quot;.</span></p>
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-sienter;">
+<a href="http://4.bp.blogspot.com/-xEI0iakSU5g/UQUMmER56rI/AAAAAAAAAyw/KCQIeYm55rs/s1600/41_completingImport.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-xEI0iakSU5g/UQUMmER56rI/AAAAAAAAAyw/KCQIeYm55rs/s1600/41_completingImport.png" width="640" height="480" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Hyper-V begins the import<span style="line-height:107%;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">&nbsp;</span>process.</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-4Ka-knNQvFw/UQUMmCeb5hI/AAAAAAAAAy0/A77arU9kWNE/s1600/42_copying.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-4Ka-knNQvFw/UQUMmCeb5hI/AAAAAAAAAy0/A77arU9kWNE/s1600/42_copying.png" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:13.85pt;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">Once the import is complete, if you edit the .xml configuration file of the imported VM, you can notice that the generation_id field has been modified.</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+DC02 .xml</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-JMrDO29K0i4/UQUJV64q8BI/AAAAAAAAAvk/pFI9oLQuSjI/s1600/generationIDDC02.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-JMrDO29K0i4/UQUJV64q8BI/AAAAAAAAAvk/pFI9oLQuSjI/s1600/generationIDDC02.png" width="640" height="26" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+DC03 (imported VM) .xml</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-swleylZTOgA/UQUMmUW2RfI/AAAAAAAAAzE/RKP1vBCyvh4/s1600/43_newGenerationID.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-swleylZTOgA/UQUMmUW2RfI/AAAAAAAAAzE/RKP1vBCyvh4/s1600/43_newGenerationID.png" width="640" height="74" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Rename the VM. Right click on the imported VM and click on &quot;<strong>Rename...</strong>&quot;</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-IlCjFj3TjsA/UQUMms4PbnI/AAAAAAAAAzA/p0TKb2deYn0/s1600/44_renameNewVM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-IlCjFj3TjsA/UQUMms4PbnI/AAAAAAAAAzA/p0TKb2deYn0/s1600/44_renameNewVM.png" width="181" height="320" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+It&#39;s done! Start DC02 and then DC03.</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-Md_AF0ZtKHk/UQUMmtqv9SI/AAAAAAAAAzM/EyuxNSoPc10/s1600/45_VMRenamed.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-Md_AF0ZtKHk/UQUMmtqv9SI/AAAAAAAAAzM/EyuxNSoPc10/s1600/45_VMRenamed.png" /></a></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Initiating of DC03...</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-7ss8QTMnh8Y/UQUNx0F1aDI/AAAAAAAAA04/5Og-y_hXt-Q/s1600/46.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-7ss8QTMnh8Y/UQUNx0F1aDI/AAAAAAAAA04/5Og-y_hXt-Q/s1600/46.png" width="320" height="275" /></a></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+The DC found out it was a clone, so it starts the cloning process.</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-Stu7lBUFArI/UQUNxxhXtKI/AAAAAAAAA08/nFRXDK-UZu4/s1600/48.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-Stu7lBUFArI/UQUNxxhXtKI/AAAAAAAAA08/nFRXDK-UZu4/s1600/48.png" width="320" height="207" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+DC03 restarts once.</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-HU88VezWc0Y/UQUNxy_xp4I/AAAAAAAAA1E/sdEUBqTBOL4/s1600/49.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-HU88VezWc0Y/UQUNxy_xp4I/AAAAAAAAA1E/sdEUBqTBOL4/s1600/49.png" width="320" height="241" /></a></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Check the Sites and Services console. You can see the new DC.</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-c3s8UnR4HSw/UQUMrm5EAEI/AAAAAAAAAz8/gOzKwozkqbw/s1600/50_sitesAndServices.png" style="color:#888888;margin-righ></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Check the Sites and Services console. You can see the new DC.</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<br />
+</div>
+<div class="separator" style="line-height:22pxt:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-c3s8UnR4HSw/UQUMrm5EAEI/AAAAAAAAAz8/gOzKwozkqbw/s1600/50_sitesAndServices.png" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">Also located in ADUC and ADAC.</span></p>
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://1.bp.blogspot.com/-PaSeQfcyOIc/UQUMsBI5n9I/AAAAAAAAA0M/Aat6mlSHTLo/s1600/52_ADUC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-PaSeQfcyOIc/UQUMsBI5n9I/AAAAAAAAA0M/Aat6mlSHTLo/s1600/52_ADUC.png" width="400" height="278" /></a></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-DRyysyHRDPg/UQUMsnbD7cI/AAAAAAAAA0g/yyUuDr1btUk/s1600/53_ADAC.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-DRyysyHRDPg/UQUMsnbD7cI/AAAAAAAAA0g/yyUuDr1btUk/s1600/53_ADAC.png" width="400" height="273" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;text-align:center;">
+<br />
+</div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:13.85pt;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">If the properties of DC03 (DC resulting from cloning) are edited, you will see that the VM-GenerationID is different from the source DC DC02.</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-AtnFNT1n0Lc/UQUVzvZYunI/AAAAAAAAA2M/MlQ_VhZRsaU/s1600/54_newmsDS-GenerationID.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-AtnFNT1n0Lc/UQUVzvZYunI/AAAAAAAAA2M/MlQ_VhZRsaU/s1600/54_newmsDS-GenerationID.png" width="356" height="400" /></a></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<div class="separator" style="line-height:22px;clear:both;font-family:Arial,sans-serif;font-size:15px;">
+<span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<h1><a name="Detailed_cloning_process"></a>4) Detailed cloning process</h1>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+Technet&nbsp;<a href="http://technet.microsoft.com/en-us/library/jj574118.aspx" style="color:#888888;">explains</a>&nbsp;exactly what happens during the cloning process. Here is the diagram published by Microsoft describing<span style="line-height:107%;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">
+ it.</span></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-hPeZ1bJJRpM/UQUWmUvaqxI/AAAAAAAAA2U/jgCu0hdp_5M/s1600/IC629661.gif" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-hPeZ1bJJRpM/UQUWmUvaqxI/AAAAAAAAA2U/jgCu0hdp_5M/s1600/IC629661.gif" width="640" height="627" /></a></div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<h1><a name="Cloning_went_wrong"></a>5) Cloning went wrong ?</h1>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+</div>
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">If your cloning goes wrong, the source DC will restart in Directory Service Restore Mode (<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#DSRM">DSRM</a>).
+ You need to login locally and remove the flag for DSRM mode. Then clone and restart after -obviously- correcting the error that prevented you from properly cloning the source DC.&nbsp;</span></p>
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="line-height:13.85pt;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">There are two ways to do this:</span></p>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<span style="line-height:18.47px;font-family:&#39;Trebuchet MS&#3t MS&#39;,sans-serif;color:#666666;">If your cloning goes wrong, the source DC will restart in Directory Service Restore Mode (<a href="http://social.technet.microsoft.com/wiki/contents/articles/16757.active-directory-glossary.aspx#DSRM">DSRM</a>).
+ You need to login locally and remove the flag for DSRM mode. Then clone and restart after -obviously- correcting the error that prevented you from properly cloning the source DC.&nbsp;</span></p>
+<p style="line-height:13.85pt;background:white none repeat scroll 0% 0%;"><span style="line-height:13.85pt;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">There are two ways to do this:</span></p>
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><br />
+</div>
+<9;,Trebuchet,Verdana,sans-serif;font-size:13px;color:#666666;">a) Via Msconfig</span><br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://4.bp.blogspot.com/-tUpWsEznwnw/UQUYe9P57wI/AAAAAAAAA28/PlMrYBW1n3U/s1600/55_DSRM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-tUpWsEznwnw/UQUYe9P57wI/AAAAAAAAA28/PlMrYBW1n3U/s1600/55_DSRM.png" width="400" height="268" /></a></div>
+<br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-rgQFAYVRX8w/UQUYhDajR-I/AAAAAAAAA3E/okiIv2Cby74/s1600/56_DSRM.png" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-rgQFAYVRX8w/UQUYhDajR-I/AAAAAAAAA3E/okiIv2Cby74/s1600/56_DSRM.png" width="400" height="267" /></a></div>
+<br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+b) If you are in CORE Edition, via the command shell</div>
+<div style="line-height:22px;font-family:Arial,sans-serif;font-size:15px;"><span style="line-height:normal;font-size:small;font-family:&#39;Times New Roman&#39;;color:black;"><br />
+</span></div>
+<pre style="padding:0px;border:1px dashed #cccccc;width:646.46px;height:auto;color:#666666;line-height:20px;overflow:auto;font-family:arial;font-size:12px;background-color:#f0f0f0;"><code> bcdedit.exe /deletevalue safeboot </code></pre>
+<div style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">
+<br />
+</div>
+<h1><a name="Conclusion"></a>6) Conclusion</h1>
+<span style="text-decoration:underline;"><br />
+</span><span style="line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13px;color:#666666;"></span><span style="line-height:107%;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">This tutorial is now
+ complete.<br />
+<br />
+We can see the great advantage of the VM-GenerationID addition by Microsoft, as it also opens the way for snapshot DC.<br />
+<br />
+Indeed, before this improvement, cloning a DC could lead to serious inconsistencies in our AD database as shown in this diagram</span><span style="line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13px;color:#666666;">(</span><a href="http://technet.microsoft.com/en-us/library/virtual_active_directory_domain_controller_virtualization_hyperv(v=ws.10).aspx" style="color:#888888;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">source</a><span style="line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13px;color:#666666;">).</span><br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://3.bp.blogspot.com/-L2dTnq7HGSA/UQUaGlss9rI/AAAAAAAAA30/dBMUbojVCTk/s1600/IC261600.gif" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-L2dTnq7HGSA/UQUaGlss9rI/AAAAAAAAA30/dBMUbojVCTk/s1600/IC261600.gif" width="372" height="400" /></a></div>
+<span style="line-height:18px;font-size:12px;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><br />
+</span><span style="line-height:18px;font-size:12px;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><br />
+</span><span style="line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13px;color:#666666;">It is now managed as shown in the following
+<span style="line-height:107%;font-size:10pt;font-family:&#39;Trebuchet MS&#39;,sans-serif;color:#666666;">
+illustration&nbsp;</span>(</span><a href="http://technet.microsoft.com/en-us/library/jj574118.aspx" style="color:#888888;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;">source</a><span style="line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13px;color:#666666;">).</span><br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+<div class="separator" style="color:#666666;line-height:18.47px;clear:both;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;text-align:center;">
+<a href="http://2.bp.blogspot.com/-ga8U8StNVIs/UQUaxTE5j1I/AAAAAAAAA38/RfqwlsF_E8o/s1600/IC610954.gif" style="color:#888888;margin-right:1em;margin-left:1em;"><img alt=" " src="http://2.bp.blogspot.com/-ga8U8StNVIs/UQUaxTE5j1I/AAAAAAAAA38/RfqwlsF_E8o/s1600/IC610954.gif" width="640" height="353" /></a></div>
+<br style="color:#666666;line-height:18.47px;font-family:&#39;Trebuchet MS&#39;,Trebuchet,Verdana,sans-serif;font-size:13.19px;" />
+</div>
+
+</div>
+    
+    

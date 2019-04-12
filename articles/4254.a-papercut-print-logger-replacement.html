@@ -1,0 +1,117 @@
+---
+layout: default
+title: A PaperCut Print Logger Replacement - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+Since I originally posted this article my print logging has changed quite a bit. In the version that I talked about originally I wasn&#39;t getting an accurate accounting of pages printed. This was only recently revealed to me. To be honest, the fact that I missed
+ it originally is upsetting but the fact that amount of printing done historically was so monumental and that I perhaps missed on actual number by a large precentage is rather depressing! I&#39;ll give you an example of how much we pdiv></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">A PaperCut Print Logger Replacement</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_6615__1d76b5ed_ctl00_ctl01" title="Rated Excellent [5 out of 5]."></span><input type="hidden" value="5" id="ctl00_ctl00_content_content_ctl00_w_6615__1d76b5ed_ctl00_ctl01_Value" /></rint a little later.<br />
+<br />
+I want to start out saying that I really like the free PaperCut print loging software, it works really well and I&#39;ve had no complaints. But we recently migrated from multiple print servers, to a print cluster, the process went smoothly and I have a few scripts
+ that I used that I need to publish on the Gallery. The only loss was the logging capability we had via
+<a href="http://www.papercut.com/products/free_software/print_logger/">PaperCut</a>.
+<br />
+<br />
+I did some research and the most I found was an&nbsp;<a href="http://www.papercut.com/products/ng/manual/ch-clustering.html">article</a> from PaperCut that talked about how to set up the paid software to work within a clustered environment. There was an indication
+ on the FAQ for the free software that while unsupported you might be able to use the same set of instructions to get it to go, but sadly I did not have the requiste mojo to make that happen.<br />
+<br />
+So I&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/windows-server-2008-r2-and-print-logging.aspx">remembered</a> I had found that print logging had been moved to a separate log that is disabled be default. So I enabled those logs on my
+ cluster, and began banging away at PowerShell to get a solution put together. There are several events associated with a given print job at least 4 to be precise:
+<ul>
+<li>800 - This is the job spooling on the server </li><li>801 - This is the job being sent to the printer </li><li>805 - This is the job actually printing (I think) </li><li>307 - A summary of the job </li></ul>
+<p>Event ID 307 is what I was after, it had all the pertinent information I needed to build my log with:</p>
+<ul>
+<li>Size (bytes) </li><li>Time </li><li>User </li><li>Job # </li><li>Client </li><li>Port </li><li>Printer </li><li>Pages </li><li>Document </li></ul>
+<p>What I didn&#39;t realize originally is that Event ID 805 contains the number of copies for a given Job ID. Why this isn&#39;t included in Event ID 307 I&#39;m not entirely sure but oh well. In order to get the proper accounting I needed a script that would write out
+ to a file the Job Id and the number of copies. Then the print logging script would read it in, and write the count out with the rest of the data.</p>
+<p>Originally this script was tied to an event and when that event occurred it would attempt to get the most recent (ie the one that triggered it). I found a wonderful article on&nbsp;<a href="http://blogs.technet.com/b/wincat/archive/2011/08/25/trigger-a-powershell-script-from-a-windows-event.aspx">TechNet</a>
+ about how to pass the EventRecord to a script. This allows me to parse the actual event that occurred. Since you have to modify the task I included two XML files that you can import into your Event Tasks that are already configured.<br />
+<br />
+To get things up and running there are a few steps that need to be gone through first and then you can get started. Once everything is setup the script will start working on it&#39;s own. The nice thing about it is, if the log file doesn&#39;t exist it will create
+ it for you. Since the filenames are based on the date, this means it should roll over for you every 24 hours.
+</p>
+<ol>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/windows-server-2008-r2-and-print-logging.aspx">Enable</a>&nbsp;the Microsoft-Windows-PrintService/Operational log
+</li><li>Create a folder to hold scipts and log output </li><li>Copy the&nbsp;<a href="http://gallery.technet.microsoft.com/PowerShell-Print-Logger-09a6f4e0">zip file</a> to your print server and extract it
+</li></ol>
+<p>Setup an <a href="http://social.technet.microsoft.com/wiki/contents/articles/how-to-attach-a-custom-task-to-an-event-on-ws08.aspx">
+Event Triggered Task</a> Or import the XML files</p>
+<ol>
+<li>Make sure the task runs when a user is NOT logged in </li><li>For a PowerShell script the command is Powershell and the argument is the path to the script
+</li></ol>
+<p>About 6mo ago I decided that I wanted to start writing this information out to a SQL database, so the script now writes data out to a csv, as well as logs it to your sql server. To setup a SQL database is a bit beyond this particular article, but what I
+ did was create a database on the default SQL instance. Within that database I created a table, and populated it with the following fields</p>
+<table>
+<tbody>
+<tr>
+<td>Column Name&nbsp;</td>
+<td>Data Type</td>
+</tr>
+<tr>
+<td>Time</td>
+<td>Datetime</td>
+</tr>
+<tr>
+<td>UserName</td>
+<td>varchar(50)</td>
+</tr>
+<tr>
+<td>Pages</td>
+<td>int</td>
+</tr>
+<tr>
+<td>DocumentName</td>
+<td>ntext</td>
+</tr>
+<tr>
+<td>Client</td>
+<td>varchar(50)</td>
+</tr>
+<tr>
+<td>Size</td>
+<td>bigint</td>
+</tr>
+<tr>
+<td>Printer</td>
+<td>varchar(50)</td>
+</tr>
+<tr>
+<td>Port</td>
+<td>varchar(50)</td>
+</tr>
+<tr>
+<td>Job</td>
+<td>int</td>
+</tr>
+<tr>
+<td>Copies</td>
+<td>int</td>
+</tr>
+</tbody>
+</table>
+<p>Finally I created a sql user, assigned a password and created a login for it in the database. That user only has the ability to insert into the table and only has access to that particular table. I left in the code to write to csv as I think that&#39;s handy
+ and a nice builtin backup. Feel free to comment out the parts you don&#39;t want, I&#39;m thinking I may update this slightly so if you don&#39;t pass in any SQL information it doesn&#39;t write anything out to SQL.<br />
+<br />
+That&#39;s pretty much it, I do in fact use this in production, I think this particular version works much better than in the past. I have a script that is included in the&nbsp;<a href="http://gallery.technet.microsoft.com/PowerShell-Print-Logger-09a6f4e0">download
+ page</a> on the TechNet Gallery that shows how to query the table for yesterday&#39;s print jobs. Here is a sample of the output I receive from that script each morning.<br />
+<br />
+<span style="font-family:&#39;courier new&#39;;">DateSubmitted : 5/1/2012<br />
+PrintJobs&nbsp;&nbsp;&nbsp;&nbsp; : 2067<br />
+PagesPrinted&nbsp; : 9544<br />
+UsersPrinting : 414<br />
+MaxJob&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : 211<br />
+ReamsUsed&nbsp;&nbsp;&nbsp;&nbsp; : 19.088<br />
+BoxesUsed&nbsp;&nbsp;&nbsp;&nbsp; : 1.9088</span></p>
+<ol>
+</ol>
+
+</div>
+    
+    

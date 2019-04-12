@@ -1,0 +1,104 @@
+---
+layout: default
+title: Common Problems with ConfigMgr 2007 Site Assignment - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>In this article I&#39;d like to share information gleaned from a quarters worth of support incidents as regards Configuration Manager 2007 Client Site Assignment. The goal is for this&nbsp;article to help by providing details on common problems driving calls to support.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Online_Content">Online Content</a></li><li class="hierarchy-item"><a href="#Some_of_the_common_problems_which_prevent_site_assignments">Some of the common problems that prevent site assignments</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Site_Boundaries">Site Boundaries</a></li><li class="hierarchy-item"><a href="#Component_Servers_and_Site_Publishing_to_AD">Component Servers and Site Publishing to AD</a></li><li class="hierarchy-item"><a href="#Network_and_related_Dependencies">Network and related Dependencies</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#General_Information">General Information</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<p>It is worth noting here many of these details will assist in Client Installation failures as well even though that is a topic for another day. It is also worth noting that many of the problems perceived to be Client Installation failures are in fact successfully
+ installed clients which are unable to assign to a site. In the Admin console when the property
+<em>Client</em> = <em>No</em>, you may have a successfully installed client that like E.T. cannot phone home. Actually, unlike E.T. it does not yet know where Home is...</p>
+<p><strong></strong></p>
+<strong>
+<h1><a name="Online_Content"></a>Online Content</h1>
+</strong>
+<p>&nbsp;</p>
+<p>The online TechNet library for Configuration Manager has a wealth of data covering site assignment and related subjects so please check out the relevant links at need.</p>
+<p>Before beginning, ensure your familiar with the topic: <strong>About Client Site Assignment in Configuration Manager
+</strong><a href="http://technet.microsoft.com/en-us/library/bb681005.aspx">http://technet.microsoft.com/en-us/library/bb681005.aspx</a>.</p>
+<p><strong></strong></p>
+<strong>
+<h1><a name="Some_of_the_common_problems_which_prevent_site_assignments"></a>Some of the common problems that prevent site assignments</h1>
+</strong>
+<p>&nbsp;</p>
+<p><strong></strong></p>
+<strong>
+<h2><a name="Site_Boundaries"></a>Site Boundaries</h2>
+</strong>
+<p>&nbsp;</p>
+<p>The common theme here is that clients are not always on the subnets we expect, or have defined. It&#39;s easy to target an installation to a resource which is not assigned to the current site and the expectation may be that it will find its local site and join.
+ It is also common for clients to be beyond any sites defined boundaries resulting in site assignment failure.</p>
+<p>1. <strong>Simple omissions. </strong>Failure to define a subnet is one of the most common call triggers. This can include: a simple oversight when defining subnets, clients appearing on previously unknown subnets, or can be due to network reconfigurations
+ having occurred. This also applies to IP Ranges<strong><em>. </em></strong><em>Find more here:
+</em><em></em><a href="http://technet.microsoft.com/en-us/library/bb633084.aspx"><em>Choose Configuration Manager Boundaries</em></a></p>
+<p><strong>2. </strong><strong>Active Directory omissions</strong>. Beware the AD Site which at the time does not contain the expected subnet. Validate that the AD Site used by Configuration Manager defines all the expected subnets. It is also wise to validate
+ that the AD Site name was not entered incorrectly. The <em>fat fingered</em> AD Site name is not an unseen beast and is not validated against AD when entered.<strong></strong></p>
+<p><strong>3. </strong><strong>Omissions of a VPN Scope. </strong>When clients connect through a VPN and have an IP address from that VPN&#39;s scope, it is important that the scope be defined in the expected sites defined boundaries. Too often it is not.
+<em>Find more here</em>: <a href="http://technet.microsoft.com/en-us/library/bb694028.aspx">
+<em>Example Roaming Scenarios for Configuration Manager: Complex</em></a><strong></strong></p>
+<p>4. <strong>Overlapping Boundaries</strong>. These come in two flavors worth noting:
+</p>
+<blockquote>
+<p>a) <em>Doubling Up</em>: When multiple sites publish to Active Directory or a removed (deleted) site has orphaned its data in Active Directory, the potential for a conflict exists. Please review the contents in Active Directory for such conflicts removing
+ orphaned site data and resolving active overlap configurations. <em>Find more here:</em>
+<a href="http://technet.microsoft.com/en-us/library/bb693614.aspx"><em>How to Verify Site Information is Published to Active Directory Domain Services</em></a></p>
+</blockquote>
+<blockquote>
+<p>b) <em>Piling On</em>, or <em>Hidden Overlaps</em>: Active Directory sites may be leveraged by one Configuration Manager site while an IP subnet which is in that AD Site has been defined to a different Configuration Manager site. Here the conflict is not
+ as obvious but the potential problem is worth keeping in mind. The client will find it belongs to both; one site by IP and the next by AD Site membership.</p>
+</blockquote>
+<p><em>More on Boundary Validation: </em>A tool which may help investigate suspected boundary issues is the SMSBoundaries tool by
+<em>Russ Slaten</em> which you can find here: <a href="http://blogs.msdn.com/rslaten/archive/2007/03/20/finding-overlapping-boundaries-in-sms-smsboundaries-v1-42.aspx">
+http://blogs.msdn.com/rslaten/archive/2007/03/20/finding-overlapping-boundaries-in-sms-smsboundaries-v1-42.aspx</a>.</p>
+<p><strong></strong></p>
+<strong>
+<h2><a name="Component_Servers_and_Site_Publishing_to_AD"></a>Component Servers and Site Publishing to AD</h2>
+</strong>
+<p>&nbsp;</p>
+<p>With boundaries well defined and covering existing subnets, it is still not uncommon for a sites data to not have been published to AD:
+</p>
+<p><em>1. </em><strong>Publishing to Active Directory</strong>. A common driver is a sites failure to publish data to Active Directory when the Clients are expected to leverage that data. Ensure relevant sites are enabled for publication, and that the site
+ also has permissions to update Active Directory. This will require granting of the required permissions.
+<em>Find more here</em>: <a href="http://technet.microsoft.com/en-us/library/bb680711.aspx">
+<em>How to Publish Configuration Manager Site Information to Active Directory Domain Services</em></a>.<em></em></p>
+<p><em>2. </em><strong>Active Directory</strong>. Assuming data is published successfully, ensure Active Directory is able to replicate data correctly. While uncommon such a situation usually is resolved before Configuration Manager site assignment failures
+ leads to its discovery. <em></em></p>
+<p><em></em></p>
+<p><strong></strong></p>
+<strong>
+<h2><a name="Network_and_related_Dependencies"></a>Network and related Dependencies
+</h2>
+</strong>
+<p>&nbsp;</p>
+<p>When all the other ducks are lined up remain aware that sometimes clients just can&#39;t get where they need to go and locate the servers they expect to locate.
+</p>
+<p>1. <strong>Name Resolution</strong>. Common for Workgroup systems lacking WINS, name resolution failures can block a client from completing site assignment. While this is uncommon, it usually takes access to a problem client to pin down as such issues can
+ be local to a given subnet or location and not easily identified. </p>
+<p><em></em></p>
+<p><strong>A Note on Site Code Changes:</strong></p>
+<p>It’s often overlooked but the Configuration Manager 2007 client is not designed to change site codes based upon location. If the client was previously assigned to one site, it takes a dedicated act to reassign that client - and this is often overlooked prior
+ to a support call. <em>Find more here:</em> <a href="http://technet.microsoft.com/en-us/library/bb680370.aspx">
+<em>How to Assign Configuration Manager Clients to a Site</em></a>.<em> </em></p>
+<p><strong></strong></p>
+<strong>
+<h1><a name="General_Information"></a>General Information</h1>
+</strong>
+<p>&nbsp;</p>
+<p>The following are links you may find of use when approaching site assignment issues and strategies:
+</p>
+<p>· Configuration Manager Site Assignment Data Flow: <a href="http://technet.microsoft.com/en-us/library/bb932178.aspx">
+http://technet.microsoft.com/en-us/library/bb932178.aspx</a></p>
+<p>· You can find more about the SLP role for Native Mode Clients in this posting from Carol Bailey:
+<a href="http://blogs.technet.com/configmgrteam/archive/2009/01/21/clarifying-native-mode-clients-and-the-server-locator-point-slp.aspx">
+http://blogs.technet.com/configmgrteam/archive/2009/01/21/clarifying-native-mode-clients-and-the-server-locator-point-slp.aspx</a></p>
+<p><em><strong>Note:</strong> This information was originally contributed by <strong>
+Brent Dunsire&nbsp;</strong>on the Configuration Manager Support Team blog.<br />
+</em></p>
+
+</div>
+    
+    

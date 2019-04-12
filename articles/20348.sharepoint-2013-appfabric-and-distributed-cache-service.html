@@ -1,0 +1,254 @@
+---
+layout: default
+title: SharePoint 2013&#58; AppFabric and Distributed Cache Service - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="font-size:12px;"></span><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hier-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="conarchy-item"><a href="#How_is_AppFabric_leveraged_in_the_context_of_SharePoint_TwentyThirteen">How is AppFabric leveraged in the context of SharePoint 2013?</a></li><li class="hierarchy-item"><a href="#What_Is_Distributed_Cache_Service">What Is Distributed Cache Service?</a></li><li class="hierarchy-item"><a href="#Things_to_Remember">Things to Remember</a></li><li class="hierarchy-item"><a href="#Configuring_Distributed_Cache_Service">Configuring Distributed Cache Service</a></li><li class="hierarchy-item"><a href="#Start_and_Stop_the_Distributed_Cache_service">Start and Stop the Distributed Cache service</a></li><li class="hierarchy-item"><a href="#Getting_Started_with_Distributed_Cache">Getting Started with Distributed Cache</a></li><li class="hierarchy-item"><a href="#Check_and_Change_The_Memory_Allocated_To_Distributed_Cache">Check and Change The Memory Allocated To Distributed Cache</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<h2><a name="Introduction"></a>Introduction</h2>
+<br />
+<div style="text-align:justify;">Windows Server AppFabric extends Windows Server to provide enhanced hosting, management, and caching capabilities for Web applications and middle-tier services. It consists of two main feature areas: AppFabric Hosting and AppFabric
+ Caching. </div>
+<p style="margin:0in 0in 8pt;text-align:justify;"><span style="font-size:12px;line-height:107%;color:#2a2a2a;">AppFabric Hosting features provide an easy way for users to deploy and manage Windows Workflow Foundation (WF) workflows that are hosted in Windows
+ Communication Foundation (WCF) services. AppFabric includes an extension of the Internet Information Services management tool that enables an IIS administrator to monitor the performance of services and workflows. There is also a set of Windows PowerShell
+ commands to manage persistence, hosting, and monitoring tasks.</span></p>
+<div style="text-align:justify;">The AppFabric caching features add a distributed, in-memory object cache to Windows Server that makes it easier to scale out high-performance .NET applications, especially ASP.NET applications.<br />
+</div>
+<p style="text-align:justify;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#000000;">Windows Server AppFabric is installed as a prerequisite for SharePoint 2013. AppFabric is installed as an extension to the Windows Server Application
+ Server Role and consist of two main components:</span></p>
+<ul>
+<li><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#000000;">Distributed caching – Previously codename Velocity</span>
+</li><li><span style="font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;color:#000000;"></span><span style="font-size:12px;line-height:107%;font-family:&#39;Segoe UI&#39;,sans-serif;color:#000000;">Service and workflow management</span>
+</li></ul>
+<h2><a name="How_is_AppFabric_leveraged_in_the_context_of_SharePoint_TwentyThirteen"></a>How is AppFabric leveraged in the context of SharePoint 2013?</h2>
+<ol style="list-style-type:lower-alpha;">
+<li style="text-align:justify;">What is AppFabric distributed caching and how does it work?
+<p style="text-align:justify;">AppFabric 1.1 for Windows Server Caching features uses a cluster of servers that communicate with each other to form a single, unified application cache system. As a distributed cache system, all cache operations are abstracted
+ to a single point of reference, referred to as the cache cluster. In other words, your client applications can work with a single logical unit of cache in the cluster regardless of how many computers make up the cache cluster.<br />
+<br />
+<span style="font-size:12px;color:#000000;">The value is stored in the HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\AppFabric\V1.0\Configuration in the registry.</span></p>
+</li><li style="text-align:justify;">
+<p><span style="font-size:12px;color:#000000;">AppFabric implements the caching methodology by using a cache cluster containing a number of caching servers. This cache cluster automatically handles the complexity of load balancing, scaling and failover. Each
+ one of the servers in the cache cluster has AppFabric installed and is running an instance of the AppFabric Caching Service. As an addition to storing data in the cache cluster AppFabric Caching Service also has the ability to store data in a local cache on
+ the server. This can be used to provide faster access to certain data which can be configured to automatically synchronize with cached items in the cache cluster.</span><span style="font-size:12px;color:#000000;">&nbsp;</span></p>
+When a cached item is being requested the local cache is checked first (if it is being used). If the item is found it is returned to the client. If the item does not exist the query is sent to the cache cluster and returned if it exists. This interaction with
+ the caching service is transparent to the client which only sees the cluster and local cache as a single entity. This way the client does not have to worry about which server the caching is stored on.&nbsp;&nbsp;
+<p><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#000000;">All data in the cache cluster is stored in memory on the cache servers. By default the data is stored in the memory on only one server in the cache cluster. By enabling the high-availability
+ option in the AppFabric Caching Services a second copy of each cached item is created on another server in the cache cluster. The first cached item is called the primary item and the second copy is the secondary item. In case a server in the cache cluster
+ becomes unavailable the data is available on one of the other servers. The secondary item is then promoted to the primary item and a new secondary item is created on another server in the cluster.</span></p>
+</li><li style="text-align:justify;">How does SharePoint 2013 utilize AppFabric distributed caching?<br />
+<br />
+<span style="font-size:12px;color:#000000;">The distributed caching is used by SharePoint 2013 for caching social elements and FedAuth tokens. Every time a user accesses a front end server the user needs to be authenticated which can become an issue when using
+ multiple front end servers. In SharePoint 2010 this was handled by enabling load balancing affinity (Sticky Sessions) to ensure that the user stayed on the same front end server. By caching the FedAuth token in the distributed cache it is no longer necessary
+ to enable sticker. The first cached item is called the primary item and the second copy is the secondary item. In case a server in the cache cluster
+ becomes unavailable the data is available on one of the other servers. The secondary item is then promoted to the primary item and a new secondary item is created on another server in the cluster.</span></p>
+</li><li style="text-align:justify;">How does SharePoint 20y session since the authentication token is now available from all front end servers through the cache cluster.</span>&nbsp;
+<p style="text-align:justify;"><span style="font-size:12px;color:#000000;">Prerequisite: Windows Server AppFabric cache service.</span></p>
+<p style="text-align:justify;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#000000;">In SharePoint 2010 and previous versions of SharePoint, authentication happened at the server level within Internet Information Services (IIS). The
+ authentication cookie was tied to the server (often as a session cookie) and if you jumped to a new server you had to log in again. In a load balanced environment, this required “sticky sessions” where the load balancer had to remember where it had sent you
+ previously within the same session so that you didn’t have to log in again. All of your SharePoint requests had to go to that server (images, pages, etc.) instead of being actively load balanced.</span></p>
+SharePoint takes advantage of this service in quite a few ways, specifically through user profiles and authentication.
+<br />
+<br />
+<ul>
+<li style="text-align:justify;">For user profiles, it enables everything to be “in sync” and have minimal visible
+<strong>POST</strong>s back to the server. Instead, the browser POSTs to the distributed cache and returns quickly because the distributed cache is resident in server memory. The data doesn’t have to be persisted to the database. Behind the scenes, a process
+ is doing the persistence from the distributed cache to the database, but the browser does not have to wait for it. This drastically improves responsiveness.
+</li><li>
+<p style="text-align:justify;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">For authentication, it means that the authentication information exists above the IIS Cache level (see diagram). So you can move from server to server with ease without
+ being redirected to the login page. This allows your load balancers to actively balance the load of all requests. So you could get the page you requested from server A, but all of the images may come from server B. The end result is a faster response and a
+ healthier, more balanced SharePoint farm. &nbsp;It makes login easier and allows load balancing to be more robust. Additionally, we get another level of cache that’s farm-wide aside from the Hierarchical Object Store that you can use.</span></p>
+</li></ul>
+</li></ol>
+<h2><a name="What_Is_Distributed_Cache_Service"></a>What Is Distributed Cache Service?</h2>
+<p style="text-align:justify;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">Distributed Cache Service is a customized version of Windows App Fabric (code named Velocity) deployed in SharePoint 2013.
+<br />
+</span><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;"><br />
+The Distributed Cache service provides caching functionality to features (not to be confused with site features) in SharePoint Server 2013. The Distributed Cache service is either required by or improves performance of the following features:</span></p>
+<ul>
+<li><strong><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">Authentication</span>
+</strong></li><li><span style="font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;"></span><strong><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">Newsfeeds</span>
+</strong></li><li><strong><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">OneNote client access</span>
+</strong></li><li><strong><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">Security Trimming</span>
+</strong></li><li><span style="font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;"></span><span style="font-size:12px;line-height:107%;font-family:&#39;Segoe UI&#39;,sans-serif;"><strong>Page load performance</strong></span>
+</li></ul>
+<div style="text-align:justify;">Any server in the farm running the Distributed Cache service is known as a
+<strong>cache host</strong>. A <strong>cache cluster</strong> is the group of all cache hosts in a SharePoint Server 2013&nbsp;farm. A cache host joins a cache cluster when a new application server running the Distributed Cache service is added to the farm. When
+ using a cache cluster, the Distributed Cache spans all application servers and creates one cache in the server farm. The total cache size is the sum of the memory allocated to the Distributed Cache service on each of the cache hosts.<br />
+</div>
+<br />
+<h2><a name="Things_to_Remember"></a>Things to Remember</h2>
+<ul>
+<li style="text-align:justify;"><span style="font-size:12px;">In a SharePoint Server 2013 farm, there must be at least one cache host running the Distributed Cache service.</span>
+</li><li style="text-align:justify;"><span style="font-size:12px;">The Distributed Cache service’s memory allocation for the cache size is set to a default value of 10 percent of total physical memory when SharePoint Server 2013 installs. The Distributed Cache service
+ uses half of that memory allocation for data storage (also known as cache size), and the other half of that memory allocation is used for memory management overhead. When the cached data grows, the Distributed Cache service uses the entire 10 percent of the
+ allocated memory.</span> </li><li style="text-align:justify;"><span style="font-size:12px;">The Distributed Cache service can be assigned a maximum of 16GB of memory per cache host in the cache cluster.
+</span></li><li style="text-align:justify;"><span style="font-size:12px;">The maximum number of hosts per cluster is 16.&nbsp;</span>
+</li><li style="text-align:justify;"><span style="font-size:12px;">On a server that has more than 16 GB of total physical memory, allocate a maximum of 16 GB of memory to the Distributed Cache service. If you allocate more than 16 GB of memory to the Distributed Cache
+ service, the server might unexpectedly stop responding for more than 10 seconds.</span>
+</li><li style="text-align:justify;"><span style="font-size:12px;font-weight:normal;font-style:normal;color:#000000;">Do not manage the Distributed Cache service through either the Services MMC snap-in or the generic Windows Server AppFabric tools. Use SharePoint
+ Central Administration and the SharePoint PowerShell cmdlets. You may see the following message while trying to manage the service from services.msc.<br />
+</span><span style="font-size:12px;"><span style="color:#000000;">The Distributed Cache service can end up in a nonfunctioning or unrecoverable state if you do not follow the procedures that are listed in this article. In extreme scenarios, you might have to
+ rebuild the server farm. </span><span style="color:#0c0c0c;">The Distributed Cache depends on Windows Server AppFabric as a prerequisite. Do not administer the
+<span style="font-weight:bold;">AppFabric Caching Service</span>&nbsp;</span><span style="font-size:12px;color:#0c0c0c;">the
+<span style="font-size:12px;font-weight:bold;">Services </span>window in&nbsp;<span style="font-size:12px;font-weight:bold;">Control Panel</span>. Do not use the applications in the folder named&nbsp;<span style="font-size:12px;font-weight:bold;">Start</span></span></span><span style="font-size:12px;color:#0c0c0c;">&nbsp;menu.</span>
+</li><li style="text-align:justify;"><span style="font-size:12px;color:#0c0c0c;">The Distributed Cache service on a cache host throttles requests when memory consumption approaches 95%. Until memory utilization levels drop back to (approximately) 70%, cache read
+ and write requests are not accepted.</span> </li><li style="text-align:justify;"><span style="font-size:12px;">The Distributed Cache service can run on either a physical or virtual server. When using virtualization, do not use Dynamic Memory to manage shared memory resources among other virtual machines and
+ the Distributed Cache servers. This is NOT SUPPORTED. See </span><a href="http://support.microsoft.com/kb/2764086"><span style="font-size:12px;">Certain Microsoft SharePoint Server 2013 installation scenarios are not supported</span></a>.
+</li></ul>
+For more information about planning for the Distributed Cache service, see <a href="http://technet.microsoft.com/library/jj219572.aspx">
+http://technet.microsoft.com/library/jj219572.aspx</a>.<br />
+<br />
+<h2><a name="Configuring_Distributed_Cache_Service"></a>Configuring Distributed Cache Service</h2>
+<div style="text-align:justify;"><span style="font-size:10pt;font-family:&#39;Segoe UI&#39;,sans-serif;"><strong><br />
+Firewall Exceptions and Port Configuration<br />
+<br />
+</strong></span><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;">It is important that all cache servers have firewall exceptions for the cache, cluster, and arbitration ports. The AppFabric Configuration Wizard can automatically configure these
+ firewall exceptions; but you may want to confirm these exceptions when troubleshooting communication issues.<br />
+</span><br />
+</div>
+<p style="text-align:justify;">Each cache host refers to the cluster configuration settings to determine the appropriate ports to use to communicate with the cluster. Use the Windows PowerShell Get-CacheHostConfig command to see which ports are being used by
+ each cache host.</p>
+<table border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:auto auto auto 31.4pt;">
+<tbody>
+<tr>
+<td valign="top" style="border:1pt solid #a3a3a3;padding:4pt;width:82.6pt;background-color:#e7e6e6;">
+<p style="line-height:13pt;"><strong><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">Port name</span></stI&#39;,sans-serif;">It is important that all cache servers have firewall exceptions for the cache, cluster, and arbitration ports. The AppFabric Configuration Wizard can automatically configure these
+ firewall exceptions; but yourong></p>
+</td>
+<td valign="top" style="border-color:#a3a3a3 #a3a3a3 #a3a3a3 #f0f0f0;border-top-width:1pt;border-top-style:solid;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;width:74.5pt;background-color:#e7e6e6;">
+<p style="line-height:13pt;"><strong><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">Default value</span></strong></p>
+</td>
+</tr>
+<tr style="height:0.1in;">
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;border-left-width:1pt;border-left-style:solid;width:82.6pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">cache port</span></p>
+</td>
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3 #f0f0f0;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;width:74.5pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">22233</span></p>
+</td>
+</tr>
+<tr style="height:0.1in;">
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;border-left-width:1pt;border-left-style:solid;width:82.6pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">cluster port</span></p>
+</td>
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3 #f0f0f0;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;width:74.5pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">22234</span></p>
+</td>
+</tr>
+<tr style="height:0.1in;">
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;border-left-width:1pt;border-left-style:solid;width:82.6pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">arbitration port</span></p>
+</td>
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3 #f0f0f0;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;width:74.5pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">22235</span></p>
+</td>
+</tr>
+<tr style="height:0.1in;">
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;border-left-width:1pt;border-left-style:solid;width:82.6pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">replication port</span></p>
+</td>
+<td valign="top" style="height:0.1in;border-color:#f0f0f0 #a3a3a3 #a3a3a3 #f0f0f0;border-right-width:1pt;border-right-style:solid;border-bottom-width:1pt;border-bottom-style:solid;padding:4pt;width:74.5pt;background-color:transparent;">
+<p style="line-height:13pt;"><span style="font-size:12px;font-family:&#39;Segoe UI&#39;,sans-serif;color:#2a2a2a;">22236</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p><strong>Cache Port<br />
+</strong>The cache port is used for transmitting data between the cache hosts and your cache-enabled application. The default is 22233.</p>
+<p><strong>Cluster Port<br />
+</strong>The cache hosts use the cluster port to communicate availability to each of their neighbors in the cluster. The default is 22234.</p>
+<p><strong>Arbitration Port<br />
+</strong>If a cache host fails, the arbitration port is used to make certain that the cache host is unavailable. The default is 22235.</p>
+<p><strong>Replication Port</strong><br />
+The replication port is used to move data between hosts in the cache cluster. This supports features such as high availability and load balancing. The default is 22236.</p>
+<br />
+<h2><a name="Start_and_Stop_the_Distributed_Cache_service"></a>Start and Stop the Distributed Cache service</h2>
+<ul>
+<li><strong>From Central Administration<br />
+<br />
+</strong>
+<ul>
+<li>In Central Administration, click Application Management. </li><li>In Service Applications, click Manage Services on Server. </li><li>On the Services on Server page, locate the Distributed Cache service. </li><li>To start the service, under Action, click Start. To stop, click Stop. </li></ul>
+</li><li><strong>Using PowerShell</strong> </li></ul>
+<strong>
+<blockquote style="padding:0px;margin:0px 0px 0px 40px;"><strong>
+<pre class="PowerShellColorizedScript" style="border:1px solid #7f9db9;font-size:12px;font-family:consolas;overflow-y:auto;"><span style="color:#006400;"># Start the Distributed Cache service by using Windows PowerShell</span>            
+<span style="color:#ff4500;">$InstanceName</span> <span style="color:#a9a9a9;">=</span> <span style="color:#8b0000;">&quot;SPDistributedCacheService Name=AppFabricCachingService&quot;</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$serviceInstance</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">Get-SPServiceInstance</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span> <span style="color:#000000;">{</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">service</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">tostring</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#000000;">)</span> <span style="color:#a9a9a9;">-eq</span> <span style="color:#ff4500;">$instanceName</span> <span style="color:#a9a9a9;">-and</span> <span style="color:#000000;">(</span><span style="color:#ff4500;">$_</span><spa="color:#a9a9a9;">=</span> <span style="color:#8b0000;">&quot;SPDistributedCacheService Name=AppFabricCachingService&quot;</span><span style="color:#000000;">;</span>            
+<span style="color:#ff4500;">$serviceInstance</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">Get-SPServiceInstance</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span> <span style="color:#000000;">{</span><span style="color:#000000;">(</span><span style="color:n style="color:#a9a9a9;">.</span><span style="color:#000000;">server</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">name</span><span style="color:#000000;">)</span> <span style="color:#a9a9a9;">-eq</span> <span style="color:#ff4500;">$env:computername</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$serviceInstance</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Provision</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span>            
+             
+<span style="color:#006400;"># Stop the Distributed Cache service by using Windows PowerShell</span>            
+<span style="color:#ff4500;">$instanceName</span> <span style="color:#a9a9a9;">=</span> <span style="color:#8b0000;">&quot;SPDistributedCacheService Name=AppFabricCachingService&quot;</span>            
+<span style="color:#ff4500;">$serviceInstance</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">Get-SPServiceInstance</span> <span style="color:#a9a9a9;">|</span> <span style="color:#0000ff;">?</span> <span style="color:#000000;">{</span><span style="color:#000000;">(</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">service</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">tostring</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#000000;">)</span> <span style="color:#a9a9a9;">-eq</span> <span style="color:#ff4500;">$instanceName</span> <span style="color:#a9a9a9;">-and</span> <span style="color:#000000;">(</span><span style="color:#ff4500;">$_</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">server</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">name</span><span style="color:#000000;">)</span> <span style="color:#a9a9a9;">-eq</span> <span style="color:#ff4500;">$env:computername</span><span style="color:#000000;">}</span>            
+<span style="color:#ff4500;">$serviceInstance</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Unprovision</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span><span style="color:#000000;">;</span></pre>
+<br />
+</strong><br />
+</blockquote>
+</strong>
+<blockquote style="padding:0px;margin:0px 0px 0px 40px;"></blockquote>
+<h2><a name="Getting_Started_with_Distributed_Cache"></a>Getting Started with Distributed Cache</h2>
+<ul>
+<li style="text-align:justify;">Run the <strong>Use-CacheCluster</strong> command to use the connection settings from the current computer.<br />
+<br />
+Use-CacheCluster command sets the context of your PowerShell session to a particular cache cluster. You must run this command before using any other Cache Administration commands and without any parameters to use the connection settings that reside on the current
+ machine. If you need to connect to a different cache cluster, use the Provider and ConnectionString parameters to specify the cache cluster explicitly.
+<br />
+Use-CacheCluster -&nbsp;<a href="http://technet.microsoft.com/en-us/library/ff428183(v=ws.10).aspx">http://technet.microsoft.com/en-us/library/ff428183(v=ws.10).aspx</a>
+</li><li style="text-align:justify;">Run the PowerShell command <strong>Get-CacheClusterHealth</strong> to retrieve the health statistics for all of the named caches in the cache cluster.<br />
+<br />
+Get-CacheClusterHealth -&nbsp;<a href="http://technet.microsoft.com/en-us/library/ff428190(v=ws.10).aspx">http://technet.microsoft.com/en-us/library/ff428190(v=ws.10).aspx</a>
+</li><li>Retrieve the list of all the cache host services in a cluster using <strong>Get-CacheHost</strong> command<br />
+<br />
+Get-CacheHost provides the list of each cache host service that is a member of the cache cluster. You can specify the following parameters along with this command<br />
+<br />
+-HostName-&nbsp;&nbsp; Name of the cache host<br />
+-CachePort-&nbsp;&nbsp;&nbsp; Cache port number used by the cache host. The default value for the cache port number is 22233.<br />
+<br />
+For example: Get-CacheHost -ComputerName localhost -CachePort 22233 | fl<br />
+<br />
+This will return the cache host service on the local computer and the port number used by it.<br />
+<br />
+Get-CacheHost -&nbsp;<a href="http://technet.microsoft.com/en-us/library/ff428165(v=ws.10).aspx">http://technet.microsoft.com/en-us/library/ff428165(v=ws.10).aspx</a><br />
+<br />
+</li></ul>
+<h2><a name="Check_and_Change_The_Memory_Allocated_To_Distributed_Cache"></a>Check and Change The Memory Allocated To Distributed Cache</h2>
+<p>To check the existing memory allocation for the Distributed Cache service on a server, run the following command at the Windows PowerShell (run as administrator) command prompt:</p>
+<p>Use-CacheCluster<br />
+Get-AFCacheHostConfiguration -ComputerName &lt;YourServerName&gt; -CachePort &quot;22233&quot;<br />
+<br />
+Where:<br />
+ComputerName is the computer name of the server that you are running the PowerShell cmdlet on.</p>
+<p><strong>Change the memory allocation of the Distributed Cache</strong> </p>
+<ol>
+<li>Stop the Distributed Cache service on all cache hosts. <br />
+To stop the Distributed Cache service, go to Services on Server in Central Administration, and Stop the Distributed Cache service on all cache hosts in the farm.
+<br />
+<br />
+</li><li>To reconfigure the cache size of the Distributed Cache service, run the following command one time only on any cache host at the Windows PowerShell command prompt:
+<p>Update-SPDistributedCacheSize -CacheSizeInMB CacheSize</p>
+<p>Where:<br />
+CacheSize is the cache size&#39;s memory allocation assignment in MB.</p>
+</li><li>Restart the Distributed Cache service on all cache hosts. <br />
+<br />
+To restart the Distributed Cache service, go to Services on Server in Central Administration, and Start the Distributed Cache service on all cache hosts in the farm.&nbsp;
+</li></ol>
+<h2><a name="See_Also"></a><span style="font-size:22px;line-height:28px;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;color:#3a3e43;">See Also</span></h2>
+<ul>
+<li><a href="http://msdn.microsoft.com/en-us/library/hh334305.aspx">AppFabric 1.1 Caching Features</a>
+</li><li><a href="http://technet.microsoft.com/en-us/library/jj219700#cache">Overview of Distributed Cache Service</a>&nbsp;
+</li><li><a href="http://blogs.perficient.com/microsoft/2012/08/sharepoint-2013-claims-infrastructure-part-i/">SharePoint 2013: Claims Infrastructure – Part I (Distributed Cache Service)</a>
+</li><li><a href="http://blogs.perficient.com/microsoft/2012/08/sharepoint-2013-claims-infrastructure-part-ii/">SharePoint 2013: Claims Infrastructure – Part II</a>
+</li><li><a href="http://www.jeremytaylor.net/2013/04/22/sharepoint-2013-distrbuted-cache-service/">SharePoint 2013 Distributed Cache service</a>&nbsp;
+</li></ul>
+
+</div>
+    
+    

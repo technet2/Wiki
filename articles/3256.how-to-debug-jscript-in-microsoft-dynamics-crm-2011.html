@@ -1,0 +1,64 @@
+---
+layout: default
+title: How to Debug JScript in Microsoft Dynamics CRM 2011 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>UPDATE: There&#39;s another approach to debugging JavaScript web resources here:<br />
+<a href="http://dkdt.me/14jilsi">http://dkdt.me/14jilsi</a><br />
+<br />
+So, in the forums, there are a lot of people asking about jscript / javascript problems or how to debug jscript in Microsoft Dynamics CRM 2011. &nbsp;I probably tell at least two people a week how to do this and &nbsp;I always point them to a different post that contains
+ this information but it is somewhat&nbsp;buried. &nbsp;I thought I should separate this into it&#39;s own post for clarity. &nbsp;It&#39;s one of the most helpful tools for working with client-side jscript in CRM 2011 or any other version. Let&#39;s take a look at a sample piece of
+ jscript I want to debug. </p>
+<pre style="padding:5px;width:100%;color:black;line-height:14px;overflow:auto;font-family:&#39;andale mono&#39;,&#39;lucida console&#39;,monaco,fixed,monospace;"><code><span style="font-size:12px;">function parseResponse(responseXML, attributename) {
+
+    </span><strong><span style="font-size:large;">debugger;</span></strong><span style="font-size:12px;">
+    xmlDoc=new ActiveXObject(&quot;Microsoft.XMLDOM&quot;);
+    xmlDoc.async=&quot;false&quot;;
+    xmlDoc.loadXML(responseXML);
+    x=xmlDoc.getElementsByTagName(&quot;a:KeyValuePairOfstringanyType&quot;);
+    for (i=0;i&lt;x.length;i&#43;&#43;)
+   {
+      if (x[i].childNodes[0].text == attributename)
+      {
+         //we decode the base 64 contents and alert the HTML of the Iframe
+          alert(x[i].childNodes[1].text);
+      }
+      
+   } 
+}
+</span></code></pre>
+<p>You will notice in the first line of the of the Jscript above I included this miscellaneous line:
+<strong>debugger;</strong> This causes a breakpoint in your code that can be picked up in your code as long as you go in IE to Tools - Internet Options - Advanced and<strong> uncheck</strong> the two &quot;Disable script debugging&quot; check boxes that are checked by
+ default in IE. </p>
+<div class="separator" style="text-align:center;clear:both;"><a href="http://2.bp.blogspot.com/-MNaRv_kCDHM/TZPeTsTOfbI/AAAAAAAAACM/aS3rCa0l28k/s1600/domparsing1.png" style="margin-right:1em;margin-left:1em;"><img width="400" height="356" alt=" " src="http://2.bp.blogspot.com/-MNaRv_kCDHM/TZPeTsTOfbI/AAAAAAAAACM/aS3rCa0l28k/s400/domparsing1.png" style="border:0px solid currentColor;" /></a></div>
+<p>Now, when IE hits the break point it will ask you how you want to debug it. I use Visual Studio 2010 for this debugging, and it stops on my breakpoint and I can use F10 and F11 to step through or step into my code step by step. Then I can add a watch or
+ whatever I want. Now, if I step into the code in Visual Studio and add my watch I can see all the attributes and, in the context of the jscript snippet above, can clearly see that I can look at the text of the first child node to see my attribute value and
+ I can also drill down into the child nodes and other collections and properties within the structure to determine the syntax I need to unlock the needed values of the other types.
+</p>
+<div class="separator" style="text-align:center;clear:both;"><a href="http://1.bp.blogspot.com/-OZKqESTjKrc/TZPjzj0DMSI/AAAAAAAAACU/WSvO4jZR_AA/s1600/node&#43;properties1.png" style="margin-right:1em;margin-left:1em;"><img alt=" " src="http://1.bp.blogspot.com/-OZKqESTjKrc/TZPjzj0DMSI/AAAAAAAAACU/WSvO4jZR_AA/s1600/node&#43;properties1.png" style="border:0px solid currentColor;" /></a></div>
+<p>You can see above I am looking at the [0] child node and that the text is &quot;content&quot;, you could look at the [1] child node here and see that it contains the value in the text property. If you have questions feel free to ask questions in the comments.&nbsp; I am
+ more than willing to help with this kind of thing. I hope this helps!<br />
+<br />
+</p>
+Debugging Without Visual Studio<br />
+<br />
+If you are working on a machine that does not have Visual Studio installed you can debug JScript using the Internet Explorer Developer Tools that are built into Internet Explorer 9 (they can be downloaded for previous versions of Internet Explorer –
+<a href="http://www.microsoft.com/en-us/download/details.aspx?id=18359">download link</a>). You can access them from within a browser window by hitting F12 or selecting
+<em>F12 developer tools</em> from the Tools menu.&nbsp;<br />
+<br />
+After opening the screen where your code is going to execute, start the Developer Tools and then navigate to the
+<em>Script</em> tab. From the drop down list to the left of the <em>Start Debugging</em> button, select your script web reference file. Clicking in the left hand margin allows you to set breakpoints. Finally, hit the
+<em>Start Debugging</em> button. If you are trying to debug the On Load event of a form you will need to refresh the page otherwise you can take the action needed to trigger your code.&nbsp;<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6201.ScriptTab.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6201.ScriptTab.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+When your breakpoints are hit you can open the <em>Locals</em> window and see the different values in the current context. Alternatively you can also hover over the values within the script itself to see the values.&nbsp;<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0878.Locals.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0878.Locals.png" style="border-width:0px;border-style:solid;" /></a><br />
+
+</div>
+    
+    

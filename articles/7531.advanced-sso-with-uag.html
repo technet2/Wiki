@@ -1,0 +1,247 @@
+---
+layout: default
+title: Advanced SSO with UAG - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4336.URL-Set.JPG"></a>Recently&nbsp;I was called to assist with&nbsp;an interesting SSO customization for UAG.<br />
+<br />
+The requirments&nbsp;are as follows:</p>
+<ol>
+<li>Add a new input field named &quot;Code&quot; to the default login page. </li><li>Add a second new input field named &quot;Suffix&quot;, of type drop box to be used as username suffix.
+</li><li>Collect and process the inputs during authentication process. &nbsp;Here the requirement was to use &quot;suffix&#43;username&quot;&nbsp;for username and&nbsp;&quot;password&quot; as password&nbsp;for authentication.
+</li><li>Process the inputs (revert back to the&nbsp;original valuv class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Advanced SSO with UAG</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4336.URL-Set.JPG"></a>Recently&nbsp;I was called to assist with&nbsp;ae of username) to support SSO.&nbsp; Here the requirement was to send the original username &#43; password &#43; code to the backend application&#39;s FBA to achieve SSO.
+</li><li>In addition, the whole solution needs to work with One Time Password / SMS solution (Radius with challenge-response).
+</li></ol>
+The end result should resemble the below UAG portal login page:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6036.UAG-Customizaed-Login-form.JPG"><img alt=" " width="404" height="248" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6036.UAG-Customizaed-Login-form.JPG" style="border-width:0px;border-style:solid;width:473px;height:248px;" /></a><br />
+<br />
+Published Application&#39;s Form Based Authentication page:<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8420.BEWApplication-Login-form-2.JPG"><img alt=" " width="458" height="241" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8420.BEWApplication-Login-form-2.JPG" style="border-width:0px;border-style:solid;width:325px;height:166px;" /></a><br />
+<br />
+<br />
+<strong>Step #1<br />
+</strong>
+<ul>
+<li><span style="font-size:12px;">Publish the web applciation in a portal</span> </li></ul>
+<span style="font-size:12px;">
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8623.web-application.JPG"><img alt=" " width="244" height="239" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8623.web-application.JPG" style="border-width:0px;border-style:solid;width:291px;height:145px;" /></a></p>
+</span><strong>Step #2<br />
+<br />
+</strong>
+<ul>
+&nbsp;&nbsp;&nbsp;
+<li>Create a copy of the default login.asp and place it in /InternalSite/CustomUpdate/Trunk1newLogin.asp
+</li></ul>
+<ul>
+<li>Add the new input fields to the Trunk1newLogin.asp </li></ul>
+<blockquote dir="ltr" style="margin-right:0px;">
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>a. Add suffix field to login page</p>
+</blockquote>
+</blockquote>
+<table>
+<tbody>
+<tr>
+<td><span style="font-size:8px;">&lt;TR&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;TD class=&quot;paramText&quot;&gt;Prefix &lt;TD colspan=&quot;2&quot;&gt;&lt;select class=&quot;paramText&quot; TYPE=&quot;text&quot; ID=&quot;pre_fix&quot; NAME=&quot;pre_fix&quot; onkeypress=&quot;keyDetect(event)&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;option value=&quot;0&quot;&gt;0&lt;/option&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;option value=&quot;1&quot;&gt;1&lt;/option&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;option value=&quot;2&quot;&gt;2&lt;/option&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;option value=&quot;3&quot;&gt;3&lt;/option&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/select&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/TD&gt;<br />
+&lt;/TR&gt;</span></td>
+</tr>
+</tbody>
+</table>
+<blockquote dir="ltr" style="margin-right:0px;">
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>b. Add code field to login page</p>
+</blockquote>
+</blockquote>
+<table>
+<tbody>
+<tr>
+<td>
+<p style="text-align:left;"><span style="font-size:8px;">&lt;TD class=&quot;paramText&quot;&gt;Code&lt;/TD&gt;<br />
+&lt;TD&gt;&lt;INPUT class=&quot;paramTextbox&quot; TYPE=&quot;text&quot; ID=&quot;Code_Value&quot; NAME=&quot;Code_Value&quot; size=&quot;11&quot;&gt;&lt;/TD&gt;</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<ul>
+<li>Point the portal to use the new customized CustomUpdate/Trunk1newLogin.asp&nbsp;&nbsp;&nbsp;&nbsp;
+</li></ul>
+<p><img alt=" " width="209" height="126" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4048.loginpage.JPG" style="border-width:0px;border-style:solid;width:384px;height:156px;" /><br />
+<br />
+</p>
+<ul>
+<li>Edit the relevant URL Set rule to allow the passing of the new parameters </li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4670.URL-Set.JPG"><img alt=" " width="415" height="283" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4670.URL-Set.JPG" style="border-width:0px;border-style:solid;width:491px;height:311px;" /></a></p>
+<p><strong>Step #3<br />
+<br />
+</strong></p>
+<ul>
+<li>Process the inputs before authentication process occures by adding the following code to /InternalSite/Inc/Trunk1Validate.inc
+</li></ul>
+<p>&nbsp;</p>
+<p><strong></strong></p>
+<strong>
+<table>
+<tbody>
+<tr>
+<td>
+<p><span style="font-size:8px;">&lt;%</span></p>
+<p><span style="font-size:8px;">if Session(&quot;CredentialsNum&quot;) = &quot;&quot; then<br />
+if g_login_type = RESOURCE_OPERATION_LOGIN and GetSiteFixRepositories() then<br />
+use_the_same_user_name = GetSiteUseTheSameUserName()<br />
+repositories = GetSiteRepositoriesVec()<br />
+i = 1<br />
+for each repository_name in repositories<br />
+Session(&quot;repository&quot;&amp;i) = repository_name<br />
+i = i &#43; 1<br />
+next</span></p>
+<p><span style="font-size:8px;">i = 1<br />
+for each password in Request(&quot;password&quot;)<br />
+Session(&quot;password&quot;&amp;i) = password<br />
+if use_the_same_user_name then<br />
+Session(&quot;user_name&quot;&amp;i) = Request(&quot;user_name&quot;)<br />
+end if<br />
+i = i &#43; 1<br />
+next<br />
+<br />
+if not use_the_same_user_name then<br />
+i = 1<br />
+for each user_name in Request(&quot;user_name&quot;)<br />
+Session(&quot;user_name&quot;&amp;i) = user_name<br />
+i = i &#43; 1<br />
+next<br />
+end if</span></p>
+<p><span style="font-size:8px;"><strong>Session(&quot;CredentialsNum&quot;) = i-1<br />
+else<br />
+Session(&quot;repository1&quot;) = Request(&quot;repository&quot;)<br />
+x1 = Request(&quot;user_name&quot;)<br />
+x2 = Request(&quot;pre_fix&quot;)<br />
+Session(&quot;user_nambr />
+i = 1<br />
+for each repository_name in repositories<br />
+Session(&quot;repository&quot;&amp;i) = repository_name<br />
+i = i &#43; 1<br />
+next</span></p>
+<p><span style="font-size:8px;">i = 1<br />
+for each password in Request(&quot;password&quot;)<br />
+Session(&quot;password&quoe1&quot;) = x2 &amp; x1<br />
+Session(&quot;password1&quot;) = Request(&quot;password&quot;)<br />
+Session(&quot;CredentialsNum&quot;) = 1<br />
+end if<br />
+Session(&quot;CurrentCredentialsNum&quot;) = 1<br />
+end if</strong></span></p>
+<p><span style="font-size:8px;">num = Session(&quot;CurrentCredentialsNum&quot;)<br />
+user_name = Session(&quot;user_name&quot;&amp;num)<br />
+password = Session(&quot;password&quot;&amp;num)<br />
+repository = Session(&quot;repository&quot;&amp;num)</span></p>
+<p><span style="font-size:8px;">HEAVY_TRACE &quot;CurrentCredentialsNum [&quot; &amp; num &amp; &quot;] CredentialsNum [&quot; &amp; Session(&quot;CredentialsNum&quot;) &amp; &quot;]&quot;</span></p>
+<p><span style="font-size:8px;">HEAVY_TRACE &quot;Validate got site_name [&quot; &amp; g_site_name &amp; &quot;] secure [&quot; &amp; g_secure &amp; &quot;] orig_url [&quot; &amp; g_orig_url &amp; &quot;] resource_id [&quot; &amp; g_resource_id &amp; &quot;] login_type [&quot; &amp; g_login_type &amp; &quot;] cookie [&quot; &amp; g_cookie &amp; &quot;] repository [&quot; &amp;
+ repository &amp; &quot;] user_name [&quot; &amp; user_name &amp; &quot;]&quot;</span></p>
+<p><span style="font-size:8px;"><br />
+%&gt;</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+</strong>
+<p>&nbsp;</p>
+<ul>
+&nbsp;&nbsp;&nbsp;
+<li>Revert the username manipulation back to its original value for SSO to succeed
+</li><li>Collect the data and add it to session parameters, by adding the following code to CustomUpdate/Trunk1validatecontinue.inc
+</li></ul>
+<p>Note: if you are using normal username / password authentication this code should be saved in /CustomUpdate/Trunk1postpostvalidate.inc and the code
+<span style="font-size:10px;"><strong>Session(&quot;user_name1&quot;) = Request(&quot;user_name&quot;)</strong>
+<span style="font-size:12px;">should be added to begining of&nbsp;InternalSite/Inc/sso.inc</span></span></p>
+<table>
+<tbody>
+<tr>
+<td><span style="font-size:8px;">&lt;%<br />
+Session(&quot;user_name1&quot;) = Request(&quot;user_name&quot;)<br />
+Code_Value = Request(&quot;Code_Value&quot;)<br />
+SetSessionResourceParam g_cookie, &quot;B755 Replace with application ID 92A57F824&quot;, &quot;txtCode&quot;, Code_Value<br />
+%&gt;</span>
+<p>&nbsp;</p>
+</td>
+</tr>
+</tbody>
+</table>
+&nbsp;&nbsp;&nbsp;
+<p>&nbsp;<br />
+<strong>Step #4</strong></p>
+<ul>
+<li>Map the credentials to their corresponding counterparts in the application&#39;s FBA.&nbsp;Looking at the source code of the application&#39;s FBA revealed the input field&#39;s names.
+</li></ul>
+<p>Place the following code in \Conf\WizardDefaults\FormLogin\CustomUpdate\formlogin.xml</p>
+<p>&nbsp;</p>
+<table>
+<tbody>
+<tr>
+<td><span style="font-size:8px;">&lt;WHLFILTFORMLOGIN ver=&quot;1.0&quot;&gt;<br />
+&nbsp;&lt;APPLICATION&gt;<br />
+&nbsp;&nbsp;&lt;APPLICATION_TYPE&gt;<strong>App1</strong>&lt;/APPLICATION_TYPE&gt;<br />
+&nbsp;&nbsp;&lt;USAGE description=&quot;form_login&quot;&gt;<br />
+&nbsp;&nbsp;&lt;PRIMARY_HOST_URL&gt;&lt;![CDATA[/.*]]&gt;&lt;/PRIMARY_HOST_URL&gt;<br />
+&nbsp;&nbsp;&lt;SECONDARY_HOST_URL&gt;&lt;![CDATA[/.*]]&gt;&lt;/SECONDARY_HOST_URL&gt;<br />
+&nbsp;&nbsp;&lt;SCRIPT_NAME source=&quot;data_definition&quot;&gt;FormLoginSubmitStandard&lt;/SCRIPT_NAME&gt;<br />
+&nbsp;&nbsp;&lt;USER_AGENT&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;AGENT_TYPE search=&quot;group&quot;&gt;all_supported&lt;/AGENT_TYPE&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;POLICY&gt;multiplatform&lt;/POLICY&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;SCRIPT_NAME source=&quot;data_definition&quot;&gt;FormLoginHandler&lt;/SCRIPT_NAME&gt;<br />
+&nbsp;&nbsp;&lt;/USER_AGENT&gt;<br />
+&nbsp;&nbsp;&lt;MULTIPLE_LOGIN&gt;true&lt;/MULTIPLE_LOGIN&gt;<br />
+&nbsp;&nbsp;&lt;LOGIN_FORM&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;NAME&gt;&lt;/NAME&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;METHOD&gt;POST&lt;/METHOD&gt;<br />
+<strong>&nbsp;&nbsp;&nbsp;&lt;CONTROL handling=&quot;real_value&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;TYPE&gt;USER_PROVIDED&lt;/TYPE&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;NAME&gt;txtCode&lt;/NAME&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;DEF_VALUE&gt;sitecode&lt;/DEF_VALUE&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;/CONTROL&gt;<br />
+</strong>&nbsp;&nbsp;&nbsp;&lt;CONTROL handling=&quot;real_value&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;TYPE&gt;USER_NAME&lt;/TYPE&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;NAME&gt;txtUserName&lt;/NAME&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;DEF_VALUE&gt;siteusr&lt;/DEF_VALUE&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;/CONTROL&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;CONTROL handling=&quot;real_value&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;TYPE&gt;PASSWORD&lt;/TYPE&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;NAME&gt;txtPassword&lt;/NAME&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;DEF_VALUE&gt;sitepass&lt;/DEF_VALUE&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;/CONTROL&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;LOGIN_EVALUATOR indicate=&quot;failure&quot;&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;SEARCH encoding=&quot;&quot;&gt;ERROR:&lt;/SEARCH&gt;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&lt;SEARCH encoding=&quot;&quot;&gt;credentials supplied were invalid&lt;/SEARCH&gt;<br />
+&nbsp;&nbsp;&nbsp;&lt;/LOGIN_EVALUATOR&gt;<br />
+&nbsp;&nbsp;&lt;/LOGIN_FORM&gt;<br />
+&nbsp;&nbsp;&lt;/USAGE&gt;<br />
+&nbsp;&lt;/APPLICATION&gt;<br />
+&lt;/WHLFILTFORMLOGIN&gt;</span><br />
+&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+
+</div>
+    
+    

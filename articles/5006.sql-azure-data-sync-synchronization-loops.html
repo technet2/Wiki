@@ -1,0 +1,174 @@
+---
+layout: default
+title: SQL Azure Data Sync - Synchronization Loops - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="line-height:125%;font-family:segoe;font-size:13px;"><a name="top"></a>
+<div style="border:0px solid currentcolor;width:100px;color:#000000;padding-right:10px;margin-right:25px;float:left;background-color:#ffffff;">
+<img alt="SQL Azure Data Sync Logo" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/100x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2867.SADS_5F00_Logo_2D00_Large.png" style="border:0px solid currentcolor;" />
+</div>
+<p>A synchronization looass="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fip results from an overlapping of databases in two or more sync groups such that a change in a database in one sync group is re-written to the same database by another sync group. Synchronization loops are self perpetuating and can result
+ in large amounts of data repeatedly overwriting identical data in two of more databases. This can significantly degrade performance and increase costs as you pay for unnecessary data movement.
+</p>
+<table align="center" style="border:1px solid #000000;width:90%;font-family:&#39;segoe ui&#39;;background-color:#fff200;">
+<tbody>
+<tr>
+<td valign="top"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/0x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4747.sads_5F00_iconimportant.png" style="border-width:0px;border-style:solid;" /></td>
+<td><span style="font-size:15px;font-weight:bold;">Important! </span><br />
+<span style="font-weight:bold;font-size:13px;">This wiki topic <span style="text-decoration:underline;">
+may</span> be obsolete. </span><br />
+<span style="font-weight:normal;font-size:13px;">This wiki topic is no longer updated by Microsoft. We moved the content to the MSDN Library where we keep it current.<br />
+To find the latest version of this topic on MSDN click <a href="http://msdn.microsoft.com/en-us/library/hh667312.aspx">
+here</a>. </span></td>
+</tr>
+</tbody>
+</table>
+<p>This article discusses the causes of synchronization loops and how to prevent them.
+</p>
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Design">Sync Group Design</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#HowItWorksFig1">How Figure 1 works</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#AvoidSyncLoops">How to avoid synchronization loops</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h4 style="background-color:white;margin:2.25pt 0in;line-height:110%;"><span style="line-height:110%;font-size:15pt;font-family:&#39;segoe ui semibold&#39;;color:#000099;"><a name="Design"></a>Sync Group Design</span></h4>
+When you design your synchronization topologies it is perfectly fine to have a single database in multiple sync groups. Figure 1 is an illustration of this. Even though database A is shared by Sync Group 1 and Sync Group 2 there is no feedback loop that perpetuates
+ the same data being written and re-written to the same database. It is also possible to share more than one database between two sync groups and not have a loop. We will discuss those configurations later in this topic.<br />
+&nbsp;
+<h5 style="background-color:white;margin:2.25pt 0in;line-height:110%;"><span style="line-height:110%;font-size:13pt;font-style:italic;font-family:&#39;segoe ui semibold&#39;;color:#000099;"><a name="HowItWorksFig1"></a>How Figure 1 works</span></h5>
+Let&#39;s walk through the sequence of events that take place when a change is made to any database in Figure 1. We&#39;ll assume the change is made to database C here.
+<ol>
+<li>Row 1 in database C is changed. </li><li>In database C&#39;s metadata a record is created indicating that row 1 was changed and where the change originated.
+</li><li>Sync Group 1 synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database C is changed by somone other than SG1. </li><li>Row 1 from Datbase C is written to SG1 Hub. </li><li>A record is created in SG1&#39;s metadata indicating that row 1 was changed by SG1.
+</li><li>Row 1 from SG1 is written to database A. </li><li>A record is created in database A&#39;s metadata indicating that row 1 was changed by SG1.
+</li></ol>
+Sync Group 1 is finished synchronizing.<br />
+&nbsp; </li><li>Sync Group 2 Synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database A is changed by somone other than SG2. </li><li>Row 1 from Datbase A is written to SG2 Hub. </li><li>A record is created in SG2&#39;s metadata indicating that row 1 was changed by SG2.
+</li><li>Row 1 from SG2 is written to database D. </li><li>A record is created in database D&#39;s metadata indicating that row 1 was changed by SG2.
+</li></ol>
+Sync Group 2 is finished synchronizing. </li></ol>
+If no new changes are made to any of the databases then the next time they sync no data is written to any of the databases.
+<p>&nbsp;&nbsp;&nbsp; <a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0523.SADS_5F00_SyncLoop_2D00_Not.jpg">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0523.SADS_5F00_SyncLoop_2D00_Not.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<em>Figure 1: Two sync groups sharing a database. No synchronization loop</em> </p>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/5006.sql-azure-data-sync-synchronization-loops/edit.aspx#Top">Top</a></p>
+<hr />
+<p><span style="line-height:110%;font-size:13pt;font-style:italic;font-family:&#39;segoe ui semibold&#39;;color:#000099;">How Figure 2 works (or doesn&#39;t work)</span></p>
+Let&#39;s walk through the sequence of events that take place when a change is made to any database in Figure 2. Again we&#39;ll assume the change is made to database C.
+<ol>
+<li>Row 1 in database C is changed. </li><li>In database C&#39;s metadata a record is created indicating that row 1 was changed and where the change originated.
+</li><li>Sync Group 1 synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database C is changed by somone other than SG1. </li><li>Row 1 from Datbase C is written to SG1 Hub. </li><li>A record is created in SG1&#39;s metadata indicating that row 1 was changed by SG1.
+</li><li>Row 1 from SG1 is written to databases A and B. </li><li>A record is created in database A and B&#39;s metadata indicating that row 1 was changed by SG1.
+</li></ol>
+Sync Group 1 is finished synchronizing.<br />
+&nbsp; </li><li>Sync Group 2 Synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database A (or B) is changed by somone other than SG2.
+</li><li>Row 1 from Datbase A is written to SG2 Hub. </li><li>A record is created in SG2&#39;s metadata indicating that row 1 was changed by SG2.
+</li><li>Row 1 from SG2 is written to databases B (or A) and D. </li><li>A record is created in database B (or A) and D&#39;s metadata indicating that row 1 was changed by SG2.
+</li></ol>
+Sync Group 2 is finished synchronizing. </li></ol>
+If no new changes are made to any of the databases the next time that SG1 synchronizes it notes a change in database A (or B) that it didn&#39;t make (it was made by SG2 in the last cycle). Even though the data is no different from what is in all the databases
+ in both sync groups it is treated as changed data and the above synchronization cycle is run again, and again, and again without end.
+<p>It is worth noting that while our synchronization loop example involves only a single row, what is true for one row is true for any number of rows. Imagine a million row database where 1% of the unchanged rows are changed in each synchronization cycle. After
+ one cycle you are infinitely looping 10,000 rows.ata indicating that row 1 was changed by SG2.
+</li><li>Row 1 from SG2 is written to databases B (or A) and D. </li><li>A record is created in database B (or A) and D&#39;s metadata indicating that row 1 was changed by SG2.
+</li></ol>
+Sync Group 2 is finished synchronizing. </li></ol>
+If no new changes are made to any of the databases the next time that SG1 synchronizes it notes a change in database A (or B) that it didn&#39;t make (it was made by SG2 in the last cycle). Even thou After two cycles you are looping that 10,000 plus an addiitonal 9,900 rows for a total of 19,900 rows. And the number of rows in the loop continues to increase, never decrease.
+</p>
+<p>&nbsp;&nbsp;&nbsp; <a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1614.SADS_5F00_SyncLoop2.jpg">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1614.SADS_5F00_SyncLoop2.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<em>Figure 2: Two sync groups with a synchronization loop</em> </p>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/5006.sql-azure-data-sync-synchronization-loops/edit.aspx#Top">Top</a></p>
+<hr />
+<p><span style="line-height:110%;font-size:13pt;font-style:italic;font-family:&#39;segoe ui semibold&#39;;color:#000099;">How Figure 3 works (big loops are still loops)</span></p>
+Figure 3 illustrates a more complex situation where the loop may not be as easy to identify as in Figure 2.
+<p>In Figure 3 there are three sync groups. Each sync group has a hub and two other databases. Each database is shared by two sync groups but no pair of sync groups share the same two databases.
+</p>
+<ul>
+<li>SG1: A and B </li><li>SG2: B and C </li><li>SG3: C and A </li></ul>
+<p>&nbsp;</p>
+<p>Let&#39;s walk through the sequence of events that take place when a change is made to any database in Figure 3. We&#39;ll assume the change is made to database A.
+</p>
+<ol>
+<li>Row 1 in database A is changed. </li><li>In database A&#39;s metadata a record is created indicating that row 1 was changed and where the change originated.
+</li><li>Sync Group 1 synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database A is changed by somone other than SG1. </li><li>Row 1 from Datbase A is written to SG1 Hub. </li><li>A record is created in SG1&#39;s metadata indicating that row 1 was changed by SG1.
+</li><li>Row 1 from SG1 is written to database B. </li><li>A record is created in database B&#39;s metadata indicating that row 1 was changed by SG1.
+</li></ol>
+Sync Group 1 is finished synchronizing.<br />
+&nbsp; </li><li>Sync Group 2 Synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database B is changed by somone other than SG2. </li><li>Row 1 from Datbase B is written to SG2 Hub. </li><li>A record is created in SG2&#39;s metadata indicating that row 1 was changed by SG2.
+</li><li>Row 1 from SG2 is written to database C. </li><li>A record is created in database C&#39;s metadata indicating that row 1 was changed by SG2.
+</li></ol>
+Sync Group 2 is finished synchronizing.<br />
+&nbsp; </li><li>Sync Group 3 Synchronizes.
+<ol style="list-style-type:lower-alpha;">
+<li>It notes that row 1 in database C is changed by somone other than SG3. </li><li>Row 1 from Datbase C is written to SG3 Hub. </li><li>A record is created in SG3&#39;s metadata indicating that row 1 was changed by SG3.
+</li><li>Row 1 from SG3 is written to database A. </li><li>A record is created in database A&#39;s metadata indicating that row 1 was changed by SG3.
+</li></ol>
+Sync Group 3 is finished synchronizing.<br />
+&nbsp; </li></ol>
+If no new changes are made in any of the databases the next time SG1 synchronizes it notes that row 1 in database A was changed by someone other than SG1. This is treated by SG1 as a completely different change even though the data is identical to that in all
+ the databases and hubs. Thus the entire synchronization cycle is repeated infinitely.
+<p>&nbsp;&nbsp;&nbsp; <a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2146.SADS_5F00_SyncLoop3b.jpg">
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2146.SADS_5F00_SyncLoop3b.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<em>Figure 3: Three sync groups with a synchronization loop</em> </p>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/5006.sql-azure-data-sync-synchronization-loops/edit.aspx#Top">Top</a></p>
+<hr />
+<p>&nbsp;</p>
+<h4 style="background-color:white;margin:2.25pt 0in;line-height:110%;"><span style="line-height:110%;font-size:15pt;font-family:&#39;segoe ui semibold&#39;;color:#000099;"><a name="AvoidSyncLoops"></a>How to avoid synchronization loops</span></h4>
+The key to avoiding synchronization loops is to avoid having any path whereby a data change in one sync group is ultimately written back to the originating database by another sync group. There are three ways to accomplish this.
+<ul>
+<li>
+<p><strong>Design your synchronization system so the loops cannot exist.</strong><br />
+For example:<br />
+In Figure 2 you could remove either database A or B from the shared area.<br />
+In Figure 3 you could remove any database from any sync group and you would break the loop.
+</p>
+</li><li>
+<p><strong>Use row filtering.</strong><br />
+If you create mutually exclusive filters when you configure each sync group then no two sync groups will synchronize the same data.<br />
+For example:<br />
+In Figure 2 you could add the row filter <span style="font-family:&#39;courier new&#39;;font-size:13px;">
+Region = &quot;NA&quot;</span> to one sync group and <span style="font-family:&#39;courier new&#39;;font-size:13px;">
+Region = &quot;EU&quot;</span> to the other. </p>
+</li><li>
+<p><strong>Use synchronization direction</strong><br />
+For example:<br />
+If you set the sync directions as illustrated in Figure 4 you no longer have a loop.
+</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6735.SADS_5F00_SyncLoop2NoLoop.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6735.SADS_5F00_SyncLoop2NoLoop.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<em>Figure 4: Use synchronization direction to prevent loops</em> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+</li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/5006.sql-azure-data-sync-synchronization-loops/edit.aspx#Top">Top</a></p>
+<hr />
+<p><span style="line-height:110%;font-size:15pt;font-family:&#39;segoe ui semibold&#39;;color:#000099;">Feedback</span></p>
+This release was provided in order to gather feedback from our customers. Now that you have previewed what the SQL Azure Data Sync team is doing, please let us know what you think of our direction, and tell us about your experiences.
+<p style="background-color:white;margin:0in 0in 9.5pt;line-height:13.5pt;font-size:9.5pt;">
+</p>
+<ul style="color:#000000;font-size:9.5pt;">
+<li>Send us a note on <a href="http://twitter.com/syncfx">http://twitter.com/syncfx</a>.
+</li><li>Post a comment to our blog at <a href="http://blogs.msdn.com/sync">http://blogs.msdn.com/sync</a>.
+</li><li>Post a thread to our forum at <a href="http://social.msdn.microsoft.com/forums/en-US/ssdsgetstarted/threads/">
+http://social.msdn.microsoft.com/forums/en-US/ssdsgetstarted/threads/</a> </li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/5006.sql-azure-data-sync-synchronization-loops/edit.aspx#Top">Top</a></p>
+<hr />
+<p><span style="line-height:110%;font-size:15pt;font-family:&#39;segoe ui semibold&#39;;color:#000099;">See Also</span></p>
+<ul style="color:#000000;font-size:9.5pt;">
+<li><a class="ExistingPageLink" href="/wiki/contents/articles/1821.sql-data-sync-overview.aspx" title="Click to view the page titled: SQL Azure Data Sync Overview">SQL Azure Data Sync Overview</a> </li><li><a class="ExistingPageLink" href="/wiki/contents/articles/1817.sql-azure-overview.aspx" title="Click to view the page titled: SQL Azure Overview">SQL Azure Overview</a> </li></ul>
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/5006.sql-azure-data-sync-synchronization-loops/edit.aspx#Top">Top</a></p>
+<hr />
+<p>&nbsp;</p>
+</span>
+
+</div>
+    
+    

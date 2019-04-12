@@ -1,0 +1,1190 @@
+---
+layout: default
+title: BizTalk Server&#58; Implementing Continuous Integration and Deployment For BizTalk Using BTDF and Jenkins - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#BizTalk_CI_CD">BizTalk CI CD</a></li><li class="hierarchy-item"><a href="#CICD_Flow">CICD Flow</a></li><li class="hierarchy-item"><a href="#Sample_BizTalk_Application">Sample BizTalk Application</a></li><li class="hierarchy-item"><a href="#Configuration_Steps">Configuration Steps</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Supportive_Batch_Files_and_PowerShell_Scripts">Supportive Batch Files and PowerShell Scripts</a></li><li class="hierarchy-item"><a href="#Configuring_and_Setting_Up_Jenkins">Configuring and Setting Up Jenkins</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#What_Is_Jenkins">What Is Jenkins?</a></li><li class="hierarchy-item"><a href="#Setting_Up_Jenkins">Setting Up Jenkins</a></li><li class="hierarchy-item"><a href="#Configuring_Plugins">Configuring Plugins</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#MSBuild_Plugin">MSBuild Plugin</a></li><li class="hierarchy-item"><a href="#Git_Plugin">Git Plugin</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Configuring_Build_Pipeline">Configuring Build Pipeline</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Fetch_BizTalk_Code_from_GIT_Repository">Fetch BizTalk Code from GIT Repository</a></li><li class="hierarchy-item"><a href="#Build_BizTalk_Solution">Build BizTalk Solution</a></li><li class="hierarchy-item"><a href="#Upgrade_BizTalk_msi_Version">Upgrade BizTalk MSI Version</a></li><li class="hierarchy-item"><a href="#Create_BTDF_Msi">Create BTDF Msi</a></li><li class="hierarchy-item"><a href="#Install_Msi_and_Extract_Settings_Files">Install Msi and Extract Settings Files</a></li><li class="hierarchy-item"><a href="#Verify_Deployment">Verify Deployment</a></li><li class="hierarchy-item"><a href="#Copy_MSI_To_Next_Environment">Copy MSI To Next Environment</a></li><li class="hierarchy-item"><a href="#Build_Pipeline_View">Build Pipeline View</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Scripts">Scripts</a></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li><li class="hierarchy-item"><a href="#References">References</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Introduction"></a><span style="font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:22px;">Introduction</span></h1>
+<p>With the advent of agile methodology for the project delivery, a scenario where the code changes from multiple developers need to be built and tested on the build server presents itself very frequently even for multiple times even in a single day. And testing
+ the build includes a lot of manual work right from building the code to verifying the deployment of the code on the build server. Continuous Integration and Deployment provide a way of coping up with this demand of the testing and deployment of the code to
+ the environments like Preproduction, Quality Assurance servers and even to the production environment. Continuous integration and deployment focus on automating following steps using various CI CD tools like Visual Studio Team Services (VSTS), Jenkins etc.</p>
+<ol>
+<li>Fetch the code from the Source Control </li><li>Build the code </li><li>Run Unit Tests </li><li>Generate The Deployment Packages </li><li>Install And Deploy the Packages&nbsp; </li><li>Run the Deployment Verification/Integration Tests </li><li>Push the MSI to the next target Server. </li></ol>
+<p>Steps 1 to 6 are done on the build server with a run restriction based upon the success of the predecessor steps. Once the Steps 1 through 6 are executed successfully, the installer package can be released to the immediate higher environment where the CI/CD
+ tool deploys the installer package and then hands over the control for actual testing to the Testing Teams. The successful testing then can prompt the movement of the package to the next higher environment and so on till the code actually reaches the production
+ environment.</p>
+<p>↑<a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To top</a>&nbsp;</p>
+<hr />
+<h1><a name="BizTalk_CI_CD"></a>BizTalk CI CD&nbsp;</h1>
+<p>This concept can be applied to the BizTalk solutions. The CI CD approach can be used to automate the building and deployment of the BizTalk code across multiple environments. The CI CD approach for BizTalk applications is a bit different as the deployment
+ of the BizTalk applications is different from normal .NET apps. Various tools aid in setting up BizTalk CI CD right from the Source Control to the deployment. This entire process can be achieved using the Team Foundation Server, Visual Studio Team Services
+ or other open source application like Jenkins. This article deals with setting up the CI CD for BizTalk using Jenkins in combination with PowerShell scripts, MSBuild and Windows batch files. Following tools are used to set up the CI CD cycle for BizTalk</p>
+<ol>
+<li>GIT Repository - Used for Source Control (Build Server Should have the GIT Command Line Tools Installed to Pull The Code from GIT)
+</li><li>Visual Studio - Used to Build BizTalk Application </li><li>BizUnit and Visual Studio Testing Framework - Used to write and execute the Unit Test Cases for the BizTalk schemas, Maps and Helper class Methods
+</li><li>BizTalk Deploymentenvironments. The CI CD approach for BizTalk applications is a bit different as the deployment
+ of the BizTalk applications is different from normal .NET apps. Various tools aid in setting up BizTalk CI CD right from the Source Control to the deployment. This entire process can be achieved using the Team Foundation Server, Visual Studio Team Services
+ or other open source application like Jenkins. This article deals with setting up the CI CD for BizTalk using Jenkins in combination with PowerShell scripts, MSBuild and Windows batch files. Following tools are used to set up the CI CD cycle for BizTalk</p>
+<ol>
+ Framework - Used to create the mMSIinstaller package for the BizTalk application.
+</li><li>NUnit - Used to run Post Deployment Integration tests </li><li>Jenkins- Used as the CI CD server. To automate the building and testing of the BizTalk applications.
+</li></ol>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins/edit.aspx#top">Back To Top</a></p>
+<hr />
+<h1><a name="CICD_Flow"></a>CICD Flow</h1>
+<p>Following flowchart describes the flow for the build server pipeline tasks related to the CICD.<span style="font-size:12.1px;white-space:pre;">
+</span></p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2766.BTCICDFlow.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2766.BTCICDFlow.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p>↑<span style="white-space:pre;"><a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To Top</a>
+<br />
+<br />
+</span></p>
+<p><span style="white-space:pre;"></span></p>
+<hr />
+<h1><a name="Sample_BizTalk_Application"></a>Sample BizTalk Application</h1>
+<p>The application used in this demonstration is a simple application which takes the first name and the last name of the person and returns the full name by appending the first and the last name. The BizTalk application is invoked through a WCF service. Following
+ are the input and the output schemas used in the app.</p>
+<ol>
+<li>Input.xsd<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code>&lt;</code><code style="font-weight:bold;">xs:schema</code>
+<code>xmlns</code><code>=</code><code style="color:blue;">&quot;<a href="http://samplebtapp.schemas.input/">http://SampleBTApp.Schemas.Input</a>&quot;</code>
+<code>xmlns:b</code><code>=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/BizTalk/2003">http://schemas.microsoft.com/BizTalk/2003</a>&quot;</code>
+<code>targetNamespace</code><code>=</code><code style="color:blue;">&quot;<a href="http://samplebtapp.schemas.input/">http://SampleBTApp.Schemas.Input</a>&quot;</code>
+<code>xmlns:xs</code><code>=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code>&gt;</code></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:element</code>
+<code>name</code><code>=</code><code style="color:blue;">&quot;Req&quot;</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:complexType</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:sequence</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:element</code>
+<code>name</code><code>=</code><code style="color:blue;">&quot;FirstName&quot;</code>
+<code>type</code><code>=</code><code style="color:blue;">&quot;xs:string&quot;</code>
+<code>/&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:element</code>
+<code>name</code><code>=</code><code style="color:blue;">&quot;LastName&quot;</code>
+<code>type</code><code>=</code><code style="color:blue;">&quot;xs:string&quot;</code>
+<code>/&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">xs:sequence</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">xs:complexType</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">xs:element</code><code>&gt;</code></span></span></div>
+<div><span><code>&lt;/</code><code style="font-weight:bold;">xs:schema</code><code>&gt;</code></span></div>
+</div>
+<br />
+<br />
+<br />
+<br />
+</li><li>Output.xsd&nbsp;<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code>&lt;</code><code style="font-weight:bold;">xs:schema</code>
+<code>xmlns</code><code>=</code><code style="color:blue;">&quot;<a href="http://samplebtapp.schemas.output/">http://SampleBTApp.Schemas.Output</a>&quot;</code>
+<code>xmlns:b</code><code>=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/BizTalk/2003">http://schemas.microsoft.com/BizTalk/2003</a>&quot;</code>
+<code>targetNamespace</code><code>=</code><code style="color:blue;">&quot;<a href="http://samplebtapp.schemas.output/">http://SampleBTApp.Schemas.Output</a>&quot;</code>
+<code>xmlns:xs</code><code>=</code><code style="color:blue;">&quot;<a href="http://www.w3.org/2001/XMLSchema">http://www.w3.org/2001/XMLSchema</a>&quot;</code><code>&gt;</code></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:element</code>
+<code>name</code><code>=</code><code style="color:blue;">&quot;Resp&quot;</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:complexType</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:sequence</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">xs:element</code>
+<code>name</code><code>=</code><code style="color:blue;">&quot;FullName&quot;</code>
+<code>type</code><code>=</code><code style="color:blue;">&quot;xs:string&quot;</code>
+<code>/&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">xs:sequence</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">xs:complexType</code><code>&gt;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">xs:element</code><code>&gt;</code></span></span></div>
+<div><span><code>&lt;/</code><code style="font-weight:bold;">xs:schema</code><code>&gt;</code></span></div>
+</div>
+</li></ol>
+<p><span style="white-space:pre;"></span></p>
+<p>The BizTalk application project also has a unit test helper and unit tests project which contains the unit tests to test the map which is used to transform the input to output. The Unit Test projects take the help of the BizUnit framework and the Visual
+ Studio Testing framework to run the unit tests. Following piece of code shows the implementation of the classes from the BizUnit framework and how they can be used to create the method to test the Maps in the sample BizTalk application.</p>
+<div class="reCodeBlock">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">01.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Collections.Generic;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">02.</code><span><code style="font-weight:bold;">using</code>
+<code>BizUnit.TestSteps.Common;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">03.</code><span><code style="font-weight:bold;">using</code>
+<code>BizUnit.TestSteps.ValidationSteps.Xml;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">04.</code><span><code style="font-weight:bold;">using</code>
+<code>BizUnit.TestSteps.File;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">05.</code><span><code style="font-weight:bold;">using</code>
+<code>Microsoft.BizTalk.TestTools.Mapper;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">06.</code><span><code style="font-weight:bold;">using</code>
+<code>BizUnit.Core.TestBuilder;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">07.</code><span><code style="font-weight:bold;">namespace</code>
+<code>SampleBTApp.TestHelper</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code>{</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+class</code> <code>MapTestHelpers</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code styl/code>
+<code>SampleBTApp.TestHelper</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code>{</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+class</code> <code>MapTestHelpers</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code stye="font-weight:bold;">
+void</code> <code>MapTest(</code><code style="font-weight:bold;">string</code>
+<code>inputMessageFolderPath, </code><code style="font-weight:bold;">string</code>
+<code>outputMessageFolderPath, TestableMapBase target, </code>
+<code style="font-weight:bold;">string<span style="white-space:pre;">
+</span></code><code>sourceFile, SchemaDefinition sourceSchema,
+</code><code style="font-weight:bold;">string</code> <code>
+destinationFile, SchemaDefinition destinationSchema, <span style="white-space:pre;">
+</span>List&lt;XPathDefinition&gt; xpathList)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">12.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>ValidateSouceMessage(inputMessageFolderPath,
+ sourceFile, sourceSchema);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">14.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">string</code>
+<code>inputMessagePath = inputMessageFolderPath &#43; sourceFile;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">16.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">string</code>
+<code>outputMessagePath = outputMessageFolderPath &#43; destinationFile;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">17.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>target.ValidateInput
+ = </code><code style="font-weight:bold;">false</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>target.ValidateOutput
+ = </code><code style="font-weight:bold;">false</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">20.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>target.TestMap(inputMessagePath,
+ Microsoft.BizTalk.TestTools.Schema.InputInstanceType.Xml, outputMessagePath, <span style="white-space:pre;">
+</span>Microsoft.BizTalk.TestTools.Schema.OutputInstanceType.XML);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">21.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">22.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">25.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+void</code> <code>ValidateSouceMessage(</code><code style="font-weight:bold;">string</code>
+<code>inputMessageFolderPath, </code><code style="font-weight:bold;">string</code>
+<code>inputFile, SchemaDefinition sourceSchema)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">26.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">27.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>FileReadMultipleStep
+ fileReadStep = </code><code style="font-weight:bold;">new</code>
+<code>FileReadMultipleStep();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">28.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">29.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.DeleteFiles
+ = </code><code style="font-weight:bold;">false</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">30.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.DirectoryPath
+ = inputMessageFolderPath;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">31.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.SearchPattern
+ = inputFile;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">32.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.FailOnError
+ = </code><code style="font-weight:bold;">true</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:be>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">30.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.DirectoryPath
+ = inputMessageFolderPath;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">31.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.SearchPattern
+ = inputFile;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">32.</code><span><code>&nbsp;lock;">33.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.ExpectedNumberOfFiles
+ = 1;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">34.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">35.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlValidationStep
+ inputValidationStep = </code><code style="font-weight:bold;">new</code>
+<code>XmlValidationStep();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">36.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>inputValidationStep.XmlSchemas.Add(sourceSchema);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">37.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">38.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.SubSteps.Add(inputValidationStep);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">39.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>TestCase
+ inValTestCase = </code><code style="font-weight:bold;">new</code>
+<code>TestCase();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">40.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>inValTestCase.Name
+ = </code><code style="color:blue;">&quot;Validate Input Message&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">41.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>inValTestCase.ExecutionSteps.Add(fileReadStep);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">42.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">43.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>BizUnit.Core.TestRunner
+ testRunner = </code><code style="font-weight:bold;">new</code>
+<code>BizUnit.Core.TestRunner(inValTestCase);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">44.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>testRunner.Run();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">45.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">46.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">47.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">48.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">49.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">50.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+void</code> <code>ValidateDestinationMessage(</code><code style="font-weight:bold;">string</code>
+<code>OutoutputMessageFolderPath, </code><code style="font-weight:bold;">string</code>
+<code>outputFile, SchemaDefinition <span style="white-space:pre;">
+</span>destinationSchema, List&lt;XPathDefinition&gt; xpathList)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">51.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">52.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>FileReadMultipleStep
+ fileReadStep = </code><code style="font-weight:bold;">new</code>
+<code>FileReadMultipleStep();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">53.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.DeleteFiles
+ = </code><code style="font-weight:bold;">false</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">54.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.FailOnError
+ = </code><code style="font-weight:bold;">true</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">55.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.DirectoryPath
+ = OutoutputMessageFolderPath;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">56.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.SearchPattern
+ = outputFile;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">57.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.ExpectedNumberOfFiles
+ = 1;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">58.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">59.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">60.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlValidationStep
+ validateOutPutStep = </code><code style="font-weight:bold;">new</code>
+<code>XmlValidationStep();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">61.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>validateOutPutStep.XmlSchemas.Add(destinationSchema);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">62.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">63.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">foreach</code><code>(
+ var xpath </code><code style="font-weight:bold;">in</code> <code>
+xpathList)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">64.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">65.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>validateOutPutStep.XPathValidations.Add(xpath);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">66.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">67.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">68.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>fileReadStep.SubSteps.Add(validateOutPutStep);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">69.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">70.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>TestCase
+ outValTestCase = </code><code style="font-weight:bold;">new</code>
+<code>TestCase();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">71.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>outValTestCase.Name=
+</code><code style="color:blue;">&quot;Validate Output Message&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">72.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>outValTestCase.ExecutionSteps.Add(fileReadStep);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">73.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">74.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>BizUnit.Core.TestRunner
+ testRunner = </code><code style="font-weight:bold;">new</code>
+<code>BizUnit.Core.TestRunner(outValTestCase);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">75.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>testRunner.Run();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">76.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">77.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">78.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">79.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">80.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">81.</code><span><code>}</code></span></div>
+</div>
+<br />
+<br />
+<p>Following class shows how the unit test cases written to test the maps.</p>
+<div class="reCodeBlock">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">01.</code><span><code style="font-weight:bold;">using</code>
+<code>System;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">02.</code><span><code style="font-weight:bold;">using</code>
+<code>Microsoft.VisualStudio.TestTools.UnitTesting;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">03.</code><span><code style="font-weight:bold;">using</code>
+<code>SampleBTApp.TestHelper;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">04.</code><span><code style="font-weight:bold;">using</code>
+<code>BizUnit.TestSteps.ValidationSteps.Xml;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">05.</code><span><code style="font-weight:bold;">using</code>
+<code>Microsoft.BizTalk.TestTools.Mapper;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">06.</code><span><code style="font-weight:bold;">using</code>
+<code>SampleBTApp.Maps;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">07.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Collections.Generic;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code style="font-weight:bold;">using</code>
+<code>BizUnit.TestSteps.Common;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code style="font-weight:bold;">namespace</code>
+<code>SampleBTApp.UnitTests</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>{</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[TestClass]</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">12.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">class</code> <code>
+MapTests</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">14.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">private</code>
+<code style="font-weight:bold;">const</code> <code style="font-weight:bold;">
+string</code> <code>InputFileDirectory = <span style="white-space:pre;">
+</span>@</code><code style="color:blue;">&quot;E:\BizTalkCICDUsingJenkins\BizTalkApp\SampleBTApp\SampleBTApp.UnitTests\SampleMessages\In\&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">private</code>
+<code style="font-weight:bold;">const</code> <code style="font-weight:bold;">
+string</code> <code>OutputFileDirectory = <span style="white-space:pre;">
+</span>@</code><code style="color:blue;">&quot;E:\BizTalkCICDUsingJenkins\BizTalkApp\SampleBTApp\SampleBTApp.UnitTests\SampleMessages\Out\&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">16.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">17.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>SchemaDefinition
+ sourceSchema = </code><code style="font-weight:bold;">new</code>
+<code>SchemaDefinition()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlSchemaNameSpace
+ = </code><code style="color:blue;">&quot;<a href="http://samplebtapp.schemas.input/">http://SampleBTApp.Schemas.Input</a>&quot;</code><code>,</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">20.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlSchemaPath
+ = @</code><code style="color:blue;">&quot;E:\BizTalkCICDUsingJenkins\BizTalkApp\SampleBTApp\SampleBTApp.Schemas\Input.xsd&quot;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">21.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">22.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>};</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">23.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>SchemaDefinition
+ destinationSchema = </code><code style="font-weight:bold;">new</code>
+<code>SchemaDefinition()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">25.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">26.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlSchemaNameSpace
+ = </code><code style="color:blue;">&quot;<a href="http://samplebtapp.schemas.output/">http://SampleBTApp.Schemas.Output</a>&quot;</code><code>,</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">27.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XmlSchemaPath
+ = @</code><code style="color:blue;">&quot;E:\BizTalkCICDUsingJenkins\BizTalkApp\SampleBTApp\SampleBTApp.Schemas\Output.xsd&quot;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">28.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>};</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">29.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">30.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[TestMethod]</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">31.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">void</code> <code>
+TestTransform_Input_To_OutputMap()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">32.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">33.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>var
+ inputSchema = sourceSchema;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">34.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>var
+ outputSchema = destinationSchema;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">35.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">const</code>
+<code style="font-weight:bold;">string</code> <code>
+inputFile = </code><code style="color:blue;">&quot;Input.xml&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">36.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">const</code>
+<code style="font-weight:bold;">string</code> <code>
+outputFile = </code><code style="color:blue;">&quot;Output.xml&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">37.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">const</code>
+<code style="font-weight:bold;">string</code> <code>
+fullNameXpath = </code><code style="color:blue;">&quot;/*[local-name()=&#39;Resp&#39; and namespace-uri()=&#39;<a href="http://samplebtapp.schemas.output/">http://SampleBTApp.Schemas.Output</a>&#39;]/*<span style="white-space:pre;">
+</span>[local-name()=&#39;FullName&#39; and namespace-uri()=&#39;&#39;]&quot;</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">38.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">39.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>List&lt;XPathDefinition&gt;
+ xpathList = </code><code style="font-weight:bold;">new</code>
+<code>List&lt;XPathDefinition&gt;()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">40.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">41.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">new</code>
+<code>XPathDefinition()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">42.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">43.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>XPath
+ = fullNameXpath,</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">44.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Value
+ = </code><code style="color:blue;">&quot;Mandar Dharmadhikari&quot;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">45.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">46.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">47.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>};</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">48.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">49.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>TestableMapBase
+ target = </code><code style="font-weight:bold;">new</code> <code>
+Maps.Input_To_Output();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">50.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>MapTestHelpers.MapTest(InputFileDirectory,
+ OutputFileDirectory, target, inputFile, sourceSchema, outputFile, <span style="white-space:pre;">
+</span>destinationSchema, xpathList);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">51.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">52.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">53.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">54.</code><span><code>}</code></span></div>
+</div>
+<p>These unit tests can be run from the Visual StileDirectory,
+ OutputFileDirectory, target, inputFile, sourceSchema, outputFile, <span style="white-space:pre;">
+</span>destinationSchema, xpathList);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">51.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">52.</code><span><udio just like other unit test cases.<br />
+<br />
+<br />
+<br />
+The BizTalk Sample application also contains the deployment verification tests that use the NUnit framework for the testing.&nbsp;</p>
+<p>Following code shows the method which calls the BizTalk exposed WCF service and passes the first and last name and checks if the response returned is as expected.</p>
+<div class="reCodeBlock">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">01.</code><span><code style="font-weight:bold;">using</code>
+<code>System;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">02.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Collections.Generic;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">03.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Linq;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">04.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Text;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">05.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Threading.Tasks;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">06.</code><span><code style="font-weight:bold;">using</code>
+<code>SampleBTApp.DeploymentTests.SampleAppServiceRef;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">07.</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+class</code> <code>NUnitUtility</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code>{</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+bool</code> <code>TestBizTalkAppService(</code><code style="font-weight:bold;">string</code>
+<code>firstName, </code><code style="font-weight:bold;">string</code>
+<code>lastName)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">bool</code>
+<code>retVal = </code><code style="font-weight:bold;">false</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">12.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>NameAppenderServiceClient
+ client = </code><code style="font-weight:bold;">new</code> <code>
+NameAppenderServiceClient();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">14.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Req
+ req = </code><code style="font-weight:bold;">new</code> <code>
+Req();</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">16.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>req.FirstName
+ = firstName;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">17.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>req.LastName
+ = lastName;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">18.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Resp
+ resp = client.AppendName(req);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">20.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">21.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">if</code>
+<code>(resp != </code><code style="font-weight:bold;">null</code>
+<code>&amp;&amp; resp.FullName == firstName &#43; </code><code style="color:blue;">&quot; &quot;</code>
+<code>&#43; lastName) </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">22.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>retVal=</code><code style="font-weight:bold;">true</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">return</code>
+<code>retVal;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<d-weight:bold;">if</code>
+<code>(resp != </code><code style="font-weight:bold;">null</code>
+<code>&amp;&amp; resp.FullName == firstName &#43; </code><code style="color:blue;">&quot; &quot;</code>
+<code>&#43; lastName) </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">22.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>retVal=</code><code style="font-weight:bold;">true</code><code>;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">return</code>
+<code>retVal;</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.<iv><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">25.</code><span><code>}</code></span></div>
+</div>
+<br />
+<br />
+<p>Following is the code used for writing the NUnit test cases.</p>
+<div class="reCodeBlock">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">01.</code><span><code style="font-weight:bold;">using</code>
+<code>System;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">02.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Collections.Generic;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">03.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Linq;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">04.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Text;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">05.</code><span><code style="font-weight:bold;">using</code>
+<code>System.Threading.Tasks;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">06.</code><span><code style="font-weight:bold;">using</code>
+<code>NUnit.Framework;</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">07.</code><span><code style="font-weight:bold;">namespace</code>
+<code>SampleBTApp.DeploymentTests</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code>{</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[TestFixture]</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+class</code> <code>VerifyDeployment</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">12.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[Test]</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;">public</code>
+<code style="font-weight:bold;">static</code> <code style="font-weight:bold;">
+void</code> <code>TestBizTalkWCFService()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">14.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>var
+ retVal= NUnitUtility.TestBizTalkAppService(</code><code style="color:blue;">&quot;Mandar&quot;</code><code>,
+</code><code style="color:blue;">&quot;Dharmadhikari&quot;</code><code>);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">16.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Assert.AreEqual(</code><code style="font-weight:bold;">true</code><code>,
+ retVal);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">17.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">20.</code><span><code>}</code></span></div>
+</div>
+<br />
+<br />
+<p>These Nunit Test cases can be bundled in the BTDF deployment for the application. There are some important settings that need to be done in the BTDF .btdfproj file to allow the auto-termination of the instances, deploying the IIS application, creating the
+ IIS app pools and the IIS reset. The btdf project file for this sample application is as below.<br />
+<br />
+<span style="font-family:monospace;"><br />
+<br />
+</span></p>
+<div class="reCodeBlock">
+<div><span style="font-family:monospace;"><code>&lt;?</code><code style="font-weight:bold;">xml</code>
+<code>version</code><code>=</code><code style="color:blue;">&quot;1.0&quot;</code>
+<code>encoding</code><code>=</code><code style="color:blue;">&quot;utf-8&quot;</code><code>?&gt;</code></span></div>
+<div><span style="font-family:monospace;"><code>&lt;!--
+</code></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>Deployment Framework for BizTalk</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>Copyright (C) Thomas F. Abraham, Scott Colestock</code></span></span></div>
+<div><span style="font-family:monospace;"><code>--&gt;</code></span></div>
+<div><span style="font-family:monospace;"><code>&lt;</code><code style="font-weight:bold;">Project</code>
+<code>xmlns</code><code>=</code><code style="color:blue;">&quot;<a href="http://schemas.microsoft.com/developer/msbuild/2003">http://schemas.microsoft.com/developer/msbuild/2003</a>&quot;</code>
+<code>DefaultTargets</code><code>=</code><code style="color:blue;">&quot;Installer&quot;</code><code>&gt;</code></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Configuration</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(Configuration)&#39; == &#39;&#39;&quot;</code><code>&gt;Debug&lt;/</code><code style="font-weight:bold;">Configuration</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Platform</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(Platform)&#39; == &#39;&#39;&quot;</code><code>&gt;x86&lt;/</code><code style="font-weight:bold;">Platform</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">SchemaVersion</code><code>&gt;1.0&lt;/</code><code style="font-weight:bold;">SchemaVersion</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ProjectName</code><code>&gt;SampleBTApp&lt;/</code><code style="font-weight:bold;">ProjectName</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ProjectVersion</code><code>&gt;1.0&lt;/</code><code style="font-weight:bold;">ProjectVersion</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">IncludeVirtualDirectories</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">IncludeVirtualDirectories</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">IncludeDeploymentTest</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">IncludeDeploymentTest</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">UsingMasterBindings</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">UsingMasterBindings</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">RequireXmlPreprocessDirectives</code><code>&gt;False&lt;/</code><code style="font-weight:bold;">RequireXmlPreprocessDirectives</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ApplyXmlEscape</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">ApplyXmlEscape</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">AutoTerminateInstances</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">AutoTerminateInstances</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">MsiName</code><code>&gt;SampleBTApp&lt;/</code><code style="font-weight:bold;">MsiName</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-ctives</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ApplyXmlEscape</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">ApplyXmlEscape</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">AutoTerminateInstances</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">AutoTerminateInstances</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;weight:bold;">SkipIISReset</code><code>&gt;False&lt;/</code><code style="font-weight:bold;">SkipIISReset</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">IncludeDeploymentTest</code><code>&gt;True&lt;/</code><code style="font-weight:bold;">IncludeDeploymentTest</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DefaultInstallDir</code><code>&gt;c:\BTDFInstall\SampleBTApp\1.0&lt;/</code><code style="font-weight:bold;">DefaultInstallDir</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!-- Properties related to building an MSI for server deployments
+ --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!-- BizTalk App Version Upgrade --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!--&nbsp;&nbsp; For each new product release to be deployed to your BizTalk
+ servers: --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!--&nbsp;&nbsp;&nbsp;&nbsp; 1) Increment ProductVersion --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!--&nbsp;&nbsp;&nbsp;&nbsp; 2) Generate a new GUID and update ProductId with the new
+ GUID --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!--&nbsp;&nbsp; This allows the new MSI to automatically uninstall (not undeploy!)
+ the old MSI and install the new one. --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ProductVersion</code><code>&gt;1.0.01&lt;/</code><code style="font-weight:bold;">ProductVersion</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ProductId</code><code>&gt;408fe762-c721-4963-b47a-7ea6b9068f25&lt;/</code><code style="font-weight:bold;">ProductId</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!-- BizTalk App Version Upgrade --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ProductName</code><code>&gt;SampleBTApp&lt;/</code><code style="font-weight:bold;">ProductName</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Manufacturer</code><code>&gt;Deployment
+ Framework User&lt;/</code><code style="font-weight:bold;">Manufacturer</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PackageDescription</code><code>&gt;SampleBTApp&lt;/</code><code style="font-weight:bold;">PackageDescription</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!-- NEVER change the ProductUpgradeCode. --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ProductUpgradeCode</code><code>&gt;ef8b2bb5-e10e-40c1-9f31-b04c730fd36f&lt;/</code><code style="font-weight:bold;">ProductUpgradeCode</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- Under TFS Team Build, set CustomizableOutDir property to true in
+ TFS 2005/2008/2010 UpgradeTemplate. --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- With a workflow build, copy the default template then modify the
+ MSBuild task for the solution build. Set OutDir to blank and --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- CommandLineArguments to String.Format(&quot;/p:SkipInvalidConfigurations=true;TeamBuildOutDir=&quot;&quot;{0}&quot;&quot;
+ {1}&quot;, BinariesDirectory, MSBuildArguments). --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PropertyGroup</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(Configuration)&#39; == &#39;Debug&#39;&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeploymentFrameworkTargetsPath</code><code>&gt;$(MSBuildExtensionsPath)\Deploy><smentFrameworkForBizTalk\5.0\&lt;/</code><code style="font-weight:bold;">DeploymentFrameworkTargetsPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">OutputPath</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(TeamBuildOutDir)&#39; == &#39;&#39;&quot;</code><code>&gt;bin\Debug\&lt;/</code><code style="font-weight:bold;">OutputPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">OutputPath</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(TeamBuildOutDir)&#39; != &#39;&#39;&quot;</code><code>&gt;$(TeamBuildOutDir)&lt;/</code><code style="font-weight:bold;">OutputPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PropertyGroup</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(Configuration)&#39; == &#39;Release&#39;&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeploymentFrameworkTargetsPath</code><code>&gt;$(MSBuildExtensionsPath)\DeploymentFrameworkForBizTalk\5.0\&lt;/</code><code style="font-weight:bold;">DeploymentFrameworkTargetsPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">OutputPath</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(TeamBuildOutDir)&#39; == &#39;&#39;&quot;</code><code>&gt;bin\Release\&lt;/</code><code style="font-weight:bold;">OutputPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">OutputPath</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(TeamBuildOutDir)&#39; != &#39;&#39;&quot;</code><code>&gt;$(TeamBuildOutDir)&lt;/</code><code style="font-weight:bold;">OutputPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PropertyGroup</code>
+<code>Condition</code><code>=</code><code style="color:blue;">&quot;&#39;$(Configuration)&#39; == &#39;Server&#39;&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeploymentFrameworkTargetsPath</code><code>&gt;Framework\&lt;/</code><code style="font-weight:bold;">DeploymentFrameworkTargetsPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;!-- Get our PDBs into the GAC so we get file/line number information
+ in stack traces. --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeployPDBsToGac</code><code>&gt;false&lt;/</code><code style="font-weight:bold;">DeployPDBsToGac</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">PropertyGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PropsFromEnvSettings</code>
+<code>Include</code><code>=</code><code style="color:blue;">&quot;SsoAppUserGroup;SsoAppAdminGroup&quot;</code>
+<code>/&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- !!! TODO !!! --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- Add ItemGroup elements that contain one or more Schemas, Orchestrations,
+ Transforms, etc. elements that describe --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- the specific artifacts in your solution that need to be deployed.
+ Use IntelliSense as a guide. --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Schemas</code>
+<code>Include</code><code>=</code><code style="color:blue;">&quot;SampleBTApp.Schemas.dll&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">LocationPath</code><code>&gt;..\$(ProjectName).Schemas\bin\$(Configuration)&lt;/</code><code style="font-weight:bold;">LocationPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">Schemas</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Orchestrations</code>
+<code>Include</code><code>=</code><code style="color:blue;">&quot;SampleBTApp.Orchestrations.dll&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">LocationPath</code><code>&gt;..\$(ProjectName).Orchestrations\bin\$(Configuration)&lt;/</code><code style="font-weight:bold;">LocationPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">Orchestrations</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Transforms</code>
+<code>Include</code><code>=</code><code style="color:blue;">&quot;SampleBTApp.Maps.dll&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">LocationPath</code><code>&gt;..\$(ProjectName).Orchestrations\bin\$(Configuration)&lt;/</code><code style="font-weight:bold;">LocationPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">Transforms</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeploymentTest</code>
+<code>Include</code><code>=</code><code style="color:blue;">&quot;SampleBTApp.DeploymentTests.dll&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">LocationPath</code><code>&gt;..\SampleBTApp.DeploymentTests\bin\$(Configuration)&lt;/</code><code style="font-weight:bold;">LocationPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">DeploymentTest</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">IISAppPool</code>
+<code>Include</code>sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">LocationPath</code><code>&gt;..\SampleBTApp.DeploymentTests\bin\$(Configuration)&lt;/</code><code style="font-weight:bold;">LocationPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">DeploymentTest</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><c<code>=</code><code style="color:blue;">&quot;SampleBTApp.Services&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeployAction</code><code>&gt;Create&lt;/</code><code style="font-weight:bold;">DeployAction</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">UndeployAction</code><code>&gt;Delete&lt;/</code><code style="font-weight:bold;">UndeployAction</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DotNetFrameworkVersion</code><code>&gt;v4.0&lt;/</code><code style="font-weight:bold;">DotNetFrameworkVersion</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PipelineMode</code><code>&gt;Integrated&lt;/</code><code style="font-weight:bold;">PipelineMode</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">UserName</code><code>&gt;mandar\mandar
+ dharmadhikari&lt;/</code><code style="font-weight:bold;">UserName</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Password</code><code>&gt;Microsoft@234&lt;/</code><code style="font-weight:bold;">Password</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">IdentityType</code><code>&gt;SpecificUser&lt;/</code><code style="font-weight:bold;">IdentityType</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">IISAppPool</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">IISApp</code>
+<code>Include</code><code>=</code><code style="color:blue;">&quot;SampleAppWcfService&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">AppPoolName</code><code>&gt;SampleBTApp.Services&lt;/</code><code style="font-weight:bold;">AppPoolName</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">DeployAction</code><code>&gt;CreateOrUpdate&lt;/</code><code style="font-weight:bold;">DeployAction</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">UndeployAction</code><code>&gt;Delete&lt;/</code><code style="font-weight:bold;">UndeployAction</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">PhysicalPath</code><code>&gt;..\SampleBTApp.Services&lt;/</code><code style="font-weight:bold;">PhysicalPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">VirtualPath</code><code>&gt;/SampleAppWcfService&lt;/</code><code style="font-weight:bold;">VirtualPath</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Exclusions</code><code>&gt;*.csproj;Web.Debug.config;Web.Release.config;obj;Properties;bin&lt;/</code><code style="font-weight:bold;">Exclusions</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">IISApp</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">ItemGroup</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!-- !!! TODO !!! --&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Import</code>
+<code>Project</code><code>=</code><code style="color:blue;">&quot;$(DeploymentFrameworkTargetsPath)BizTalkDeploymentFramework.targets&quot;</code>
+<code>/&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;!--</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code>-weight:bold;">IISApp</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:mo<span><code>The Deployment Framework automatically packages most files into the
+ server install MSI.</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>However, if there are special folders that you need to include in the
+ MSI, you can</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>copy them to the folder $(RedistDir) in the CustomRedist target.</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>To include individual files, add an ItemGroup with AdditionalFiles
+ elements.</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>--&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;</code><code style="font-weight:bold;">Target</code>
+<code>Name</code><code>=</code><code style="color:blue;">&quot;CustomRedist&quot;</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&nbsp;&nbsp;</code><span><code>&lt;/</code><code style="font-weight:bold;">Target</code><code>&gt;</code></span></span></div>
+<div><span style="font-family:monospace;"><code>&lt;/</code><code style="font-weight:bold;">Project</code><code>&gt;</code></span></div>
+</div>
+<p>↑<span style="font-family:monospace;"><a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back
+ To Top</a>&nbsp;<br />
+<br />
+</span></p>
+<p><span style="font-family:monospace;"></span></p>
+<hr />
+<h1><a name="Configuration_Steps"></a>Configuration Steps</h1>
+<p>The setup of a Build Pipeline using Jenkins to achieve CI CD for BizTalk requires the use of some batch files and PowerShell scripts to achieve an end top end automated process. This section covers the batch and PowerShell scripts along with the basic setup
+ of Jenkins for connecting to the GIT and Configuration of the Build Pipeline</p>
+<h2><a name="Supportive_Batch_Files_and_PowerShell_Scripts"></a>Supportive Batch Files and PowerShell Scripts</h2>
+<ol>
+<li>&nbsp;Bach File To Build The BizTalk Code: In order to build the Visual Studio code, the devenv.exe command can be run in the silent mode and the build log can be sent to a log file. In case if there are any build errors in the solution, the batch file will
+ cause generate a fail message which will cause the who;e flow to halt. Following is the sample batch file. It can be configured to point to the location where the code fetched from the GIT is kept.<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code style="color:blue;">&quot;&lt;Visual Studio Installation Path&gt;\Common7\IDE\devenv.exe&quot;</code>
+<code>%</code><code>1</code> <code>
+/Build Debug /Out &lt;BizTalkAppName&gt;_VSBuildLog.log</code></span></div>
+</div>
+</li><li>Batch File To Execute the Unit Test Cases: In order to run the Unit Test cases, the VSTests.Console.exe command line exe needs to be run by providing parameters like the assembly containing the unit tests and the test settings file. Again it is possible
+ to generate the log file for the run unit test cases. ( See References for more Details).<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code style="color:blue;">&quot;&lt;VS Installation Path&gt;\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe&quot;</code>
+<code style="color:blue;">&quot;&lt;Path To the assembly(dll) containing the Unit Test Cases&quot;</code>
+<code>/Setting:</code><code style="color:blue;">&quot;Path To the Test Settings File&quot;</code></span></div>
+</div>
+<br />
+<br />
+<br />
+<br />
+</li><li><strong>Power Shell Script to Modify the BTDF Proj file</strong>: One important point that needs to be taken care of while generating the BizTalk application MSI using BTDF is that the product version and the product id values need to be updated so that
+ the upgraded version of the MSI is created. This facilitates the installation of MSI as an upgraded version the MSI will ensure that the older version gets uninstalled first and the newer version is installed later. If the version of the MSI is not upgraded
+ then the administrator has to manually first uninstall the MSI from the control panel and then reinstall the new MSI. Following PowerShell script modifies the product version by changing the product id and the product version values in the BTDF proj file.
+ This power shell accepts the path to the BTDF proj file as input and saves the modified btdf proj file at the same location.<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">01.</code><span><code>param</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">02.</code><span><code>(</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">03.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[Parameter(Mandatory=$true)]</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">04.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[string]$BTDFProjFilePath</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">05.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">06.</code><span><code>)</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">07.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">08.</code><span><code>Function UpdateBTDFFile($BTDFProjFilePath)</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">09.</code><span><code>{</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>if(Test-Path
+ $BTDFProjFilePath)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">12.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-host(</code><code style="color:blue;">&quot;Found
+ the valid path ofr the btdf Project File&quot;</code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Write-Host(</code><code style="color:blue;">&quot;This
+ script will now try to change the Product version and Product GUID&quot;</code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">14.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$btdfprojxml=
+ new-object xml </code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">16.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[xml]$btdfprojxml
+ = get-content -path $BTDFProjFilePath</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">17.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$Guid
+ = [guid]::NewGuid()</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>foreach($projectgroup
+ in $btdfprojxml.Project.PropertyGroup)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">20.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">21.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>if(
+ $projectgroup.ProductVersion -ne $null)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">22.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[string]$productId
+ = $projectgroup.ProductVersion</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$version
+ = $productId.Substring(</code><code><span>3</span></code><code>,</code><code><span>2</span></code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">25.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[int]$verionint=
+ $version</csp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[string]$productId
+ = $projectgroup.ProductVersion</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">24.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&node></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">26.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host($verionint)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">27.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Write-Host(</code><code style="color:blue;">&quot;Current
+ Version of the product is $productId&quot;</code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">28.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host(</code><code style="color:blue;">&quot;Attempting
+ to increament the product version now&quot;</code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">29.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$verionint
+ = $verionint &#43;</code><code>1</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">30.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host($verionint)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">31.</code><span><code>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;$<span style="font-family:monospace;">productId</span>=$<span style="font-family:monospace;">productId</span>.remove(4,1).Insert(4,&quot;$versionInt&quot;)</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">32.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host(</code><code style="color:blue;">&quot;New
+ version of the Product is $productId&quot;</code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">33.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$projectgroup.ProductVersion
+ = $productId</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">34.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$projectgroup.ProductId
+ = [string]$Guid</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">35.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">36.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">37.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">38.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">39.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">40.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">41.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host(</code><code style="color:blue;">&quot;Saving
+ the xml File Now&quot;</code><code>)</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">42.</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">43.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$btdfprojxml.Save($BTDFProjFilePath);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">44.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">45.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">46.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">47.</code><span><code>}</code></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;display:block;">48.</code><span><code>UpdateBTDFFile -BTDFProjFilePath
+ $BTDp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$btdfprojxml.Save($BTDFProjFilePath);</code></span></span></div>
+<div><code style="width:3em;text-align:right;padding-right:0.3em;float:left;diFProjFilePath</code></span></div>
+</div>
+</li><li>
+<div><span><code></code><span><code>$productId = $productId.Replace(</code><code style="color:blue;">&quot;$version&quot;</code><code>,</code><code style="color:blue;">&quot;$verionint&quot;</code><code>)</code></span></span></div>
+</li><li>
+<div><span><code>$pversion=$pversion.remove(4,1).Insert(4,&quot;$versionInt&quot;)<br />
+<br />
+</code></span></div>
+</li><li>PowerShell Script To Install the Newly Generated MSI file and Export the Environment Settings File: This PowerShell script is designed to install the MSI generated by the BTDF at a particular location. Once the installation extracts the contents, the next
+ step is to prep the settings file for the deployment of the BizTalk application on the server. This PowerShell Script accepts the location path where the MSI is stored and the path at which it needs to be installed.&nbsp;<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code>param</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>(</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[Parameter(Mandatory=$true)]</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$MsiPath,</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[Parameter(Mandatory=$true)]</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$InstallPath
+</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>)</code></span></span></div>
+<div><span>&nbsp;</span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>Function InstallBTDFMSI ($MsiPath, $InstallPath)</code></span></div>
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>if(($MsiPath -eq $null) -or ($InstallPath -eq $null))</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host(</code><code style="color:blue;">&quot;MSI Path /Install Path is missing&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>else</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>cls</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Write-Host(</code><code style="color:blue;">&quot;Installation of MSI started&quot;</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[string]$InstallArgument=
+</code><code style="color:blue;">&quot;/i `&quot;</code><code style="color:blue;">&quot; &#43; $MsiPath &#43; &quot;</code><code>`</code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>[string]$InstalDirArgument =
+</code><code style="color:blue;">&quot;INSTALLDIR=`&quot;</code><code style="color:blue;">&quot; &#43; $InstallPath &#43;&quot;</code><code>`</code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host($InstallArgument</code><code>1</code><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host($InstalDirArgument)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$MSIArguments = @(</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$InstallArgument</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;/qn&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;/norestart&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;/log BackEndService-1.0.03.log&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$InstalDirArgument</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Write-Host ($MSIArguments)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>try</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Start-Process
+</code><code style="color:blue;">&quot;msiexec.exe&quot;</code> <code>
+-ArgumentList $MSIArguments -Wait -ErrorAction Stop</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>ExportEnvironmentSettingsFile -InstallPath $InstallPath</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>catch</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-host $error[</code><code>0</code><code>]</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>throw $LASTEXITCODE</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>}</code></span></div>
+<div><span><code>Function ExportEnvironmentSettingsFile ($InstallPath)</code></span></div>
+<div><span><code>{</code></span></div>
+<div><span><code>&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$InstallPathTemp = $InstallPath.Substring(</code><code>1</code><code>,(($InstallPath.Length)</code><code>-2</code><code>))</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Write-Host($InstallPathTemp)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$SettingsFilePath = $InstallPath &#43;</code><code style="color:blue;">&quot;\Deployment\EnvironmentSettings\SettingsFileGenerator.xml&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$SettingsFileExtractPath = $InstallPath &#43;
+</code><code style="color:blue;">&quot;\Deployment\EnvironmentSettings&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$FilePath =
+</code><code style="color:blue;">&quot;`&quot;</code><code style="color:blue;">&quot; &#43;&nbsp; $InstallPath &#43; &quot;</code><code>\Deployment\Framework\DeployTools\EnvironmentSettingsExporter.exe</code><code style="color:blue;">&quot; &#43; &quot;</code><code>`</code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$ArgumentList =
+</code><code style="color:blue;">&quot;`&quot;</code><code style="color:blue;">&quot; &#43; $SettingsFilePath &#43; &quot;</code><code>`</code><code style="color:blue;">&quot; `&quot;</code><code style="color:blue;">&quot; &#43;&nbsp; $SettingsFileExtractPath &#43; &quot;</code><code>`</code><code style="color:blue;">&quot;&quot;</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Write-Host($ArgumentList)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-Host($FilePath)</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>try</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbspiv>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>$ArgumentList =
+</code><code style="color:blue;">&quot;`&quot;</code><code style="color:blue;">&quot; &#43; $SettingsFilePath &#43; &quot;</code><code>`</code><code style="color:blue;">&quot; `&quot;</code><code style="color:blue;">&quot; &#43;&nbsp; $SettingsFileExtractPath &#43; &quot;</code><code>`</code><code style="color:blue;">&quot;&quot;</code><;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -Wait -ErrorAction Stop</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>ExportEnvironmentSettingsFile -InstallPath $InstallPath</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>catch</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>{</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>write-host $error[</code><code>0</code><code>]</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>throw $LASTEXITCODE</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code>}</code></span></span></div>
+<div><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div><span><code>}</code></span></div>
+<div><span>&nbsp;</span></div>
+<div><span><code>InstallBTDFMSI -MsiPath $MsiPath -InstallPath $InstallPath</code></span></div>
+</div>
+</li><li><strong>Batch File To Run NUnit Tests</strong>: The Batch file uses the NUnit Console exe to run the NUnit Tests silently in the background. Nunit Console application can be downloaded from the Nuget Packages using Visual Studio. Following is the batch
+ file.<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code style="color:blue;">&quot;C:\Program Files (x86)\NUnit.org\nunit-console\nunit3-console.exe&quot;</code>
+<code style="color:blue;">&quot;&lt;Path To Nunit Test Assembly&gt;&quot;</code> <code>
+/</code><code style="font-weight:bold;">out</code><code>:TestResult.txt</code></span></div>
+</div>
+</li><li>Batch File To Copy MSI to Shared Folder: The last task of the Build is to copy the MSI generated by BTDF to a shared folder if the build is successful end to end. This shared folder can be accessed from the next environment.<br />
+<br />
+<br />
+<br />
+<div class="reCodeBlock">
+<div><span><code>copy
+</code><code style="color:blue;">&quot;Path Where Build MSi is Stored&quot;</code> <code style="color:blue;">
+&quot;Path to the shared folder accessible from Next Environment&quot;</code></span></div>
+</div>
+</li></ol>
+<h2><a name="Configuring_and_Setting_Up_Jenkins"></a>Configuring and Setting Up Jenkins</h2>
+<h3><a name="What_Is_Jenkins"></a>What Is Jenkins?</h3>
+<p>Jenkins is an open source continuous integration server which uses an assortment of plugins to set up the CI CD process for various projects. It has the support for the execution of Windows Batch File, MSBuild and PowerShell executions and hence can be used
+ to set up Continuous Integration of the .Net applications when the organization using the &gt;NET technology in conjunction with other open source technologies and Source controls like GITHub. Jenkins with its plugins extends the support to fetch the code from
+ the source control systems like GIT based on GIT webhooks /Periodic pull from the GIT server using the scheduler build. Jenkins can be downloaded from&nbsp;<a href="https://jenkins.io/download/" target="_blank">Download Jenkins</a>&nbsp;</p>
+<h3><a name="Setting_Up_Jenkins"></a>Setting Up Jenkins</h3>
+<p>Jenkins is installed as a windows service and is available on http://localhost:8080 . In order to make Jenkins able to do the deployments to the BizTalk environment, it is imperative that the Jenkins Windows service is configured to run using a logon of
+ the user which has the administrative privileges on the Server as well as BizTalk databases. Following screenshots show the service configuration and the sample home page of the Jenkins.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6560.JenkinsService.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6560.JenkinsService.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2134.JenkinsSampleDashBoards.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2134.JenkinsSampleDashBoards.JPG" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p>&nbsp;<span style="white-space:pre;"> </span></p>
+<p>Once Jenkins is installed, following is the list of the plugins that need to be installed on the Jenkins Server.</p>
+<ol>
+<li>GITPlugin </li><li>MSBuildPlugin </li><li>PowerShell Plugin </li><li>NUnit Plugin </li><li>Pipeline Plugin </li><li>Visual Studio Test Plugin /MS Test Plugin </li></ol>
+<p>Refer to following set of screenshots to navigate to the page from which the plugins can be installed.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6518.ManagePlugins.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/0hnet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2134.JenkinsSampleDashBoards.JPG" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p>&nbsp;<span style="white-space:pre;"> </span></p>
+<p>Once Jenkins is inst0-00-00-00-05/6518.ManagePlugins.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0876.InstallPlugins.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0876.InstallPlugins.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<h3><a name="Configuring_Plugins"></a><span style="white-space:pre;">Configuring Plugins
+</span></h3>
+<p>Once the Plugins listed above are downloaded, installed and the Jenkins service is restarted, next task is to configure the plugins like MSBuild and GIT. Refer following to set up the plugins.</p>
+<h4><a name="MSBuild_Plugin"></a>MSBuild Plugin&nbsp;</h4>
+<p>Refer following screenshots to configure the MSBuild plugin.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4426.ManagePlugins2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4426.ManagePlugins2.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5050.ConfigureMSBuild.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5050.ConfigureMSBuild.jpg" style="border-width:0px;border-style:solid;" /></a></span></p>
+<h4><a name="Git_Plugin"></a>Git Plugin</h4>
+<p><span style="font-size:12.1px;white-space:pre;">In order to connect to the Git repository, it is necessary to save the user access token for the logged in user in Jenkins. Refer to the following screenshot.
+</span></p>
+<p><span style="font-size:12.1px;white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3301.AddGitUserToken.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3301.AddGitUserToken.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><span style="font-size:12.1px;white-space:pre;">Following screen shot shows how to configure the GIT servers.</span></p>
+<p><span style="font-size:12.1px;white-space:pre;"><br />
+<br />
+</span></p>
+<p><span style="font-size:12.1px;white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6835.AddGitUserToken2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6835.AddGitUserToken2.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><span style="white-space:pre;">Once the GIT command line tools are installed on the Jenkins server, the path to git.exe is configured by default.
+</span></p>
+<p><span style="white-space:pre;">This completes the basic configuration set up for the Jenkins Server.
+</span></p>
+<h1><a name="Configuring_Build_Pipeline"></a><span style="white-space:pre;">Configuring Build Pipeline
+</span></h1>
+<p><span style="white-space:pre;">Once the basic configuration steps are done, Next step comes to the creation and configuration of the build jobs for each of the steps mentioned in the Introduction.</span></p>
+<p><span style="white-space:pre;">Following screenshot shows how to add a new build job to the Jenkins.</span></p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1513.AddBuildJob1.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1513.AddBuildJob1.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><span style="white-space:pre;"></span></p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6560.AddBuildJob2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6560.AddBuildJob2.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<h2><a name="Fetch_BizTalk_Code_from_GIT_Repository"></a>Fetch BizTalk Code from GIT Repository&nbsp;</h2>
+<p>Following screenshots give a step by step approach to create the build project the fetch the code from the GIT Repository. This Build project is scheduled to run after every 15 mins but this can be configured as required.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0211.GITBuildJob2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0211.GITBuildJob2.jpg" style="border-width:0px;border-style:solid;" /></a></span></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2671.GITBuildJob1.jpg"><span style="white-space:pre;"></span><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2671.GITBuildJob1.jpg" style="border-width:0px;border-style:solid;" /></a>
+<h2><a name="Build_BizTalk_Solution"></a>Build BizTalk Solution</h2>
+<p><span style="white-space:pre;">This Build job is created with a link to the previous job with a condition that a successful fetching from the Git Repository will fire the Build BizTalk Application build job.
+</span></p>
+<p><span style="white-space:pre;">Refer sample screenshots below.</span></p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6724.BuildVSSolution1.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6724.BuildVSSolution1.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4064.BuildVSSolution2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4064.BuildVSSolution2.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;</p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4314.BuildVSSolution3.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4314.BuildVSSolution3.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.BuildVSSolution4.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1665.BuildVSSolution4.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p>Paths indicated in above are as a sample. They should be changed as required. Once the job is saved, it is ready to run.&nbsp;</p>
+<p><span style="font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:20px;">Run Unit Tests</span></p>
+<p>Following Screen Shots give a sample way of configuring the Unit Test Case project. The paths shown are for sample purposes. Actual paths should be configured as required.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2500.RunUnitTests1.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2500.RunUnitTests1.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7357.RunUnitTests2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7357.RunUnitTests2.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0550.RunUnitTests3.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0550.RunUnitTests3.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4010.RunUnitTests4.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4010.RunUnitTests4.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;&nbsp;</p>
+<p><br />
+</p>
+<p>The unit tests results can be published using the MSTest plugin that was downloaded earlier. This can be done by adding a post-build action as shown below.<br />
+<br />
+<br />
+<br />
+</p>
+<p><span style="white-space:pre;"><-components-files/00-00-00-00-05/0550.RunUnitTests3.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0550.RunUnitTests3.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7024.PublishUnitTestReports.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7024.PublishUnitTestReports.JPG" style="border-width:0px;border-style:solid;" /></a></span>
+</p>
+<h2><a name="Upgrade_BizTalk_msi_Version"></a>Upgrade BizTalk MSI Version&nbsp;</h2>
+<p>As discussed earlier, it is imperative that the version of the BizTalk MSI should be upgraded to enable a smooth installation of the MSI on the target server. Following screenshots show the steps to invoke the PowerShell script to modify the BTDF project
+ File.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2210.UpgrademsiVer1.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2210.UpgrademsiVer1.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;</p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1425.UpgrademsiVer2.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1425.UpgrademsiVer2.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0268.UpgrademsiVer3.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0268.UpgrademsiVer3.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6014.UpgrademsiVer3.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6014.UpgrademsiVer3.jpg" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p><br />
+</p>
+<h2><a name="Create_BTDF_Msi"></a>Create BTDF Msi&nbsp;</h2>
+<p>Once the Version of the Product is upgraded in the btdf project file, the next step is to create a BTDF powered MSI for the BizTalk application. The MSBuild plugin of Jenkins is used to create the MSI.&nbsp;</p>
+<p><strong>Prerequisite</strong>: Before the Build Project can be executed, it is necessary to add the InstallPath string value in the windows registry. Refer following screenshot for example.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6787.AddBTDFKey.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6787.AddBTDFKey.jpg" style="border-width:0px;border-style:solid;" /></a></span></p>
+<p>Following screenshots give a step by step process to set up the Build project in Jenkins.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1351.CreateBTDFMsi14.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1351.CreateBTDFMsi14.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;&nbsp;</p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8037.CreateBTDFMsi2.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8037.CreateBTDFMsi2.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.CreateBTDFMsi3.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.CreateBTDFMsi3.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3414.CreateBTDFMsi4.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3414.CreateBTDFMsi4.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;</p>
+<p><br />
+</p>
+<h2><a name="Install_Msi_and_Extract_Settings_Files"></a>Install Msi and Extract Settings Files</h2>
+<p>Once the BTDF powered MSI is created for the BizTalk application, next step is to install the MSI at a particular path and then to extract out the settings file for the environment. All <img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.CreateBTDFMsi3.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-cthis is accomplished using the PowerShell Script for MSI installation
+ mentioned in the Scripts and PowerShell section. Refer the following screenshot to set up the Jenkins Build Project.</p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8688.InstallBTDFMsi1.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8688.InstallBTDFMsi1.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;</p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2211.InstallBTDFMsi2.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2211.InstallBTDFMsi2.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5025.InstallBTDFMsi3.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5025.InstallBTDFMsi3.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><span style="white-space:pre;"><br />
+<br />
+</span></p>
+<span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6232.InstallBTDFMsi4.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6232.InstallBTDFMsi4.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span><br />
+<br />
+<p>Command Invoked in the screenshot is as below.</p>
+<div class="reCodeBlock">
+<div><span><code>powershell -command
+</code><code style="color:blue;">&quot;&amp;{E:\BizTalkCICDUsingJenkins\SampleRepository\InstallMSI.ps1 E:\Jenkins\BizTalkCICD\Builds\SampleBTApp.msi C:\BTDFInstall\SampleBTApp\1.0}&quot;</code><code>;exit $lastexitcode;</code></span></div>
+</div>
+<br />
+<br />
+<p>Deploy BizTalk Application</p>
+<p>Once the Msi is installed and the settings file extracted, the next task is to deploy the Application to the build server. Here MSBuild.exe is used through the MSBuild plugin. Following Screenshots show the process to set up the Build Job for the Deployment
+ of BizTalk application.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0602.DeployBizApp1.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0602.DeployBizApp1.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4834.DeployBizApp2.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4834.DeployBizApp2.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8737.DeployBizApp4.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8737.DeployBizApp4.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<h2><a name="Verify_Deployment"></a>Verify Deployment</h2>
+<p>Once the deployment is done, the next task is to check if the deployment is successful and to that, in this particular example the response from BizTalk exposed WCGF service is examined. To perform the actual testing, NUnit framework is used. The NUnit test
+ cases are run using the NUnitConsole.exe from a batch file. BTDF enables the developers to deploy the NUnit Test Assemblies by configuring them in the btdf project. Following screenshots show a sample set up Jenkins Build Job for the Nunit Test Cases.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1200.NunitTestCases1.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1200.NunitTestCases1.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><span style="white-space:pre;"><br />
+<br />
+</span></p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6888.NunitTestCases2.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6888.NunitTestCases2.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8738.NunitTestCases3.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8738.NunitTestCases3.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4745.NunitTestCases4.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4745.NunitTestCases4.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p>Once the tests are run the reports for the test can be published using the NUnit Plugin which was downloaded earlier.&nbsp; Post build action needs to be set in the NUnit project. Providing the name of the Test results XML that was generated while running the
+ NUnit tests. Refer sample screenshots below.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6014.PublishTestReports.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6014.PublishTestReports.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<h2><a name="Copy_MSI_To_Next_Environment"></a><span style="white-space:pre;">Copy MSI To Next Environment
+</span></h2>
+<p>Once all of above tasks are completed successfully, the final task is to push the MSI to a shared folder which can be accessed from the next higher environment. The Jenkins project on the next higher environment can be configured to fire up after checking
+ the existence of the MSI in the shared drive periodically. Refer Sample screenshots below&nbsp;</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8865.CopyMsi.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8865.CopyMsi.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3386.CopyMsi2.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3386.CopyMsi2.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p><br />
+</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7776.CopyMsi3.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7776.CopyMsi3.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span><br />
+<br />
+<br />
+<br />
+</p>
+<h2><a name="Build_Pipeline_View"></a>Build Pipeline View</h2>
+<p>The jobs that are created in above steps are chained together in such a way that the current job is triggered by its immediate upstream while the current job on successful completion triggers its immediate downstream job. This can be viewed together using
+ the build pipeline view. A sample run of the whole BizTalk CI CD process is shown below.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7220.SampleBuildPipeline.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7220.SampleBuildPipeline.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;&nbsp;</p>
+<p>↑<a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To Top</a>&nbsp;</p>
+<hr />
+<h1><a name="Scripts"></a>Scripts&nbsp;</h1>
+<p>The scripts used in this&nbsp; demonstration can be downloaded from Technet Gallery from following link.</p>
+<p><a href="https://gallery.technet.microsoft.com/BizTalk-Server-Implementing-5aa217e7" target="_blank">BizTalk Server: Implementing Continuous Integration and Deployment For BizTalk</a>&nbsp;</p>
+<p>↑<a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To Top</a></p>
+<hr />
+<h1><a name="Conclusion"></a>Conclusion</h1>
+<p>Based upon the results obtained in t00-05/7220.SampleBuildPipeline.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span>&nbsp;&nbsp;</p>
+<p>↑<a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-ihe build pipeline view, it can be concluded that Continuous Integration and Deployment for BizTalk application can be set up with ease using Visual Studio, BTDF, BizUnit , NUnit, Windows PowerShell and Jenkins build server.</p>
+<p>↑<a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To Top</a></p>
+<hr />
+<h1><a name="See_Also"></a>See Also&nbsp;</h1>
+<p>Following are some of the links that can be used for extra reading.</p>
+<ol>
+<li><a href="https://social.technet.microsoft.com/wiki/contents/articles/26333.biztalk-server-2013-step-by-step-to-implement-unit-testing-in-schemas-and-maps.aspx" target="_blank">BizTalk Server 2013: Step-by-Step to implement Unit Testing in Schemas and Maps</a>&nbsp;
+</li><li><a href="https://social.technet.microsoft.com/wiki/contents/articles/47821.step-by-step-guide-for-installation-and-configuration-of-btdf-for-biztalk-2016-and-visual-studio-2015.aspx" target="_blank">Step by Step Guide For Installation and Configuration
+ of BTDF for BizTalk 2016 and Visual Studio 2015</a>&nbsp; </li><li><a href="https://docs.microsoft.com/en-us/powershell/scripting/getting-started/fundamental/windows-powershell-basics?view=powershell-5.1" target="_blank">Windows PowerShell Basics</a>&nbsp;
+</li><li><a href="https://docs.microsoft.com/en-us/powershell/scripting/getting-started/getting-started-with-windows-powershell?view=powershell-5.1" target="_blank">Getting Started with Windows PowerShell</a>&nbsp;
+</li><li><a href="https://docs.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-nunit" target="_blank">Unit testing C# with NUnit and .NET Core</a>&nbsp;
+</li><li><a href="https://www.visualstudio.com/team-services/" target="_blank">Visual Studio Team Services</a>&nbsp;
+</li></ol>
+<p>↑<span style="white-space:pre;"><a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To Top</a>
+</span></p>
+<p><span style="white-space:pre;"></span></p>
+<hr />
+<h1><a name="References"></a>References</h1>
+<span style="white-space:pre;">Content from following websites was referred while writing the wiki article</span>
+<ol>
+<li>&nbsp;<a href="http://nunit.org/" target="_blank">Nunit Home Page</a>&nbsp; </li><li><a href="https://jenkins.io/" target="_blank">Jenkins Home Page</a>&nbsp; </li><li><a href="http://www.tfabraham.com/BTDFDocs/V5_0/DeploymentFrameworkForBizTalkDocs.html" target="_blank">Deployment Framework for BizTalk Server V5.0</a>&nbsp;
+</li><li><a href="https://blog.mexia.com.au/biztalk-continuous-integration-continuous-deployment" target="_blank">BizTalk Continuous Integration &amp; Continuous Deployment</a>&nbsp;
+</li><li><a href="https://www.codit.eu/blog/2017/05/02/bts-2016-feature-pack-i-continuous-deployment-walkthrough/" target="_blank">BTS 2016 Feature Pack I - Continuous Deployment Walk-Through</a>&nbsp;
+</li></ol>
+<span style="white-space:pre;">
+<p>↑<span style="white-space:pre;"><a href="https://social.technet.microsoft.com/wiki/contents/articles/51109.biztalk-server-implementing-continuous-integration-and-deployment-for-biztalk-using-btdf-and-jenkins.aspx#top">Back To Top</a>
+</span><span style="font-size:12.1px;"></span></p>
+</span>
+<hr />
+<div><br />
+<br />
+</div>
+
+</div>
+    
+    

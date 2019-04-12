@@ -1,0 +1,114 @@
+---
+layout: default
+title: PerfGuide&#58; Analyzing Poor Disk Response Times - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Common_Used_Disk_Terminology">Common Used Disk Terminology</t-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"><a></li><li class="hierarchy-item"><a href="#Disk_Virtualization">Disk Virtualization</a></li><li class="hierarchy-item"><a href="#Troubleshooting">Troubleshooting</a></li><li class="hierarchy-item"><a href="#Initial_Indicators">Initial Indicators</a></li><li class="hierarchy-item"><a href="#Symptoms">Symptoms</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+If you have arrived here, then you have identified a potential disk performance condition where “\LogicalDisk(*)\Avg. Disk sec/Read” and/or “\LogicalDisk(*)\Avg. Disk sec/Write” performance counters are greater&nbsp;than 15ms (0.015 seconds) or more on average&nbsp;on
+ your Windows computer. If this is not correct, then return to the <a href="http://blogs.technet.com/b/perfguide/archive/2010/09/28/the-microsoft-pfe-performance-guide-start-here.aspx">
+<span style="color:#0066dd;">Start</span></a> of the Performance Guide. </p>
+<h3><a name="Common_Used_Disk_Terminology"></a>Common Used Disk Terminology</h3>
+<p><strong>&nbsp;</strong><strong>Spindle:</strong>&nbsp;a&nbsp;<a href="http://en.wikipedia.org/wiki/Spindle_(computer)"><span style="color:#0066dd;">spindle</span></a> of a hard disk. Jargon for&nbsp;a physical hard disk.</p>
+<p><strong>LUN:</strong> A <a href="http://en.wikipedia.org/wiki/Logical_Unit_Number">
+<span style="color:#0066dd;">LUN</span></a> (line unit number) is the identifier of a device which is being addressed by the
+<a href="http://en.wikipedia.org/wiki/SCSI"><span style="color:#0066dd;">SCSI</span></a> protocol or similar protocols such as
+<a href="http://en.wikipedia.org/wiki/Fibre_Channel"><span style="color:#0066dd;">Fibre Channel</span></a> and
+<a href="http://en.wikipedia.org/wiki/ISCSI"><span style="color:#0066dd;">iSCSI</span></a>. This is jargon for the the representation of a physical disk to the Windows operating system – meaning Windows thinks it is a single spindle, but could be many spindles
+ masked by the hardware.</p>
+<p><strong>PhysicalDisk:</strong> The the PhysicalDisk counter object is the physical disk representation to Windows. Same as a LUN from the operating system perspective.
+</p>
+<p><strong>LogicalDisk:</strong> A drive letter or mount point mapped to a the representation of a physical disk from an operating system perspective.</p>
+<p><strong>Disk Transfers:</strong> This is the total number of Windows&nbsp;read and write operations on a disk. This is the number of I/O’s that Windows is doing, but could translate to one or more I/O’s on the physical hardware.</p>
+<h3><a name="Disk_Virtualization"></a>Disk Virtualization</h3>
+<p>“\PhysicalDisk(*)\Avg. Disk Queue Length” and “\PhysicalDisk(*)\% Disk Time” are great counters to use for initial indicators of disk performance when you know how many physical spindles are behind the LUN. In the enterprise server environment, Storage Area
+ Networks (SAN) are common and many virtualize the disk spindles so much that no one really knows how many spindles are behind a given LUN. Therefore, Avg disk queue length and % Disk Time become unreliable when measuring performance of hardware RAID and SAN
+ performance. </p>
+<p>Since disk virtualization can make it difficult or impossible to know how many spindles are behind a given LUN, and since performance&nbsp;is ultimately the perception of the end user,&nbsp;our best indicator of a disk performance problem is disk response times. The
+ performance counters that measure disk response times are “\LogicalDisk(*)\Avg. Disk sec/Read” and/or “\LogicalDisk(*)\Avg. Disk sec/Write”. A standard uncached&nbsp;5400 RPM disk drive can do about 200 IOPS (I/O’s per second) with about 5ms on average per 4K I/O
+ with 100%&nbsp;random writes. Therefore, if disk performance is greater than 3 times that amount (15ms or 0.015 seconds), it warrants further investigation to see why the disk performance is not as good as expected.</p>
+<h3><a name="Troubleshooting"></a>Troubleshooting</h3>
+<p>The&nbsp;<a href="http://pal.codeplex.com/"><span style="color:#0066dd;">PAL tool</span></a> checks and throws warning alerts for response times greater than 15ms and critical alerts for response time greater than 25ms.
+</p>
+<p>Response times measured by “\LogicalDisk(*)\Avg Disk sec/Read” and “\LogicalDisk(*)\Avg Disk sec/Write” is our most authoritative and primary indicator of disk performance. With that said, it can’t tell us the entire story. When you see high disk response
+ times, it simply warrants more investigation. For example, slow disk response times could be normal if the average I/O size is relatively large such as 2MBs per I/O.
+</p>
+<h3><a name="Initial_Indicators"></a>Initial Indicators</h3>
+<p><strong>Disk Read and Write response times:</strong>&nbsp;Monitor the counters&nbsp;“\LogicalDisk(*)\Avg Disk sec/Read” and “\LogicalDisk(*)\Avg Disk sec/Write” for disk response times on average greater than 15ms (0.015 seconds). Infrequent spikes above 25ms (0.025
+ seconds) is normal.</p>
+<h3><a name="Symptoms"></a>Symptoms</h3>
+<p>If a disk has poor response times, then check the following:</p>
+<ol>
+<li><strong>Monitor IOPS (I/O’s per second):</strong>&nbsp;Monitor the counter&nbsp;“\LogicalDisk(*)\Disk Transfers/sec” when disk response times are high. Generally, a single 5400RPM drive should be able to do more than 80 disk transfers per second. Therefore, if disk
+ transfers are lower than 80 when response times are high (greater than 15ms), then the disk is performing slower than a single 5400RPM spindle. Use this information to help with diagnosis.
+</li><li><strong>Large&nbsp;Bytes Per I/O:</strong> The size of the&nbsp;disk transfers can have an impact on disk response times. Use the counters&nbsp;“\LogicalDisk(*)\Avg Disk Bytes/Read” and “\LogicalDisk(*)\Avg Disk Bytes/Write” to measure the size of the disk transfers.
+ If the sizes are greater than 64K on average, then longer than normal response times are normal.
+<ol>
+<li><strong>Consider Larger Blocksizes:</strong> To potentially optimize this condition, consider formatting the logical disk at 64K or at the most common disk transfer size if possible. The default&nbsp;blocksize is 4K.&nbsp;<strong><span style="color:#ff0000;">*Warning:*</span></strong>
+ Adjusting the blocksize of a logical disk requires reformatting which will erase all data on the logical disk.
+<ol>
+<li>Use the fol
+ transfers are lower than 80 when response times are high (greater than 15ms), then the disk is performing slower than a single 5400RPM spindle. Use this information to help with diagnosis.
+</li><li><strong>Large&nbsp;Bytes Per I/O:</strong> The size of the&nbsp;disk transfers can have an impact on disk response times. Use the counters&nbsp;“\LogicalDisk(*)\Avg Disk Bytes/Read” and “\LogicalDisk(*)\Avg Disk Bytes/Write” to measure the size of the disk transfers.
+ If the sizes are greater than 64K on average, then longer than normal response times are normal.
+<ol>
+<li><strong>Consider Larger Blocksizes:</stlowing command to check the blocksize of disk logical disks:<br />
+<span style="font-size:x-small;font-family:&#39;courier new&#39;;">wmic volume GET Caption, BlockSize<br />
+</span><br />
+Sample Output:<br />
+<span style="font-size:x-small;font-family:courier;">BlockSize&nbsp; Caption<br />
+4096&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; \\?\Volume{bdf048e7-33e6-11df-b5ae-806e6f6e6963}\<br />
+4096&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; D:\<br />
+4096&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C:\<br />
+</span></li></ol>
+</li></ol>
+</li><li><strong>Disk Fragmentation:</strong> If this is spinning media, then disk fragmentation can cause poor disk performance. Consider running a disk fragmentation analysis on the affected disks. If this is non-spinning media such as solid state disks (SSD),
+ then disk defragmentation will not help. See the following documents for more information:
+<ol>
+<li><a href="http://blogs.technet.com/b/askperf/archive/2008/03/14/disk-fragmentation-and-system-performance.aspx"><span style="color:#0066dd;">Disk Fragmentation and System Performance</span></a>
+</li></ol>
+</li><li><strong>Low Free Disk Space:</strong> Monitor the counter “\LogicialDisk(*)\% Free Space”. Check if the value is less than 10. Spinning media commonly writes to the outer sections of the spindle and write towards the center hub. When free disk space is
+ low, the head will spend more time&nbsp;waiting on&nbsp;the slower hub of the spindle. If free disk space is low, then:
+<ol>
+<li>Delete any unnecessary files from the disk. </li><li>Move data that can be safely moved to another location. </li><li>Add disk capacity to the server. </li></ol>
+</li><li><strong>Failing Hardware:</strong> Disk failures are typically progressive and fail over time.&nbsp;Check the&nbsp;System Event Logs will for disk read/write failures and troubleshoot the hardware.
+</li><li><strong>Poorly Performing Drivers and Anti-x Software:</strong> Poor performance could be the result of poorly written disk drivers and/or anti-x (virus, intrusion, etc.) drivers doing unnecessary scans. Consider using
+<a href="http://live.sysinternals.com/procmon.exe"><span style="color:#0066dd;">Process Monitor</span></a> (a Mark Russinovich SysInternals tool owned by Microsoft) and/or
+<a href="http://msdn.microsoft.com/en-us/performance/cc825801.aspx"><span style="color:#0066dd;">Microsoft xPerf (part of the Windows Server 2008 Performance Toolkit)</span></a>&nbsp;to capture a sample of disk activity when the symptoms persist.
+</li><li><strong>Identify Processes and Files Using Disk Resources:&nbsp;</strong>Use <a href="http://live.sysinternals.com/procmon.exe">
+<span style="color:#0066dd;">Process Monitor</span></a> (a Mark Russinovich SysInternals tool owned by Microsoft),
+<a href="http://msdn.microsoft.com/en-us/performance/cc825801.aspx"><span style="color:#0066dd;">Microsoft xPerf (part of the Windows Server 2008 Performance Toolkit)</span></a>, or from Resource Monitor which is part of Windows 7 to identify the processes and
+ files most frequently using disk resources. This helps identify unnecessary disk usage.
+</li><li><strong>Misconfigured Disk Cache:</strong> Monitor the affected disk over time and determine the read/write ratio of the disks using the counters “\LogicalDisk(*)\Disk Reads/sec” and “\LogicalDisk(*)\Disk Writes/sec”. Adjust the hardware disk cache (if
+ applicable) to match the read/write ratio. </li><li><strong>Oversaturated Hardware:</strong> Hardware between the Windows driver and the physical spindle might be saturated such as the fibre channel hardware (cable,&nbsp;switches, etc.)&nbsp;between the Host Bus Adapter (HBA) and the SAN or the SAN itself is misconfigured
+ or saturated.
+<ol>
+<li><strong>Check the Hardware:</strong> Use hardware vendor provided tools to check the SAN fabric and hardware between the HBA and SAN.
+</li><li><strong>Dedicate and/or Allocate More Spindles:</strong> Consult with your hardware vendor on the possibility of dedicating or allocating more physical spindles to the affected LUNs.
+</li><li><strong>Change the RAID Type:&nbsp;</strong>Monitor the counters “\LogicalDisk(*)\Disk Reads/sec” and “\LogicalDisk(*)\Disk Writes/sec” and compare them to create a ratio of reads to writes. If most of the disk I/O is write operations, then avoid RAID types
+ that multiply the number of I/O’s required to do a write operation such as RAID5 (4 I/O’s per write operation) and RAID6 (6 I/O’s per write operation).
+</li></ol>
+</li><li><strong>Partition Misalignment:</strong> Misaligned disk partitions can cause unnecessary disk I/O at the hardware level for disks. Use the following command line (works on Windows XP/2003 and greater), to check the starting offset of the disk partitions:<br />
+<span style="font-size:x-small;font-family:&#39;courier new&#39;;">wmic partition GET Caption, StartingOffset</span><br />
+<br />
+Sample Output:<br />
+<span style="font-family:&#39;courier new&#39;;"><span style="font-size:x-small;">Caption&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; StartingOffset<br />
+Disk #0, Partition #0&nbsp; 1048576<br />
+Disk #0, Partition #1&nbsp; 105906176<br />
+Disk #0, Partition #2&nbsp; 21475885056</span><br />
+</span><br />
+A StartingOffset (in bytes)&nbsp;that is not&nbsp;1,048,576 (1MB) is likely misaligned. Partitions created on Windows Vista/2008 and greater will automatically use a 1MB starting offset.<br />
+<br />
+See the following document(s) for more information:
+<ol>
+<li><a target="_blank" href="http://msdn.microsoft.com/en-us/library/dd758814.aspx"><span style="color:#0066dd;">Disk Partition Alignment Best Practices for SQL Server</span></a>
+</li></ol>
+</li></ol>
+
+</div>
+    
+    

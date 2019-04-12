@@ -1,0 +1,154 @@
+---
+layout: default
+title: ASP.NET MVC教程(3)&#58;ASP.NET MVC请求处理顺序 (zh-CN) - TechNet文章 - 中国（简体中文） - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+在学习 ASP.NET MVC编程的过程中，很重要的一点，就是我们想知道 例子客户端浏览器的请求，最终是怎么样在网站中处理的。大家肯定有很多疑惑，到期ASP.NET MVC是不是处理请求完全推到了之前的基础架构，重新进行的设计，还是和ASP.NET Web Form进行了兼容扩展呢？
+<div><span class="sentence" style="color:#000000;">现在我们先来看看 ASP.NET Web Form处理过程</span></div>
+<h1><a name="ASP_NET_Web_Form请求处理过程"></a><a name="ASP_NET_Web_Form请求处理过程"></a><a name="ASP_NET_Web_Form请求处理过程"></a><span class="sentence" style="color:#000000;">1. ASP.NET Web Form请求处理过程</span></h1>
+<div></div>
+<div><span class="sentence" style="color:#000000;">我们知道 ASP.NET Web Form编程用，IIS6请求的处理的过程如下：</span></div>
+<div>
+<p style="text-align:center;"><span style="color:#000000;"><img alt=" " src="http://54peixun.com/image.axd?picture=634765795546863516IIS6%20%E7%9A%84%20ASP.net%20%E8%AF%B7%E6%B1%82%E5%A4%84%E7%90%86%E8%BF%87%E7%A8%8B.gif" /></span></p>
+<p style="text-align:center;"><span style="color:#000000;"><strong>IIS6 的 ASP.net 请求处理过程</strong></span></p>
+</div>
+<div><span style="color:#000000;">ASP.NET的请求过程是基于一个管道（pipeline）模型的，ASP.NET会把所有的http请求（Requests）都发送给这个管道里的http组件（modules）。每个组件在接收到http请求后进行一些相应处理工作。当http请求通过了所有的http modules程序后，将会被交由一个http handler程序来处理，处理后的结果又将通过管道里http modules返回。</span></div>
+<div></div>
+<div></div>
+<div></div>
+<div>
+<h1><a name="ASP_NET_MVC_请求过程图"></a><a name="ASP_NET_MVC_请求过程图"></a><a name="ASP_NET_MVC_请求过程图"></a><span class="sentence" id="xn5_c83d98a166cddebb077f8cef19c1a977" style="color:#000000;">2 ASP.NET MVC 请求过程图：</span></h1>
+<p><span style="color:#000000;"><span class="sentence" id="xn1_01bf7c6e1f817eed08c3aef0ed51c8a1">ASP.NET MVC 的 Web 请求首先通过 UrlRoutingModule 对象（HTTP Module 模块）进行传递。</span><span class="sentence" id="xn2_250554e0828c583d0b93eaf3ab6eba9c">此模块将分析请求并执行路由选择（这和ASP.NET
+ Web Form里类&amp;#20284;，只是路由器就是 一个Model模块，他们来分发请求 给特定的Handler处理程序）。</span><span class="input" id="xn3_5069f502905c5779ed300441df446d2b">UrlRoutingModule 对象将选择与当前请求匹配的第一个路由对象。</span></span><span class="sentence" id="xn4_bb062514e6d6caa334ceca17a1bf8fca"><span style="color:#000000;">路由对象是实现
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.routebase(v=VS.98).aspx"><span style="color:#000000;">RouteBase</span></a><span class="input" style="color:#000000;"> 的类，并且通常是 Route 类的实例。） 如果任何路由都不匹配，则 UrlRoutingModule 对象不执行任何操作，并允许请求回退到常规的
+ ASP.NET Web Form 或 IIS 请求处理流程。这个就和第一节相同了。</span></span></p>
+<div><span class="input" style="color:#000000;">从选定的 Route 对象中，UrlRoutingModule 对象将获得一个对象，所获得的对象将实现 IRouteHandler接口并与 Route 对象关联。</span><span class="sentence" id="xn6_3cf94bdacbafcc776781d70aa1005fe5"><span style="color:#000000;">通常，在 MVC 应用程序中，这将是
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.mvcroutehandler(v=VS.98).aspx"><span style="color:#000000;">MvcRouteHandler</span></a><span style="color:#000000;"> 类的一个实例。</span></span><span class="sentence" id="xn7_20ab7651ed13a80db932bb1c49c34763"><span class="input" style="color:#000000;">MvcRouteHandler
+ 实例将创建一个实现 </span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.ihttphandler(v=VS.98).aspx"><span style="color:#000000;">IHttpHandler</span></a><span style="color:#000000;"> 接口的 MvcHandler 对象。</span></span></div>
+<div><span class="input" id="xn8_0ad32b4dcc3952871a07f81bf62d6b01" style="color:#000000;">然后，MvcHandle 对象会选择将最终处理该请求的控制器Controller。</span><span class="sentence" id="xn9_3c842e503cf9e6e73b4b3b3dd8e8f558"><span style="color:#000000;">有关更多信息，请参见
+</span><a href="http://msdn.microsoft.com/zh-cn/library/cc668201(v=VS.98).aspx"><span style="color:#000000;">ASP.NET Routing</span></a><span style="color:#000000;">。</span></span><span style="color:#000000;"><span class="sentence" id="xn12_4a484fb4bb9a057610769063206a557b">UrlRoutingModule
+ 和 MvcRouteHandler 类是 ASP.NET MVC 框架的入口点。</span><span class="sentence" id="xn13_ef0999cbf803cd2737c8815389c831fc">它们执行下列操作：</span></span></div>
+<div></div>
+<ul>
+<li>
+<div><span class="sentence" id="xn14_427312e489263c5854ccc57d4d19a8c7" style="color:#000000;">选择 ASP.NET MVC 程序中合适的控制器 Controller。</span></div>
+</li><li>
+<div><span class="sentence" id="xn15_8799447d9190f1d9b15dcd63886e3985" style="color:#000000;">获取特定的控制器Controller实例。</span></div>
+</li><li>
+<div><span class="sentence" id="xn16_17dd7578ad72c93b28ca765a57db670c"><span style="color:#000000;">调用该控制器的
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.controllerbase.execute(v=VS.98).aspx"><span style="color:#000000;">Execute</span></a><span style="color:#000000;"> 方法，执行Action操作方法。
+</span></span>
+<div style="text-align:center;"><span class="sentence" id="xn16_17dd7578ad72c93b28ca765a57db670c" style="color:#000000;"><img alt=" " src="http://54peixun.com/image.axd?picture=634570630955117187MVC%20Process.gif" /></span></div>
+</div>
+</li></ul>
+<h1><a name="ASP_NET_MVC_项目的执行阶段"></a><a name="ASP_NET_MVC_项目的执行阶段"></a><a name="ASP_NET_MVC_项目的执行阶段"></a><span class="sentence" id="xn17_b13d2804d296ea02f62b3bc8bc5acdbf" style="color:#000000;">3 ASP.NET MVC 项目的执行阶段</span></h1>
+<div></div>
+<div><span class="sentence" id="xn17_b13d2804d296ea02f62b3bc8bc5acdbf" style="color:#000000;">下表列出了 ASP.NET MVC Web 程序的执行阶段。</span></div>
+<div class="tableSection">
+<table style="width:908px;height:218px;">
+<tbody>
+<tr>
+<th style="width:208px;">
+<div><span class="sentence" id="xn18_9a8c2b9d518bc163e99611fbacea63b2" style="color:#000000;">阶段</span></div>
+</th>
+<th>
+<div><span class="sentence" id="xn19_27792947ed5d5da7c0d1f43327ed9dab" style="color:#000000;">详细信息</span></div>
+</th>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn20_fc0ce9b5168ce89458a0e70b88e8a112" style="color:#000000;">接收请求</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn21_ed9635b9fc03a43f7fda38d2b509e732"><span class="input" style="color:#000000;">在 Global.asax 文件中，Route 对象将添加到
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.routetable(v=VS.98).aspx"><span style="color:#000000;">RouteTable</span></a><span style="color:#000000;"> 对象中。</span></span></div>
+</td>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn22_dd17e2784dbe2eb72f1462df5c193ef9" style="color:#000000;">执行路由</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn23_e914011d2ac0bfaf4942017a8f924c8f"><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.urlroutingmodule(v=VS.98).aspx"><span style="color:#000000;">UrlRoutingModule</span></a><span style="color:#000000;"> 模块使用
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.routetable(v=VS.98).aspx"><span style="color:#000000;">RouteTable</span></a><span class="input" style="color:#000000;"> 中第一个匹配的 Route 对象来创建
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.routedata(v=VS.98).aspx"><span style="color:#000000;">RouteData</span></a><span style="color:#000000;"> 对象，然后创建
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.requestcontext(v=VS.98).aspx"><span style="color:#000000;">RequestContext</span></a><span style="color:#000000;"> 对象。</span></span></div>
+</td>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn24_80391e5b5afc396a63b3c82fbed2728d" style="color:#000000;">创建Handler</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn25_d03dba81c8c176c3c0a218d8770f6efd"><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.mvcroutehandler(v=VS.98).aspx"><span style="color:#000000;">MvcRouteHandler</span></a><span style="color:#000000;"> 创建
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.mvchandler(v=VS.98).aspx"><span style="color:#000000;">MvcHandler</span></a><span style="color:#000000;"> 类的实例，并将
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.requestcontext(v=VS.98).aspx"><span style="color:#000000;">RequestContext</span></a><span style="color:#000000;"> 实例传递给处理程序。</span></span></div>
+</td>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn26_0109220d3f37f5fffbc315dd74079d37" style="color:#000000;">创建控制器</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn27_19ece65b683956afcebbdc45d1518ff9"><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.mvchandler(v=VS.98).aspx"><span style="color:#000000;">MvcHandler</span></a><span style="color:#000000;"> 对象使用
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.routing.requestcontext(v=VS.98).aspx"><span style="color:#000000;">RequestContext</span></a><span style="color:#000000;"> 实例标识用于创建控制器实例的
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.icontrollerfactory(v=VS.98).aspx"><span style="color:#000000;">IControllerFactory</span></a><span style="color:#000000;"> 对象</span></span></div>
+</td>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn28_4ad3253ac004962ec710d2fbe8a76a99" style="color:#000000;">执行控制器</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn29_dcc7335ec49726beaf136ecb771ca239"><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.mvchandler(v=VS.98).aspx"><span style="color:#000000;">MvcHandler</span></a><span style="color:#000000;"> 实例调用控制器的
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.controllerbase.execute(v=VS.98).aspx"><span style="color:#000000;">Execute</span></a><span style="color:#000000;"> 方法。</span></span></div>
+</td>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn30_276209f0fc282414cc43feeab1744dc1" style="color:#000000;">调用操作</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn31_f66fee7165e074dad489bed159fb00c0"><span style="color:#000000;">对于从
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.controllerbase(v=VS.98).aspx"><span style="color:#000000;">ControllerBase</span></a><span style="color:#000000;"> 类继承的控制器，与该控制器关联的
+</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.controlleractioninvoker(v=VS.98).aspx"><span style="color:#000000;">ControllerActionInvoker</span></a><span style="color:#000000;"> 对象将决定要调用的 controller 类的操作方法</span></span></div>
+</td>
+</tr>
+<tr>
+<td>
+<div><span class="sentence" id="xn32_edef7a9af9bf728de88c51db60e821a4" style="color:#000000;">执行结果</span></div>
+</td>
+<td>
+<div><span class="sentence" id="xn33_54172fe7f67a394e21185f81213c6a17" style="color:#000000;">返回结果类型来执行结果。</span><span class="sentence" id="xn34_29dfcdd7406ec32df5f6644c0b8be3d9"><span style="color:#000000;">可执行的内置结果类型包括：</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.viewresult(v=VS.98).aspx"><span style="color:#000000;">ViewResult</span></a><span style="color:#000000;">（呈现视图并且是最常用的结果类型）、</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.redirecttorouteresult(v=VS.98).aspx"><span style="color:#000000;">RedirectToRouteResult</span></a><span style="color:#000000;">、</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.redirectresult(v=VS.98).aspx"><span style="color:#000000;">RedirectResult</span></a><span style="color:#000000;">、</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.contentresult(v=VS.98).aspx"><span style="color:#000000;">ContentResult</span></a><span style="color:#000000;">、</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.jsonresult(v=VS.98).aspx"><span style="color:#000000;">JsonResult</span></a><span style="color:#000000;">、</span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.fileresult(v=VS.98).aspx"><span style="color:#000000;">FileResult</span></a><span style="color:#000000;">
+ 和 </span><a href="http://msdn.microsoft.com/zh-cn/library/system.web.mvc.emptyresult(v=VS.98).aspx"><span style="color:#000000;">EmptyResult</span></a><span style="color:#000000;">。</span></span></div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div></div>
+<div></div>
+<h1><a name="总结"></a><a name="总结"></a><a name="总结"></a><span style="color:#000000;">4.总结</span></h1>
+<div></div>
+<div></div>
+<ol>
+<li><span style="color:#000000;">ASP.NET MVC 和ASP.NET Web Form请求处理有很大的相&amp;#20284;之处。我们可以看出来，整个MVC的架构，前期的基础架构基本都是一样的，所不同的就是在Module 模块和Handler 处理程序的变换。而这不分的变换，主要是为了实现ASP.NET MVC里 请求路由机制，把 MVC三个部分关联起来。</span>
+</li><li><span class="sentence" id="xn12_4a484fb4bb9a057610769063206a557b" style="color:#000000;">UrlRoutingModule 和 MvcRouteHandler 就是之前的 Module 模块和Handler 处理程序。</span>
+</li><li><span class="sentence" style="color:#000000;">换个新的名字，但是在整个架构中的角色没有变化，1个是截获请求，进行分析，转发，一个是进行实际的处理工作。</span>
+</li></ol>
+<div></div>
+<div>原文地址: <a href="http://msdn.microsoft.com/zh-cn/library/dd381612(v=VS.98).aspx">
+http://msdn.microsoft.com/zh-cn/library/dd381612(v=VS.98).aspx</a></div>
+<div></div>
+<div><a href="http://www.54peixun.com/Author/frankxulei"><span style="color:#006699;">老徐Frank Xu Lei
+</span></a>修订、翻译、整理</div>
+<br />
+转自：<a href="http://54peixun.com/frankxulei/POST/e3100c5816fa4c7c9534229d261c67f1">http://54peixun.com/frankxulei/POST/e3100c5816fa4c7c9534229d261c67f1</a>
+
+</div>
+    
+    

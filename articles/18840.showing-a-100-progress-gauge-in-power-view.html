@@ -1,0 +1,51 @@
+---
+layout: default
+title: Showing a 100% Progress Gauge in Power View - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="entry">
+<p>by <a href="http://sqlserverbiblog.com/" target="_blank"><span>Paul Turley
+<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</span></a>, Mentor, <a href="http://solidq.com/" target="_blank"><span>SolidQ
+<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</span></a><br />
+from <a href="http://sqlserverbiblog.com/" target="_blank"><span>SQLServerBiBlog.com
+<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</span></a><br />
+<br />
+What I’m going to show you is not rocket science.&nbsp; This one gets filed under the category of “well, duh.&nbsp; That was easy&nbsp; …now that I see how to do it.”</p>
+<p>Power View sets the maximum value for a chart series based on the maximum unfiltered axis value; pretty simple but not too flexible.&nbsp; Let’s say that I want to show the progress of project completion.&nbsp; If I add a percentage type measure to the Value of a
+ column chart with&nbsp; no fields on the Axis, it will plot a single column “gauge” chart with the maximum value (in this case 65%) somewhere near the top of the chart.&nbsp; I suppose that’s what we asked it to do but there is no way to manually set the maximum range
+ of the axis scale.&nbsp; Oh, what to do?</p>
+<p>&nbsp;</p>
+<p><a href="http://sqlserverbiblog.files.wordpress.com/2013/07/image7.png"><img width="244" height="114" title="image" alt="image" src="http://sqlserverbiblog.files.wordpress.com/2013/07/image_thumb7.png?w=244&amp;h=114" style="border:0px currentColor;display:inline;" /></a>
+</p>
+<p>Like most beyond-the-basics capabilities in Power View, the answer is to enhance the semantic model – and this one’s easy.&nbsp; In the PowerPivot or SSAS model, create another measure.&nbsp; I’ll do it right next to the existing Percentage calculation named “Project
+ Pct Complete”.&nbsp; The objective is to get the gauge visual (our no axis column chart) scale to add up to 100% so what we need is another measure that when added to the first one, adds up to 100%. I’ll call that calculation “Remainder Pct Complete” using the
+ DAX expression:</p>
+<p>Remainder Pct Complete:=1 – [Project Pct Complete]</p>
+<p>By subtracting the % Complete from the number one, the result will always be the remainder of 100%.&nbsp; I’ll format the new measure as a percentage.</p>
+<p>Now I add both measures to the chart/gauge like so:</p>
+<p><a href="http://sqlserverbiblog.files.wordpress.com/2013/07/image8.png"><img width="169" height="244" title="image" alt="image" src="http://sqlserverbiblog.files.wordpress.com/2013/07/image_thumb8.png?w=169&amp;h=244" style="border:0px currentColor;display:inline;" /></a>
+</p>
+<p>I haven’t quite got the legend to work the way I want it to.&nbsp; In this case, I’d probably just hide it and then&nbsp;maybe show data labels for the two series values.&nbsp; That’s all up to you, of course.&nbsp; For extra credit, let’s add another progress gauge that shows
+ the overall progress even when a slicer is used to filter the data.&nbsp; First of all, test this.&nbsp; I’ve added a Priority slicer and selecting one or a combination of items slices the project rows and changes the progress gauge value.</p>
+<p>Back in the model, I add two more measures starting with the existing expressions.&nbsp; You can just copy one of the measure cells and paste it into an empty cell.&nbsp; This must be done on-at-a-time.&nbsp; The expression is enhanced using the CALCULATE and ALL functions,
+ like this:</p>
+<p>Overall Project Pct Complete:=CALCULATE([Project Pct Complete], ALL(‘Projects’))</p>
+<p>This says “Apply the Project Pct Complete measure calculation to whatever filter context is provided in the CALCULATE function.&nbsp; In this case, we are says “ignore the natural row or filtering context of the query and always apply the calculation to all rows
+ in the Projects table.”</p>
+<p><a href="http://sqlserverbiblog.files.wordpress.com/2013/07/image9.png"><img width="244" height="147" title="image" alt="image" src="http://sqlserverbiblog.files.wordpress.com/2013/07/image_thumb9.png?w=244&amp;h=147" style="border:0px currentColor;display:inline;" /></a>&nbsp;
+</p>
+<p>Now, when a slicer or filter is used on the report, the Overall gauge continues to show the same percentage while the rest of the report, including the Progress gauge shows only filtered values.</p>
+<p><a href="http://sqlserverbiblog.files.wordpress.com/2013/07/image10.png"><img width="244" height="119" title="image" alt="image" src="http://sqlserverbiblog.files.wordpress.com/2013/07/image_thumb10.png?w=244&amp;h=119" style="border:0px currentColor;display:inline;" /></a></p>
+<div class="wlWriterHeaderFooter" style="margin:0px;padding:4px 0px;text-align:right;">
+<a href="http://digg.com/submit?url=https%3a%2f%2fsqlserverbiblog.wordpress.com%2f2013%2f07%2f31%2fshowing-a-100-progress-gauge-in-power-view%2f&amp;title=Showing&#43;a&#43;100%25&#43;Progress&#43;Gauge&#43;in&#43;Power&#43;View"></a></div>
+</div>
+
+</div>
+    
+    

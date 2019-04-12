@@ -1,0 +1,102 @@
+---
+layout: default
+title: SQL Server 2008+&#58; Merge (Unity is Strength - Strengthen your Performance by Merge) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Problem_Definition">Problem Definition</a></li><li class="hierarchy-item"><a href="#Solution">Solution</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#MERGE">MERGE</a></li><li class="hierarchy-item"><a href="#Points_to_note">Points to note</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<span style="font-size:14px;"><strong><br />
+</strong></span><strong>
+<h2><strong><a name="Problem_Definition"></a><span style="font-size:14px;">Problem Definition</span></strong></h2>
+<br />
+</strong><span style="font-size:13px;"></span><span style="font-size:12px;">In SQL Server for each DML transaction (Insert, Update, Delete) we need to write separate statements which will be executed one by one in&nbsp;SQL Server execution engine.<br />
+</span>Let&#39;s give a basic example that, if we are passing a record to procedure, if the record already exists, then we need to update or else it should be inserted. In this scenario, we need to write 1 DML statement to check the record&#39;s existence and 2 DML
+ statements &nbsp;based on the 1st query result, which will be a performance hurdle.<br />
+<br />
+<strong>
+<h2><strong><a name="Solution"></a><span style="font-size:14px;">Solution</span></strong></h2>
+</strong>Simply we can say &quot;Unity is strength&quot;. Like that &quot;MERGE&quot; your DML and DDL statements together to break the performance hurdles.<br />
+<br />
+<br />
+<strong>
+<h3><strong><a name="MERGE"></a><span style="font-size:12px;">MERGE</span></strong></h3>
+</strong>MERGE is a new feature in SQL Server 2008 (and up) that provides an efficient way to perform multiple DML operations.<br />
+<br />
+<strong>Example<br />
+</strong>Let&#39;s assume, we are going to write a procedure for this payroll&nbsp;scenario.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;1. If employee exists and&nbsp;salary is less than 100, then delete that employee from payroll<br />
+&nbsp;&nbsp;&nbsp; 2. If employee exists and salary is greater than 100, then update (add extra amount as salary / 100)<br />
+&nbsp;&nbsp;&nbsp; 3. if employee does not exist, then insert the employee with salary 2500.<br />
+<br />
+In prior to SQL Server 2008 version, we would need to write multiple DML statements.<br />
+But in 2008 (and up) we can use MERGE as follows: (The details of the query added as comments.)<br />
+<br />
+<p><a href="mailto:DECLARE@PayRoll">DECLARE <span style="font-size:13px;">@PayRoll
+</span></a><span style="font-size:13px;color:#0000ff;">TABLE</span><span style="font-size:13px;color:#808080;">(</span><span style="font-size:13px;">EmpID
+</span><span style="font-size:13px;color:#0000ff;">INT</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;"> Salary
+</span><span style="font-size:13px;color:#0000ff;">INT</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;"> AddAmt
+</span><span style="font-size:13px;color:#0000ff;">INT</span><span style="font-size:13px;color:#808080;">) -- Declare table
+</span></p>
+<span style="font-size:13px;color:#808080;"></span><span style="font-size:13px;color:#808080;"></span><span style="font-size:13px;color:#808080;"></span>
+<p>I<span style="font-size:13px;color:#0000ff;">NSERT</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">INTO</span><span style="font-size:13px;"> @PayRoll<br />
+</span><span style="font-size:13px;color:#0000ff;">VALUES</span><span style="font-size:13px;color:#808080;">(</span><span style="font-size:13px;">1</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">2500</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">0</span><span style="font-size:13px;color:#808080;">),(</span><span style="font-size:13px;">2</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">100</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">0</span><span style="font-size:13px;color:#808080;">),(</span><span style="font-size:13px;">3</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">2700</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">0</span><span style="font-size:13px;color:#808080;">)
+ --Insert sample records </span></p>
+<span style="font-size:13px;color:#808080;"></span><span style="font-size:13px;color:#808080;"></span><span style="font-size:13px;color:#808080;"></span>
+<p><a href="mailto:MERGE@PayRoll">MERGE <span style="font-size:13px;">@PayRoll </span>
+</a><span style="font-size:13px;color:#0000ff;">AS</span><span style="font-size:13px;"> PayRoll<br />
+</span><span style="font-size:13px;color:#0000ff;">USING </span><span style="font-size:13px;color:#808080;">(</span><span style="font-size:13px;color:#0000ff;">SELECT</span><span style="font-size:13px;"> EmpID</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">Salary
+</span><span style="font-size:13px;color:#0000ff;">FROM</span><span style="font-size:13px;"> @PayRoll</span><span style="font-size:13px;color:#808080;">)</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">AS</span><span style="font-size:13px;"> PayRollAd -- Update the payroll table by taking values from that same table<br />
+</span><span style="font-size:13px;color:#0000ff;">ON</span><span style="font-size:13px;"> PayRoll</span><span style="font-size:13px;color:#808080;">.</span><span style="font-size:13px;">EmpID
+</span><span style="font-size:13px;color:#808080;">=</span><span style="font-size:13px;"> PayRollAd</span><span style="font-size:13px;color:#808080;">.</span><span style="font-size:13px;">EmpID<br />
+</span>WHEN <span style="font-size:13px;color:#808080;">MATCHED</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#808080;">AND</span><span style="font-size:13px;"> PayRoll</span><span style="font-size:13px;color:#808080;">.</span><span style="font-size:13px;">Salary
+</span><span style="font-size:13px;color:#808080;">&lt;</span><span style="font-size:13px;">&nbsp;100
+</span><span style="font-size:13px;color:#0000ff;">THEN</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">DELETE -- If employee salary less than 100 then delete<br />
+WHEN</span><span style="font-size:13px;"> </span><span style="font-size:13px;color:#808080;">MATCHED</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">THEN</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">UPDATE</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">SET</span><span style="font-size:13px;"> PayRoll</span><span style="font-size:13px;color:#808080;">.</span><span style="font-size:13px;">AddAmt
+</span><span style="font-size:13px;color:#808080;">=</span><span style="font-size:13px;color:#0000ff;">
+</span><span style="font-size:13px;color:#808080;">(</span><span style="font-size:13px;">PayRoll</span><span style="font-size:13px;color:#808080;">.</span><span style="font-size:13px;">Salary
+</span><span style="font-size:13px;color:#808080;">/</span><span style="font-size:13px;"> 10</span><span style="font-size:13px;color:#808080;">) -- If employee salary greater than 100 then update the additional amount<br />
+</span><span style="font-size:13px;color:#0000ff;">WHEN</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#808080;">NOT</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#808080;">MATCHED</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">THEN<br />
+INSERT</span><span style="font-size:13px;color:#808080;">(</span><span style="font-size:13px;">EmpID</span><span style="font-size:13px;color:#808080;">,&nbsp;</span><span style="font-size:13px;">Salary</span><span style="font-size:13px;color:#808080;">)<br />
+</span><span style="font-size:13px;color:#0000ff;">VALUES&nbsp;</span><span style="font-size:13px;color:#808080;">(</span><span style="font-size:13px;">PayRollAd</span><span style="font-size:13px;color:#808080;">.</span><span style="font-size:13px;">EmpID</span><span style="font-size:13px;color:#808080;">,</span><span style="font-size:13px;">2500</span><span style="font-size:13px;color:#808080;">);
+ -- if employee is not there then insert (this scenario will come only when we use different table for merge)
+</span></p>
+<span style="font-size:13px;color:#808080;"></span>
+<p><span style="font-size:13px;color:#0000ff;">SELECT</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#808080;">*</span><span style="font-size:13px;">
+</span><span style="font-size:13px;color:#0000ff;">FROM</span><span style="font-size:13px;"> @PayRoll
+</span></p>
+<span style="font-size:13px;"></span>&nbsp;<br />
+<strong>
+<h3><strong><a name="Points_to_note"></a><span style="font-size:14px;">Points to note</span></strong></h3>
+</strong>
+<p><strong><a name="Semicolon_is_mandatory_after_the_merge_statement_This_is_very_important_and_it_s_often_forgotten_fact"></a>Semicolon is mandatory after the merge statement. This is very important and it is an often forgotten fact!</strong></p>
+<p>When there is a MATCH clause used along with some condition, it has to be specified first among all other WHEN MATCH clauses.</p>
+<strong>
+<h2><a name="Conclusion"></a><span style="font-size:14px;"><br />
+<strong>Conclusion</strong></span></h2>
+</strong>MERGE statement improves the performance of database as it passes through data only once.
+<br />
+<br />
+<br />
+<strong><span style="font-size:14px;">References</span></strong><br />
+<ul>
+<li><a href="http://technet.microsoft.com/en-us/library/bb510625.aspx" style="font-size:12px;"><span style="font-size:13px;color:#0066dd;">http://technet.microsoft.com/en-us/library/bb510625.aspx</span></a>
+</li><li><a href="http://blog.sqlauthority.com/2008/08/28/sql-server-2008-introduction-to-merge-statement-one-statement-for-insert-update-delete/" style="font-size:12px;">http://blog.sqlauthority.com/2008/08/28/sql-server-2008-introduction-to-merge-statement-one-statement-for-insert-update-delete/</a>
+</li><li><a href="http://sqlblog.com/blogs/alexander_kuznetsov/archive/2010/01/12/t-sql-tuesday-002-patterns-that-do-not-work-as-expected.aspx" style="font-size:12px;">T-SQL Tuesday #002: patterns that do not work as expected</a>
+</li></ul>
+
+</div>
+    
+    

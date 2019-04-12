@@ -1,0 +1,132 @@
+---
+layout: default
+title: SharePoint 2010&#58; Workflows on Incoming Emails in SharePoint Documents Library - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="text-align:center;direction:ltr;"><strong><span style="font-family:calibri;font-size:14pt;text-decorationclass="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="conten:underline;">Create workflow on incoming email in SharePoint documents library</span></strong><span style="font-family:calibri;">&nbsp;</span></p>
+<p style="text-align:left;direction:ltr;">Based on the information in&nbsp;this article, you will be able to&nbsp;design a SharePoint 2010 custom workflow on a document library&nbsp;with&nbsp;items created by incoming e-mail method. (Estimated time to achieve
+ that is around 30-45 minutes)</p>
+<p style="text-align:left;direction:ltr;">&nbsp; </p>
+<p>&nbsp;</p>
+<p style="text-align:left;direction:ltr;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8875.arc_5F00_1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8875.arc_5F00_1.png" style="border:0px solid currentColor;" /></a></p>
+<p>&nbsp;</p>
+<hr />
+<p><strong><span style="font-size:14px;">1- First of all, we have check in SharePoint server setting if workflow trigger on email is enabled or not, and enable it.</span><br />
+<br />
+</strong></p>
+<strong>Using STSADM&nbsp;</strong>
+<p style="text-align:left;direction:ltr;">Open the SharePoint 2010 Management Shell as administrator and run following command:</p>
+<p style="text-align:left;direction:ltr;background-color:black;">
+<strong><span style="color:white;font-size:10pt;">stsadm -o getproperty -pn declarativeworkflowautostartonemailenabled</span></strong></p>
+<p style="text-align:left;direction:ltr;">Output should be:</p>
+<p style="text-align:left;direction:ltr;"><strong><span style="color:red;font-size:10pt;"></span></strong></p>
+<p style="text-align:left;direction:ltr;background-color:black;">
+<strong><span style="color:white;font-size:10pt;">&lt;Property Exist=&quot;Yes&quot; Value=&quot;yes&quot; /&gt;PS</span></strong><strong><span style="color:red;font-size:10pt;">&nbsp;</span></strong></p>
+<p style="text-align:left;direction:ltr;">If Value of property is “No” you have to enable it by typing following command:</p>
+<p style="text-align:left;direction:ltr;background-color:black;">
+<strong><span style="color:white;font-size:10pt;">stsadm -o setproperty -pn declarativeworkflowautostartonemailenabled -pv true.</span></strong></p>
+<strong>Using PowerShell<br />
+<br />
+</strong><em>This property was somewhat easier to set using STSADM, however keep in mind that STSADM is being retired. PowerShell is the command line administration tool to use moving forward.</em><br />
+<br />
+Open the SharePoint 2010 Management Shell as administrator and run the following to determine the value of the DeclarativeWorkflowAutoStartOnEmailEnabled property:<br />
+<code><br />
+$spWebService = [Microsoft.SharePoint.Administration.SPWebService]::ContentService<br />
+$spWebService.DeclarativeWorkflowAutoStartOnEmailEnabled<br />
+</code><br />
+If the Value of the property is &quot;False&quot; you have to enable it by typing the following commands:<br />
+<br />
+$spWebService = [Microsoft.SharePoint.Administration.SPWebService]::ContentService<br />
+$spWebService.DeclarativeWorkflowAutoStartOnEmailEnabled = $true<br />
+$spWebService.Update()<br />
+<strong><br />
+<hr />
+<br />
+<span style="font-size:14px;">2- Enable Incoming E-mail on the Farm.</span></strong><br />
+<p style="text-align:left;direction:ltr;"><strong>Form Central Admin
+<span style="font-family:wingdings;">è</span></strong><strong> System Settings&nbsp;<span style="font-family:wingdings;">è</span>&nbsp;</strong><strong>E-Mail and Text Messages (SMS)<br />
+</strong><strong>Click on “Configure incoming e-mail settings”</strong></p>
+<p style="text-align:left;direction:ltr;">Enable Sites on serverv to revive E-mails.</p>
+<p style="text-align:left;direction:ltr;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.2.png" width="359" height="203" style="border:0px solid currentColor;width:281px;height:108px;" /></a></p>
+<p style="text-align:left;direction:ltr;"><span></span></p>
+<p style="text-align:left;direction:ltr;">And set the STMP server on SharePoint</p>
+<p style="text-align:left;direction:ltr;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4786.3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4786.3.png" width="281" height="154" style="border:0px solid currentColor;width:297px;height:104px;" /></a>&nbsp;</p>
+<p style="text-align:left;direction:ltr;">Click OK to save changes.<br />
+<br />
+</p>
+<hr />
+<br />
+<p style="text-align:left;direction:ltr;"><span style="font-size:14px;"><strong>3- From library level:</strong></span></p>
+<p style="text-align:left;direction:ltr;">Open the document targeted document library
+</p>
+<p style="text-align:left;direction:ltr;">Ribbon menu&nbsp;<span style="font-family:wingdings;">è</span> Library èLibrary settings
+<span style="font-family:wingdings;">è</span>&nbsp;under the communications column.&nbsp;</p>
+<p style="text-align:left;direction:ltr;">Click&nbsp;“<strong>Incoming e-mail settings</strong>”.</p>
+<p style="text-align:left;direction:ltr;">Enable the document library to&nbsp;receive e-emails and add email receiver name that will be received and rout documents to this list and it should be unique name than another email on another document.</p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5734.4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5734.4.png" width="298" height="140" style="border:0px solid currentColor;width:283px;height:97px;" /></a></span></p>
+<p style="text-align:left;direction:ltr;">Click <strong>OK</strong> to save changes.</p>
+<p><span style="font-size:14px;"><strong></strong></span></p>
+<hr />
+<strong><br />
+4- From SharePoint designer level:</strong>
+<p style="text-align:left;direction:ltr;">Open SharePoint SPD and connect to the site contain the targeted document library è open workflow menu form the side navigation window.
+</p>
+<p>&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7624.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7624.5.png" width="172" height="1217" style="border:0px solid currentColor;width:209px;height:546px;" /></a></p>
+<p>Form the ribbon menu click on List workflow and pick document library need to associate the workflow on it.&nbsp;<br />
+Writ the workflow name and put the description.<br />
+<br />
+Workflow Editor Window will open. </p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2260.6.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2260.6.png" style="border:0px solid currentColor;" /></a></span></p>
+<p__key/communityserver-wikis-components-files/00-00-00-00-05/7624.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7624.5.png" width="172" height="1217" style="border:0px solid curr style="text-align:left;direction:ltr;">From the ribbon menu add action&nbsp;<span style="font-family:wingdings;">è</span> inside task action sector chose “Start Approval process”</p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;"></span></p>
+<p style="text-align:left;direction:ltr;"><span></span></p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4784.7.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4784.7.png" width="385" height="706" style="border:0px solid currentColor;width:325px;height:401px;" /></a></span></p>
+<p style="text-align:left;direction:ltr;">Now new action added as a line on the workflow editor
+</p>
+<p style="text-align:left;direction:ltr;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5050.8.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5050.8.png" style="border:0px solid currentColor;" /></a>&nbsp;</p>
+<p style="text-align:left;direction:ltr;">Now we’re going to set task process participants users, by clicking the “<strong>these users</strong>” link</p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:&#39;segoe ui&#39;;">And pick the users from SharePoint groups or single users.
+</span></p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0167.9.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0167.9.png" style="border:0px solid currentColor;" /></a></span></p>
+<p style="text-align:left;direction:ltr;"><span></span></p>
+<p style="text-align:left;direction:ltr;">In the first field, add the participants IDs and there is an option to send the task to the users I in parallel or one at time (sequential).<br />
+<br />
+And here is a snapshot for the&nbsp;sequential approval task for 2 exists groups, from top to bottom.</p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7563.10.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7563.10.png" style="border:0px solid currentColor;" /></a></span></p>
+<p style="text-align:left;direction:ltr;">So the task will be assigned to Hierarchy Managers group
+<span style="font-family:wingdings;">è</span> if approved&nbsp;<span style="font-family:wingdings;">è</span>&nbsp;&nbsp;Approvers group.<br />
+No need to add any title or instructions but may you need to set the task duration time and due process date if required.<br />
+<br />
+Finally we need to trigger this workflow when an item added to the document library.<br />
+So, we have to click <strong>Workflow settings</strong> form the ribbon menu.<br />
+<br />
+<span style="font-family:&#39;segoe ui&#39;;">Then under the Start Options group box, check&nbsp;the start workflow option automatically when the item is created as below:</span></p>
+<p style="text-align:left;direction:ltr;"><span style="font-family:calibri;">&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8206.11.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8206.11.png" style="border:0px solid currentColor;" /></a></span></p>
+<p style="text-align:left;direction:ltr;"><strong><span style="font-family:calibri;font-size:14px;"></span></strong></p>
+<hr />
+<strong><br />
+Now it’s ShowTime :)<br />
+</strong>
+<p style="text-align:left;direction:ltr;">&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Save and publish the workflow from the ribbon menu.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;Send an email with attached document to email ID which is set on the point number 3 above.<br />
+<br />
+<span style="font-family:calibri;"><span style="font-family:&#39;segoe ui&#39;;">And check the document library new item</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2072.12.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2072.12.png" style="border:0px solid currentColor;" /></a><br />
+<br />
+</span>You will notify that, there is a new column added named as workflow name created on step number 4 above and contain the status of the workflow.<br />
+Let’s click on the “In Progress” link</p>
+<p style="text-align:left;direction:ltr;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6763.13.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6763.13.png" style="border:0px solid currentColor;" /></a></p>
+<p style="text-align:left;direction:ltr;">&nbsp;</p>
+<p style="text-align:left;direction:ltr;">So the task been assigned to the Hierarchy group automatically and after open it and approve it, it will assigned to next group (approvers as set before).</p>
+
+</div>
+    
+    

@@ -1,0 +1,167 @@
+---
+layout: default
+title: IPAM Audit logic - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="margin:0in 0in 10pt;"><span style="line-height:115%;font-size:20pt;text-decoration:underline;font-family:Calibri;">IPAM IP ADDRESS TRACKING</span></div>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">Goal:</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">For a given search criteria, (IP Address \ MAC Address \ Host Name \ User Name), &nbsp;find as much as related activity as possible from IPAM-managed DHCP servers, NPS, and domain
+ controllers.</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">The search results will be a combination of two things:</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;/h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div style="margin:0in 0in 10pt;"><span style="line-height:115%;font-size:20pt;text-decoration:underline;font-family:Calibri;">IPAM IP ADDRESS TRACKING</spfont-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">All direct matches to the search criteria between the specified start time and end time.</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">All the “related” logs based on the DHCP lease activity.</span></p>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">Finding “related” logs:</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">There are two steps to finding related data in the logs.</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">For a given search criteria, (IP Address \ MAC Address \ User Name \ Host Name) – creating a set of “lease chunks.” The approach to creating lease chunks will vary depending on the search criteria.</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Getting the final correlated search results from the set of “lease chunks.” This approach is the same regardless of the search criteria.</span></p>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">End-to-end flow for “IP Address” search criteria:</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">Let’s say that the search criteria is: IP address = 3.3.3.1 and search interval = 1<sup><span style="font-size:13px;">st</span></sup> January to 7<sup><span style="font-size:13px;">th</span></sup>
+ January.</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">All the direct matches to 3.3.3.1 from 1<sup><span style="font-size:13px;">st</span></sup> January to 7<sup><span style="font-size:13px;">th</span></sup> January will be added to the final search results. This includes
+ all the logs from DHCP, DC and NPS.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Then, from the DHCP server each lease activity corresponding to 3.3.3.1 is evaluated. This information forms a lease chunk pairs.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">1)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">New lease – Release \ Delete lease.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">2)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">New lease – Renew lease.</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">3)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Renew lease – Release \ Delete lease.</span></p>
+<div style="margin:0in 0in 10pt 0.5in;"><span style="font-family:Calibri;">Therefore, the following might be lease activity logs:</span></div>
+<div style="margin:0in 0in 10pt 0.5in;"><span style="font-family:Calibri;">The following tuple denotes: [IP Address, Mac Address, Host Name, User Name, Log Type, Timestamp]</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">1)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, New Lease, 1<sup><span style="font-size:13px;">st</span></sup> January)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">2)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, Renew Lease, 2nd January)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">3)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, Release Lease, 3rd January)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">4)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00ccccccaaaa, HostB, null, New Lease, 4th January)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">5)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00ccccccaaaa, HostB, null, Renew Lease, 5th January)</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">6)</span><span style="font-style:normn 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">4)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00ccccccaaaa, HostB, null, New Lease, 4th January)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-famial;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00ccccccaaaa, HostB, null, Release Lease, 6th January)</span></p>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">Next, from this DHCP lease activity, the following lease chunk pairs are obtained”</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">(1,2) (2,3) (4,5) (5,6)</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">Then, for each chunk the correlated results are obtained.</span></div>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">Getting Correlated results from a lease chunk:</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">For example:</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">1)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, New Lease, 1<sup><span style="font-size:13px;">st</span></sup> January)</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">2)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, Renew Lease, 2nd January)</span></p>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">The correlated search results thus include:</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">All the logs from any source (DHCP \ NPS \ DC) that match the
+<span style="text-decoration:underline;">ANY OF</span> IP Address = 3.3.3.1 OR MAC Address = 00aaaabbbbcc OR Host Name = HostA (between 1<sup><span style="font-size:13px;">st</span></sup> January and 2<sup><span style="font-size:13px;">nd</span></sup> January).
+ Note: The logs that match HostName = HostA may have a different value for the corresponding IP Address like 3ffe::1 in dual-stack environments. Even though the search criteria is 3.3.3.1, this result is still displayed.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Specifically to handle dual stack scenarios, special handling is as follows: Go back 14 days from 1<sup><span style="font-size:13px;">st</span></sup> January, find all the unexpired IP addresses that are associated
+ with <span style="text-decoration:underline;">HostA</span>. Find activity for those IP addresses between
+<span style="text-decoration:underline;">1<sup><span style="font-size:13px;">st</span></sup> January and 2<sup><span style="font-size:13px;">nd</span></sup> January</span>. Typically there could be one such address in dual stack environments. Let’s say machine
+ logon events are as follows:</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">(3ffe::1, null, HostA, null,
+<span style="text-decoration:underline;">Machine Logon</span>, 25<sup><span style="font-size:13px;">th</span></sup> December)&nbsp;&nbsp;&nbsp; - obtained from the DC.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;"><span style="text-decoration:underline;">3ffe::1 is obtained as a related IP address as well, therefore its activity is queried between 1<sup><span style="font-size:13px;">st</span></sup>
+ January and 2<sup><span style="font-size:13px;">nd</span></sup> January</span>. </span>
+</p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">If a user logon event occurred like the following, then that will be included in the result.</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">(3ffe::1, null, null, UserA, User Logon, 1<sup><span style="font-size:13px;">st</span></sup> January 5 PM) – obtained from the DC.</span></p>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">These same steps will be repeated for all lease chunks and the results will be combined and displayed.</span></div>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">End-To-End flow for Mac Address \ Host Name search criteria:</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">The steps will be similar to the IP address search criteria.
+</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">All direct matches will be added to the final results.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">The “lease chunks” are obtained from DHCP activity logs by matching with MAC address or host name (specified as the search criteria).
+</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">c)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Correlated search results are obtained and displayed for lease chunks (the same procedure as used for IP address searches).</span></p>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">End-To-End flow for “User Name” search criteria:</span></div>
+<div style="margin:0in 0in 10pt;"><span style="font-family:Calibri;">This is the same, except for step b below. The procedure for getting lease chunks from a specified “User Name” criteria is different.</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">All direct matches will be added to the final results.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Obtain the DHCP lease chunks based on the specified User Name criteria (see the following procedure).</span></p>
+<p class="CxSpLast" style="margin:0in 0in 10pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">c)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">From the lease chunks, obtain and display the correlated search results. This is the same procedure as used for IP address searches.</span></p>
+<div style="margin:0in 0in 10pt;"><span style="text-decoration:underline;font-family:Calibri;">Procedure:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-heig to obtain lease chunks based on the User Name criteria:</span></div>
+<p class="CxSpFirst" style="margin:0in 0in 0pt 0.5in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Consider the following tuples:</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">1)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, DHCP New Lease, 1<sup><span style="font-size:13px;">st</span></sup> January 3 pm)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">2)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">(3ffe::1, null, HostA, null, DC Machine Logon, 1<sup><span style="font-size:13px;">st</span></sup> January 5 pm)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">3)&nbsp;&nbsp;&nbsp; (3ffe::1, null, null, UserA, DC User Logon, 1<sup><span style="font-size:13px;">st</span></sup> January 6 pm)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">4)&nbsp;&nbsp;&nbsp; (3.3.3.1, 00aaaabbbbcc, HostA, null, DHCP Renew Lease, 1<sup><span style="font-size:13px;">st</span></sup> January 8 pm)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;"></span>&nbsp;</p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">If the search criteria is “UserA”, find the “DHCP Lease Chunk” such that the IP address associated with UserA has “machine logon” event as well within the
+ same lease chunk, and the lease chunk has the “same host” as the machine logon event.<br />
+</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.5in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">For example, using the previous tuples, the association will be:<br />
+</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">a)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A user logon event for UserA occurs at 6 pm, with IP address: 3ffe::1.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">b)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">A machine logon event for HostA occurs at 5 pm with the same IP address: 3ffe::1.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">c)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">There is a lease chunk that includes HostA for these two periods (6 pm and 5 pm). So, this lease chunk will be added as a final lease chunk.</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, DHCP New Lease, 1<sup><span style="font-size:13px;">st</span></sup> January 3 pm)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;margin:0 0 .0001pt .5in;"><span style="font-family:Calibri;">(3.3.3.1, 00aaaabbbbcc, HostA, null, DHCP Renew Lease, 1<sup><span style="font-size:13px;">st</span></sup> January 8 pm)</span></p>
+<p class="CxSpMiddle" style="margin:0in 0in 0pt 0.75in;text-indent:-0.25in;margin:0 0 .0001pt .5in;">
+<span><span style="font-family:Calibri;">d)</span><span style="font-style:normal;font-weight:normal;font-size:7pt;line-height:normal;font-family:&#39;Times New Roman&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><span style="font-family:Calibri;">Correlated results from the lease chunk (similar to earlier procedures) are displayed.</span></p>
+
+</div>
+    
+    

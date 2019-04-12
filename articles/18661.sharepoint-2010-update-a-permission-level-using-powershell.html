@@ -1,0 +1,80 @@
+---
+layout: default
+title: SharePoint 2010&#58; Update a Permission Level using PowerShell - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li cla>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SharePoint 2010: Update a Permission Level using PowerShell</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a hress="hierarchy-item"><a href="#The_Problem">The Problem</a></li><li class="hierarchy-item"><a href="#The_PowerShell">The PowerShell</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<br />
+<br />
+<h2><a name="Introduction"></a>Introduction</h2>
+<br />
+I have a collaboration web application that is used within my Company, within this web application we have several hundred Site Collections.&nbsp; All site collections are using a customized set of Permission Levels which contain some restrictions from the out of
+ the box Permission Levels, such as Owners are not allowed to create Subsites as each site collection (we call them workspaces) are supposed to be for collaborating on a specific item (which could be a document, a topic, a project, a team, etc.)<br />
+<br />
+It was noticed that the CustomOwner permission was allowing Owners of a Site Collection (not to be confused with Site Collection Owner) to be able to create subsites.&nbsp; The template that drives the newly created site collections was amended to change this for
+ all new site collections.&nbsp; However that left us with several hundred existing site collections that still had the wrong permissions set against the permission level.<br />
+<br />
+<h2><a name="The_Problem"></a>The Problem</h2>
+Here&#39;s where my problem started, I was tasked with finding a way to update all of the existing site collections to have the correct permissions assigned against the permission levels.&nbsp; As our staff have had training on managing the permissions within their
+ workspace, we could not simply create a new permission level and push out that new permission level as a replacement for the old one.<br />
+<br />
+So to re-cap, I have a permission level called CustomOwner.&nbsp; This permission level should give the user/group assigned with the permission level ALL permissions on Lists, ALL Permissions on Personal Permissions and a limited set of Permissions against Site
+ Permissions.<br />
+<br />
+I chose PowerShell as my option for a solution on the premise of its ability to do a task multiple times with ease, however I found this task much harder to complete that I hould have.&nbsp; I was unaware when I started of what I would need to do and so I turned
+ to Technet, Google, etc for answers and there were literally thousands of websites/blogs/posts/etc. regarding using PowerShell to amend SharePoint Permissions however they were all referring to changing which Permission Level was used against a Group and/or
+ Person.&nbsp; After much searching and trial and error testing I finally discovered you could the Role Definition for your permission level into a variable and then set the Base Permissions against that Permission Level and update it.<br />
+<br />
+This left me now needing to find the names of the Base Permissions and then make my script.&nbsp; As I had to find the information in multiple places I put together a quick table of all the Display Name of the Base Permissions, their Description and the name of
+ the actual permission.&nbsp; Then with this information I was able to build my script.&nbsp; Its worth noting at this point also that you cannot use Delete or Remove to remove a base permission from a Permission Level (or if you can, I couldn&#39;t figure out how :P) but
+ you can simply apply the Add option which will add only the Base Permissions you specify and remove the ones you don&#39;t if they were already active (which is what I was looking for as my Owners were allowed already to create subsites and I wanted to remove
+ that permission from them).<br />
+<br />
+Here are the permission tables I mentioned. and below them is the PowerShell I used.<br />
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2806.ListPermissions.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2806.ListPermissions.png" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3007.SitePermissions.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3007.SitePermissions.png" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0410.PersonalPermissions.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0410.PersonalPermissions.png" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<h2><a name="The_PowerShell"></a>The PowerShell</h2>
+<pre class="PowerShellColorizedScript" style="font-family:consolas;font-size:12px;border:1px solid #7f9db9;overflow-y:auto;"><span style="color:#ff4500;">$sites</span> <span style="color:#a9a9a9;">=</span> <span style="color:#0000ff;">get-spsite</span> <span style="color:#000080;">-Limit</span> <span style="color:#8a2be2;">ALL</span> <span style="color:#000080;">–webapplication</span> <span style="color:#8a2be2;">http://mywebapplication.com</span>            
+<span style="color:#00008b;">ForEach</span> <span style="color:#000000;">(</span><span style="color:#ff4500;">$site</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$Sites</span><span style="color:#000000;">)</span>            
+<span style="color:#000000;">{</span>             
+    <span style="color:#006400;"># The URL to the Site Collection</span>            
+    <span style="color:#ff4500;">$spWeb</span> <span style="color:#a9a9a9;">=</span> <span style="color:#ff4500;">$site</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">RootWeb</span>            
+             
+    <span style="color:#006400;"># Enter the Name of the Permission Level to Change</s="color:#a9a9a9;">=</span> <span style="color:#0000ff;">get-spsite</span> <span style="color:#000080;">-Limit</span> <span style="color:#8a2be2;">ALL</span> <span style="color:#000080;">–webapplication</span> <span style="color:#8a2be2;">http://mywebapplication.com</span>            
+<span style="color:#00008b;">ForEach</span> <span style="color:#000000;">(</span><span style="color:#ff4500;">$site</span> <span style="color:#00008b;">in</span> <span style="color:#ff4500;">$Sites</span><span style="color:#000000;">)</span>            
+<span style="color:#000000;">{</span>             
+    <span style="color:#006400;"># The URL to the Site Collection</span>            
+    <span style="color:#ff4500;">$spWeb</span> <span style="color:#a9a9a9;">=</sppan>            
+    <span style="color:#ff4500;">$PermissionLevel</span><span style="color:#a9a9a9;">=</span><span style="color:#ff4500;">$spWeb</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">RoleDefinitions</span><span style="color:#a9a9a9;">[</span><span style="color:#8b0000;">&quot;CustomOwner&quot;</span><span style="color:#a9a9a9;">]</span>            
+             
+    <span style="color:#006400;"># Enter all the permissions that Permission Level should have enabled</span>            
+    <span style="color:#ff4500;">$PermissionLevel</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">BasePermissions</span><span style="color:#a9a9a9;">=</span><span style="color:#8b0000;">&quot;ViewListItems, AddListItems, EditListItems, DeleteListItems, ApproveItems, OpenItems, ViewVersions, DeleteVersions, CancelCheckout, ManagePersonalViews, ManageLists, ViewFormPages, Open, ViewPages, AddAndCustomizePages, ViewUsageData, CreateSSCSite, ManagePermissions, BrowseDirectories, BrowseUserInfo, AddDelPrivateWebParts, UpdatePersonalWebParts, UseClientIntegration, UseRemoteAPIs, ManageAlerts, CreateAlerts, EditMyUserInfo, CreateGroups, EnumeratePermissions&quot;</span>            
+             
+    <span style="color:#ff4500;">$PermissionLevel</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Update</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span>            
+    <span style="color:#ff4500;">$spweb</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Dispose</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span>            
+    <span style="color:#ff4500;">$spsite</span><span style="color:#a9a9a9;">.</span><span style="color:#000000;">Dispose</span><span style="color:#000000;">(</span><span style="color:#000000;">)</span>            
+<span style="color:#000000;">}</span></pre>
+
+</div>
+    
+    

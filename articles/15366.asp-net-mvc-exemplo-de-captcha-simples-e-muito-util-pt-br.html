@@ -1,0 +1,233 @@
+---
+layout: default
+title: ASP.NET MVC - Exemplo de Captcha simples e muito útil (pt-BR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+Um dos grandes problema do MVC para iniciantes é o ato de poder simplificar pequenas tarefas, normalmente elas se tornam grandes e complexas por pouco dominio da ferramenta, o que é natural. Porém isso leva a uma crença de que o MVC gera maior codificação e
+ atraso no tempo de dediv class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fijisenvolvimento.<br />
+<br />
+Este mini artigo tem como objetivo então apresentar um Captcha funcional, extremamente personalizável e que ajuda a acostumar com as camadas ao se desenvolver em ASP.Net.<br />
+<br />
+Vamoas parar de firula e irmos direto ao ponto. o model que é a interação com o banco deve ser lembrada nesse momento e aqui ela está bem clara (o get/set)<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">1.</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">class</code> <code style="color:#000000;">
+SubscribeModel</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">2.</code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">3.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//model specific
+ fields</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">4.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Required]</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">5.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Display(Name
+ = </code><code style="color:blue;">&quot;Quanto é o resultado desse somatório&quot;</code><code style="color:#000000;">)]</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">6.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#006699;font-weight:bold;">string</code> <code style="color:#000000;">
+Captcha { </code><code style="color:#006699;font-weight:bold;">get</code><code style="color:#000000;">;
+</code><code style="color:#006699;font-weight:bold;">set</code><code style="color:#000000;">; }</code></span></span></div>
+</div>
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><br />
+<br />
+Então no controller, eu indico o user controller pra maioria dos casos que se usa captcha, ou seja &nbsp;o momento que se testa usuário, login, senha...&nbsp;...nós montamos o controller do captcha:<br />
+</div>
+</div>
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Drawing; </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.IO; </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Drawing.Drawing2D; </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">System.Drawing.Text; </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">ActionResult CaptchaImage(</code><code style="color:#006699;font-weight:bold;">string</code>
+<code style="color:#000000;">prefix, </code><code style="color:#006699;font-weight:bold;">bool</code>
+<code style="color:#000000;">noisy = </code><code style="color:#006699;font-weight:bold;">true</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var rand =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Random((</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">)DateTime.Now.Ticks);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//gera uma nova questão
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">a = rand.Next(10, 99); </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">b = rand.Next(0, 9); </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var captcha =
+</code><code style="color:#006699;font-weight:bold;">string</code><code style="color:#000000;">.Format(</code><code style="color:blue;">&quot;{0} &#43; {1} = ?&quot;</code><code style="color:#000000;">, a, b);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//guarda a resposta na session</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Session[</code><code style="color:blue;">&quot;Captcha&quot;</code>
+<code style="color:#000000;">&#43; prefix] = a &#43; b; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//faz stream da imagem
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">FileContentResult img =
+</code><code style="color:#006699;font-weight:bold;">null</code><code style="color:#000000;">;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:##43; prefix] = a &#43; b; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code000000;">(var mem = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">MemoryStream()) </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">(var bmp = </code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Bitmap(130, 30)) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">using</code>
+<code style="color:#000000;">(var gfx = Graphics.FromImage((Image)bmp)) </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">gfx.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">gfx.SmoothingMode = SmoothingMode.AntiAlias;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">gfx.FillRectangle(Brushes.White,
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Rectangle(0, 0, bmp.Width, bmp.Height)); </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//adiciona ruído</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(noisy) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">int</code>
+<code style="color:#000000;">i, r, x, y; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var pen =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Pen(Color.Yellow); </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">for</code>
+<code style="color:#000000;">(i = 1; i &lt; 10; i&#43;&#43;) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">pen.Color = Color.FromArgb(
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(rand.Next(0, 255)),
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(rand.Next(0, 255)),
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">(rand.Next(0, 255)));
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">r = rand.Next(0, (130 / 3));
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">x = rand.Next(0, 130);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">y = rand.Next(0, 30);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">gfx.DrawEllipse(pen, x – r, y – r, r, r);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//adiciona a questão</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">gfx.DrawString(captcha,
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Font(</code><code style="color:blue;">&quot;Tahoma&quot;</code><code style="color:#000000;">, 15), Brushes.Gray, 2, 3);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//renderiza o Jpeg
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">img =
+>new</code> <code style="color:#000000;">
+Font(</code><code style="color:blue;">&quot;Tahoma&quot;</code><code style="color:#000000;">, 15), Brushes.Gray, 2, 3);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><cod</code><code style="color:#006699;font-weight:bold;">this</code><code style="color:#000000;">.File(mem.GetBuffer(),
+</code><code style="color:blue;">&quot;image/Jpeg&quot;</code><code style="color:#000000;">);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">img;</code></span></span></div>
+</div>
+<br />
+Então agora construímos a view usando razor ela fica da seguinte forma:
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">02.</code><span><code style="color:#000000;">@*form specific fields*@
+</code></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">03.</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">div</code>
+<code style="color:#808080;">class</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;editor-label&quot;</code><code style="color:#000000;">&gt;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">04.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@Html.LabelFor(model
+ =&gt; model.Captcha) </code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">05.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">a</code>
+<code style="color:#808080;">href</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;@Url.Action(&quot;</code><code style="color:#000000;">Index&quot;)&quot;&gt;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">06.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">img</code>
+<code style="color:#808080;">alt</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Captcha&quot;</code>
+<code style="color:#808080;">src</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;@Url.Action(&quot;</code><code style="color:#000000;">CaptchaImage&quot;)&quot;
+</code><code style="color:#808080;">style</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;&quot;</code>
+<code style="color:#000000;">/&gt; </code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">07.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">a</code><code style="color:#000000;">&gt;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">08.</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">div</code><code style="color:#000000;">&gt;
+</code></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">09.</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">div</code>
+<code style="color:#808080;">class</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;editor-field&quot;</code><code style="color:#000000;">&gt;&nbsp;
+</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@Html.EditorFor(model
+ =&gt; model.Captcha) </code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">@Html.ValidationMessageFor(model
+ =&gt; model.Captcha) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">12.</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">div</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<br />
+Finalmente temos de fazer o teste do resultado, novamente no controller:<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">01.</code><span><code style="color:#000000;">[HttpPost]
+</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">02.</code><span><code style="color:#006699;font-weight:bold;">public</code>
+<code style="color:#000000;">ActionResult Index(SubscribeModel model) </code></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">03.</code><span><code style="color:#000000;">{
+</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">04.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//validação
+ do captcha </code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">05.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(Session[</code><code style="color:blue;">&quot;Captcha&quot;</code><code style="color:#000000;">] ==
+</code><code style="color:#006699;font-weight:bold;">null</code> <code style="color:#000000;">
+|| Session[</code><code style="color:blue;">&quot;Captcha&quot;</code><code style="color:#000000;">].ToString() != model.Captcha)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">06.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{
+</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">07.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbs-right:0.3em;text-align:right;display:block;">05.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(Session[</code><code style="color:blue;">&quot;Captcha&quot;</code><code style="color:#000000;">] ==
+</code><code style="color:#006699;font-weight:bold;">null</code> <code style="color:#000p;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ModelState.AddModelError(</code><code style="color:blue;">&quot;Captcha&quot;</code><code style="color:#000000;">,
+ Resultado errado, por favor tente novamente.&quot;); </code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">08.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">//Mostra
+ mensagem de erro e gra novo captcha</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">View(model); </code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">return</code>
+<code style="color:#000000;">RedirectToAction(</code><code style="color:blue;">&quot;páginaderesposta&quot;</code><code style="color:#000000;">);
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="color:#5c5c5c;float:left;width:3em;padding-right:0.3em;text-align:right;display:block;">12.</code><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+Finalmente você tem seu captcha, que aqui pode-se fazer outras contas aleatórias, mexer no tamanho da imagem gerada e do seu rúido, assim como entender o caminho que toda a transação passa gravando em sessão, model, controler e views.<br />
+<br />
+Abraço
+
+</div>
+    
+    

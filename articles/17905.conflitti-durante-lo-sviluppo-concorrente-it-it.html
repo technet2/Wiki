@@ -1,0 +1,164 @@
+---
+layout: default
+title: Conflitti durante lo sviluppo concorrente (it-IT) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<a name="Top"></a><br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Central_Manage">Gestione conflitti in sistemi centralizzati</a></li><li class="hierarchy-item"><a href="#Manage_Git">Gestioni conflitti in figit</a></li><li class="hierarchy-item"><a href="#Fetch_Pull_Solve_Local">Fetch, pull e risoluzione di conflitti in locale</a></li><li class="hierarchy-item"><a href="#Visual_Studio_Resolve">Risoluzione di conflitti all’interno di Visual Studio</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<hr />
+<p><strong>NOTA:</strong> questo articolo è tratto da un <a href="http://blogs.msdn.com/b/italy/archive/2013/05/27/guest-post-conflitti-durante-lo-sviluppo-concorrente.aspx">
+post</a> di <a href="http://social.msdn.microsoft.com/profile/ricci%20gian%20maria/">
+Gian Maria Ricci</a> (MPV Visual Studio ALM) sul Blog di MSDN Italia. Si ringrazia l&#39;autore per la gentile concessione.</p>
+<br />
+<h2><a name="Central_Manage"></a>Gestione conflitti in sistemi centralizzati</h2>
+<p>I conflitti possono accadere in entrambe le tipologie di VCS (Version Control Systems), sia in quello centralizzato sia in quello distribuito, è comunque interessante capire a fondo come i vari sistemi riescano ad identificarli per permetterne la risoluzione.</p>
+<p>Nel source control standard di Team Foundation Server i conflitti vengono rilevati sia durante la fase di Check-In, sia durante la fase di Get-Latest. Durante un Get-Latest infatti, per ogni file modificato nel server e che viene quindi scaricato per aggiornare
+ la versione locale, Visual Studio verifica se il file ha modifiche pendenti ed in caso affermativo si ha un conflitto, poiché il file è stato modificato da due distinte parti.
+</p>
+<p>In caso di conflitto Visual Studio cerca di capire se è possibile effettuare un merge automatico delle modifiche, senza richiedere dunque l’intervento manuale dell’utente. Questo accade ad esempio se le modifiche riguardano parti differenti di un file.
+</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/8156.clip_5F00_image002_5F00_7849CBAD.jpg"><img title="clip_image002" alt="clip_image002" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/5444.clip_5F00_image002_5F00_thumb_5F00_2890A064.jpg" width="244" height="82" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Nel caso non sia possibile procedere ad un merge automatico, lo sviluppatore viene notificato e si procede ad effettuare un merge manuale utilizzando Visual Studio o altri strumenti equivalenti. Come nota si consiglia comunque di controllare sempre dopo
+ il Get-Latest se sono state scaricate nuove modifiche ed in caso affermativo, anche se non vi sono conflitti, è sempre buona norma rieseguire gli Unit Test per vedere se le modifiche scaricate sono compatibili con le modifiche pendenti locali.</p>
+<p>Durante un check-in la situazione è invece leggermente differente; si supponga infatti che Marco abbia fatto un Get-Latest recuperando il changeset con id 100 ed inizi a lavorare su di un file. Nel frattempo Giorgio modifica lo stesso file effettuando Check-In
+ e creando quindi un changeset con id superiore, supponiamo il 101. Per correttezza Marco dovrebbe sempre effettuare un Get-Latest e risolvere eventuali conflitti prima di tentare un check-in; supponiamo invece che utilizzi la procedura meno corretta e tenti
+ di effettuare direttamente il check-in senza curarsi di eseguire un Get-Latest. </p>
+<p>In questo caso durante le operazioni di check-in, per ogni file viene associato il numero di versione che tale file aveva nel workspace locale quando sono iniziate le modifiche, nel nostro esempio 100. Il server verifica quindi la versione attuale del file
+ (in questo caso la 101 perché è stato modificato da Giorgio), e se le due versioni non corrispondono il file è stato modificato da entrambi. Anche in questo caso è possibile che le modifiche possano essere risolte da un automerge, ma in caso non siano compatibili,
+ il check-in viene bloccato.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/0020.clip_5F00_image004_5F00_079D2DBD.jpg"><img title="clip_image004" alt="clip_image004" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/8228.clip_5F00_image004_5F00_thumb_5F00_3445E796.jpg" width="244" height="113" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Questo blocco è fondamentale, perché se non ci fosse Marco avrebbe erroneamente sovrascritto ed annullato le modifiche di Giorgio. Quando il check-in viene bloccato, si rende necessario procedere ad un Get-Latest e risolvere i conflitti localmente prima
+ di tentare nuovamente un check-in.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/4212.clip_5F00_image006_5F00_6C182BB9.jpg"><img title="clip_image006" alt="clip_image006" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/0435.clip_5F00_image006_5F00_thumb_5F00_5ED1A2A6.jpg" width="244" height="103" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Manage_Git"></a>Gestioni conflitti in git</h2>
+<p>In un sistema distribuito la gestione dei conflitti è molto simile, ma complicata dal concetto di commit locale. In questo scenario di esempio si hanno due utenti: Gian Maria Ricci ed alkampferOutook, i quali possono modificare entrambi lo stesso file e
+ fare commit in locale contemporaneamente. Questo accade perché il commit è locale, ogni sviluppatore ha una linea di codice composta dai suoi commit e quindi nessun conflitto si genera se due sviluppatori modificano e fanno commit di uno stesso file. Si supponga
+ che entrambi gli sviluppatori abbiano fatto un clone di un repository, costituito per ora da un singolo commit con id 202396b ed abbiano fatto alcune modifiche creando ognuno due commit nel proprio repository locale.<br />
+<i><br />
+NOTA: Nella descrizione seguente, ogni qualvolta si parla di <b>origin</b> si intende implicitamente il server remoto predefi<a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Manage_Git"></a>Gestioni conflitti in git</h2>
+<p>In un sistema distribuito la gestione dei conflitti è molto simile, ma complicata dal concetto di commit locale. In questo scenario di esempio si hanno due utenti: Gian Maria Ricci ed alkampferOutook, i quali possono modificare entrambi lo stesso file e
+ fare commit in locale contemporaneamente. Questo accade perché il commit è locale, ogni sviluppatore ha una linea di codice composta dai suoi commit e quindi nessun conflitto si genera se due sviluppatori modificano e fanno commit di uno stesso file. Si supponga
+ che entrambi gli sviluppatori abbiano fatto un clone di un repository, costituito per ora da unito collegato al repository locale, che di base è il server da cui si è effettuato il clone. Data la sua natura distribuita, è possibile
+ che il proprio repository locale Git si sincronizzi con più server (detti remote) e quindi la dicitura server può risultare ambigua, non esistendo di fatto il concetto di un unico server centralizzato.
+</i></p>
+<p>Sebbene non si sia ancora parlato di branch, per ora si consideri semplicemente che quando si effettua il primo commit in un repository Git, viene automaticamente creata una prima branch chiamata master che costituisce l’unica branch attiva.
+</p>
+<p>Quando Gian Maria Ricci tenta di effettuare il <b>push</b> verso il server origin, git non fa altro che verificare la posizione della branch corrispondente nel sistema destinazione e se non ci sono stati cambiamenti dall’ultima volta che è stato fatto
+<b>pull</b> esegue un fast-forward, ovvero copia semplicemente i commit nel sistema destinazione.</p>
+<p>Quello che accade in dettaglio è: quando uno sviluppatore effettua un pull (o il clone iniziale), tutti i commit del sistema remoto vengono scaricati nel repository locale, cosi che i due repository siano perfettamente allineati ed identici (nei sistemi
+ distribuiti infatti ogni sviluppatore ha una copia completa del repository). Quando uno sviluppatore effettua commit locali, questi vengono aggiunti sequenzialmente alla branch attiva ed ognuno ha un id (costituito da un hash SHA1), come si può vedere con
+ un git logf. (il comando logf non è altro che un alias creato con l’istruzione git config --global alias.logf &quot;log --graph --oneline --all --decorate&quot;)</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/7318.clip_5F00_image008_5F00_2F9FB70F.jpg"><img title="clip_image008" alt="clip_image008" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/7268.clip_5F00_image008_5F00_thumb_5F00_4E09F7F8.jpg" width="244" height="39" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Il dato interessante è dato dalla colorazione, che identifica in maniera univoca la situazione del repository. In primo luogo, in verde, è mostrata la branch attiva locale; la master è attualmente pari alla HEAD (è infatti l’unica branch ed è quella attiva),
+ ed è associata all’ultimo commit con hash <i>ca9fd1e</i>. La master remota, ovvero quella del TF Service, è invece mostrata in rosso ed è chiamata
+<b>origin/master</b> ad indicare appunto che è la branch master del remote chiamato origin. Avendo effettuato due commit, la branch master locale è due commit più avanti della master remota, che invece è ferma al
+<i>202396b</i>. L’operazione di <b>push</b> non fa altro che tentare di inviare i due commit locali al server e se nel frattempo nessuno ha effettuato operazioni di push, questi commit locali vengono semplicemente copiati nel server.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3482.clip_5F00_image010_5F00_7F293298.jpg"><img title="clip_image010" alt="clip_image010" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/1460.clip_5F00_image010_5F00_thumb_5F00_7DE499B9.jpg" width="244" height="114" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Effettuando di nuovo un log da riga di comando si può notare come ora la origin/master sia allineata alla master locale, ed i due commit sono stati correttamente copiati nel server.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/1616.clip_5F00_image012_5F00_5CF12712.jpg"><img title="clip_image012" alt="clip_image012" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/6518.clip_5F00_image012_5F00_thumb_5F00_4963C771.jpg" width="244" height="31" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Supponiamo ora che l’altro sviluppatore (AlkampferOutlook) abbia anche lui effettuato due commit e tenti di effettuare l’operazione di push. In questo caso i due commit sono sempre successivi al commit
+<i>202396b</i>, ma nel frattempo la branch master del server è stata aggiornata ed ora punta al commit
+<i>ca9fd1e</i>. In questo caso l’operazione viene fermata, dato che non è più possibile effettuare il fast-forward; AlkampferOutlook deve quindi effettuare il merge con le modifiche che nel frattempo sono state inviate da Gian Maria Ricci. L’interfaccia suggerisce
+ quindi di effettuare un pull (operazione analoga al get-latest) ed effettuare la merge in locale.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3733.clip_5F00_image014_5F00_7A830211.jpg"><img title="clip_image014" alt="clip_image014" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/5023.clip_5F00_image014_5F00_thumb_5F00_54ACDBAE.jpg" width="244" height="208" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Tentando il push da command line il messaggio è molto più esplicito</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/4214.clip_5F00_image016_5F00_778D9D5E.jpg"><img title="clip_image016" alt="clip_image016" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3731.clip_5F00_image016_5F00_thumb_5F00_55C1C4CD.jpg" width="244" height="54" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Fetch_Pull_Solve_Local"></a>Fetch, pull e risoluzione di conflitti in locale</h2>
+<p>La soluzione al conflitto è fare un pull, ma prima di procedere in questa direzione è preferibile entrare più a fondo nel funzionamento di git per comprendere più in dettaglio cosa accade durante questa operazione.</p>
+<p>Una volta che il suo tentativo di Push è stato rigettato, AlkampferOutlook può effettuare un log a riga di comando per capire lo stato del suo repository.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/5340.clip_5F00_image018_5F00_34CE5226.jpg"><img title="clip_image018" alt="clip_image018" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/2538.clip_5F00_image018_5F00_thumb_5F00_1A8DE902.jpg" width="244" height="28" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>La situazione è esattamente omologa a quella vista da Gian Maria Ricci precedentemente, ovvero la master locale è due commit più avanti della branch remota, ma questa informazione è purtroppo oramai obsoleta, perché nel frattempo Gian Maria Ricci ha fatto
+ push sulla master remota. Per aggiornare la situazione del repository locale e scaricare i commit che nel frattempo sono stati aggiunti al server è necessario usare il comando
+<i>fetch</i> (git fetch)</p>
+<p>Questo comando contatta il server remoto, scaricando le eventuali modifiche effettuate dall’ultimo aggiornamento. Visual Studio ha il vantaggio di mostrare una comoda visualizzazione grafica di quello che è cambiato dopo che viene effettuato il fetch</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/2577.clip_5F00_image020_5F00_2787C913.jpg"><img title="clip_image020" alt="clip_image020" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3021.clip_5F00_image020_5F00_thumb_5F00_5EEDDA41.jpg" width="244" height="200" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a><b></b></p>
+<p>Dall’immagine precedente è immediatamente chiaro che Gian Maria Ricci ha fatto due commit rispetto il nostro ultimo aggiornamento ed è necessario dunque procedere ad un merge.
+</p>
+<p>La stessa visualizzazione si può avere in command line:</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/5123.clip_5F00_image022_5F00_16C01E65.jpg"><img title="clip_image022" alt="clip_image022" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/0245.clip_5F00_image022_5F00_thumb_5F00_6E413C50.jpg" width="244" height="46" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>In questo caso è leggermente più difficile comprendere cosa sia successo, ma la rappresentazione grafica premette comunque di capire che la branch master locale è partita dal commit
+<i>202396b</i>, ed è evoluta con due commit (<i>806c743</i> e <i>d9f7cc7</i>), mentre la origin/master, partita anche essa dal commit
+<i>202396b</i> è ora evoluta con altri due commit (<i>8374733</i> e <i>ca9fd1e</i>) che sono stati effettuati da Gian Maria Ricci.</p>
+<p>Un tool utile per familiarizzare con questi concetti ed avere una chiara visualizzazione è stato scritto da Phil Haack e permette di avere una visualizzazione grafica del proprio repository, in maniera analoga alle varie immagini che si vedono sui tutorial
+ o libri su Git. Il tool si chiama SeeGit ed è possibile trovarlo qui (<a href="http://haacked.github.io/SeeGit/">http://haacked.github.io/SeeGit/</a>)</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/6557.clip_5F00_image024_5F00_623F4C1C.jpg"><img title="clip_imaga successo, ma la rappresentazione grafica premette comunque di capire che la branch master locale è partita dal commit
+<i>202396b</i>, ed è evoluta con due commit (<i>806c743</i> e <i>d9f7cc7</i>), mentre la origin/master, partita anche essa dal commit
+<i>202396b</i> è ora evoluta con altri due commit (<i>8374733</i> e <i>ca9fd1e</i>) che sono stati effettuati da Gian Maria Ricci.</p>
+<p>Un tool utile per familiarizzare con questi concetti ed avere una chiara visualizzazione è stato scritto da Phil Haack e permette di avere una visualizzazione grafica del proprio repository, in maniera analoga alle varie immagini che si vedono sui tutorial
+ o libri su Git. Il tool si chiama SeeGit ed è possibile trovarlo qui (<a href="http://haacked.github.io/SeeGit/">http://haacked.github.io/SeeGit/</a>)</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/6557.clip_5F00_image024_5F00_623F4C1C.jpg"><ime024" alt="clip_image024" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/7080.clip_5F00_image024_5F00_thumb_5F00_20C499C3.jpg" width="244" height="164" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Se invece si vuole una visualizzazione grafica veramente completa è possibile utilizzare un altro tool completamente gratuito chiamato SourceTree, il quale permette di gestire un repository Git o Mercurial fornendo una interfaccia molto intuitiva e che permette
+ facilmente di visualizzare le differenze tra i file.</p>
+<p>A discapito del tool utilizzato, una volta effettuato il fetch, è necessario procedere al merge tra le proprie modifiche e quelle appena scaricate con il comando</p>
+<p><b><i>git merge origin/master</i></b></p>
+<p>Questo comando non fa altro che effettuare una merge tra la branch locale correntemente attiva (la master in questo caso) e la origin/master. Se non vi sono conflitti, ovvero le modifiche nei vari commit non riguardano le stesse porzioni di file, il merge
+ viene eseguito in maniera automatica e lo sviluppatore dovrà quindi procedere alla verifica del merge stesso, in maniera analoga a quello che si fa dopo un merge su un VCS centralizzato.</p>
+<p>Le operazioni di fetch e merge sono comuni per allineare la propria branch con quella di un server di upstream, per cui in git è presente il comando
+<b>pull</b> <i>che effettua entrambi i comandi in uno</i>. In Visual Studio infatti abbiamo la possibilità di effettuare il fetch o direttamente il pull. Sia che venga fatto a riga di comando o da Visual Studio o con qualsiasi altro tool questa è la situazione
+ che si ha dopo un fetch&#43;merge (o pull)</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/5355.clip_5F00_image026_5F00_5896DDE6.jpg"><img title="clip_image026" alt="clip_image026" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3250.clip_5F00_image026_5F00_thumb_5F00_45097E45.jpg" width="244" height="179" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>La situazione è ancora più chiara utilizzando l’utility di Phil Haack.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3107.clip_5F00_image028_5F00_67EA3FF5.jpg"><img title="clip_image028" alt="clip_image028" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/6254.clip_5F00_image028_5F00_thumb_5F00_1492F9CF.jpg" width="244" height="211" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Dato che ogni sviluppatore possiede un repository locale, è molto comune la situazione in cui, partendo da un singolo commit, si abbia la divergenza con più linee di codice, una sviluppata in locale e l’altra in uno dei remote con cui si sta lavorando. In
+ questo caso quindi il commit <i>140f00a8</i> ha due commit padri, perché costituisce la merge dei due distinti rami di codice che si sono generati dal primo commit
+<i>202396b4</i>. A tutti gli effetti quindi quando avvengono conflitti quello che si fa è fare un merge della branch locale con la corrispondente branch remota che è stata portata in locale con il comando
+<i>fetch.</i></p>
+<p>Una volta che la correttezza del merge è stata verificata (Unit Test e/o verifica manuale), è possibile effettuare il push. Se nel frattempo nessuno ha inviato altri commit, i tre commit (i due effettuati in locale ed il risultato della merge) verranno inviati
+ al server, altrimenti sarà necessario procedere nuovamente ad un nuovo pull.</p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<h2><a name="Visual_Studio_Resolve"></a>Risoluzione di conflitti all’interno di Visual Studio</h2>
+<p>Naturalmente è possibile che entrambi gli sviluppatori abbiano modificato lo stesso file, in questo caso durante il merge git notificherà l’utente della presenza di uno o più conflitti.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/5633.clip_5F00_image030_5F00_7A5290AA.jpg"><img title="clip_image030" alt="clip_image030" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/8780.clip_5F00_image030_5F00_thumb_5F00_23E65BDE.jpg" width="244" height="145" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>La comodità di uno strumento grafico come Visual Studio è capire con facilità tutti i file che hanno attualmente generato conflitti ed avere quindi un quadro preciso della situazione. È comunque possibile utilizzare la command line anche per le operazioni
+ di merge, dato che gli eventuali conflitti vengono comunque risolti con un tool visuale, lanciato in automatico dalla command line stessa.
+</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/7673.clip_5F00_image032_5F00_37934572.jpg"><img title="clip_image032" alt="clip_image032" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/8686.clip_5F00_image032_5F00_thumb_5F00_281033A3.jpg" width="244" height="181" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>In questo caso il conflitto è su un singolo file, è possibile premere sul link Compare Files per lanciare il compare tools di Visual Studio e capire cosa è cambiato.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/4426.clip_5F00_image034_5F00_06B08E07.jpg"><img title="clip_image034" alt="clip_image034" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/7080.clip_5F00_image034_5F00_thumb_5F00_19F144A6.jpg" width=ver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/7673.clip_5F00_image032_5F00_37934572.jpg"><img title="clip_image032" alt="clip_image032" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/8686.clip_5F00_image032_5F00_thumb_5F00_281033A3.jpg" width="244" height="181" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>In questo caso il conflitto è su un singolo file, è possibile premere sul link Compare Files per lanciare il compare tools di Visual Studio e capire cosa è cambiato.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/4426.clip_5F00_image034_5F00_06B08E07.jpg"><img title="clip_image034" alt="clip_image034" src="http://blogs.msd"244" height="66" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Di base però si preme il bottone Merge e si gestiscono i conflitti direttamente da Visual Studio</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/4300.clip_5F00_image036_5F00_4B107F46.jpg"><img title="clip_image036" alt="clip_image036" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3250.clip_5F00_image036_5F00_thumb_5F00_5731F96D.jpg" width="244" height="94" style="border-width:0px;border-style:solid;margin:0px;display:inline;" /></a></p>
+<p>Se avete installato precedentemente msysgit o i tool di GitHub è possibile che premendo il bottone Merge vi si apra il KDiff3 o qualche altro strumento di risoluzione conflitti. Questo accade perché git memorizza nelle configurazioni gli strumenti da usare
+ per il compare e la risoluzione di conflitti, in modo che possano essere lanciati durante il merge da command line. Dato che il plugin per git integrato in Visual Studio preserva le configurazioni, se nel config è indicato di usare kdiff3, Visual Studio onora
+ la configurazione e non usa il suo strumento integrato. Per risolvere questo problema ed usare Visual Studio è possibile editare direttamente il file di configurazione di git locale o globale inserendo questa configurazione</p>
+<p>[diff]</p>
+<p>tool = vsdiffmerge</p>
+<p>[difftool]</p>
+<p>prompt = true</p>
+<p>[difftool &quot;vsdiffmerge&quot;]</p>
+<p>cmd = \&quot;C:\\Program Files (x86)<a>file://microsoft/</a> Visual Studio 11.0\\Common7\\IDE\\vsdiffmerge.exe\&quot; \&quot;$LOCAL\&quot; \&quot;$REMOTE\&quot; //t</p>
+<p>keepbackup = false</p>
+<p>trustexistcode = true</p>
+<p>[merge]</p>
+<p>tool = vsdiffmerge</p>
+<p>[mergetool]</p>
+<p>prompt = true</p>
+<p>[mergetool &quot;vsdiffmerge&quot;]</p>
+<p>cmd = \&quot;C:\\Program Files (x86)<a>file://microsoft/</a> Visual Studio 11.0\\Common7\\IDE\\vsdiffmerge.exe\&quot; \&quot;$REMOTE\&quot; \&quot;$LOCAL\&quot; \&quot;$BASE\&quot; \&quot;$MERGED\&quot; //m</p>
+<p>keepbackup = false</p>
+<p>trustexistcode = true</p>
+<p>Il file di configurazione locale si chiama <i>config</i> ed è nella cartella .git del repository locale, mentre il file di configurazione globale per l’utente si chiama .gitconfig ed è nella cartella di profilo dell’utente c:\users\nomeutente. Entrambi sono
+ file di testo che possono essere editati senza problemi. Localizzate le eventuali sezioni già presenti (quelle tra parentesi quadre) e sostituitele con quelle mostrate sopra</p>
+<p>Se non è stato configurato nessuno strumento, Visual Studio di default utilizza i suoi strumenti integrati.</p>
+<p>Indipendentemente dallo strumento utilizzato per la risoluzione dei conflitti, una volta che tutti sono stati risolti, i file risultano modificati e debbono quindi essere committati nel repository locale prima di poter effettuare il push verso il server
+ remoto. Nella figura sottostante è infatti rappresentata la situazione in cui ho due commit da inviare al remote, il primo è il commit che ha generato conflitto, il secondo è quello che risolve il conflitto.</p>
+<p><a href="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/3107.clip_5F00_image038_5F00_7D27A9C3.jpg"><img title="clip_image038" alt="clip_image038" src="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-87-58-metablogapi/2047.clip_5F00_image038_5F00_thumb_5F00_20086B74.jpg" width="244" height="106" style="border-width:0px;border-style:solid;display:inline;" /></a></p>
+↑ <a href="#Top">Torna all&#39;inizio</a><br />
+<br />
+<p>&nbsp;</p>
+
+</div>
+    
+    

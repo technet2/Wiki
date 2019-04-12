@@ -1,0 +1,275 @@
+---
+layout: default
+title: Logic Apps 101&#58; Inserting Data Into Multiple Tables Using SQL Connector and Trigger(SQL) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<a name="Top"></a><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#What_are_Logic_Apps">What are Logic Apps?</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Scope">Scope</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#What_are_SQL_Triggers">What are SQL Triggers?</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Implementation">Implementation</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Creating_SQL_Tables_Stored_Procedures_and_Triggers">Creating SQL Tables, Stored Procedures and Triggers</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#SQL_Tables">SQL Tables</a></li><li class="hierarchy-item"><a href="#Stored_Procedure_and_SQL_Trigger">Stored Procedure and SQL Trigger</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Creating_Logic_App">Creating Logic App</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Testing">Testing</a></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li><li class="hierarchy-item"><a href="#References">References</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>In modern-day integration, there are many cases where the front end(web app/API) is hosted in cloud and some or whole part of the data store is on cloud or on premises and the integration code has to populate the data /fetch and perform the CRUD operations
+ on the tables based upon the request. In such scenarios, Logic Apps is best suited to integrate the web app/API and the data store as Logic App provides an easy and visual way of integrating the systems( in form of a workflow).&nbsp;</p>
+<h2><a name="What_are_Logic_Apps"></a>What are Logic Apps?</h2>
+<p>Logic Apps are a piece of integration workflow hosted on Azure which is used to create scale-able integrations between various systems.These are very easy to design and provide connectivity between various disparate systems using many out of the box connectors
+ as well as with the facility to design custom connectors for specific purposes. This makes integration easier than ever as the design aspect of the earlier complex integrations is made easy with minimum steps required to get a workflow in place and get it
+ running.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiple-tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a></p>
+<hr />
+<h1><a name="Scope"></a>Scope</h1>
+<p>This article deals with how to insert similar data into multiple tables in a data store using a logic app. The logic app exposes an HTTPS endpoint which can be consumed by the front end web API/app and it can send the data to the Logic App. The endpoints
+ accept JSON payload and insert the data received over the HTTPS call into multiple tables hosted on an on-premise SQL server. This article aims to discuss how to insert the data to SQL tables using a single call from the logic app ( by making use of SQL After
+ Insert triggers) as opposed to the conventional way of calling two different stored procedures/ insert row actions. The approach discussed in this article reduces the number of action that an Logic App needs to perform and thus saves user from getting billed
+ for multiple actions ( as number of actions are billed during an logic app run). This article assumes that the reader is a beginner with a basic knowledge about Microsoft Azure and Logic Apps and guides the user to try a hands on approach to learn the concept.</p>
+<h2><a name="What_are_SQL_Triggers"></a>What are SQL Triggers?</h2>
+<p>As per the MSDN Documentation at&nbsp;<a href="https://docs.microsoft.com/en-us/sql/t-sql/statements/create-trigger-transact-sql" target="_blank">CREATE TRIGGER (Transact-SQL)</a>&nbsp;</p>
+<p>&quot;A trigger is a special kind of stored procedure that automatically executes when an event occurs in the database server. DML triggers execute when a user tries to modify data through a data manipulation language (DML) event. DML events are INSERT, UPDATE,
+ or DELETE statements on a table or view. These triggers fire when any valid event is fired, regardless of whether or not any table rows are affected&quot;</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiple-tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a>&nbsp;</p>
+<hr />
+<h1><a name="Implementation"></a>Implementation</h1>
+<p>The Implementation can be divided into two parts.</p>
+<ol>
+<li>Creating SQL Tables, Stored Procedures and Triggers </li><li>Creating Logic App and Connecting Logic App to the SQL Store </li></ol>
+<p><br />
+</p>
+<h2><a name="Creating_SQL_Tables_Stored_Procedures_and_Triggers"></a>Creating SQL Tables, Stored Procedures and Triggers</h2>
+<p><br />
+</p>
+<h3><a name="SQL_Tables"></a>SQL Tables</h3>
+<p>A simple Employee Master Table is created which stores the information about the employee like the Employee ID, Employee Name, Salary, Reporting Manager Employee ID etc. The query for creating the simple employee table is as below.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<cables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a>&nbsp;</p>
+<hr />
+<h1><a name="Implementation"></a>Implementation</h1>
+<p>The Implementation can be divided into two parts.</p>
+<ol>
+<li>Creating SQL Tables, Stored Procedures and Triggers </li><li>Creating Logic App and Connecting Logic App to the SQL Store </li></ol>
+<p><br />
+</p>
+<h2><a name="Creating_SQL_Tables_Stored_Procedures_and_Triggers"></a>Creating SQL Tables, Stored Procedures and Triggers</h2>
+<p><br />
+</p>
+<h3><a name="SQL_Tables"></a>SQL Tables</h3>
+<p>A simple Employee Master Table is created which stores the information about the employee like the Employee ID, Employee Name, Salary, Reporting Manager Employee ID etc. The query for creating the simple employee table is as below.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-ode style="color:#006699;font-weight:bold;">TABLE</code> <code style="color:#000000;">
+[dbo].[Employee_Master]<br />
+(</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Emp_ID]
+</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#006699;font-weight:bold;">
+Unique</code> <code style="color:#808080;">NOT</code> <code style="color:#808080;">
+NULL</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Emp_name]
+</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(100)
+</code><code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Emp_Sal]
+</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">(10, 2)
+</code><code style="color:#808080;">NULL</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Supervisor_ID]
+</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#006699;font-weight:bold;">
+Unique</code> <code style="color:#808080;">NOT</code> <code style="color:#808080;">
+NULL</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">)</code></span></div>
+</div>
+<br />
+<p>Another table which stores the Employee and Reporting Manager can be created using the sample query as mentioned below.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">TABLE</code> <code style="color:#000000;">
+[dbo].[Employee_Manager_Mapping]</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">(</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Emp_ID]
+</code><code style="color:#006699;font-weight:bold;">int</code> <code style="color:#006699;font-weight:bold;">
+Unique</code> <code style="color:#808080;">NOT</code> <code style="color:#808080;">
+NULL</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[Supervisor_ID]
+</code><code style="color:#006699;font-weight:bold;">int</code>&nbsp; <code style="color:#808080;">
+NOT</code> <code style="color:#808080;">NULL</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">)</code></span></div>
+</div>
+<h3><a name="Stored_Procedure_and_SQL_Trigger"></a>Stored Procedure and SQL Trigger</h3>
+<p>The stored procedure to insert the data into the the Employee_Master table is as follows.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">PROCEDURE</code> <code style="color:#000000;">
+usp_OnboardEmployee</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">@employeeId
+</code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">,</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">@employeeName
+</code><code style="color:#006699;font-weight:bold;">varchar</code><code style="color:#000000;">(100),</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">@salary
+</code><code style="color:#006699;font-weight:bold;">decimal</code><code style="color:#000000;">(10,2),</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">@managerid
+</code><code style="color:#006699;font-weight:bold;">int</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">INSERT</code>
+<code style="color:#006699;font-weight:bold;">INTO</code> <code style="color:#000000;">
+[EMPLOYEE_MASTER] </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">VALUES</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">(@employeeId, @employeeName, @salary, @managerid)</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">END</code></span></div>
+</div>
+<br />
+<p>The SQL trigger which is an After Insert Trigger which is created on the Employee_Master table and inserts the Employee Id and the Supervisor Id in the Employee_Manager_Mapping Table. The trigger is as follows.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">TRIGGER</code> <code style="color:#000000;">
+trgAfterEmployeeOnBoardSP </code><code style="color:#006699;font-weight:bold;">ON</code>
+<code style="color:#000000;">[dbo].[Employee_MASTER] </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">FOR</code>
+<code style="color:#006699;font-weight:bold;">INSERT</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">@empid </code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">declare</code>
+<code style="color:#000000;">@SupervisorId </code><code style="color:#006699;font-weight:bold;">int</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">@empid=i.Emp_ID </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">inserted i; </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">select</code>
+<code style="color:#000000;">@SupervisorId = i.Supervisor_ID </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">inserted i;</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">INSERT</code>
+<code style="color:#006699;font-weight:bold;">INTO</code> <code style="color:#000000;">
+Employee_Manager_Mapping</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">VALUES</code><code style="color:#000000;">(@empid, @SupervisorId);</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">GO</code></span></div>
+</div>
+<br />
+<h2><a name="Creating_Logic_App"></a>Creating Logic App</h2>
+<p>Before the Logic App can be created, it is necessary to set up an on premises data gateway to enable the communication between the Logic App on the cloud and the SQL data store on the premises. Refer&nbsp;<a href="https://docs.microsoft.com/en-us/azure/analysis-services/analysis-services-gateway" target="_blank">Connecting
+ to on-premises data sources with Azure On-premises Data Gateway</a>&nbsp;. Once done following steps can be done to create the logic app.</p>
+<ol>
+<li>&nbsp;Select the Logic App from the Azure Market Place<br />
+<br />
+<span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.SelectLogicAPp.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.SelectLogicAPp.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Select the Details like subscription, Resource Group, Location and then ht the create blade on the blade.
+ Refer below screenshot.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2287.CreateLA.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.SelectLogicAPp.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8507.SelectLogicAPp.jpg" style="border-width:0px;border-style:solid;" /></a>
+</span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Select the Details like subscription, Resource Group, Location and then ht the create blade on the blade.
+ Refer below screenshot.<br />
+<br />
+<287.CreateLA.JPG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">&nbsp;Select the HTTP Trigger template from the list of available templates as shown below.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6303.SelectTrigger.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6303.SelectTrigger.JPG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</span></li><li><span style="background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;"><span style="font-size:12.11px;">In order to define the input message, use the Upload Sample Payload To Generate Schema (highlighted
+ in yellow), Paste following sample message which can be used to generate&nbsp;the input schema. After that Click on Advanced Options and select the method as POST.&nbsp;</span><br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;font-size:12.11px;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;EmployeeId&quot;</code>
+<code style="color:#000000;">: </code><code style="color:#009900;">123</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;EmployeeName&quot;</code>
+<code style="color:#000000;">: </code><code style="color:blue;">&quot;Mandar Dharmadhikari&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Salary&quot;</code>
+<code style="color:#000000;">: </code><code style="color:#009900;">10000.20</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;SupervisorId&quot;</code>
+<code style="color:#000000;">: </code><code style="color:#009900;">345</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+Refer following sample screenshot for the configuration of the HTTP Trigger<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.httptriggerconfig.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4718.httptriggerconfig.JPG" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+</span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Once the HTTP POST request is received , the On Premises SQL datastore can be updated with the employee details.
+ The Action to execute the stored procedure from the list of SQL action is to be selected. Refer sample screen shot.
+<br />
+<br />
+<span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5633.SQLSelect.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5633.SQLSelect.JPG" style="border-width:0px;border-style:solid;" /></a>
+<br />
+<br />
+</span></span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Create the connection to the On Premise SQL server data store using the on premise data gateway. Refer following
+ sample screen shot<br />
+<br />
+<span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0842.CreateSQLConn.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0842.CreateSQLConn.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span><br />
+</span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Select the SQL stored procedure usp_onboardEmployee which was created earlier and use the fields that are
+ recieved from the HTTP Post call. Refer a sample screen shot below.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3583.ExecuteStoredProcedure.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3583.ExecuteStoredProcedure.JPG" style="border-width:0px;border-style:solid;" /></a>
+<br />
+<br />
+</span></li><li><span style="font-size:12.11px;background-color:#ffffff;font-family:&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Verdana,Arial,Helvetica,sans-serif;color:#2a2a2a;">Save the Logic App. This will create the end point that can be copied from the HTTP trigger and used to test
+ the solution developed.</span> </li></ol>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiplech was -tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a></p>
+<hr />
+<h1><a name="Testing"></a>Testing</h1>
+<p>A utility like POSTMAN or SOAP UI can be used to test the Logic App created above. The sample message used while creating the json payload for the HTTP trigger is used for testing. The payload is as follows.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;EmployeeId&quot;</code>
+<code style="color:#000000;">: </code><code style="color:#009900;">123</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;EmployeeName&quot;</code>
+<code style="color:#000000;">: </code><code style="color:blue;">&quot;Mandar Dharmadhikari&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;Salary&quot;</code>
+<code style="color:#000000;">: </code><code style="color:#009900;">10000.20</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:blue;">&quot;SupervisorId&quot;</code>
+<code style="color:#000000;">: </code><code style="color:#009900;">345</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+The url copied from the HTTP Trigger is the one which should be consumed in the POSTMAN. The content-type header for the request should be set to application/json. Following is the screen shot of the request that is sent to the Logic App.
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1727.POstMan.JPG"><span style="white-space:pre;"></span><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1727.POstMan.JPG" style="border-width:0px;border-style:solid;" /></a>&nbsp;</p>
+<p><br />
+</p>
+<p>Following screenshot confirms the successful execution of the Flow.</p>
+<p><span style="white-space:pre;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2818.LogicAPpRun.JPG"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2818.LogicAPpRun.JPG" style="border-width:0px;border-style:solid;" /></a>
+</span></p>
+<p>When Following query is run on the on premises data store, the results returned as shown in the screen shot following the query.</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">* </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">Employee_Master</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">* </code><code style="color:#006699;font-weight:bold;">from</code>
+<code style="color:#000000;">Employee_Manager_Mapping</code></span></div>
+</div>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4456.SQLResult.JPG"><span style="white-space:pre;"></span><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4456.SQLResult.JPG" style="border-width:0px;border-style:solid;" /></a>&nbsp;&nbsp;</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiple-tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a></p>
+<hr />
+<h1><a name="Conclusion"></a>Conclusion</h1>
+<p>As evident from the testing results, a single action from logic app can be used in conjunction with the SQL trigger when similar data is to be updated across multiple sql tables in the data store.</p>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiple-tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a>&nbsp;</p>
+<hr />
+<h1><a name="See_Also"></a>See Also</h1>
+<p>Following articles can be visited for extra reading related to the topic discussed above.</p>
+<ol>
+<li><a href="https://social.technet.microsoft.com/wiki/contents/articles/48680.create-azure-logic-app.aspx" target="_blank">Create Azure Logic App</a>&nbsp;
+</li><li><a href="https://social.technet.microsoft.com/wiki/contents/articles/31366.microsoft-azure-building-a-logic-app.aspx" target="_blank">Microsoft Azure: Building a Logic App</a>&nbsp;
+</li><li><a href="https://social.technet.microsoft.com/wiki/contents/articles/40056.logic-apps-face-verification-using-microsoft-cognitive-services-face-api-and-logic-apps.aspx" target="_blank">Logic Apps: Face Verification Using Microsoft Cognitive Services Face
+ Api and Logic Apps</a> </li><li><a href="https://social.technet.microsoft.com/wiki/contents/articles/39960.updating-users-with-daily-weather-forecasts-using-logic-apps.aspx" target="_blank">Updating Users With Daily Weather Forecasts Using Logic Apps</a>
+</li><li><a href="https://social.technet.microsoft.com/wiki/contents/articles/36084.logic-app-resources-wiki-portal.aspx" target="_blank">Logic App Resources Wiki Portal</a>&nbsp;
+</li></ol>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiple-tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top" target="_blank">↑Back To Top
+</a>&nbsp;</p>
+<hr />
+<h1><a name="References"></a>References</h1>
+<p>Content from following articles was referred while writing the article.</p>
+<ol>
+<li><a href="https://docs.microsoft.com/en-us/azure/analysis-services/analysis-services-gateway" target="_blank">Connecting to on-premises data sources with Azure On-premises Data Gateway</a>&nbsp;
+</li><li><a href="https://docs.microsoft.com/en-us/sql/t-sql/statements/create-trigger-transact-sql" target="_blank">CREATE TRIGGER (Transact-SQL)</a>&nbsp;
+</li></ol>
+<p><a href="https://social.technet.microsoft.com/wiki/contents/articles/51245.logic-apps-101-inserting-data-into-multiple-tables-in-multiple-tables-using-sql-connector-and-trigger-sql/edit.aspx#Top">↑Back To Top</a>&nbsp;</p>
+<hr />
+<p><br />
+</p>
+
+</div>
+    
+    

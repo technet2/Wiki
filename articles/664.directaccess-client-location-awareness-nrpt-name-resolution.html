@@ -1,0 +1,118 @@
+---
+layout: default
+title: DirectAccess Client Location Awareness – NRPT Name Resolution - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">DirectAccess Client Location Awareness – NRPT Name Resolution</h1>
+    <div class="post-rating"><span id="ctl00_ctl00_content_content_ctl00_w_="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Overview">Overview</a></li><li class="hierarchy-item"><a href="#The_Name_Resolution_Policy_Table_NRPT">The Name Resolution Policy Table (NRPT)</a></li><li class="hierarchy-item"><a href="#Name_Resolution_for_the_DA_client_when_the_NRPT_is_Active">Name Resolution for the DA client when the NRPT is Active</a></li><li class="hierarchy-item"><a href="#Conclusion">Conclusion</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<p><strong>[NOTE: This article originally appeared in &quot;The Edge Man&quot; blog at <a href="http://blogs.technet.com/tomshinder/archive/2010/04/02/directaccess-client-location-awareness-nrpt-name-resolution.aspx">
+http://blogs.technet.com/tomshinder/archive/2010/04/02/directaccess-client-location-awareness-nrpt-name-resolution.aspx</a>]</strong></p>
+<p><strong>(Discuss UAG DirectAccess issues on the TechNet Forums over at <a href="http://social.technet.microsoft.com/Forums/en-US/forefrontedgeiag">
+http://social.technet.microsoft.com/Forums/en-US/forefrontedgeiag</a>)</strong></p>
+<h3><a name="Overview"></a>Overview</h3>
+<p>In order for the DirectAccess (DA) client to determine whether to turn on it’s DirectAccess client configuration (which connects the DA client to the DA server), it must know if it is on the corporate network or not. If the DA client is
+<em>not </em>on the corporate network, then the DA client components are turned <em>
+on</em>, and if the DA client is <em>on </em>the corporate network, then the DA client components are
+<em>not </em>turned on. </p>
+<ul>
+<li>DA client off the corporate network – DA client components are turned on </li><li>DA client on the corporate network – DA client components are turned off </li><li>When the DA client components are turned on, the DA client tries to reach corporate resources though a connection through the DA server.
+</li><li>If the DA client components are not turned on, then the DA client connects directly to the resources.
+</li></ul>
+<p>The DA client uses a Network Location Server (NLS) to find out if it is on the corporate network. The NLS is a web server that is accessible only when the client is on the corporate network.&nbsp; That means there must never be a DNS entry on the public Internet
+ that matches the name of your NLS server. For example, if the name of your NLS server is
+<strong>nls.contoso.com</strong>, then that name must not be resolvable by any public DNS server. However, that name
+<em>must<strong> </strong></em>be resolvable by your internal NLS servers.</p>
+<p>The URL used to connect to the NLS server is contained in the Registry of the DA client, and this setting is delivered over Group Policy. The Registry setting is stored at:</p>
+<p><strong>HKLM\software\policies\microsoft\windows\NetworkConnectivityStatusIndicator\
+<br />
+CorporateConnectivity\DomainLocationDeterminationUrl</strong></p>
+<p>and is pictured in the figure below.</p>
+<p><a href="http://blogs.technet.com/blogfiles/tomshinder/WindowsLiveWriter/DirectAccessClientLocationAwareness_BC06/image_4.png"><img height="493" width="704" src="http://blogs.technet.com/blogfiles/tomshinder/WindowsLiveWriter/DirectAccessClientLocationAwareness_BC06/image_thumb_1.png" alt="image" title="image" style="display:inline;border-width:0px;border-style:solid;" /></a>
+</p>
+<p>The DA client always assumes that it is on the outside. Whenever the DA client detects that there has been a network status change (such as when the network interface is unplugged and then plugged in again, or after waking from sleep), the DA client tries
+ to connect to the NLS server URL over an HTTPS connection. If the DA client receives a 200 HTTP success code, then it assumes that it on the corporate network and will then use Network Location Awareness to determine if it should switch the the domain profile.
+ NLA is part of the users decision making process when they select “which type of network are you on” when they change networks. When they choose the “work network” the Domain Profile (part of the Windows Firewall with Advanced Security) is enabled, which turns
+ off the DA client components.</p>
+<p><strong>NOTE: In order to successfully connect to the NLS server, the DA client must have access to the CRL location(s) listed on the web site certificate presented by the NLS server. If the CRL checks, then the connection will fail, and the DA client components
+ will remain enabled, even if the DA client is on the corporate network.</strong></p>
+<p>This is an important point to understand. The DA client configuration is driven by Group Policy settings and Windows Firewall for Advanced Security. The Windows Firewall with Advanced Security maintains three profiles:
+<strong>public</strong>, <strong>private</strong>, and <strong>domain</strong>. When the client is on a public or private network, the DA client components are enabled via the WFAS configuration for those profiles. When the DA client is on the corpnet and the
+ domain profile is enabled, the DA client settings in WFAS are disabled.</p>
+<h3><a name="The_Name_Resolution_Policy_Table_NRPT"></a>The Name Resolution Policy Table (NRPT)</h3>
+<p>When the DA client has disabled its DA client components, it resolves names based on the DNS server IP address settings on its NIC. However, when the DA client has enabled its DA client configuration, name resolution depends on the settings on the Name Resolution
+ Policy Table or NRPT.</p>
+<p>The NRPT provides a form of “DNS server routing” based on the names configured on the NRPT. You configure the NRPT during the setup of the Windows DA server or the UAG DA server. The figure below shows the configuration interface for the NRPT using the UAG
+ DA wizard. Notice that there are two entries in this example:</p>
+<ul>
+<li><strong>*.corp.contoso.com</strong> This entry will caushe DA client components are enabled via the WFAS configuration for those profiles. When the DA client is on the corpnet and the
+ domain profile is enabled, the DA client settings in WFAS are disabled.</p>
+<h3><a name="The_Name_Resolution_Policy_Table_NRPT"></a>The Name Resolution Policy Table (NRPT)</h3>
+<p>When the DA client has disabled its DA client components, it resolves names based on the DNS server IP address settings on its NIC. However, when the DA client has enabled its DA client configuration, name resolution depends on the settings on the Name Resolution
+ Policy Table or NRPT.</p>
+<p>The NRPT provides a form of “DNS server routing” based on the names configured on the NRPT. You configure the NRPT during the setup of the Windows DA server or the UAG DA server. The figure below shows the configuration interface for the NRPT using the UAG
+ DA wizard. Notice that there are two entries in this example:</p>
+<ul>
+<li><strong>*.corp.contoso.com</strong> This entry we all DNS queries for the
+<strong>corp.contoso.com </strong>domain to go to the UAG DA server for name resolution using the UAG DA DNS proxy that is installed on the UAG DA server.
+</li><li><strong>nls.corp.contoso.com</strong> This entry is an NRPT exemption entry. The purpose of this entry is to make sure that even though the FQDN would qualify as part of the first entry (that is to say, nls.corp.contoso.com would match the first entry and
+ therefore queries for this name would be sent to the UAG DA server), the query will not be sent to the UAG DA server for name resolution because there is an exemption rule for this name. This prevents the DA client from using the UAG DA server DNS proxy to
+ resolve the NLS server name on the internal network, and therefore prevents the DA client from thinking that it’s on the corpnet when it is not.
+</li></ul>
+<p><strong>NOTE: The UAG DA server DNS proxy is a component of the UAG DNS64 feature set. You can learn more about this feature at
+<a href="http://blogs.technet.com/edgeaccessblog/archive/2009/09/08/deep-dive-into-directaccess-nat64-and-dns64-in-action.aspx" title="http://blogs.technet.com/edgeaccessblog/archive/2009/09/08/deep-dive-into-directaccess-nat64-and-dns64-in-action.aspx">
+http://blogs.technet.com/edgeaccessblog/archive/2009/09/08/deep-dive-into-directaccess-nat64-and-dns64-in-action.aspx</a>&nbsp;</strong></p>
+<p>If a name does not match any entry on the NRPT, then the name resolution request is sent to the DNS server configured on the DA client computer’s NIC. Since public DNS servers do not contain entries for your private network addresses, connection are made
+ to public servers over the local connection the client has to the Internet and <em>
+not</em> over the DA link to the UAG DA server. </p>
+<p><a href="http://blogs.technet.com/blogfiles/tomshinder/WindowsLiveWriter/DirectAccessClientLocationAwareness_BC06/image_2.png"><img height="503" width="704" src="http://blogs.technet.com/blogfiles/tomshinder/WindowsLiveWriter/DirectAccessClientLocationAwareness_BC06/image_thumb.png" alt="image" title="image" style="display:inline;border-width:0px;border-style:solid;" /></a>
+</p>
+<h3><a name="Name_Resolution_for_the_DA_client_when_the_NRPT_is_Active"></a>Name Resolution for the DA client when the NRPT is Active</h3>
+<p>Let’s take a closer look at what happens when the NRPT name resolution policies are active (and remember that they are only active when the DA client components are turned on):</p>
+<ol>
+<li>The user needs to connect to a resource using a FQDN and enters that name into the application, or the application might already be configured to connect to that FQDN in some automated way.
+</li><li>However, there might be times when the user or the application needs to connect to the resource using a single-label name, and not the FQDN. In this case, the DNS client resolver will append a DNS suffix to the request. By default, the client will append
+ the DNS suffix based on the DA client’s domain membership. But in many cases, you will have configured a DNS suffix search list – and so the single-label name will be appended with those DNS suffixes as well.
+</li><li>The FQDN, or the single-label name with the appended DNS suffix, will be compared to the entries in the NRPT. So, if the application needs to connect to
+<strong>exchange.corp.contoso.com</strong> is would see that it matches the first entry in the NRPT shown above, and the DNS query would be sent to the DNS proxy on the UAG DA server for name resolution on the corpnet. If the DA client were a member of the
+ corp.contoso.com domain, and the request was for EXCHANGE (single-label name), then the default DNS suffix for that client (assuming that the DA client belongs to the corp.contoso.com domain) will be for
+<strong>exchange.corp.contoso.com </strong>and that will match the first rule in the NRPT as shown above. If the name the application is seeking for is
+<strong>nls.corp.contoso.com</strong> then it will match the second entry on the NRPT, and since this is an exemption rule, it will not send the request to the DNS proxy on the UAG DA server and instead will send the DNS query request to a DNS server configured
+ on the DA client’s NIC for public address name resolution. </li><li>For single-label names, if after queries with the appended DNS suffixes fail, name resolution will continue using Local Link Multicast Name Resolution (LLMNR) or NetBIOS name resolution (if available, which includes WINS name resolution if the client is
+ configured to use a WINS server, and depending on the NetBIOS Node Type of the client). For more information about LLMNR, check out
+<a href="http://technet.microsoft.com/en-us/library/bb878128.aspx" title="http://technet.microsoft.com/en-us/library/bb878128.aspx">
+http://technet.microsoft.com/en-us/library/bb878128.aspx</a> </li></ol>
+<p>At this point things get a bit more tricky, because name resolution fallback depends on what type of name was queried for initially. This relates into the options seen on the bottom of the figure above and reproduced in the figure below. If the original
+ query to the UAG DA server was for a FQDN and the query fails, then that’s it and there’s no fall back. However, if the name query was for a single-label name (note that the user interface assumes that you know that
+<strong>local name resolution</strong> is the same as “single-label name”), then there are three fall back options for name resolution.
+</p>
+<p>Fall back for single label names will always happen if the client receives a “name not found” response from the UAG DA DNS proxy.
+</p>
+<p>However, if the <strong>Fall back to local name resolution if the name does not exist in DNS or the DNS servers are unreachable when the client computer is on a private network (recommended)
+</strong>option is selected, fall back will take place if the name doesn’t exist in DNS or if DNS server isn’t reachable
+<em>and</em> the user selected the “Home” or “Work” option for the type of network their connected to. (that is to say, they didn’t select the “public” network option).</p>
+<p>However, if the <strong>Fall back to local name resolution for any kind of DNS resolution error (least secure) option</strong> is selected, fall back will also take place for any kind of DNS query error and will take place if the user is located on a public
+ Network. As you can imagine, this can be a bit problematic if you’re concerned about your private names being broadcasted to the DA client’s local link. A determined attacker might be able to leverage this information in a focused attack on your network.
+</p>
+<p><a href="http://blogs.technet.com/blogfiles/tomshinder/WindowsLiveWriter/DirectAccessClientLocationAwareness_BC06/image_6.png"><img height="127" width="501" src="http://blogs.technet.com/blogfiles/tomshinder/WindowsLiveWriter/DirectAccessClientLocationAwareness_BC06/image_thumb_2.png" alt="image" title="image" style="display:inline;border-width:0px;border-style:solid;" /></a>
+</p>
+<p>It’s worth repeating that fall back only takes place for single-label names and never takes place for FQDNs. Another thing to be aware of is that LLMNR only works on the local segment (similar to NetBIOS Name Query broadcasts) and that NetBIOS name resolution
+ only works on the local segment (actually subnet) unless a WINS server is configured, and it’s unlikely that the client is going to be assigned a WINS server that’s going to resolve the name of the server the client is actually interested in, and if there
+ is a name match in WINS, it’s almost impossible that this is going to be the correct computer, since the DA client computer is not located on the corpnet.</p>
+<h3><a name="Conclusion"></a>Conclusion</h3>
+<p>At this point you now should have a better understanding of the Network Location Server and how its used to determine whether the DA client is on or of the corpnet. You should also understand how DNS query behavior changes when the DA client components are
+ enabled – and that the NRPT determines what DNS server will be used to service a DNS query when the DA components are enabled on the client.</p>
+<p>In the next blog post on network location awareness and detection, we’ll build on this understanding and looking into what happens when the DA client is unable to determine if it’s on the corpnet, and what happens to corpnet located clients when they are
+ not able to turn off their DA client configuration.</p>
+
+</div>
+    
+    

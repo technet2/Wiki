@@ -1,0 +1,120 @@
+---
+layout: default
+title: Conditionally Moving Files Using SSIS File System Task - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>There was a&nbsp;series of questions (<a href="http://social.msdn.microsoft.com/Forums/en-US/sqlintegrationservices/thread/2b9d3c57-8a54-4597-8601-1d119474a558">Post1</a>,
+<a href="http://social.msdn.microsoft.com/Forums/en-US/sqlintegrationservices/thread/59fc9984-6196-4486-8331-6699813dfc79">
+Post2</a>, <a href="http://social.msdn.microsoft.com/Forums/en-US/sqlintegrationservices/thread/b0b18a80-e67d-48de-95c7-7ecb7b77a50f">
+Post3</a>)&nbsp;on SSt page no-wrapper"IS MSDN forum regarding moving the files to a folder based on: </p>
+<ul>
+<li>File Name (first 4 characters)&nbsp;and </li><li>Existence of destination&nbsp;folder </li></ul>
+<p><strong>Solution</strong>:</p>
+<p><strong><em>Step 1</em></strong>: Take a variable SourcePath with value as C:\IS_Test\</p>
+<p><strong><em>Step 2</em></strong>: Take a foreach loop with for each file enumerator as collection. Set an expression for directory as @[User::SourcePath]. Set regex for Files as *.xlsx and retrieve fully qualified name in a variable FilePath. Check the Traverse
+ subfolders box.</p>
+<p>Put a file system task (<strong>FST2</strong>)&nbsp;inside the for each loop with the following:</p>
+<ul>
+<li>IsDestinationPathVariable as False </li><li>DestinationConnection: Create a connection (Dest) that points to C:\IS_Test\HotFolders\Download\1111. Usage type is existing folder
+</li><li>Operation as copy file </li><li>IsSourcePathVariable as True </li><li>SourceVariable is @[User::FilePath] </li></ul>
+<p><strong><em>Step 3</em></strong>: Create a variable filename with expression as:</p>
+<pre class="prettyprint prettyprinted"><p><span class="pln" style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;SUBSTRING</span><span class="pun" style="color:#666600;">(</span><span class="pln" style="color:#000000;">REVERSE</span><span class="pun" style="color:#666600;">(</span><span class="pln" style="color:#000000;">SUBSTRING</span><span class="pun" style="color:#666600;">(</span><span class="pln" style="color:#000000;">REVERSE</span><span class="pun" style="color:#666600;">(@[</span><span class="typ" style="color:#660066;">User</span><span class="pun" style="color:#666600;">::</span><span class="typ" style="color:#660066;">FilePath</span><span class="pun" style="color:#666600;">]),</span><span class="lit" style="color:#006666;">5</span><span class="pun" style="color:#666600;">,</span><span class="pln" style="color:#000000;">FINDSTRING</span><span class="pun" style="color:#666600;">(</span><span class="pln" style="color:#000000;">REVERSE</span><span class="pun" style="color:#666600;">(@[</span><span class="typ" style="color:#660066;">User</span><span class="pun" style="color:#666600;">::</span><span class="typ" style="color:#660066;">FilePath</span><span class="pun" style="color:#666600;">]),</span><span class="str" style="color:#008800;">&quot;\\&quot;</span><span class="pun" style="color:#666600;">,</span><span class="lit" style="color:#006666;">1</span><span class="pun" style="color:#666600;">)-</span><span class="lit" style="color:#006666;">5</span><span class="pun" style="color:#666600;">)),</span><span class="lit" style="color:#006666;">1</span><span class="pun" style="color:#666600;">,</span><span class="lit" style="color:#006666;">4</span><span class="pun" style="color:#666600;">)</span></p></pre>
+<p><strong><em>Step 4</em></strong>: Set&nbsp;an expression for connection string of Dest connection manager as:&nbsp;
+<span class="str" style="color:#008800;">&quot;C:\\IS_Test\\HotFolders\\Download\\&quot;</span><span class="pun" style="color:#666600;">&#43;@[</span><span class="typ" style="color:#660066;">User</span><span class="pun" style="color:#666600;">::</span><span class="pln" style="color:#000000;">filename</span><span class="pun" style="color:#666600;">]<br />
+&nbsp;<br />
+<span style="color:#333333;"><strong><em>Step 5</em></strong>: Add a string variable FolderPath within scope of the package and set its evaluate as expression property to true.
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set the expression as: &quot;C:\\....\\Upload\\&quot;&#43;@[User::filename]</span></span></p>
+<strong><em>Step 6</em></strong>: Add a script task to check if the folder is present before moving the files, using a script task (ST1) and based on the script task&#39;s result you can execute the file system task (<strong>FST2</strong>) to move the files within
+ the foreach loop as <strong>ST1--&gt;FST2</strong>.<br />
+<p><span><strong><em>Step 7</em></strong>: Create&nbsp;a variable Exists (Int).Take a script task and configure it as:</span></p>
+<ul>
+<li>Script Language: C# </li><li>Read only variable: FolderPath </li><li>Read write variable: Exists </li><li>Use following code in script task: </li></ul>
+<p><span class="kwd" style="color:#000088;">using</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">System</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">using</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">System</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Data</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">using</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Microsoft</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">SqlServer</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Runtime</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">using</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">System</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Windows</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Forms</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">using</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">System</span><span class="pun" style="color:#666600;">.</span><span class="pln" style="color:#000000;">IO</span><span class="pun" style="color:#666600;">;<br />
+</span><span classspan class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Runtime</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">using</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">System</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Windows</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Forms</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" ="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;"><br />
+namespace</span><span class="pln" style="color:#000000;"> ST_58766d3d454f4e008ccd08ee2bd2181e</span><span class="pun" style="color:#666600;">.</span><span class="pln" style="color:#000000;">csproj<br />
+</span><span class="pun" style="color:#666600;">{<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">[</span><span class="typ" style="color:#660066;">System</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">AddIn</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">AddIn</span><span class="pun" style="color:#666600;">(</span><span class="str" style="color:#008800;">&quot;ScriptMain&quot;</span><span class="pun" style="color:#666600;">,</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Version</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="str" style="color:#008800;">&quot;1.0&quot;</span><span class="pun" style="color:#666600;">,</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Publisher</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="str" style="color:#008800;">&quot;&quot;</span><span class="pun" style="color:#666600;">,</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Description</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="str" style="color:#008800;">&quot;&quot;</span><span class="pun" style="color:#666600;">)]<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">public</span><span class="pln" style="color:#000000;">
+</span><span class="kwd" style="color:#000088;">partial</span><span class="pln" style="color:#000000;">
+</span><span class="kwd" style="color:#000088;">class</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">ScriptMain</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">:</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Microsoft</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">SqlServer</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Tasks</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">ScriptTask</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">VSTARTScriptObjectModelBase<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">{<br />
+</span><span class="pln" style="color:#000000;"></span><span class="com" style="color:#880000;">#region VSTA generated code<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">enum</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">ScriptResults<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">{<br />
+</span><span class="pln" style="color:#000000;"></span><span class="typ" style="color:#660066;">Success</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Microsoft</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">SqlServer</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Runtime</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">DTSExecResult</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Success</span><span class="pun" style="color:#666600;">,<br />
+</span><span class="pln" style="color:#000000;"></span><span class="typ" style="color:#660066;">Failure</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Microsoft</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">SqlServer</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Runtime</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">DTSExecResult</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Failure<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">};<br />
+</span><span class="pln" style="color:#000000;"></span><span class="com" style="color:#880000;">#endregion<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;"><br />
+public</span><span class="pln" style="color:#000000;"> </span><span class="kwd" style="color:#000088;">void</span><span class="pln" style="color:#000000;">
+</span><span class="typ" style="color:#660066;">Main</span><span class="pun" style="color:#666600;">()<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">{<br />
+</span><span class="pln" style="color:#000000;"></span><span class="com" style="color:#880000;">//If folder exists<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">if</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">(</span><span class="typ" style="color:#660066;">Directory</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Exists</span><span class="pun" style="color:#666600;">(</span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Variables</span><span class="pun" style="color:#666600;">[</span><span class="str" style="color:#008800;">&quot;FolderPath&quot;</span><span class="pun" style="color:#666600;">].</span><span class="typ" style="color:#660066;">Value</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">ToString</span><span class="pun" style="color:#666600;">()))<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">{<br />
+</span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Variables</span><span class="pun" style="color:#666600;">[</span><span class="str" style="color:#008800;">&quot;Exists&quot;</span><span class="pun" style="color:#666600;">].</span><span class="typ" style="color:#660066;">Value</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="lit" style="color:#006666;">1</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">}<br />
+</span><span class="pln" style="color:#000000;"></span><span class="kwd" style="color:#000088;">else<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">{<br />
+</span><span class="pln" style="color:#000000;"></span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Variables</span><span class="pun" style="color:#666600;">[</span><span class="str" style="color:#008800;">&quot;Exists&quot;</span><span class="pun" style="color:#666600;">].</span><span class="typ" style="color:#660066;">Value</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="lit" style="color:#006666;">0</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">}<br />
+</span><span class="pln" style="color:#000000;"></span><span class="typ" style="color:#660066;">Dts</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">TaskResult</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">=</span><span class="pln" style="color:#000000;">
+</span><span class="pun" style="color:#666600;">(</span><span class="kwd" style="color:#000088;">int</span><span class="pun" style="color:#666600;">)</span><span class="typ" style="color:#660066;">ScriptResults</span><span class="pun" style="color:#666600;">.</span><span class="typ" style="color:#660066;">Success</span><span class="pun" style="color:#666600;">;<br />
+</span><span class="pun" style="color:#666600;">}<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">}<br />
+</span><span class="pln" style="color:#000000;"></span><span class="pun" style="color:#666600;">}<br />
+</span><span style="color:#666600;"></span></p>
+<p><strong><em>Step 8</em></strong>: Add a precedence constraint between <strong>
+ST1</strong> and <strong>FST2</strong> (double click the thick green arrow between ST1 and FST2) as:</p>
+<ul>
+<li>Evaluation Operation: Expression and Constraint </li><li>Value: Success </li><li>Expression: @[User::Exists]==1 </li></ul>
+<hr />
+<h1><a name="See_Also"></a>See Also</h1>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/19746.sql-server-integration-services-portal.aspx">SQL Server Integration Services Portal</a>
+</li></ul>
+<hr />
+
+</div>
+    
+    

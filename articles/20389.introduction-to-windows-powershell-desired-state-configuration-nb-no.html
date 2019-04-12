@@ -1,0 +1,223 @@
+---
+layout: default
+title: Introduction to Windows PowerShell Desired State Configuration (nb-NO) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r139;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Hva er DSC?</span></strong></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Desired State Configuration (DSC) er ny funksjonalitet i Windows Management Framework 4.0 (WMF 4.0), noe som i tidligere versjoner har inkludert Windows PowerShell, WMI (Windows Management Instrumentation) og WinRM (Windows Remote Management).</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+DSC gjør det mulig å definere deklarative konfigurasjoner for hvordan du vil at en maskin skal være konfigurert. Denne konfigurasjonen kan både rulles ut og verifiseres på gitte intervaller ved hjelp av DSC.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Med DSC kommer også utvidelser til Windows PowerShell, som gjør det mulig å definere DSC konfigurasjoner fra PowerShell. Spesifikt er det et nytt keyword i PowerShell 4.0 relatert til DSC som heter&nbsp;<em>configuration</em>, i tillegg flere DSC-relaterte cmdlets
+ og moduler som vi skal se nærmere på. DSC i seg selv er altså ikke en del av Windows PowerShell, men det er mulig å bruke PowerShell for å definere, rulle ut og verifisere konfigurasjoner.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+DSC kommer med flere innebygde såkalte resources som gjør det mulig å utføre ting som:</p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<li>Aktivere og dekativere roller og features i Windows Server </li><li>Administrere registry innstillinger </li><li>Administrere filer og mapper </li><li>Starte, stoppe og administrere prosesser og tjenester </li><li>Administrere brukere og grupper </li><li>Rulle ut programvare </li><li>Administrere environment variabler </li><li>Kjøre PowerShell script </li></ul>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Har man behov for å utføre noe som ikke er dekket av de innebygde ressursene er det også mulig å bygge side egne ressurser, mer informasjon om DSC ressurser finner du på&nbsp;<a href="http://technet.microsoft.com/en-us/library/dn282125.aspx" style="color:#00749e;">denne</a>&nbsp;TechNet-siden.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Før vi begynner å se på det første PowerShell-eksempelet som definerer en konfigurasjon skal vi se nærmere på arkitekturen. DSC har to ulike modeller, en som heter pull og en som heter push:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/8233.clip_5F00_image001_5F00_1AB5793C.png" style="color:#00749e;"><img title="clip_image001" alt="clip_image001" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/7674.clip_5F00_image001_5F00_thumb_5F00_56DEB433.png" width="541" height="308" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+I Pull mode vil en DSC klient med gitte intervaller sjekke og om nødvendig laste ned konfigurasjonsdefinisjoner fra en Pull server. I Push mode har en konfigurasjon blitt rullet ut til DSC klienten av en administrator.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Som vi ser på skissen over er det 3 faser i DSC:</p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<li><span style="text-decoration:underline;font-size:16px;">Authoring Phase</span>
+</li></ul>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+I denne fasen defineres konfigurasjonen, noe som enten kan gjøres ved hjelp av PowerShell eller andre verktøy. Det som produseres i denne fasen er en eller flere MOF (<a href="http://msdn.microsoft.com/en-us/library/aa823192(v=vs.85).aspx" style="color:#00749e;">Management
+ Object Format</a>) filer, og det er disse filene som kan konsumeres av en DSC klient. Disse filene kan i prinsippet skrives i Notepad, men siden dette er basert på CIM schemas og ikke veldig «IT Pro»-vennlig er det i praksis vesentlig enklere å benytte de
+ mulighetene som er tilrettelagt i PowerShell for å opprette MOF-filer hvor konfigurasjoner er definert. Denne fases utføres typisk i Windows PowerShell ISE på en administrator`s klient-maskin.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<li><span style="text-decoration:underline;font-size:16px;">Staging Phase</span> </li></ul>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Neste fase består av å tilgjengelig gjøre MOF-filene for DSC klienten på den maskinen som konfigurasjonen skal gjelde for. I en Pull modell vil MOF-filene kopieres til Pull-serveren hvor de er tilgjengelig for klientene. I en Push modell vil en DSC-konfigurasjon
+ rulles ut til en DSC klient fra for eksempel en administrator`s klient-maskin eller en sentral management server.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<li><span style="text-decoration:underline;font-size:16px;">«Make it So» Phase</span>
+</li></ul>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Den siste fasen består av å faktisk bruke konfigurasjonen – «Make it So», som er en henvisning til hva&nbsp;<a href="http://en.wikipedia.org/wiki/Jean-Luc_Picard" style="color:#00749e;">Jean-Luc Picard</a>&nbsp;ville sagt. På en DSC klient er det noe som
+ heter&nbsp;en på den maskinen som konfigurasjonen skal gjelde for. I en Pull modell vil MOF-filene kopieres til Pull-serveren hvor de er tilgjengelig for klientene. I en Push modell vil en DSC-konfigurasjon
+ rulles ut til en DSC klient fra for eksempel en administrator`s klient-maskin eller en sentral management <em>Local Configuration Store</em>&nbsp;hvor konfigurasjonene som enten er manuelt rullet ut eller hentet fra en sentral Pull server er lagret. Her lagres gjeldende konfigurasjon, forrige konfigurasjon og det som er den definerte konfigurasjonen. Konfigurasjonen
+ blir parset og de relevante providerne implementerer nødvendige endringer.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">DSC klienten</span></strong></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Det som hittil er referert til som «DSC klienten» heter egentlig DSC Local Configuration Manager (LCM), og er i praksis en såkalt CIM Method som trigges som standard hver halvtime av en scheduled task:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/5857.image_5F00_71862EEA.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/4111.image_5F00_thumb_5F00_2046C62B.png" width="672" height="204" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Vil man manuelt trigge DSC til å utføre en konfigurasjons-sjekk kan man altså enten kjøre denne oppgaven fra Task Scheduler eller PowerShell:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/3652.clip_5F00_image004_5F00_2A75CFE7.png" style="color:#00749e;"><img title="clip_image004" alt="clip_image004" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/6710.clip_5F00_image004_5F00_thumb_5F00_485453E8.png" width="446" height="42" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+For konfigurasjon av DSC klienten er Get-DscLocalConfigurationManager og Set-DscLocalConfigurationManager tilgjengelig som en del av PowerShell-modulen PSDesiredStateConfiguration:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/8738.image_5F00_0D5D79DF.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/1325.image_5F00_thumb_5F00_16B6AE62.png" width="694" height="184" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Her ser vi standard-innstillingene for en DSC klient som ikke er konfigurert:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/1447.image_5F00_66F905E2.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/5582.image_5F00_thumb_5F00_39E41914.png" width="363" height="204" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+ConfigurationMode er som standard konfigurert til ApplyAndMonitor, det vil si at ingen automatisk handling for å rette innstillinger som ikke er i henhold til den definerte konfigurasjonen utføres. To andre gyldige verdier for ConfigurationMode er ApplyOnly
+ og ApplyAndAutoCorrect. På klienten som benyttes i demoen i neste avsnitt er ConfigurationMode satt til ApplyAndAutoCorrect. Mer informasjon om DSC Local Configuration Manager og hvordan den kan konfigureres er tilgjengelig på&nbsp;<a href="http://technet.microsoft.com/en-us/library/dn249922.aspx" style="color:#00749e;">denne</a>&nbsp;TechNet-siden.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Definere en DSC konfigurasjon</span></strong></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Som kjent har vi ulike keywords i PowerShell, for eksempel function for å definere en egendefinert funksjon. I PowerShell 4.0 har det kommet et nytt keyword for å definere DSC konfigurasjoner, den grunnleggende syntaksen er følgende:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/2703.clip_5F00_image009_5F00_0D4875CA.png" style="color:#00749e;"><img title="clip_image009" alt="clip_image009" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/0068.clip_5F00_image009_5F00_thumb_5F00_2407BD53.png" width="217" height="46" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+I denne demoen skal vi definere en konfigurasjon som benytter den innebygde DSC resourcen «WindowsFeature» for å si at Telnet-klienten skal være installert:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/0181.clip_5F00_image010_5F00_0FEEA0CA.png" style="color:#00749e;"><img title="clip_image010" alt="clip_image010" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/8053.clip_5F00_image010_5F00_thumb_5F00_4DE83188.png" width="278" height="125" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Typisk vil man legge på flere parametre, for eksempel –ComputerName for å si hvilken maskin denne konfigurasjonen defineres for, men i dette eksempelet benyttes localhost for enkelhets skyld.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Når man kjører de 10 linjene over i PowerShell vil det ikke skje noen endring, det eneste som er gjort er å definere en konfigurasjon. Dette prinsippet er det samme som med functions i PowerShell, de må første defineres før de kan brukes.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Når konfigurasjonen er definert kan vi kalle den ved å skrive navnet etterfulgt av de parametre vi vil angi. –OutputPath er en standard-parameter på DSC-konfigurasjoner, og definerer hvor vi vil lagre MOF-filene som genereres:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/3187.clip_5F00_image011_5F00_1E2A8909.png" style="color:#00749e;"><img title="clip_image011" alt="clip_image011" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/7823.clip_5F00_image011_5F00_thumb_5F00_34E9D092.png" width="345" height="20" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Når dette er kjørt vil vi se at det er definert en MOF-fil i mappen som ble angitt:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/5661.clip_5F00_image012_5F00_07D4E3C4.png" style="color:#00749e;"><img title="clip_image012" alt="clip_image012" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/2072.clip_5F00_image012_5F00_thumb_5F00_378FFB92.png" width="484" height="55" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a4E9D092.png" width="345" height="20" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Når dette er kjørt vil vi se at det er definert en MOF-fil i mappen som ble angitt:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Av ren nysgjerrighet kan vi åpne fila for å se hvordan den ser ut:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/0841.image_5F00_7CA8C8C8.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/2870.image_5F00_thumb_5F00_33EF5004.png" width="347" height="367" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Dette er altså innholdet som ble generert av PowerShell, og som kan konsumeres av DSC klienten for å verifisere konfigurasjonen som er definert.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Rulle ut en DSC konfigurasjon</span></strong></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+I denne artikkelen vil vi kun vise Push modellen, link til en artikkel som viser oppsett av Pull modellen er tilgjengelig i Ressurs-seksjonen nederst i artikkelen. For å rulle ut en DSC konfigurasjon (Push-mode) brukes Start-DscConfiguration hvor vi benytter
+ –Path parameteren for å angi stien til mappen hvor MOF-fila vi genererte i forrige fase ligger. Vi kan også benytte –Wait for å angi at vi vil vente til konfigurasjonen er rullet ut. Etter å ha rullet ut konfigurasjonen bruker vi Get-WindowsFeature for å se
+ status på om Telnet Client er installert:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/8171.image_5F00_46A1B90A.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/7446.image_5F00_thumb_5F00_2BD592FE.png" width="644" height="142" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Som en test vil vi deretter avinstallere Telnet Client:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/2671.image_5F00_7564E0FB.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/0564.image_5F00_thumb_5F00_17B9E5C4.png" width="644" height="175" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+I stedet for å vente inntil 30 minutter som er standard intervallet for når DSC klienten kjører en konsistens-sjekk kan vi manuelt trigge en sjekk:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/5488.image_5F00_217F4D3C.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/5773.image_5F00_thumb_5F00_1FAEF775.png" width="644" height="136" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+La oss ta en ny sjekk på status for Telnet Client:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/5148.image_5F00_4E6F8EB5.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/2055.image_5F00_thumb_5F00_0CD55269.png" width="644" height="82" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Nå ser vi at den er installert etter at DSC har kjørt en konsistens-sjekk.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Det er også mulig å sjekke om en maskin er i henhold til definert konfigurasjon ved å kjøre Test-DscConfiguration som vil returnere enten True eller False:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/6180.image_5F00_5664A066.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/1346.image_5F00_thumb_5F00_1B113AA8.png" width="229" height="45" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;margin:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Logging</span></strong></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Vi har hittil sett på et enkelt eksempel på hvordan DSC fungerer, men hva om det er noe som ikke fungep://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/6180.image_5F00_5664A066.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/1346.image_5F00_thumb_5F00_1B113AA8.png" width="229" hrerer og vi har behov for mer informasjon? Vi har flere muligheter til å se mer på hva som foregår under panseret i DSC. Den første muligheten som kan nevnes
+ er –Verbose parameteren. Her ser vi et eksempel på bruk av –Verbose på Start-DscConfiguration:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/8228.image_5F00_7B5FD02E.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/3122.image_5F00_thumb_5F00_052537A7.png" width="644" height="242" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Tilsvarende for Test-DscConfiguration:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/7367.image_5F00_67220850.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/1351.image_5F00_thumb_5F00_3BDAE098.png" width="644" height="138" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Den andre muligheten er Event Viewer, siden DSC benytter ETW (Event Tracing for Windows). Under Applications and Services-&gt;Logs-&gt;Microsoft-&gt;Windows finner vi Desired State Configuration Operational loggen:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/3438.image_5F00_65BB54CD.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/8640.image_5F00_thumb_5F00_47DA401B.png" width="196" height="146" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/7870.image_5F00_5AFB6CC7.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/2260.image_5F00_thumb_5F00_77070A50.png" width="995" height="232" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+I eksempelet over ser vi at en konsistens-sjekk ble kjørt. Ved å aktivere «Show Analytic and Debug Logs» i Event Viewer kan vi få tilgang til 2 andre logger hvor vi også finner nyttig informasjon:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/0385.image_5F00_3EC60287.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/4201.image_5F00_thumb_5F00_73D00106.png" width="227" height="113" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Her ser vi i Analytic loggen en hendelse hvor det ble logget at Telnet Client ble installert:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/1004.image_5F00_1FECFDF8.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/3056.image_5F00_thumb_5F00_229328F8.png" width="800" height="306" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Denne informasjonen er også tilgjengelig via PowerShell ved å benytte Get-WinEvent:</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/3005.image_5F00_3C64CE76.png" style="color:#00749e;"><img title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-94-28-metablogapi/4722.image_5F00_thumb_5F00_7F4112F0.png" width="534" height="167" style="overflow:hidden;border:0px solid;padding-top:0px;padding-left:0px;display:inline;padding-right:0px;" /></a></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Hva er fordelene med Desired State Configuration?</span></strong></p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<li>Gir mulighet for å overvåke og automatisk rette konfigurasjon av maskiner </li><li>Innebygd i Windows 8.1 og Windows Server 2012 R2 og tilgjengelig 2 operativsystem utgivelser tilbake i form av Windows Management Framework 4.0
+</li><li>Definisjon av DSC konfigurasjoner kan utføres i Windows PowerShell, dermed kan du dra nytte av eksisterende PowerShell kunnskaper både for å definere konfigurasjoner samt feilsøke DSC
+</li><li>Når DSC kjører konsistens-sjekk vil det kun utføres en handling for de sjekkene som ikke er i henhold til definert konfigurasjon, dermed vil en sjekk utføres på veldig kort tid når alt er i henhold
+</li><li>Det er mulig å separere konfigurasjons-data fra logikk i en DSC konfigurasjon, slik at man enklere kan gjenbruke konfigurasjons-data for ulike DSC ressurser, klienter og konfigurasjoner. For mer info, se&nbsp;<a href="http://technet.microsoft.com/en-us/library/dn249925.aspx" style="color:#00749e;">denne</a>&nbsp;TechNet-artikkelen.
+</li></ul>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Oppsummering</span></strong></p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+DSC i Windows 8.1 og Windows Server 2012 R2 er første utgivelse av denne funksjonaliteten, og eventuell manglende funksjonalitet vil bygges på i kommende versjoner.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+Det fins allerede produkter med tilsvarende funksjonalitet, slik som<a href="http://puppetlabs.com/puppet/what-is-puppet" style="color:#00749e;">&nbsp;Puppet</a>&nbsp;og&nbsp;<a href="http://www.opscode.com/chef/" style="color:#00749e;">Chef</a>.
+ Man skulle tro at disse blir direkte konkurrenter til DSC, men begge disse produktene kan dra nytte av å ha DSC innebygd i Windows. For eksempel kan et tenkt scenario være at man ikke trenger å rulle ut agenter for disse 3. parts produktene, siden de i stedet
+ kan integreres direkte i noe som er innebygd i Windows. I TechEd-videoen det er linket til i ressurs-seksjonen under er det en demo hvor Chef viser hvordan deres produkt kan integreres med DSC i Windows. Blant fordelene med dette er at kunder som kjører både
+ Linux og Windows kan administrere begge miljøene fra samme sted.</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Ressurser</span></strong></p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<li><a href="http://technet.microsoft.com/en-us/library/dn249912.aspx" style="color:#00749e;">Windows PowerShell Desired State Configuration Overview</a>&nbsp;– Microsoft TechNet
+</li><li><a href="http://channel9.msdn.com/Events/TechEd/Europe/2013/MDC-B302#fbid=y3zdKvKXDgB" style="color:#00749e;">Desired State Configuration in Windows Server 2012 R2 PowerShell</a>&nbsp;– TechEd video hvor Kenneth Hansen og Jeffrey Snover presenterer
+ DSC </li><li><a href="http://blog.cosmoskey.com/powershell/desired-state-configuration-in-pull-mode-over-smb/" style="color:#00749e;">Desired State Configuration in Pull mode over SMB</a>&nbsp;–2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+&nbsp;</p>
+<p style="color:#2a2a2a;font-family:&#39;Segoe UI&#39;;line-height:18px;background-color:#ffffff;">
+<strong><span style="font-size:18px;">Ressurser</span></strong></p>
+<ul style="color:#2a2a2a;font-family:&#39;Segoe UI eksempel på hvordan en Pull server kan konfigureres
+</li><li><a href="http://sdmsoftware.com/group-policy-blog/group-policy/group-policy-vs-desired-state-configuration-vs/" style="color:#00749e;">Group Policy vs. Desired State Configuration</a>&nbsp;– interessant artikkel skrevet av Group Policy MVP Darren
+ Mar-Elia med hans tanker rundt DSC sett i forhold til Group Policy </li><li><a href="http://powershell.org/wp/tag/dsc/" style="color:#00749e;">Community-baserte powershell.org`s artikler om DSC</a>
+</li><li><a href="https://github.com/PowerShellOrg/DSC" style="color:#00749e;">Community DSC Resources på GitHub</a>
+</li></ul>
+
+</div>
+    
+    

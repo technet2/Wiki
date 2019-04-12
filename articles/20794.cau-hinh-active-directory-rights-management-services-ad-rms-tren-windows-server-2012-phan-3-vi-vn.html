@@ -1,0 +1,272 @@
+---
+layout: default
+title: Cấu hình Active Directory Rights Management Services (AD RMS) trên Windows Server 2012 - Phần 3 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong style="font-size:12.1px;">I- GIỚI THIỆU</strong></p>
+<p>Active Directory Rights Management Service (AD RMS) là dịch vụ được tích hợp sẵn trong Windows cho phép bảo vệ các tài liệu nhạy cảm trong doanh nghiệp bằng cách cho phép người dùng tùy ý phân quyền trên các tài liệu của mình và ngăn chặn việc đưa các tài
+ liệu nhạy cảm ra khỏi môi trường doanh nghiệp. Trong loạt bài viết về AD RMS này, tôi sẽ trình bày các thao tác cài đặt và cấu hình AD RMS để phân quyền và bảo vệ các tài liệu trong tổ chức, phân quyền cho người dùng thuộc tổ chức khác và tích hợp với
+<a href="http://www.mcthub.com/technologies/microsoft/windows-server/193-c-u-hinh-dynamic-access-control-dac-tren-windows-server-2012-ph-n-2-phan-lo-i-d-li-u.html">
+Dynamic Access Control (DAC)</a> để tự động bảo vệ các tài liệu nhạy cảm dựa theo điều kiện xác định.</p>
+<p>Trong phần 3 của loạt bài viết này tôi sẽ trình bày thao tác tích hợp AD RMS với Dynamic Access Control (DAC) để tự động bảo vệ các tài liệu nhạy cảm trong doanh nghiệp</p>
+<p><strong>II- TRIỂN KHAI CHI TIẾT</strong></p>
+<p>Bài LAB sử dụng 2 server:</p>
+<p><strong><em>- DC2012:</em></strong> Domain Controller (domain <strong><em>mcthub.local</em></strong>) chạy Windows Serrer 2012</p>
+<p><strong><em>- CLIENT1:</em></strong> Domain Member chạy Windows 8 đã cài đặt Office 2010</p>
+<p>Bạn có thể tích tích hợp 2 máy này bằng cách cài đặt Office 2007/2010/2013 lên máy Domain Controller</p>
+<p>Để thực hiện bài LAB này, bạn cần hoàn tất trước đó bài LAB ở <a href="http://www.mcthub.com/technologies/microsoft/windows-server/237-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-adrms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-1.html">
+phần 1</a></p>
+<p>Bài LAB gồm các bước chính sau đây</p>
+<p>1- Enable Resource Properties</p>
+<p>2- Cài đặt File Server Resource Manager</p>
+<p>3- Phân loại File bằng Classification Rule</p>
+<p>4- Phân quyền bằng RMS Template</p>
+<p>5- Phân quyền truy cập RMS</p>
+<p>6- Cấu hình Schedule Task</p>
+<p>7- Lập lịch phân quyền bằng File Management Task</p>
+<p>8- Kiểm tra</p>
+<p><strong>1- Enable Resource Properties</strong></p>
+<p>Windows Server 2012 hỗ trợ nhiều thuộc tính để phân loại file <em><a href="http://www.mcthub.com/technologies/microsoft/windows-server/193-c-u-hinh-dynamic-access-control-dac-tren-windows-server-2012-ph-n-2-phan-lo-i-d-li-u.html">(tham khảo bài biết về phân
+ loại file bằng Dynamic Access Control)</a></em> , muốn sử dụng thuộc tính nào bạn cần enable thuộc tính đó lên bằng cách sử dụng Dynamic Access Control. Trong bài LAB này tôi sẽ sử dụng thuộc tính
+<strong><em>Confidentiality</em></strong> (có thể hiểu là mức độ bảo mật của file). Trên máy
+<strong><em>DC2012</em></strong>, mở <strong><em>Server Manager - Chọn Active Directory Administrative Center</em></strong></p>
+<p><img alt=" " width="720" height="446" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image001.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Dynamic Access Control - Resource Properties</em></strong></p>
+<p><img alt=" " width="720" height="435" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image002.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bấm phải chuột lên thuộc tính <strong><em>Confidentiality</em></strong> - Chọn
+<strong><em>Enable</em></strong></p>
+<p><img alt=" " width="720" height="435" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image003.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>2- Cài đặt File Server Resource Manager</strong></p>
+<p>Để có thể thực hiện thao tác phân loại file, bạn cần cài đặt File Server Resource Manager. Trên máy DC2012, mở Server Manager - Chọn
+<strong><em>Manage - Add Roles and Features</em></strong></p>
+<p><img alt=" " width="720" height="446" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image004.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong> ở 3 hộp thoại đầu tiên. Ở hộp thoại <strong>
+<em>Select Server Role</em></strong>, bung <strong><em>File And Storage Services - File and iSCSI Services</em></strong> - Đánh dấu check
+<strong><em>File Server Resource Manager,</em></strong> sau đó cài đặt theo các lựa chọn mặc định</p>
+<p><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image005.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>3- Phân loại File bằng Classification Rule</strong></p>
+<p>Trong ví dụ này tôi sẽ phân loại file dựa vào nội dung, yêu cầu các file có chuỗi &quot;<strong><em>MCTHUB Confidential</em></strong>&quot; trong phần nội dung sẽ tự động phân loại bằng cách gán thuộc tính
+<strong><em>Confidentiality</em></strong> là <strong><em>High</em></strong>. Mở <strong>
+<em>File Server Resource Manager</em></strong></p>
+<p><img alt=" " width="720" height="446" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image006.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra thuộc tính bằng cách chọn <strong><em>Classification Management - Classification Properties</em></strong>, sau đó
+<strong><em>Refresh</em></strong> và quan sát, bảo đảm thuộc tính <strong><em>Confidentiality</em></strong> xuất hiện</p>
+<p><img alt=" " width="720" height="318" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image007.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp theo tôi sẽ tạo một Classification Rule để phân loại file dựa vào nội dung. Bấm phải chuột
+<strong><em>Classification Rules</em></strong> - Chọn <strong><em>Create Classification Rule…</em></strong></p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image008.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong tab <strong><em>General</em></strong>, Trong khung <strong><em>Rule name</em></strong>: đặt tên tùy ý cho rule, tôi đặt là
+<strong><em>High Confidentiality</em></strong></p>
+<p><img alt=" " width="464" height="571" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image009.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang <strong><em>Tab Scope</em></strong>: Chỉ định phạm vi thư mục áp dụng rule bằng cách nhấn nhút
+<strong><em>Add</em></strong></p>
+<p><img alt=" " width="464" height="571" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image010.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn thư mục <strong><em>C:\Data</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="334" height="327" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image011.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Classification</em></strong></p>
+<p>Khung <strong><em>Classification method</em></strong>: Chọn <strong><em>Content Classifier</em></strong></p>
+<p>Khung <strong><em>Choose a properties to assign to files</em></strong>: chọn thuộc tính
+<strong><em>Confidentiality</em></strong></p>
+<p>Khung <strong><em>Specify a value</em></strong>: Chọn giá trị <strong><em>High</em></strong></p>
+<p>Nhấn nút<strong><em> Configure… </em></strong>để qui định điều kiện phân loại</p>
+<p><img alt=" " width="464" height="571" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image012.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Ở cột <strong><em>Expression Type</em></strong>: Chọn <strong><em>String</em></strong></p>
+<p>Ở cột <strong><em>Expression</em></strong>: Nhập <strong><em>mcthub confidential</em></strong></p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="595" height="586" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image013.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Evaluation Type</em></strong>, đánh dấu check <strong><em>Re-evaluate existing property values</em></strong> và chọn
+<strong><em>Overwrite the existing value</em></strong> để phân loại lại các file cũ nếu thỏa mãn điều kiện</p>
+<p>Nhấn nút <strong><em>OK</em></strong></p>
+<p><img alt=" " width="464" height="571" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image014.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra Classification Rule đã được tạo thành công</p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image015.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Tiếp theo tôi sẽ tiến hành lập lịch để rule này sẽ tự động chạy vào thời điểm chỉ định. Bấm phải chuột
+<strong><em>Classification Rules</em></strong> - Chọn <strong><em>Configure Classification Schedule…</em></strong></p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image016.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu check <strong><em>Enable fixed schedule</em></strong></p>
+<p>Trong khung <strong><em>Run at</em></strong>: Chọn giờ tùy ý bạn muốn rule sẽ tự động chạy. Chọn
+<strong><em>Weekly</em></strong> và đánh dấu vào các thứ trong tuần cho phép rule chạy.</p>
+<p>Đánh dấu check <strong><em>Allow continuous classification for new files</em></strong> để áp dụng đối với các file mới</p>
+<p>Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="454" height="656" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image017.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau thao tác cấu hình này, File Server Resource Manager dẽ tự động chạy rule vào 8:00 sáng hàng ngày và sẽ tự động gán thuộc tính Confidentiality là High cho các file trong nội dung có chuỗi<strong><em>&quot;mcthub confidential&quot;</em></strong></p>
+<p><strong>4- Phân quyền bằng RMS Template</strong></p>
+<p>Do mục đích của bài LAB là phân quyền tự động, để chỉ định quyền hạn khi phân quyền tự động, bạn cần tạo một RMS Template chỉ định sẽ phân quyền
+<strong><em>Full Control</em></strong> cho group <strong><em>Manager</em></strong> và quyền<strong><em>View
+</em></strong>cho group <strong><em>IT</em></strong> đối với các dữ liệu có thuộc tính
+<strong><em>Confidentiality</em></strong> là <strong><em>High</em></strong> (dữ liệu có mức độ bảo mật cao). Trên máy
+<strong><em>DC2012</em></strong>, mở <strong><em>Active Directory Rights Management Services</em></strong> - bấm phải chuột
+<strong><em>Rights Policy Template</em></strong> - Chọn <strong><em>Properties</em></strong></p>
+<p><img alt=" " width="720" height="486" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image018.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chỉ định nơi lưu trữ RMS Template là <strong><em>\\DC2012\Public - </em></strong>Nhấn<strong><em> OK</em></strong></p>
+<p><img alt=" " width="435" height="492" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image019.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Create Distributed Rights Policy Template</em></strong></p>
+<p><img alt=" " width="719" height="452" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image020.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Add</em></strong></p>
+<p><img alt=" " width="702" height="551" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image021.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Name</em></strong>: Nhập tên tùy ý cho Template, tôi nhập là
+<strong><em>mcthub RC</em></strong></p>
+<p>Trong khung <strong><em>Description</em></strong>: Nhập mô tả tùy ý</p>
+<p>Nhấn <strong><em>Add</em></strong></p>
+<p><img alt=" " width="416" height="249" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image022.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn <strong><em>Next</em></strong></p>
+<p><img alt=" " width="702" height="551" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image023.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong khung <strong><em>Users and Rights</em></strong> - Nhấn <strong><em>Add</em></strong> để tiến hành phân quyền</p>
+<p><img alt=" " width="702" height="551" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image024.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>The e-mail address of a user or group</em></strong>: Nhấn <strong>
+<em>Manager@mcthub.local</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="396" height="219" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image025.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Đánh dấu check <strong><em>Full Control </em></strong>- Nhấn <strong><em>Add </em>
+</strong>để tiếp tục phân quyền cho group <strong><em>IT</em></strong></p>
+<p><img alt=" " width="702" height="551" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image026.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>The e-mail address of a user or group</em></strong>: Nhấn <strong>
+<em>IT@mcthub.local</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="396" height="219" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image027.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Phân quyền <strong><em>View</em></strong> cho group <strong><em>IT</em></strong> - Nhấn
+<strong><em>Finish</em></strong></p>
+<p><img alt=" " width="702" height="551" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image028.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra <strong><em>RMS Template</em></strong> đã được tạo thành công</p>
+<p><img alt=" " width="719" height="452" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image029.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>5- Phân quyền truy cập RMS</strong></p>
+<p>Để các File Server trong hệ thống có thể truy cập RMS Server, bạn cần phân quyền cho Authenticated Users có quyền truy cập file
+<strong><em>ServerCertification.asmx</em></strong>. Trên máy <strong><em>DC2012</em></strong>, mở thư mục<strong><em>C:\inetpub\wwwroot\_wmcs\certification</em></strong></p>
+<p><img alt=" " width="720" height="377" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image030.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bấm phải chuột file <strong><em>ServerCertification.asmx</em></strong> - Chọn <strong>
+<em>Properties</em></strong></p>
+<p><img alt=" " width="720" height="508" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image031.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Edit</em></strong></p>
+<p><img alt=" " width="381" height="531" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image032.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Add</em></strong></p>
+<p><img alt=" " width="377" height="457" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image033.jpg" style="border-width:0px;bverCertification.asmx</em></strong>. Trên máy <strong><em>DC2012</em></strong>, mở thư mục<strong><em>C:\inetpub\wwwroot\_wmcs\certification</em></strong></p>
+<p><img alt=" " width="720" height="377" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image030.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bấm phải chuột file <strong><em>ServerCertification.asmx</em></strong> - Chọn <strong>
+<em>Properties</em></strong></p>
+<p><img alt=" " width="720" height="508" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image031.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>Edit</em></strong></p>
+<p><img alt=" " width="381" height="531" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image032.jpg" style="border-width:0px;border-style:solid;" /><order-style:solid;" /></p>
+<p>Chọn group <strong><em>Authenticated Users</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="471" height="258" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image034.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Phân quyền <strong><em>Read </em></strong>và<strong><em> Read &amp; Execute</em></strong> cho group
+<strong><em>Authenticated Users</em></strong> - Nhấn <strong><em>OK</em></strong> - Nhấn
+<strong><em>OK</em></strong></p>
+<p><img alt=" " width="377" height="457" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image035.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>6- Cấu hình Schedule Task</strong></p>
+<p>Trên máy <strong>CLIENT1</strong>, bạn cần cấu hình Schedule task cho phép chạy RMS Template. Mở
+<strong><em>Control Panel</em></strong> - Chọn <strong><em>Administrative Tools</em></strong></p>
+<p><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image036.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Bấm phải chuột <strong><em>Task Scheduler</em></strong> - Nhấn <strong><em>Open</em></strong></p>
+<p><img alt=" " width="720" height="379" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image037.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn theo hình bên dưới, bấm phải chuột <strong><em>AD RMS Rights Policy Template Management (Automated)</em></strong> - Chọn
+<strong><em>Enable</em></strong></p>
+<p><img alt=" " width="720" height="450" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image038.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong><em>7- Lập lịch phân quyền bằng File Management Task</em></strong></p>
+<p>Để tự động phân quyền bằng RMS đối với các file đã được phân loại dựa vào thuộc tính
+<strong><em>Confidentiality</em></strong> là <strong><em>High</em></strong>, bạn cần tạo một File Management Task. Trên máy
+<strong><em>DC2012</em></strong>, mở File Server Resource Manager. Bấm phải chuột
+<strong><em>File Management Task - Create File Management Task</em></strong></p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image039.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trong tab <strong><em>General</em></strong>. Mục <strong><em>Task Name</em></strong>: Nhập tên tùy ý, tôi nhập là
+<strong><em>High Confidential</em></strong></p>
+<p><img alt=" " width="469" height="581" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image040.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Scope</em></strong>: Nhấn nút <strong><em>Add</em></strong>, chọn thư mục
+<strong><em>C:\Data</em></strong></p>
+<p><img alt=" " width="469" height="581" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image041.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Action</em></strong>: Trong khung <strong><em>Type</em></strong>: Chọn
+<strong><em>RMS Encryption</em></strong>. Chọn <strong><em>Select a tempate</em></strong> và chọn Template
+<strong><em>mcthub RC</em></strong> đã tạo ở bước 4</p>
+<p><img alt=" " width="469" height="581" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image042.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Condition</em></strong>: Chỉ định điều kiện phân quyền bằng cách nhấn nút
+<strong><em>Add</em></strong></p>
+<p><img alt=" " width="469" height="581" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image043.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Ở mục <strong><em>Properties</em></strong>: Chọn thuộc tính <strong><em>Confidentiality</em></strong></p>
+<p>Ở mục <strong><em>Operator</em></strong>: Chọn phép so sánh bằng (<strong><em>Equal</em></strong>)</p>
+<p>Ở mục <strong><em>Value</em></strong>: Chọn giá trị <strong><em>High</em></strong></p>
+<p>Nhấn nút<strong><em> OK</em></strong></p>
+<p><img alt=" " width="422" height="401" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image044.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra lại điều kiện đã tạo</p>
+<p><img alt=" " width="469" height="581" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image045.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Schedule</em></strong>: Lập lịch tương tự bước 3 - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="469" height="581" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image046.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra File Management Task đã được tạo thành công</p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image047.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><strong>8- Kiểm tra</strong></p>
+<p>Sang máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\trong</em></strong>, mở
+<strong><em>Word 2010</em></strong> và soạn một văn bản có nội dung như bên dưới (nội dung có chuỗi
+<strong><em>mcthub confidential</em></strong>)</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image048.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Lưu văn bản với tên <strong><em>ConfidentialDocument</em></strong> vào thư mục
+<strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="625" height="506" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image049.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang máy <strong><em>DC2012</em></strong>, do không muốn chờ đợi đến thời điểm đã lập lịch nên tôi sẽ thực hiện chạy Classification Rule để tiến hành phân loại file bằng cách bấm phải chuột
+<strong><em>Classification Rules</em></strong> - Chọn<strong><em>Run Classification With All Rules Now…</em></strong></p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image050.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Wait for classification to complete</em></strong> - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="422" height="242" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image051.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chờ đợi quá trình phân loại file</p>
+<p><img alt=" " width="394" height="150" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image052.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sau khi quá trình phân loại hoàn tất, một report sẽ mở ra, bạn khảo sát và đóng report, sau đó kiểm tra bằng cách mở thư mục
+<strong><em>C:\Data</em></strong>, bấm phải chuột file <strong><em>ConfidentialDocument</em></strong> - Chọn<strong><em>Properties</en Rules</em></strong> - Chọn<strong><em>Run Classification With All Rules Now…</em></strong></p>
+<p><img alt=" " width="720" heightm></strong></p>
+<p><img alt=" " width="720" height="400" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image053.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Sang tab <strong><em>Classification</em></strong>, quan sát thuộc tính <strong>
+<em>Confidentiality</em></strong> đã được đặt là <strong><em>High</em></strong> - Nhấn
+<strong><em>Cancel</em></strong></p>
+<p><img alt=" " width="381" height="549" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image054.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Do không muốn đợi đến thời điểm đã lập lịch chạy File Management Task, tôi sẽ tiến hành phân quyền bằng cách chạy File Management Task. Chọn File Management Task, bấm phải chuột vào task<strong><em>High Confidential</em></strong> đã tạo ở bước 7 - Chọn
+<strong><em>Rule File Management Task Now…</em></strong></p>
+<p><img alt=" " width="720" height="309" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image055.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chọn <strong><em>Wait for the task to complete</em></strong> - Nhấn <strong><em>OK</em></strong></p>
+<p><img alt=" " width="422" height="242" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image056.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Chờ đợi quá trình chạy task</p>
+<p><img alt=" " width="394" height="150" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image057.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Khảo sát và đóng report</p>
+<p><img alt=" " width="720" height="506" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image058.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra quá trình phân quyền: Sang máy <strong><em>CLIENT1</em></strong>, logon
+<strong><em>MCTHUB\trong</em></strong>, truy cập sang thư mục <strong><em>Data</em></strong> trên máy
+<strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="413" height="213" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image059.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Mở văn bản <strong><em>ConfidentialDocument</em></strong></p>
+<p><img alt=" " width="720" height="319" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image060.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Microsoft Office Word thông báo văn bản đã bị giới hạn quyền truy cập - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="560" height="167" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image061.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>View Permission</em></strong> để xem quyền</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image062.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra user <strong><em>MCTHUB\trong</em></strong> có toàn quyền vì user này thuộc group
+<strong><em>Manager</em></strong> và Template đã phân quyền <strong><em>Full Control</em></strong> cho group
+<strong><em>Manager - </em></strong>Nhấn<strong><em> OK </em></strong>và đóng văn bản</p>
+<p><img alt=" " width="320" height="316" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image063.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Trên máy <strong><em>CLIENT1</em></strong>, logon <strong><em>MCTHUB\duy</em></strong>, truy cập sang thư mục
+<strong><em>Data</em></strong> trên máy <strong><em>DC2012</em></strong></p>
+<p><img alt=" " width="413" height="213" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image059.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Mở văn bản <strong><em>ConfidentialDocument</em></strong></p>
+<p><img alt=" " width="720" height="294" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image064.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Microsoft Office Word thông báo văn bản đã bị giới hạn quyền truy cập - Nhấn <strong>
+<em>OK</em></strong></p>
+<p><img alt=" " width="560" height="167" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image065.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p>Nhấn nút <strong><em>View Permission</em></strong> để xem quyền</p>
+<p><img alt=" " width="720" height="492" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image066.gif" style="border-width:0px;border-style:solid;" /></p>
+<p>Kiểm tra user <strong><em>MCTHUB\duy </em></strong>có chỉ đó quyền đọc vì user này thuộc group
+<strong><em>IT</em></strong> và Template đã phân quyền <strong><em>View </em></strong>cho group
+<strong><em>IT - </em></strong>Nhấn<strong><em> OK </em></strong>và đóng văn bản</p>
+<p><img alt=" " width="320" height="316" src="http://mcthub.com/images/ContentLab/RMS-P3_files/image067.jpg" style="border-width:0px;border-style:solid;" /></p>
+<p><em>Bài viết liên quan</em></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/windows-server/237-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-adrms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-1.html">Cấu hình Active Directory Rights Management Service (ADRMS)
+ trên Windows Server 2012 - Phần 1</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/windows-server/238-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-ad-rms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-2.html">Cấu hình Active Directory Rights Management Service (ADRMS)
+ trên Windows Server 2012 - Phần 2</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/windows-server/192-c-u-hinh-dynamic-access-control-dac-tren-windows-server-2012.html">Cấu hình Dynamic Access Control (DAC) trên Windows Server 2012 - Phần 1: Phân quyền</a></p>
+<p><a href="http://www.mcthub.com/technologies/microsoft/windows-server/193-c-u-hinh-dynamic-access-control-dac-tren-windows-server-2012-ph-n-2-phan-lo-i-d-li-u.html">Cấu hình Dynamic Access Control (DAC) trên Windows Server 2012 - Phần 2: Phân loại dữ liệu</a></p>
+<p>&nbsp;</p>
+<p><a href="https://plus.google.com/u/0/112033633797932207224?rel=author" style="font-size:12.1px;">By Đồng Phương Nam</a><span style="font-size:12.1px;">
+</span></p>
+<a href="http://www.mcthub.com/technologies/microsoft/windows-server/239-c%E1%BA%A5u-h%C3%ACnh-active-directory-rights-management-services-ad-rms-tr%C3%AAn-windows-server-2012-ph%E1%BA%A7n-3.html">mcthub.com</a>
+
+</div>
+    
+    

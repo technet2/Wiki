@@ -1,0 +1,494 @@
+---
+layout: default
+title: The FAT File System - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<a name="Top"></a><br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Structure_FAT_Volume">Structure of a FAT Volume</a></li><li class="hierarchy-item"><a href="#The_Partition_Boot_Sector">The Partition Boot Sector</a></li><li class="hierarchy-item"><a href="#BPB_and_EBPB">BIOS Parameter Block and Extended BIOS Parameter Block</a></li><li class="hierarchy-item"><a href="#FAT_Root_Folder">FAT Root Folder</a></li><li class="hierarchy-item"><a href="#Long_File_Names">Long File Names</a></li><li class="hierarchy-item"><a href="#Community_Resources">Community Resources</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Web_pages">Wiki Pages</a></li><li class="hierarchy-item"><a href="#TechNet_Library_Pages">TechNet Library Pages</a></li><li class="hierarchy-item"><a href="#MS_KB_Articles">Microsoft Knowledge Base Articles</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#See_Also">See Also</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Books">Books</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div>&nbsp;<br />
+<br />
+<hr />
+<h2><a name="Introduction"></a>Introduction</h2>
+<p>File Allocation Table (FAT) is the name of a computer file system architecture and a family of industry standard file systems utilizing it. The FAT file system is a simple file system originally designed for small disks and simple folder structures. The
+ FAT file system is named for its method of organization, the file allocation table, which resides at the beginning of the volume. To protect the volume,
+<strong>two copies</strong> of the table are kept, in case one becomes damaged. In addition, the file allocation tables and the root folder must be stored
+<strong>in a fixed location</strong> so that the files needed to start the system can be correctly located.<br />
+The major versions of the FAT format are named after the number of table element bits: 12 (FAT12), 16 (FAT16), and 32 (FAT32); each of these variants is still in use. The FAT standard has also been expanded in other ways while generally preserving backward
+ compatibility with existing software.<br />
+The Windows FAT file system driver is implemented in the <strong>\Windows\System32\Drivers\Fastfat.sys</strong> file.</p>
+↑ <a href="#Top">Return to top</a><br />
+<br />
+<h2><a name="Structure_FAT_Volume" target="blank"></a>Structure of a FAT Volume</h2>
+<p>The figure below illustrates how the FAT file system organizes a volume.</p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1033.FAT_5F00_Format.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1033.FAT_5F00_Format.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<p><strong>Figure 1:</strong> FAT file system volume organization.</p>
+<p>The file allocation table contains the following types of information about each cluster on the volume
+</p>
+<ul>
+<li>unused (0x0000); </li><li>cluster in use by a file; </li><li>bad cluster (0xFFF7); </li><li>last cluster in a file (0xFF8-0xFFF for FAT12; 0xFFF8-0xFFFF for FAT16; 0xFFFFFF8-0xFFFFFFFF for FAT32).
+</li></ul>
+There is no organization to the FAT folder structure and files are given the <strong>
+first available location</strong> on the volume.<br />
+The entries in the file allocation table define the <strong>file-allocation chains</strong> (shown in
+<strong>Figure 2</strong>) for files and directories: the links in the chain are indexes to the next cluster of a file’s data. A file’s directory entry stores the
+<strong>starting cluster</strong> of the file, the last entry of the file’s allocation chain is the reserved value of
+<strong>0xFFFF</strong> for FAT16 and <strong>0xFFF</strong> for FAT12; the FAT entries for
+<strong>unused clusters</strong> have a value of <strong>0</strong>. As you can see in
+<strong>Figure&nbsp;2</strong>, FILE1 is assigned clusters 2, 3, and 4; FILE2 is fragmented and uses clusters 5, 6, and 8,&nbsp;while&nbsp;FILE3 uses only cluster 7. Reading a file from a FAT volume can involve reading large portions of a file allocation table to traverse
+ the file’s allocation chains.<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4331.FAT_5F00_Allocation_5F00_Chain.png"><img alt="Sample of a FAT file-allocation chain" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4331.FAT_5F00_Allocation_5F00_Chain.png" style="border-width:0px;border-style:solid;width:550px;height:273px;" /></a>
+<p><strong>Figure 2:</strong> sample of a FAT file-allocation chain.</p>
+<p>The <strong>root directory</strong> of FAT12 and FAT16 volumes is preassigned enough space at the start of a volume to store
+<strong>256 directory entries</strong>, which places an upper limit on the number of fles and directories that can be stored in the root directory (there’s no preassigned space or size limit on FAT32 root directories ). A FAT
+<strong>directory entry</strong> is <strong>32 bytes</strong> and stores a file’s
+<strong>name, size, starting cluster and time stamp</strong> (last-accessed, created and so on) information. If a file has a name that is Unicode or that doesn’t follow the MS-DOS 8.3 naming convention, additional directory entries are allocated to store the
+ long fle name: the supplementary entries precede the file’s main entry.&nbsp;<strong>Figure 3</strong>&nbsp;shows a sample directory entry for a file named “The quick brown fox.”: the system has created a THEQUI~1 FOX 8.3 representation of the name (that is, you don’t
+ see a “.” in the directory entry because it is assumed to come after the eighth character) and used two more directory entries to store the Unicode long fle name; each row in the figure is made up of 16 bytes.<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4426.FAT_5F00_Directory_5F00_Entry.png"><img alt="FAT directory entry" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4426.FAT_5F00_Directory_5F00_Entry.png" style="border-width:0px;border-style:solid;width:550px;height:265px;" /></a></p>
+<p><strong>Figure 3:</strong> a FAT directory entry.</p>
+↑ <a href="#Top">Return to top</a><br />
+<br />
+<h2><a name="The_Partition_Boot_Sector"></a>The Partition Boot Sector</h2>
+<p>The Partition Boot Sector contains information that the file system uses to access the volume. On x86-based computers, the Master Boot Record use the Partition Boot Sector on the system partition to load the operating system kernel files. Table 1 describes
+ the fields in the Partition Boot Sector for a volume formatted with the FAT file system.</p>
+<table border="2" width="80%">
+<tbody>
+<tr>
+<th bgcolor="#ebebeb"><b>
+<p>Byte Offset</p>
+</b></th>
+<th bgcolor="#ebebeb"><b>
+<p>Field Length</p>
+</b></th>
+<th bgcolor="#ebebeb"><b>
+<p>Sample Value</p>
+</b></th>
+<th bgcolor="#ebebeb"><b>
+<p>Meaning</p>
+</b></th>
+</tr>
+<tr>
+<td>00</td>
+<td>3 bytes</td>
+<td>EB 3C 90</td>
+<td>Jump instruction</td>
+</tr>
+<tr>
+<td>03</td>
+<td>8 bytes</td>
+<td>MSDOS5.0</td>
+<td>OEM Name in text</td>
+</tr>
+<tr>
+<td>0B</td>
+<td>25 bytes</td>
+<td>&nbry.</p>
+↑ <a href="#Top">Return to top</a><br />
+<br />
+<h2><a name="The_Partition_Boot_Sector"></a>The Partition Boot Sector</h2>
+<p>The Partition Boot Sector contains information that the file system uses to access the volume. On x86-based computers, the Master Boot Record use the Partition Boot Sector on the system partition to load the operating system kernel files. Table 1 describes
+ the fields in the Partition Boot Sector for a volume formatted with the FAT file system.</p>
+<table border="2" width="80%">
+<tbody>
+<tr>
+<th bgcolor="#ebebeb"><b>
+<p>Byte Offset</p>
+</b><sp;</td>
+<td>BIOS Parameter Block</td>
+</tr>
+<tr>
+<td>24</td>
+<td>26 bytes</td>
+<td>&nbsp;</td>
+<td>Extended BIOS Parameter Block</td>
+</tr>
+<tr>
+<td>3E</td>
+<td>448 bytes</td>
+<td>&nbsp;</td>
+<td>Bootstrap code</td>
+</tr>
+<tr>
+<td>1FE</td>
+<td>2 bytes</td>
+<td>0x55AA</td>
+<td>End of sector marker</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Table 1:</strong> fields in the Partition Boot Sector.</p>
+↑ <a href="#Top">Return to top</a><br />
+<br />
+<h2><a name="BPB_and_EBPB"></a>BIOS Parameter Block and Extended BIOS Parameter Block</h2>
+<p>The BIOS Parameter Block, or BPB&quot; is a structure that provides enough information for the executable portion of the boot sector to be able to locate the NTLDR file. Because the BPB always starts at the same offset, standard parameters are always in a known
+ location. Because the first instruction in the boot sector is a jump, the BPB can be extended in the future, provided new information is appended to the end. Some additional fields follow the standard BIOS Parameter Block and constitute an &quot;extended BIOS Parameter
+ Block&quot;. <strong>Table 2</strong> describes BIOS Parameter Block and Extended BIOS Parameter Block fields.</p>
+<table border="2" width="80%">
+<colgroup><col width="37"><col width="55"><col width="71"><col width="186"></col></col></col></col></colgroup>
+<tbody>
+<tr>
+<th bgcolor="#ebebeb"><b>
+<p>Byte Offset</p>
+</b></th>
+<th bgcolor="#ebebeb"><b>
+<p>Field Length</p>
+</b></th>
+<th bgcolor="#ebebeb"><b>
+<p>Sample Value</p>
+</b></th>
+<th bgcolor="#ebebeb"><b>
+<p>Meaning</p>
+</b></th>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x0B </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x0002 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Bytes per Sector. The size of a hardware sector. For most disks in use in the United States, the value of this field is 512.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x0D </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>BYTE </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x08 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Sectors Per Cluster. The number of sectors in a cluster. The default cluster size for a volume depends on the volume size and the file system.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x0E </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x0100 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Reserved Sectors. The number of sectors from the Partition Boot Sector to the start of the first file allocation table, including the Partition Boot Sector. The minimum value is 1. If the value is greater than 1, it means that the bootstrap code is too long
+ to fit completely in the Partition Boot Sector. </p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x10 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>BYTE </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x02 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Number of file allocation tables (FATs). The number of copies of the file allocation table on the volume. Typically, the value of this field is 2.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x11 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x0002 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Root Entries. The total number of file name entries that can be stored in the root folder of the volume. One entry is always used as a Volume Label. Files with long filenames use up multiple entries per file. Therefore, the largest number of files in the
+ root folder is typically 511, but you will run out of entries sooner if you use long filenames.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x13 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x0000 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Small Sectors. The number of sectors on the volume if the number fits in 16 bits (65535). For volumes larger than 65536 sectors, this field has a value of 0 and the Large Sectors field is used instead.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x15 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>BYTE </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0xF8 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Media Type. Provides information about the media being used. A value of 0xF8 indicates a hard disk.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x16 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0xC900 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Sectors per file allocation table (FAT). Number of sectors occupied by each of the file allocation tables on the volume. By using this information, together with the Number of FATs and Reserved Sectors, you can compute where the root folder begins. By using
+ the number of entries in the root folder, you can also compute where the user data area of the volume begins.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x18 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x3F00 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Sectors per Track. The apparent disk geometry in use when the disk was low-level formatted.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x1A </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>WORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x1000 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Number of Heads. The apparent disk geometry in use when the disk was low-level formatted.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x1C </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>DWORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>3F 00 00 00 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Hidden Sectors. Same as the Relative Sector field in the Partition Table. </p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x20 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>DWORD </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>51 42 06 00 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Large Sectors. If the Small Sectors field is zero, this field contains the total number of sectors in the volume. If Small Sectors is nonzero, this field contains zero..
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x24 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>BYTE </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x80 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Physical Disk Number. This is related to the BIOS physical disk number. Floppy drives are numbered starting with 0x00 for the A disk. Physical hard disks are numbered starting with 0x80. The value is typically 0x80 for hard disks, regardless of how many
+ physical disk drives exist, because the value is only relevant if the device is the startup disk.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x25 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>BYTE </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x00 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Current Head. Not used by the FAT file system. </p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x26 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>BYTE </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>0x29 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Signature. Must be either 0x28 or 0x29 in order to be recognized by Windows&nbsp;NT.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x27 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>4 bytes </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>CE 13 46 30 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Volume Serial Number. A unique number that is created when you format the volume.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x2B </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>11 bytes </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>NO NAME </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Volume Label. This field was used to store the volume label, but the volume label is now stored as special file in the root directory.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x36 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>8 bytes</p>
+</td>
+<td valign="top" style="width:71px;">
+<p>FAT16 </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>System ID. Either FAT12 or FAT16, depending on the format of the disk.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Table 2:</strong> fields in the BIOS Parameter Block and Extended BIOS Parameter Block.</p>
+↑ <a href="#Top">Return to top</a><br />
+<bh:286px;">
+<p>Volume Serial Number. A unique number that is created when you format the volume.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x2B </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>11 bytes </p>
+</td>
+<td valign="top" style="width:71px;">
+<p>NO NAME </p>
+</td>
+<td valign="top" style="width:286px;">
+<p>Volume Label. This field was used to store the volume label, but the volume label is now stored as special file in the root directory.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top" style="width:37px;">
+<p>0x36 </p>
+</td>
+<td valign="top" style="width:55px;">
+<p>8 bytes</p>
+</td>
+<td valign="top" style="width:71px;">
+<p>FAT16 </p>
+</td>
+<td valign="top" style="wr />
+<h2><a name="FAT_Root_Folder"></a>FAT Root Folder</h2>
+<p>The root folder contains an entry for each file and folder in the root. The only difference between the root folder and other folders is that the root folder is on a
+<strong>specified location</strong> on the disk and has a <strong>fixed size</strong> (512 entries for a hard disk, number of entries on a floppy disk depends on the size of the disk).</p>
+↑ <a href="#Top">Return to top</a><br />
+<br />
+<h2><a name="Long_File_Names"></a>Long File Names</h2>
+<p>One of the user experience goals for the designers of Windows 95 was the ability to use
+<strong>long filenames</strong> (LFNs, up to 255 UTF-16 code points long), in addition to classic 8.3 filenames (Short File Name, SFNs). For backward compatibility, LFNs were implemented as
+<strong>an optional extension on top of the existing</strong> FAT file system structures using a workaround in the way directory entries are laid out. This transparent method to store long file names in the existing FAT file systems without altering their data
+ structures is usually known as <strong>VFAT</strong> (for &quot;Virtual FAT&quot;), after the Windows 95 virtual device driver. In
+<strong>Windows NT</strong>, support for VFAT long filenames started <strong>from version 3.5</strong>. Non VFAT-enabled operating systems can still access the files under their short file name alias without restrictions; however, the associated long file names
+ may get lost, when files with long file names are copied under non VFAT-aware operating systems.</p>
+↑ <a href="#Top">Return to top</a><br />
+<br />
+<hr />
+<h2><a name="Community_Resources" target="blank"></a>Community Resources</h2>
+<h4><a name="Web_pages" target="blank"></a>Wiki Pages</h4>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/5375.aspx">Windows File Systems (en-US)</a>
+</li></ul>
+<h4><a name="TechNet_Library_Pages"></a>TechNet Library Pages</h4>
+<ul>
+<li><a href="http://technet.microsoft.com/en-us/library/cc938438.aspx">FAT File System</a>
+</li><li><a href="http://technet.microsoft.com/en-us/library/cc776720%28WS.10%29.aspx">How FAT Works</a>
+</li></ul>
+<h4><a name="MS_KB_Articles" target="blank"></a>Microsoft Knowledge Base Articles</h4>
+<ul>
+<li><a href="http://support.microsoft.com/kb/67321/en-us">FAT Type and Cluster Size Depends on Logical Drive Size</a> (KB67321)
+</li><li><a href="http://support.microsoft.com/kb/118335/en-us">Maximum Partition Size Using FAT16 File System</a> (KB118335)
+</li><li><a href="http://support.microsoft.com/kb/310561/en-us">Maximum partition size using the FAT16 file system in Windows XP</a> (KB310561)
+</li><li><a href="http://support.microsoft.com/kb/140418/en-us">Detailed Explanation of FAT Boot Sector</a> (KB140418)
+</li></ul>
+<hr />
+<h2><a name="See_Also" target="blank"></a>See Also</h2>
+<p><strong><em>NOTE</em></strong>:<em> this section provides links that are external to the TechNet Wiki.</em></p>
+<h4><a name="Books" target="blank"></a>Books</h4>
+<ul>
+<li><a href="http://www.microsoft.com/MSPress/books/4354.aspx" target="blank">Inside Windows 2000, 3rd Edition</a> (Chapter 12, &quot;<em>File Systems</em>&quot;) by David A. Solomon and Mark E. Russinovich (Microsoft Press, August 2000)
+</li><li><a href="http://www.microsoft.com/learning/en/us/Book.aspx?ID=6710&amp;locale=en-us" target="blank">Windows Internals, 4th Edition</a> (Chapter 12, &quot;<em>File Systems</em>&quot;) by David A. Solomon and Mark E. Russinovich (Microsoft Press, December 2004)
+</li><li><a href="http://www.microsoft.com/learning/en/us/book.aspx?ID=12069&amp;locale=en-us" target="blank">Windows Internals, 5th Edition</a> (Chapter 11, &quot;<em>File Systems</em>&quot;) by David A. Solomon, Mark E. Russinovich and Alex Ionescu&nbsp;(Microsoft Press,&nbsp;June 2009)
+</li></ul>
+
+</div>
+    
+    

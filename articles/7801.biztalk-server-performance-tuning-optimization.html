@@ -1,0 +1,342 @@
+---
+layout: default
+title: BizTalk Server&#58; Performance Tuning & Optimization - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+
+
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#qqq">Introduction</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#www">Few Problems</a></li><li class="hierarchy-item"><a href="#eee">Few Requirements</a></li></u></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragmenl><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#rrr">What Should We Do</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#ttt">First Few Steps</a></li><li class="hierarchy-item"><a href="#yyy">Review of Solution Design</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#uuu">References for Code Review/Solution Design</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#iii">Review Everything Else!</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#ooo">References</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#ppp">MSDN</a></li><li class="hierarchy-item"><a href="#aaa">MSDN Social</a></li><li class="hierarchy-item"><a href="#sss">Tools</a></li><li class="hierarchy-item"><a href="#ddd">Blogs</a></li><li class="hierarchy-item"><a href="#fff">Hot Fixes</a></li><li class="hierarchy-item"><a href="#ggg">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="qqq"></a>Introduction</h1>
+<p>Performance tuning is a bit more art than science. Not every single tuning technique solves every problem, and very often techniques interact. The approach should always be methodical, including baseline and differential testing particularly when justifying
+ capital expenditures.</p>
+<div>
+<div>Performance limitations should be viewed as a series of roadblocks. Removing one roadblock doesn’t clear the road, but simply makes it easier to drive. Not until all of the roadblocks have been removed does performance truly jump.</div>
+<div><br />
+</div>
+<strong>
+<div><strong>A word of caution. It’s important to understand each tuning technique, both what it does and why it works.
+<span style="color:#ff0000;"><em>Running</em></span> application of the included scripts, registry files, etc.
+<span class="GINGER_SOFTWARE_mark" id="e8b87fca-9606-4c12-ba0d-96120ac77729">is</span>
+<span style="color:#ff0000;"><em>not recommended</em></span> and could lead to serious consequences for the target system. It is not recommended at all to change the settings to the production server directly. It is always recommended to perform the changes
+ in UAT or DEV and then perform the changes in production in&nbsp;controlled&nbsp;manner following change process of your enterprise.</strong></div>
+</strong>
+<p>In this article we are trying to keep everything in one place which are related to performance tuning and optimization for Microsoft BizTalk Server. Most of the concepts are valid across BizTalk Server versions, however it is always recommended to refer
+ the product documentation of&nbsp;applicable&nbsp;version.&nbsp;</p>
+</div>
+<h2><a name="www"></a>Few&nbsp;Problems&nbsp;</h2>
+<p>At some point of time, we may face issues in our BizTalk farm and then we think about ways to identify and resolve those issues and we start searching for BizTalk Performance Tuning and Optimization options. Those issues could be one of following or somewhere
+ similar:&nbsp;</p>
+<ul>
+<li style="text-align:justify;"><span style="font-size:12px;">BizTalk is performing slower<span class="GINGER_SOFTWARE_mark" id="d591a6fa-a794-4a01-9ab9-58a406918580">,</span>when we drop the messages or during high volume of messages.</span>
+</li><li style="text-align:justify;"><span style="font-size:12px;">Large no of messages are causing memory errors in BizTalk farm.</span>
+</li><li style="text-align:justify;"><span style="font-size:12px;">Prolonged BizTalk </span>
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/6063.microsoft-biztalk-automatic-throttling.aspx" target="_blank">Throttling</a>.
+</li><li style="text-align:justify;"><span style="font-size:12px;">BizTalk receive location is not picking up the files.</span>
+</li><li style="text-align:justify;">BizTalk&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/7248.biztalk-server-2010-sql-agent-jobs.aspx" target="_blank">Database Jobs</a> are taking too much time to complete.
+</li><li style="text-align:justify;">Response time of message processing is&nbsp;increasing. There is a high&nbsp;latency in
+<span class="GINGER_SOFTWARE_mark" id="ca192ab7-1f0c-41d4-863c-71cf82c6be8f">environment</span>.
+</li><li style="text-align:justify;">It seems BizTalk is not able to process any message,&nbsp;The messages or service instance&nbsp;are&nbsp;in Active/Running State, however nothing is happening.
+</li><li style="text-align:justify;">SOAP Adapter is taking long time to call a Web Service.
+</li><li style="text-align:justify;">Orchestration/Receive Port&nbsp;is taking&nbsp;&nbsp;long time to
+<span class="GINGER_SOFTWARE_mark" id="b6151b66-1903-40fc-b048-6923b8131c82">debatch</span> a large message.
+</li><li style="text-align:justify;">The BizTalk production farm has suddenly started behaving in a strange manner.
+</li><li style="text-align:justify;">High Memory/CPU utilization of the BizTalk servers.
+</li></ul>
+<h2><a name="eee"></a>Few Requirements</h2>
+<p>It is true, at some point of time, we start getting queries, thought or requirement similar to below and then we look for options to scale or optimize the BizTalk Server:</p>
+<ul>
+<li><span style="font-size:12px;">Looking for creating scalable BizTalk solutions.</span>
+</li><li>Trying&nbsp;to achieve a particular latency for a BizTalk application. </li><li>Requirement to process 1000 messages in 1 second by a BizTalk application. </li><li>Requirement of&nbsp;<a href="http://msdn.microsoft.com/en-us/library/cc296600(BTS.10).aspx" target="_blank">processing large messages</a> in BizTalk Server.
+</li><li>Planning to change the performance throughput. </li><li>Trying to determine/test&nbsp;maximum sustainable throughput <span class="GINGER_SOFTWARE_mark" id="821316f7-71e0-4938-a196-d05ad1820e93">
+(&nbsp;</span><a href="http://msdn.microsoft.com/en-us/library/cc296884(BTS.10).aspx" target="_blank">MST</a><a href="http://msdn.microsoft.com/en-us/library/cc296884(BTS.10).aspx" target="_blank"></a><a href="http://msdn.microsoft.com/en-us/library/cc296884(BTS.10).aspx" target="_blank"></a><a href="http://msdn.microsoft.com/en-us/library/cc296884(BTS.10).a:</p>
+<ul>
+<li><span style="font-size:12px;">Looking for creating scalable BizTalk solutions.</span>
+</li><li>Trying&nbsp;to achieve a particular latency for a BizTalk application. </li><li>Requirement to process 1000 messages in 1 second by a BizTalk application. </li><li>Requirement of&nbsp;<a href="http://msdn.microsoft.com/en-us/library/cc296600(BTS.10).aspx" target="_blank">processing large messages</a> in BizTalk Server.
+</li><li>Planning to change the performance throughput. </li><li>Trying to determine/test&nbsp;maximum sustainable throughput <span clspx" target="_blank">
+</a><span class="GINGER_SOFTWARE_mark" id="85fc528e-5c6e-4725-8c0e-e7512de45d1e">)</span> of a BizTalk farm.
+</li><li>Trying&nbsp;to figure if BizTalk farm can support next 20&#43; applications which are going to be deployed in the future.
+</li><li>How&nbsp;should I decide if <span class="GINGER_SOFTWARE_mark" id="5df20052-29d6-4470-8a5a-8a6959ab462f">
+My</span> BizTalk farm needs to be tuned or&nbsp;optimized? </li><li>How should I decide if BizTalk production farm needs to be scaled-up or scaled-out?
+</li></ul>
+<h1><a name="rrr"></a>What Should We Do</h1>
+<h2><a name="ttt"></a>First Few Steps</h2>
+<p>If &nbsp;you have anything similar in the list above (Few Problems), then we should start with doing below things:</p>
+<ul>
+<li>
+<div>Check SQL Server Agent and BizTalk Server Jobs&nbsp;Status of the&nbsp;BizTalk SQL Server Instance - The agent should always be running and all the BizTalk Jobs should be enabled from the day one in your production Farm, If there are any issues&nbsp;refer this in-depth
+ Wiki<span class="GINGER_SOFTWARE_mark" id="e068eb0c-4ab3-4c3c-895f-ed9c30b9fe35"> ,</span> &quot;<a href="http://social.technet.microsoft.com/wiki/contents/articles/5109.biztalk-databases-survival-guide.aspx" target="_blank">BizTalk Server<span class="GINGER_SOFTWARE_mark" id="693c7872-7885-498b-9eea-17a42ab337d7">:</span>Databases:
+ Survival Guide</a>&quot;.</div>
+</li><li>
+<div>The BizTalk Host instance that has the &quot;allow Host tracking&quot; option set is stopped - If the host is stopped, then it should be started without any delay. As a practice there should always one dedicated &quot;<a href="http://msdn.microsoft.com/en-us/library/cc296633(BTS.10).aspx" target="_blank">Tracking
+ Host</a>&quot; should be running in BizTalk Farm. Please refer <a href="http://msdn.microsoft.com/en-us/library/cc296633(v=bts.10).aspx" target="_blank">
+&quot;</a><a href="http://msdn.microsoft.com/en-us/library/cc296633(v=bts.10).aspx" target="_blank">Configuring a Dedicated Tracking Host</a>&quot; MSDN page for more details.</div>
+</li><li>
+<div><span class="GINGER_SOFTWARE_mark" id="126ea0bb-8d0a-4dcb-b10a-8efe107a9653">Record count</span> of the Spool table- the row count in the tables should not be too much or it should not keep growing. Check the record count of the Host Instance Queue tables.
+ Refer &quot;<a href="http://blogs.msdn.com/b/amantaras/archive/2010/02/25/host-queue-tables.aspx" target="_blank">Understanding Host Queue Tables</a>&quot; article for more details.</div>
+</li><li>
+<div>Free space of the Data and log file drives on SQL Server, as there should be enough free space in the log and data files drive on SQL Server.</div>
+</li><li>
+<div>Size of BizTalkDTADb database - Need to make sure the size is not too much of this database, It is a standard practice to keep an eye on the size of this database. Refer the following articles:</div>
+<ul>
+<li>
+<div><a href="http://technet.microsoft.com/en-us/library/aa558715.aspx" target="_blank">How to Configure the DTA Purge and Archive Job</a></div>
+</li><li>
+<div><a href="http://social.technet.microsoft.com/wiki/contents/articles/7253.biztalk-server-2010-database-biztalkdtadb.aspx" target="_blank">BizTalk Server 2010: Database BizTalkDTADb</a></div>
+</li></ul>
+</li><li>
+<div><a href="http://msdn.microsoft.com/en-us/library/cc296591(v=bts.10).aspx" target="_blank">Excessive Disk I/O Latency</a> (on SQL Server)&nbsp;- If the incoming rate of data into the MessageBox database is faster than which the system can process and move the
+ data to the BizTalkDTADb database, backlog can build up in the MessageBox database. If the backlog continues to grow unabated, this is a very serious problem and system performance will degrade over time. One way to alleviate this problem is to install faster
+ disks and/or upgrade the hardware to help ensure that the system is capable of recovering from any message backlogs experienced over time.</div>
+</li></ul>
+<h2><a name="yyy"></a>Review of Solution Design</h2>
+<p>Start reviewing the application design and architecture. Sometime a design change may have a huge impact over the application performance. The following should be the starting reference points while reviewing the design and code of BizTalk solutions:</p>
+<ul>
+<li>
+<div>Code review of Custom Pipeline component.</div>
+</li><li>
+<div>Are we using XMLDom to load a very large message in <span class="GINGER_SOFTWARE_mark" id="bfe4ab97-e5e3-4ab1-8620-ac29f0ab3f8a">
+pipeline</span><span class="GINGER_SOFTWARE_mark" id="fde6b13a-bed1-422e-852a-680a6f31a6d3"> ?</span></div>
+</li><li>
+<div>What is the method used to read the values in an incoming message<span class="GINGER_SOFTWARE_mark" id="b5e85bcd-9f3f-4487-942a-7f1dcde53225"> ,</span> Use
+<span class="GINGER_SOFTWARE_mark" id="0e81e9e8-af2d-4906-814e-dfdecfda19f8">streaming</span> while reading the message or use XpathReader<span class="GINGER_SOFTWARE_mark" id="ca03386c-3da8-44d9-8f06-87b3d7c2e9d6"> ?</span></div>
+</li><li>
+<div>Code of Orchestration?</div>
+</li><li>
+<div>Design <span class="GINGER_SOFTWARE_mark" id="18faf177-3368-4a39-b8bd-4e6b20c865ed">
+( </span>use of <span class="GINGER_SOFTWARE_mark" id="d808d90c-fb13-4012-b515-fbacd6588ead">
+functoid</span> or inline <span class="GINGER_SOFTWARE_mark" id="b6957f03-2c5a-4082-966e-bbaf9304d15e">
+xslt</span>) of MAP used in&nbsp;transforming&nbsp;for large messages.</div>
+</li><li>
+<div>Are we using Enterprise Integration Patterns or not while designing enterprise solutions?</div>
+</li><li>
+<div>What kind of Custom Code we are using? </div>
+</li><li>
+<div>Can we use inline send port instead of normal send ports to achieve low latency solutions?</div>
+</li><li>
+<div>How we are calling Business Rule engine in our BizTalk Orchestrations? </div>
+</li><li>How many scopes have been used in orchestration? </li><li>What kind of instrumentation or tracing is used? </li><li>Use of <a href="http://msdn.microsoft.com/en-us/library/aa559502.aspx" target="_blank">
+BAM API</a>&#39;s or <a href="http://msdn.microsoft.com/en-us/library/ee253770(v=bts.10).aspx" target="_blank">
+TPE</a>. </li></ul>
+<h3><a name="uuu"></a>References for Code Review/Solution Design</h3>
+<p>Following articles might be useful while reviewing the solution architecture and the BizTalk Code.</p>
+<ul>
+<li><a href="http://msdn.microsoft.com/en-us/library/ee377071(BTS.10).aspx" target="_blank" style="text-align:justify;">Optimizing Pipeline Performance</a>
+</li><li><a href="http://msdn.microsoft.com/en-US/library/ee377087(v=bts.10).aspx" target="_blank" style="text-align:justify;">Optimizing Memory Usage with Streaming</a>
+</li><li><a href="http://msdn.microsoft.com/en-us/library/ee377042(BTS.10).aspx" target="_blank" style="text-align:justify;">Optimizing Orchestration Performance</a>
+</li><li><a href="http://msdn.microsoft.com/en-us/library/bb418739(BTS.10).aspx" target="_blank" style="text-align:justify;">FAQ for BizTalk Orchestrations</a>
+</li><li><a href="http://biztalkorcprofiler.codeplex.com/" target="_blank" style="text-align:justify;">BizTalk Orchestration Profiler</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/6944.biztalk-orchestrations-xpath-survival-guide.aspx" target="_blank" style="text-align:justify;">BizTalk Orchestrations XPath: Survival Guide</a><span style="text-align:justify;">&nbsp;- Refer
+ for the optimized ways to read values from XML</span> </li><li><a href="http://blogs.msdn.com/b/paolos/archive/2010/04/08/how-to-boost-message-transformations-using-the-xslcompiledtransform-class-extended.aspx" target="_blank" style="text-align:justify;">How To Boost Message Transformations Using the XslCompiledTransform
+ class Extended</a> </li><li><a href="http://blogs.msdn.com/b/biztalkcpr/archive/2008/05/08/thoughts-on-orchestration-performance.aspx" target="_blank" style="text-align:justify;">Thoughts on Orchestration Performance</a><span style="text-align:justify;">&nbsp;</span>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/6819.biztalk-orchestration-performance-thoughts-from-biztalk-support.aspx" target="_blank" style="text-align:justify;">BizTalk Orchestration Performance: Thoughts from BizTalk Support&nbsp;</a>
+</li><li><a href="http://blogs.msdn.com/b/paolos/archive/2009/09/10/4-different-ways-to-process-an-xlangmessage-within-an-helper-component-invoked-by-an-orchestration.aspx?wa=wsignin1.0" target="_blank" style="text-align:justify;">4 Different ways to process an XLANGMessage
+ within a&nbsp;helper component invoked by an orchestration Part 1</a> </li><li><a href="http://blogs.msdn.com/b/appfabriccat/archive/2010/05/11/best-practices-for-instrumenting-high-performance-biztalk-solutions.aspx" target="_blank" style="text-align:justify;">Best Practices for Instrumenting High Performance BizTalk Solutions</a>
+</li><li><a href="http://biztalkin-howard.blogspot.com/2012/02/bad-practices-for-designing-and.html" target="_blank" style="text-align:justify;"><span class="GINGER_SOFTWARE_mark" id="279f9010-7c6b-4990-9c75-8f39a89d7002">Bad</span> practices for Designing and Developing
+ BizTalk/ESB Solutions</a><span style="text-align:justify;">&nbsp;- By Howard Edidin</span>
+</li><li><a href="http://seroter.wordpress.com/2007/09/04/my-biztalk-code-review-checklist/" target="_blank" style="text-align:justify;">BizTalk Code Review checklist</a><span style="text-align:justify;">- By Richard Seroter</span>
+</li><li><a href="http://msdn.microsoft.com/en-us/magazine/cc163423.aspx" target="_blank" style="text-align:justify;">8 Tips And Tricks For Better BizTalk Programming</a>
+</li><li><a href="http://social.msdn.microsoft.com/Forums/ar/biztalkgeneral/thread/4f00239a-58ed-480d-abaf-38ec7041f8c7" target="_blank" style="text-align:justify;">Drawback of Inline Send Port
+</a><span style="text-align:justify;">(MSDN<a href="http://biztalkin-howard.blogspot.com/2012/ Social forum Thread)&nbsp;- refer this to get the&nbsp;opinion about using inline send port in BizTalk Server solutions to achieve low latency.&nbsp;</span>
+</li><li><a href="http://blogs.msdn.com/b/paolos/archive/2009/01/20/biztalk-server-and-protocol-transition.aspx" target="_blank" style="text-align:justify;">BizTalk Server and Protocol Transition</a><span style="text-align:justify;">-&nbsp;By Paolo Salvatori, refer this
+ to explore alternative ways to integrate systems with BizTalk Server</span> </li><li><a href="http://msdn.microsoft.com/en-us/library/Aa559799" target="_blank" style="text-align:justify;">Project Planning Recommendations by Phase</a><span style="text-align:justify;">-There are a number of software development
+<span class="GINGER_SOFTWARE_mark" id="ce7b1111-b8c6-4aa2-bc68-234f40f6a489">lifecycle</span> models in existence today, each with their own approaches, benefits, and limitations. The goal of this section is to provide a set of recommendations that will help
+ you plan appropriately for a successful BizTalk Server development project.</span>
+</li><li><a href="http://www.aimsinnovation.com/news/aims-blog/slideshare-presentation-bam-experiences-in-large-scale-deployments" target="_blank">Slideshare presentation: BAM experiences in Large Scale Deployments
+</a></li></ul>
+<h2><a name="iii"></a>Review Everything Else!</h2>
+<p>It is also very crucial to review BizTalk&nbsp;environment including SQL and everything else which is your control. The following could be some initial points to start with:</p>
+<ol>
+<li>Hardware configurations of the BizTalk Server Box, and yes its not only about looking RAM and CPU there are other things as well like antivirus settings,&nbsp;hyper-threading&nbsp;etc. It is very important to decide these things while designing the farm. Please see
+ below reference links for more details. </li><li>Hardware and SAN configuration details of SQL Server instance. Choosing right
+<span style="color:#ff0000;">RAID</span> level of SAN disks really matters!! </li><li>Network settings can be crucial. Check for instance&nbsp;<a href="http://www.biztalkadminsblogging.com/index.php/item/27-general-network-tcp-settings-that-can-impact-biztalk-server" target="_blank">this</a> article from Sandro Pereira.
+</li><li>Load balancing of BizTalk Web Services really matters while designing low latency solutions. Need to check options of
+<a href="http://support.microsoft.com/kb/814876" target="_blank">IIS tuning</a>. </li><li>Setting BizTalk databases and log file drive size really matters need to review them. See
+<span class="GINGER_SOFTWARE_mark" id="f1ff9bd4-54da-4cd1-b05b-16f21bef7cc8">below references</span> for more details.
+</li></ol>
+<h3><a name="ooo"></a>References</h3>
+<p>Below are few references, They have tons of information on performance optimization and tuning of BizTalk.</p>
+<ul>
+<li style="text-align:justify;"><span class="GINGER_SOFTWARE_mark" id="b30ab3a2-632f-4189-afc7-4cb0b193d1cd">(</span><strong><em><span style="color:#ff0000;">Important!</span></em></strong>)&nbsp;<a href="http://www.microsoft.com/download/en/details.aspx?id=10855" target="_blank">Microsoft
+ BizTalk Server 2010 Performance Optimization Guide</a>&nbsp;and&nbsp;<a href="https://www.google.co.in/url?sa=t&amp;rct=j&amp;q=&amp;esrc=s&amp;source=web&amp;cd=4&amp;cad=rja&amp;uact=8&amp;ved=0ahUKEwjrn5nm8OrPAhVFuI8KHaqsCxIQFggvMAM&amp;url=http%3A%2F%2Fdownload.microsoft.com%2Fdownload%2F6%2Fd%2Fe%2F6dee8ee9-0f26-4991-8fe5-b0e5239c0980%2Fbiztalkserver2013-performanceguide.docx&amp;usg=AFQjCNHyXCo3LeyhhHMpyKfbPaCU2H2GuQ">BizTalk
+ Server 2013 Performance Optimization Guide</a>- Always Keep a Copy of this guide, It provides&nbsp;prescriptive guidance on the best practices and techniques that should be followed to optimize BizTalk Server performance. This guide should be&nbsp;consulted&nbsp;while designing
+ the BizTalk Production or Test Farms. </li><li style="text-align:justify;"><a href="http://www.microsoft.com/download/en/details.aspx?displaylang=en&amp;id=6282" target="_blank">Microsoft BizTalk Server 2010 Operations Guide</a>-&nbsp;Provides detailed information for planning a BizTalk Server environment, as
+ well as recommendations and best practices for configuring, testing, maintaining, monitoring, and optimizing this environment.
+</li><li style="text-align:justify;"><a href="http://social.technet.microsoft.com/wiki/contents/articles/629.aspx" target="_blank">BizTalk Administrator&#39;s Checklist Compiled by Microsoft BizTalk Support</a>
+</li><li style="text-align:justify;"><a href="http://support.microsoft.com/kb/298475" target="_blank">How to troubleshoot SQL Server performance issues</a>
+</li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/windows/hardware/gg463392.aspx" target="_blank">Performance Tuning Guideline for Windows Server 2008 R2</a>
+</li><li style="text-align:justify;"><a href="http://channel9.msdn.com/blogs/johanlindfors/biztalk-2009--end-to-end-performance-testing" target="_blank">BizTalk 2009 – End to end performance testing (1/2)</a>
+<span class="GINGER_SOFTWARE_mark" id="ceefefc5-c950-4901-b0ec-ae9f17781635">( </span>
+<strong><em><span style="color:#00b050;">Webcast</span></em></strong><span class="GINGER_SOFTWARE_mark" id="46489cab-9dc1-4a59-ac31-73594e7e6db0"> )</span> - By Paolo Salvatori&nbsp;
+</li><li style="text-align:justify;"><a href="http://channel9.msdn.com/blogs/johanlindfors/biztalk-2009-end-to-end-performance-testing-22">BizTalk 2009 – End to end performance testing (2/2)</a>&nbsp;<span class="GINGER_SOFTWARE_mark" id="e651d49b-7643-477d-8388-0e63526ca408">(
+</span><strong><em><span style="color:#00b050;">Webcast</span></em></strong><span class="GINGER_SOFTWARE_mark" id="ad6bb7ca-7648-4a82-9607-86862024b233"> )</span> - By&nbsp;Paolo Salvatori
+</li><li style="text-align:justify;"><a href="http://blogs.msdn.com/b/paolos/archive/2010/03/16/how-to-exploit-the-text-in-row-table-option-to-boost-biztalk-server-performance.aspx" target="_blank"><span class="GINGER_SOFTWARE_mark" id="fb3d3886-0167-47c6-958e-0c3f12dd2cba" style="text-align:justify;">(</span><strong style="text-align:justify;"><em><span style="color:#ff0000;">Important!</span></em></strong><span style="text-align:justify;">)&nbsp;</span>How
+ to exploit the Text In R0"> )</span> - By Paolo Salvatori&nbsp;
+</li><li style="text-align:justify;"><a href="http://channel9.msdn.com/blogs/johanlindfors/biztalk-2009-end-to-end-performance-testing-22">BizTalk 2009 – End to end performance testing (2/2)</a>&nbsp;<span class="GINGER_SOFTWARE_mark" id="e651d49b-7643-477d-8388-0e63526ca408">(
+</span><strong><em><span style="color:#00b050;">Webcast</span></em></strong><span class="GINGER_SOFTWARE_mark" id="ad6bb7ca-7648-4a82-9607-86862024b233"> )</span> - By&nbsp;Paolo Salvatori
+</li><li style="text-align:justify;"><a href="http://blogs.msdn.com/b/paolos/archive/2010/03/16/how-to-exploit-the-text-in-row-table-option-to-boost-biztaow table option to boost BizTalk Server Performance</a> </li><li style="text-align:justify;"><span style="color:#000000;"></span><span style="color:#000000;"></span><span style="color:#000000;"></span><span style="color:#000000;"></span><span style="color:#000000;"></span><span style="color:#000000;">(</span><strong><em><span style="color:#ff0000;">Important!</span></em></strong><span style="color:#000000;">)</span>
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/7801.biztalk-server-performance-tuning-optimization/BizTalk%20Server%20Performance:%20Configuring%20BizTalk%20Server%20for%20Performance" target="_blank">
+BizTalk Server Performance: Configuring BizTalk Server for Performance</a>&nbsp;<strong></strong><strong>
+</strong><span class="GINGER_SOFTWARE_mark" id="f76bb813-166e-464f-a837-ace3e06a8bab">(
+</span><strong><em><span style="color:#00b050;">Webcast</span></em></strong><span class="GINGER_SOFTWARE_mark" id="fddf00e9-453d-4e83-a133-230e5c2135fe"> )</span> - A must watch webcast to understand the summary of performance tuning with BizTalk Server 2010
+</li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/aa475435.aspx" target="_blank">Performance Tuning for Low Latency</a>&nbsp;- A in-depth article about BizTalk Server to achieve Low Latency. If there is a requirement to host low latency
+ messaging solutions in BizTalk farm, this article might give <span class="GINGER_SOFTWARE_mark" id="8f978f3f-2d5c-4d21-a866-015096390906">
+lot</span> of information about different parameter changes to achieve it. </li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/cc296848(v=bts.10).aspx" target="_blank">Scaling Out the MessageBox Database</a><span class="GINGER_SOFTWARE_mark" id="bba33827-6a5f-43ac-a219-2b2eb5a5ed10"> -</span>&nbsp;
+</li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/cc296724(v=bts.10).aspx" target="_blank">Scaling Out the BizTalk Server Tier</a> -&nbsp;Scaling-out is the process of adding additional computers. For example, if BizTalk Server is bottlenecked
+ by CPU resources, adding another server provides double the CPU resources which may provide double the throughput. You scale out BizTalk Server by adding more computers to your BizTalk Server topology. The following figure shows an example of how you might
+ scale out the BizTalk tier </li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/aa560694.aspx" target="_blank">Performance Tips and Tricks</a> -&nbsp;This article provides useful tips for ensuring optimal performance for your BizTalk Server system, It covers following
+ points in-depth<br />
+<ul>
+<li style="text-align:justify;">Identifying Performance Bottlenecks </li><li style="text-align:justify;">Setting the EPM <span class="GINGER_SOFTWARE_mark" id="3fd61194-b431-4e22-b700-25bd6075a387">
+Threadpool</span> Size&nbsp; </li><li style="text-align:justify;">Troubleshooting MessageBox Latency Issues&nbsp; </li></ul>
+</li></ul>
+<h1><a name="ppp"></a>MSDN</h1>
+<ul>
+<li style="text-align:justify;">
+<div><a href="http://www.microsoft.com/download/en/details.aspx?id=443" target="_blank">BizTalk Server 2010 Database Infrastructure Poster</a>- Refer this to understand the architecture of BizTalk Database
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://www.microsoft.com/download/en/details.aspx?id=15223" target="_blank">BizTalk Server 2010 Scale-out Configurations Poster</a>&nbsp;- Refer this to understand the scale-out options for BizTalk Server
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://www.microsoft.com/download/en/details.aspx?id=22226" target="_blank">BizTalk Server 2010 Runtime Architecture Poster</a>
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/library/aa559893.aspx" target="_blank">How BizTalk Server Implements Host Throttling</a>&nbsp;-&nbsp;Refer this about getting familiar with Throttling concepts and how the BizTalk Engine does it
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/library/aa559591.aspx" target="_blank">What is Host Throttling</a>&nbsp;- Refer this about the details of Host Throttling
+</div>
+</li><li>
+<div><a href="http://social.technet.microsoft.com/wiki/contents/articles/6063.microsoft-biztalk-automatic-throttling.aspx" target="_blank">Microsoft BizTalk Server Automatic Throttling</a>&nbsp;(Wiki) - In-depth details about throttling
+</div>
+</li><li>
+<div><a href="http://blogs.msdn.com/b/biztalkcpr/archive/2009/05/27/throttling.aspx" target="_blank">Throttling</a>&nbsp;- MSDN Blog - Provides details about throttling and how to use performance counters to know more about it.
+</div>
+</li><li>
+<div><a href="http://msdn.microsoft.com/en-us/library/aa578302(BTS.20).aspx" target="_blank">Host Throttling Performance Counters</a>&nbsp;-&nbsp;Provides the performance monitor counters that measure system parameters that impact host throttling
+</div>
+</li><li>
+<div><a href="http://social.technet.microsoft.com/wiki/contents/articles/6983.biztalk-server-2010-host-throttling.aspx" target="_blank">BizTalk Server 2010 Host Throttling</a>&nbsp;- Refer this TechNet Wiki to understand in-depth &nbsp;of Throttling in BizTalk 2010</div>
+</li><li>
+<div><a href="http://msdn.microsoft.com/en-us/library/cc296884(BTS.10).aspx" target="_blank">Measuring Maximum Sustainable Engine Throughput</a>-&nbsp;&nbsp;Refer this for more details about MST and Testing approaches to determine MST of your BizTalk Engine.
+</div>
+</li><li>
+<div><a href="http://msdn.microsoft.com/en-us/library/gg605131.aspx" target="_blank">Load Pattern Tests to Determine Maximum Sustainable Throughput</a>- Refer this about using Visual studio to perform automated testing to figure MST
+</div>
+</li><li>
+<div><a href="http://technet.microsoft.com/en-us/library/cc296716(BTS.10).aspx" target="_blank">Measuring Maximum Sustainable Tracking Throughput</a>&nbsp;- Refer this to know more about MST of BizTalk DTA Tracking throughput
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/library/cc296600(BTS.10).aspx" target="_blank">Processing Large Messages</a>&nbsp;- The article defines large messages and provides guidelines for how to configure BizTalk Server process large messages efficiently
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://social.technet.microsoft.com/wiki/contents/articles/2240.biztalk-server-resources-on-the-technet-wiki.aspx" target="_blank">Load Testing BizTalk Server Solutions with Visual Studio 2010</a> - Refer this TechNet Wiki article about load testing
+ using Visual Studio and BizTalk 2010 </div>
+</li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/library/cc768519.aspx" target="_blank">Evaluating BizTalk Server Performance on Hyper-V</a>&nbsp;-The article&nbsp;describes considerations for evaluating and optimizing performance of a BizTalk Server application running
+ on a guest operating system installed on a Hyper-V virtual machine. It also provides a description of tools that can be used to measure performance of a BizTalk Server application
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://www.microsoft.com/download/en/details.aspx?displaylang=en&amp;id=12021" target="_blank">Managing a Successful Performance Lab</a>&nbsp;-&nbsp;This paper outlines some key strategies for managing a successful performance lab with Microsoft BizTalk® Server
+ 2006. </div>
+</li><li style="text-align:justify;">
+<div><a href="http://64.4.10.145/en-us/library/dd352510.aspx" target="_blank">How to Monitor BizTalk RFID Using Performance Counters</a>
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/library/ms177500.aspx" target="_blank">Checklist for Analyzing Slow-Running Queries</a> - Since BizTalk database is a highly optimized database and there is no need to further tune the Queries, However sometimes
+ we use custom databases in our applications, and they could become bottleneck sometime. Refer this article for tuning the SQL queries.
+</div>
+</li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/library/Aa560166" target="_blank">BizTalk Server 64-Bit Support</a> - The article provides some frequently asked questions about 64 bit support for BizTalk Server. Refer this article if you&nbsp;are planning to deploy
+ 64 bit BizTalk hosts. </div>
+</li><li style="text-align:justify;"><a href="http://www.microsoft.com/download/en/details.aspx?DisplayLang=en&amp;id=15999" target="_blank">BizTalk Server 2006 Comparative Adapter Study</a> - This white paper describes the results of a study that compares the performance
+ of BizTalk Server 2004 and BizTalk Server 2006 adapters </li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/aa972198(v=bts.10).aspx" target="_blank">BizTalk Server 2006: Scalability Case Study Using the SOAP Adapter in BizTalk Server 2006</a>&nbsp;- This document demonstrates the potential
+ increase in efficiency through scaled-up server and adapter combinations. Tests were performed on various combinations of BizTalk Servers and SQL Servers. Test criteria, procedures, server and adapter configurations, and results are presented. The data can
+ help the reader determine which configuration best-suits their existing or anticipated business requirements.
+</li></ul>
+<h1><a name="aaa"></a>MSDN Social</h1>
+<ul>
+<li style="text-align:justify;"><a href="http://social.msdn.microsoft.com/Forums/en/category/biztalkserver" target="_blank">MSDN Social Forum</a> for the discussion with Community members - Please refer this forum for posting a new Question or reading about
+ ongoing discussions. </li><li style="text-align:justify;"><a href="http://social.msdn.microsoft.com/Search/en-US/biztalk?query=BizTalk%20Tuning%20performance%20optimization&amp;rq=meta:Search.MSForums.GroupID(ef2224fa-76e2-4245-a1be-5512b238d8cc)&#43;site:microsoft.com&amp;rn=All&#43;BizTalk&#43;Server&#43;Forums" target="_blank">MSDN
+ Social Forum</a> - All threads related to BizTalk Performance Tuning &amp; Optimization
+</li></ul>
+<h1><a name="sss"></a>Tools </h1>
+<p>There are lots of tools described in &quot;<a href="http://www.microsoft.com/download/en/details.aspx?id=10855" target="_blank">Performance optimization guide</a>&quot; by Microsoft and &quot;<a href="http://social.technet.microsoft.com/wiki/contents/articles/5208.biztalk-server-2010-tools.aspx" target="_blank">BizTalk
+ Server 2010<span class="GINGER_SOFTWARE_mark" id="e935a023-1ac0-4e5a-bc1d-3faf83d7b5f5">:</span>Tools</a>&quot; wiki, however below are few tools which are very common and it is good to be&nbsp;familiar&nbsp;with them:</p>
+<ul>
+<li>
+<div><a href="http://pal.codeplex.com/" target="_blank">PAL</a>&nbsp;- Use this tool to gather and analyze performance data from BizTalk, SQL or any other Windows server. This tool provides pre-configured templates with&nbsp;performance&nbsp;counters related
+<span class="GINGER_SOFTWARE_mark" id="7870b5cd-91b7-47e9-a174-9d4138db1b89">with</span> BizTalk server and SQL Server. The templates can be configured in
+<a href="http://technet.microsoft.com/en-us/library/cc749249.aspx" target="_blank">
+<span class="GINGER_SOFTWARE_mark" id="9d285dc6-96de-43a0-ae14-a136b301d5fb">perfmon</span></a> tool to get the performance data, and further data
+<span class="GINGER_SOFTWARE_mark" id="2f2c2719-7f0d-4b34-affa-84e6c687c213">is used</span> by this tool to generate the performance report.</div>
+<ul>
+<li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/cc296652(BTS.10).aspx" target="_blank">Using the Performance Analysis of Logs (PAL) Tool</a>
+</li><li style="text-align:justify;"><a href="http://blogs.technet.com/b/clint_huffman/archive/2008/09/02/how-to-use-the-pal-tool-for-biztalk-performance-analysis.aspx" target="_blank">How to use the PAL Tool for BizTalk Performance Analysis</a>
+</li></ul>
+</li><li style="text-align:justify;"><a href="http://blogs.technet.com/b/jpierauc/archive/2007/12/18/msgboxviewer.aspx" target="_blank">Message Box Viewer</a>&nbsp;- A great tool to inspect the BizTalk group. The tool generates a comprehensive report&nbsp;summarizing all the
+ issues and summary of critical potential problems. </li><li>
+<div><a href="http://www.microsoft.com/download/en/details.aspx?amp;displaylang=en&amp;id=2846" target="_blank">BizTalk Terminator</a></div>
+<ul>
+<li style="text-align:justify;"><a href="http://blogs.msdn.com/b/biztalkcpr/archive/2011/02/10/using-biztalk-terminator-to-resolve-issues-identified-by-biztalk-msgboxviewer.aspx" target="_blank">Using BizTalk Terminator to resolve issues identified by BizTalk
+ MsgBoxViewer and the BizTalk 2010 Monitor BizTalk Server Job</a> </li><li style="text-align:justify;"><a href="http://www.biztalkadminsblogging.com/index.php/item/48-clean-up-the-marklog-table-with-terminator" target="_blank">Clean up the
+<span class="GINGER_SOFTWARE_mark" id="f225805c-9c35-4b84-b118-63b702a12ce1">MarkLog</span> table with Terminator</a>
+</li></ul>
+</li><li style="text-align:justify;"><a href="http://bbw.codeplex.com/" target="_blank">BizTalk Benchmark Wizard</a>- Use this tool to review BizTalk farm after configuring the Farm.
+</li><li style="text-align:justify;"><a href="http://social.technet.microsoft.com/wiki/contents/articles/5364.biztalk-monitoring-tools.aspx" target="_blank">BizTalk Monitoring Tools</a>&nbsp;- Refer this Wiki to know all the tools to monitor BizTalk Server Farm
+</li><li style="text-align:justify;"><a href="http://www.microsoft.com/download/en/details.aspx?id=14925" target="_blank"><span class="GINGER_SOFTWARE_mark" id="199f261e-15cb-4cc6-a174-2f55a7f9818a">LoadGen</span></a> - Refer this tool to load generation while performing
+ load testing on BizTalk Farm
+<ul>
+<li style="text-align:justify;"><a href="http://biztalkmessages.vansplunteren.net/2009/06/18/random-file-message-creator-component-for-loadgen/" target="_blank">Random File Message Creator for LoadGen</a>- By Randal
+</li><li style="text-align:justify;"><a href="http://connectedthoughts.wordpress.com/2007/11/05/loadgen-2007-and-a-simple-biztalk-wcf-test/" target="_blank"><span class="GINGER_SOFTWARE_mark" id="f1fd27fe-0135-4e63-8e71-f3b60e04a03d">LoadGen</span> and a Simple WCF
+ Load test</a> - By Thiago Almeida </li><li style="text-align:justify;"><a href="http://msdn.microsoft.com/en-us/library/ee377052.aspx">MSDN - Using BizUnit to run
+<span class="GINGER_SOFTWARE_mark" id="bd432399-1b2a-4c4a-95e3-d3a6e5df1d1b">LoadGen</span></a>.
+</li></ul>
+</li><li style="text-align:justify;"><a href="http://technet.microsoft.com/en-us/sysinternals/bb896653" target="_blank">Process Explorer</a> -&nbsp;The Process Explorer display consists of two sub-windows. The top window always shows a list of the currently active processes,
+ including the names of their owning accounts, whereas the information displayed in the bottom window depends on the mode that Process Explorer is in: if it is in handle mode you&#39;ll see the handles that the process selected in the top window has opened; if
+ Process Explorer is in DLL mode you&#39;ll see the DLLs and memory-mapped files that the process has loaded. Process Explorer also has a powerful search capability that will quickly show you which processes have particular handles opened or DLLs loaded.
+</li><li style="text-align:justify;"><a href="http://support.microsoft.com/kb/835451" target="_blank">Adapter Trace Utility</a>&nbsp;- Sometime it is required to trace&nbsp;a&nbsp;BizTalk&nbsp;adapter to get the insights of message processing, refer this article for &quot;how to use the
+ BizTalk Adapter Trace&quot; tools </li><li style="text-align:justify;">
+<div><a href="http://msdn.microsoft.com/en-us/windows/hardware/gg463009/" target="_blank">Debugging Tools for Windows</a>&nbsp;- Use Debugging Tools for Windows to debug drivers, applications, and services on Windows systems. Debugging Tools for Windows includes
+ a core debugging engine and several tools that provide interfaces to the debugging engine. A Visual Studio extension provides a graphical user interface, as does Windows Debugger (WinDbg). Console Debugger (CDB), NT Symbolic Debugger (NTSD), and Kernel Debugger
+ (KD) provide command line user interfaces.</div>
+</li></ul>
+<h1><a name="ddd"></a>Blogs</h1>
+<p>Following are few community blog&nbsp;posts which might be helpful while working with tuning &amp; optimization.</p>
+<ul>
+<li><a href="http://blog.dynatrace.com/2010/02/25/identify-performance-bottlenecks-in-your-biztalk-environment-part-i/" target="_blank">Identify Performance Bottlenecks in your BizTalk Environment – Part I</a>
+</li><li><a href="http://blog.dynatrace.com/2010/03/05/identify-performance-bottlenecks-in-your-biztalk-environment-part-ii/" target="_blank">Identify Performance Bottlenecks in your BizTalk Environment – Part II</a>
+</li><li><a href="http://www.biztalkgurus.com/biztalk_server/biztalk_blogs/b/biztalksyn/archive/2007/09/28/threads-db-sessions-and-throttling.aspx" target="_blank">Threads Database Sessions and Throttling</a>&nbsp;
+</li><li><a href="http://blog.sabratech.co.uk/2008/04/throttling-in-full-action.html" target="_blank">Throttling in Full Action</a>&nbsp;- By Yossi Dahan
+</li><li><a href="http://seroter.wordpress.com/2008/05/19/biztalk-orchestration-throttling-pattern/" target="_blank">BizTalk Orchestration Throttling Pattern</a>- By Richard Seroter
+</li><li><a href="http://connectedthoughts.wordpress.com/2007/09/26/configure-biztalk-hosts-per-application/" target="_blank">Configure BizTalk hosts per Application</a>- By Thiago Almeida
+</li><li><a href="http://www.modhul.com/2006/09/11/host-tracking-and-the-biztalkmsgboxdb/" target="_blank">Host Tracking and the BizTalk MessageBox</a>- By Nick Heppleston
+</li><li><a href="http://cloudcasts.cloudapp.net/ViewWebcast.aspx?webcastid=2521599802517599887" target="_blank">Orchestration Performance</a>&nbsp;<span class="GINGER_SOFTWARE_mark" id="9a69c731-34a0-49dc-a991-445b148e195b">(&nbsp;</span><span style="color:#00b050;"><em style="font-weight:bold;">Webcast</em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;"></em><em style="font-weight:bold;">
+</em><span class="GINGER_SOFTWARE_mark" id="b1388995-e3ca-4575-b4e6-0ed7713e195a">)</span></span> - By Alan Smith
+</li><li><a href="http://kentweare.blogspot.com/2009/04/clustering-biztalk-hosts.html" target="_blank">Clustering BizTalk Hosts</a> - By Kent Weare
+</li><li><a href="http://ninocrudele.ugics.org/?goback=%2Enmp_*1_*1_*1_*1_*1_*1_*1_*1_*1%2Egde_53234_member_154324436" target="_blank">BizTalk Tips to Improve IIS performance</a> - By Nino Crudele
+</li><li><a href="http://www.aimsinnovation.com/news/aims-blog/biztalk-property-tracking-yes-it-is-a-performance-killer" target="_blank">BizTalk Property Tracking - yes it can be a performance killer
+</a></li></ul>
+<h1><a name="fff"></a>Hot Fixes</h1>
+<p>Following are few product hot fixes which may be helpful, But it is strongly recommended to read the KB article first and understand if they are absolutely necessary for the product.</p>
+<ul>
+<li style="text-align:justify;"><a href="http://support.microsoft.com/kb/2627804" target="_blank">KB2627804</a>&nbsp;- Hotfix that improves the performance of the tracking feature in BizTalk Server
+</li><li style="text-align:justify;"><a href="http://support.microsoft.com/kb/970070" target="_blank">KB970070</a>&nbsp; -&nbsp;Support for Locked Pages on SQL Server 2008 R2 Standard Edition x64, on SQL Server 2005 Standard Edition 64-bit systems, and on SQL Server 2008 Standard
+ Edition 64-bit systems </li><li style="text-align:justify;"><a href="http://support.microsoft.com/kb/944426" target="_blank">KB944426</a> &nbsp;-&nbsp;Orphaned cache instances may be built in the Instances and Hosts Queue tables of the BizTalkMsgBoxDb database in BizTalk Server 2006 and in BizTalk
+ Server 2006 R2 </li><li style="text-align:justify;"><a href="http://support.microsoft.com/kb/943165" target="_blank">KB943165</a> &nbsp;-&nbsp;A CPU usage spike occurs on all the BizTalk hosts after you install security bulletin MS07-040 on a server that is running Microsoft BizTalk Server
+ 2006 or Microsoft BizTalk Server 2006 R2 </li><li style="text-align:justify;"><a href="http://support.microsoft.com/kb/2387313" target="_blank">kb2387313</a>&nbsp;- FIX: Poor performance occurs when you use WCF-based BizTalk Adapter for Oracle Database on a dynamic port that is used by BizTalk Server
+</li></ul>
+<h1><a name="ggg"></a>See Also</h1>
+<p>Another important place to find a huge amount of BizTalk related articles is the TechNet Wiki itself. The best entry point is
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/2240.biztalk-server-resources-on-the-technet-wiki.aspx" target="_blank">
+BizTalk Server Resources on the TechNet Wiki</a>.</p>
+
+</div>
+    
+    

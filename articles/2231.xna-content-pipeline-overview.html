@@ -1,0 +1,106 @@
+---
+layout: default
+title: XNA Content Pipeline Overview - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#How_It_Works">How It Works</a></li><li class="hierarchy-item"><a href="#Standard_Importers">Standard Importers</a></li><li class="hierarchy-item"><a href="#Standard_Processors">Standard Processors</a></li><li class="hierarchy-item"><a hrv><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="conef="#References">References</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+The Content Pipeline&nbsp;is a special set of assemblies included with XNA Game Studio&nbsp;that use MSBuild to compile game assets such as image&nbsp;and sound files into streamlined, pre-processed&nbsp;binary files called XNBs (so named for the fact that the&nbsp;file extension of
+ the compiled version of&nbsp;a source file&nbsp;is changed to .xnb) which load quickly at run-time. The&nbsp;Content Pipeline&nbsp;is only available on Windows.&nbsp;&nbsp;For XNA 4.0 it&nbsp;requires the full&nbsp;.NET Framework 4.0. Previous versions of the Content Pipeline require the full&nbsp;.NET
+ Framework 2.0. The Content Pipeline requires the&nbsp;full .NET Framework due its use of MSBuild.<br />
+<br />
+XNB files are platform-specific and are designed to be loaded using the XNA Framework&#39;s ContentManager class and related internal helper&nbsp;classes&nbsp;without the Content Pipeline assemblies. As such, content built with the XNA Content Pipeline can be used at run-time
+ despite the fact that the Content Pipeline might not exist on the target platform. The Content Pipeline is not included with the XNA Framework Redistributable and the XNA Framework EULA prohibits the distribution of the Content Pipeline assemblies except as
+ packaged with XNA Game Studio.<br />
+<br />
+The Content Pipeline is invoked through a special project type called a &quot;content project&quot;. Game assets are added to the content project which is then referenced by one or more XNA game projects (XNA game projects are slightly customized .csproj files). The
+ same content project can be shared by game projects targeting different platforms provided they are all targeting the same version of the XNA Framework. When built, assets in&nbsp;the content project will be&nbsp;compiled and written out to XNB files&nbsp;that are appropriate
+ for&nbsp;the target platform of each&nbsp;game project which the content project is referenced by.&nbsp;This is one of many features of the XNA Framework that ease&nbsp;cross-platform development.<br />
+<br />
+The Content Pipeline&nbsp;includes content importers and processors for many popular content creation tool&nbsp;export formats&nbsp;. Also, the Content Pipeline is fully extensible. This allows you to&nbsp;develop content importers and processors for any other file formats that
+ your content tools export to&nbsp;provided that you have the specifications for the format and are not prohibited from doing so&nbsp;due to any&nbsp;legal considerations such as intellectual property rights and licensing agreements.</p>
+<h2><a name="How_It_Works"></a>How It Works</h2>
+<p>The Content Pipeline operates as follows:</p>
+<ol>
+<li>The .contentproj file is read to find the next asset (if any) along with its specified importer and processor. (n.b. All importers inherit from ContentImporter&lt;T&gt;. All processors inherit from ContentProcessor&lt;TInput,TOutput&gt;.)
+</li><li>An instance of the specified importer is created. </li><li>The&nbsp;importer&#39;s Import method is called passing in the file name of the asset along with a ContentImporterContent (which provides a mechanism for returning warning and error messages). The asset specified by the file name&nbsp;is read&nbsp;either directly into the
+ output&nbsp;object or else (if processing must be done to transform it into the output format)&nbsp;into an intermediate object of another type which will later be used to create the output object which Import returns.
+</li><li>The Import method does minimal processing in order to determine if any other assets must be read in (e.g. texture maps and custom effects&nbsp;for a 3D model). If so it reads in each of the other assets (either directly or by creating an instance of&nbsp;the appropriate&nbsp;processor
+ for that&nbsp;asset type&nbsp;and calling its Import method) and assigns them to the appropriate fields and properties within the intermediate object or the output object.
+</li><li>Upon completion the Import method populates the output&nbsp;object from any intermediate objects if necessary and then&nbsp;returns the output object, which is fully loaded from the file system&nbsp;and ready for processing.
+</li><li>An instance of the specified processor is created and its Process method is called, passing in as the input object&nbsp;the object that was returned from the importer&#39;s Import method along with an instance of the&nbsp;default implementation of the&nbsp;ContentProcessorContext
+ abstract class. </li><li>The Process method does whatever processing is required on the input object including creating a new instance of the output object and populating it appropriately&nbsp;if the type of the output object differs from the type of the input object.
+</li><li>The Process method returns the output object. </li><li>An instance of the ContentTypeWriter&lt;T&gt; for the type of the object returned from Process is instantiated and passed the object returned from Process along with a ContentWriter instance that is setup to write to the appropriate output file for the asset.
+ ContentWriter is derived from BinaryWriter and includes methods for writing several XNA Framework value types and&nbsp;a few types that act to reference other assets. It also includes functionality for applying a general-purpose, lossless&nbsp;compression algorithm
+ to&nbsp;the output depending on the platform and whether or not any meaningful amount of&nbsp;compression could be achieved. (n.b. Compression is never applied in Debug configuration, only in Release configuration.)
+</li><li>The ContentTypeWriter&lt;T&gt; writes out the object in a target platform-appropriate way&nbsp;along with metadata indicating what the appropriate ContentTypeReader to read the object in at run-time is and what the run-time type of the object that is being written
+ out should be. The build-time and run-time types&nbsp;sometimes differ due to how certain things must be addressed during build-time in order to avoid things like circular references and inappropriate dependence on the characteristics of the build-time platform.
+</li><li>At run-time, when a request is made to an instance of the ContentManager class to load a specific XNB file using its Load&lt;T&gt; method, the ContentManager examines the file, checks to purpose, lossless&nbsp;compression algorithm
+ to&nbsp;the output depending on the platform and whether or not any meaningful amount of&nbsp;compression could be achieved. (n.b. Compression is never applied in Debug configuration, only in Release configuration.)
+</li><li>The ContentTypeWriter&lt;T&gt; writes out the object in a target platform-appropriate way&nbsp;along with metadata indicating what the appropriate ContentTypeReader to read the object in at run-time is and what the run-time type of the object that is being written
+ out should be. The build-time and run-time types&nbsp;sometmake sure the&nbsp;metadata specifying the run-time type matches the type T that
+ was&nbsp;specified and then locates the&nbsp;ContentTypeReader that the metadata specifies and reads the file in, returning a reference to the object it has loaded while caching a reference internally to avoid loading the same asset multiple times and to speed subsequent
+ requests (if any) for the same asset. This reference&nbsp;also enables the ContentManager to&nbsp;call Dispose on any objects it has loaded which implement IDisposable when the ContentManager&#39;s Unload method is called in order to prevent memory leaks from occurring.
+</li></ol>
+<h2><a name="Standard_Importers"></a>Standard Importers</h2>
+<p>The standard importers&nbsp;that are included with XNA Game Studio are:</p>
+<ul>
+<li>Autodesk FBX. Used to import 3D models that have been exported with the 2006.11 version of the Autodesk FBX exporter. The data&nbsp;is loaded in to&nbsp;an instance&nbsp;of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.nodecontent.aspx"><span style="color:#0066dd;">NodeContent</span></a>
+ class. </li><li>Effect. Used to import&nbsp;vertex and pixel shaders written in HLSL using the DirectX Effect file format. The data is loaded in to an instance of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.effectcontent.aspx"><span style="color:#0066dd;">EffectContent</span></a>
+ class. </li><li>MP3 Audio File. Used to import music and sound effects&nbsp;that&nbsp;are in MP3 format. The data is loaded in to an instance of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.audio.audiocontent.aspx"><span style="color:#0066dd;">AudioContent</span></a>
+ class. </li><li>Sprite Font Description. Used to import .spritefont files, which are XML files&nbsp;that conform to&nbsp;the
+<a href="http://msdn.microsoft.com/en-us/library/bb447759.aspx"><span style="color:#0066dd;">Sprite Font XML Schema</span></a>. Sprite fonts are compiled into special bitmaps which are loaded&nbsp;into instances of the SpriteFont class at run-time.&nbsp;SpriteFont class&nbsp;instances
+ are&nbsp;used in conjunction with the SpriteBatch class&nbsp;to draw strings within an XNA game. The data is loaded in to an instance of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.fontdescription.aspx"><span style="color:#0066dd;">FontDescription</span></a>
+ class. </li><li>Texture. Used to import textures. The supported file types are: .bmp; .dds; .dib; .hdr; .jpg; .pfm; .png; .ppm; and .tga. Depending on the file format and contents, the data will be loaded into an instance of either the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.texture2dcontent.aspx"><span style="color:#0066dd;">Texture2DContent</span></a>
+ class, the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.texture3dcontent.aspx"><span style="color:#0066dd;">Texture3DContent</span></a> class, or the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.texturecubecontent.aspx"><span style="color:#0066dd;">TextureCubeContent</span></a>
+ class. Unless you have taken explicit steps to create a 3D texture or a cube map, this will import your texture data into a Texture2DContent class instance.
+</li><li>WAV Audio File. Used to import music and sound effects that are in 16-bit PCM&nbsp;WAV format.&nbsp;The data is loaded in to an instance of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.audio.audiocontent.aspx"><span style="color:#0066dd;">AudioContent</span></a>
+ class. </li><li>WMA Audio File. Used to import music and sound effects&nbsp;that&nbsp;are in WMA format.&nbsp;The data is loaded in to an instance of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.audio.audiocontent.aspx"><span style="color:#0066dd;">AudioContent</span></a>
+ class. </li><li>WMV Video File. Used to import video clips that are in WMV format. There are restrictions of the encoding, which can be found
+<a href="http://msdn.microsoft.com/en-us/library/dd254869.aspx"><span style="color:#0066dd;">here</span></a>. The data is loaded in to an instance of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.videocontent.aspx"><span style="color:#0066dd;">VideoContent</span></a>
+ class. </li><li>X File. Used to import 3D models that have been exported with the DirectX X File Format using a left-handed coordinate system.&nbsp;The data&nbsp;is loaded in to&nbsp;an instance&nbsp;of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.graphics.nodecontent.aspx"><span style="color:#0066dd;">NodeContent</span></a>
+ class. </li><li>XACT Project. Used to import game audio (both music and sound effects) that are in Microsoft Cross-Platform Audio Creation Tool. Although added to a content project, XACT projects are not built by the Content Pipeline&#39;s importers or processors. XACT is
+ not available on Windows Phone 7. </li><li>XML Content. Used to import XML data in <a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.serialization.intermediate.intermediateserializer.aspx">
+<span style="color:#0066dd;">Intermediate format</span></a>. The data is loaded in to an instance of the Object class.
+</li></ul>
+<h2><a name="Standard_Processors"></a>Standard Processors</h2>
+<p>The standard processors that are included with XNA Game Studio are:</p>
+<ul>
+<li>Effect Processor. Used to process instances of&nbsp;EffectContent. Returns an instance of&nbsp;EffectContent.
+</li><li>Font Description Processor. Used to process instances of&nbsp;FontDescription. Returns an instance of
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.spritefontcontent.aspx">
+<span style="color:#0066dd;">SpriteFontContent</span></a>. </li><li>Font Texture Processor. Used to process custom sprite fonts created in conformance with the instructions
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.fonttextureprocessor.aspx">
+<span style="color:#0066dd;">here</span></a>. Used to process Texture2DContent. Returns and instance of&nbsp;<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.spritefontcontent.aspx"><span style="color:#0066dd;">SpriteFontContent</span></a>.
+</li><li>Model Processor. Used to process instances of NodeContent. Returns an instance of
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.modelcontent.aspx">
+<span style="color:#0066dd;">ModelContent</span></a>. </li><li>No Processing Required (<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.passthroughprocessor.aspx"><span style="color:#0066dd;">PassThroughProcessor</span></a>). Used to process instances of Object. Returns
+ the Object instance that was passed in without modification. </li><li>Song Processor. Used to process instances of AudioContent. Returns an instance of
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.songcontent.aspx">
+<span style="color:#0066dd;">SongContent</span></a>. Use this for game music and other background music.
+</li><li>Sound Effect Processor. Used to process instances of AudioContent. Returns an instance of
+<a href="http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.pipeline.processors.soundeffectcontent.aspx">
+<span style="color:#0066dd;">SoundEffectContent</span></a>. Use this for sound effects,&nbsp;such as&nbsp;a fog horn, a chime, or a door closing.
+</li><li>Texture Processor. Used to process instances of Texture2DContent, Texture3DContent, and TextureCubeContent. Returns the same type that was passed in.
+</li><li>Video Processor. Used to process instances of VideoContent. Returns an instance of VideoContent.
+</li></ul>
+<h2><a name="References"></a>References</h2>
+<p>The following references will provide you with more information about the Content Pipeline.</p>
+<ul>
+<li><a href="http://msdn.microsoft.com/en-us/library/dd282477.aspx">MSDN Library Adding Art, Music, and Other Game Assets</a>. A very good introduction to the Content Pipeline. This material helps explain all of the things that the Content Pipeline does for
+ you automatically and also provides examples of how to extend it if&nbsp;your needs should ever go beyond the built-in capabilities.
+</li><li><a href="http://create.msdn.com/en-us/education/catalog/?contenttype=0&amp;devarea=13&amp;sort=2">App Hub Content Pipeline Education Catalog Materials</a>. Code samples, tutorials, articles, and tools for learning more about the Content Pipeline and how to work
+ with it. </li><li><a href="http://msdn.microsoft.com/en-us/library/bb195587.aspx">MSDN Library Content Pipeline Class Library</a>. The Content Pipeline class library documentation on the MSDN Library.
+</li><li><a href="http://badcorporatelogo.wordpress.com/">BadCorporateLogo</a>. XNA Game Studio Team member Stephen Styrchak&#39;s blog. Stephen has many great posts on here about the Content Pipeline and also has a utility he created for debugging Content Pipeline
+ build processes (requires a non-Express version of Visual Studio). </li><li><a href="http://www.talula.demon.co.uk/blogindex.html#ContentPipeline">Shawn Hargreaves&#39; Blog Posts About the Content Pipeline</a>&nbsp;and
+<a href="http://www.talula.demon.co.uk/blogindex.html#IntermediateSerializer">About the IntermediateSerializer</a>. Shawn&#area=13&amp;sort=39;s posts about the content pipeline and the intermediate serializer, a custom XML serializer that the Content Pipeline uses and which can
+ be used for&nbsp; easily writing out things like level data and loading it at run-time in your game.
+</li></ul>
+<p>&nbsp;</p>
+
+</div>
+    
+    

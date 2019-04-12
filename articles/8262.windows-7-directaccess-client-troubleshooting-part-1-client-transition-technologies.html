@@ -1,0 +1,55 @@
+---
+layout: default
+title: Windows 7 DirectAccess Client Troubleshooting – Part 1 – Client Transition Technologies - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p><span style="font-family:calibri,sans-serif;font-size:11pt;">During the past few months I was heavily engaged with different DirectAccess implementations and passed by several interesting issues/problems. The Direct Access Wizard is so simple and normally things get working from the first time however sometimes things can go wrong. In this article series I will try to go through several troubleshooting items moving from the basic commands to more advanced issues.</span></p>
+<p><span style="font-family:calibri,sans-serif;font-size:11pt;">First of all we need to ensure that the Direct Access components on the Windows 7 client are running and functioning normally. The basic steps are as follows:</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"></span></p>
+<ol>
+    <li>From the Start Menu - Right Click Computer Object &ndash; Properties &ndash; Device Manager &ndash; View (Show Hidden Devices) &ndash; Expand Network Adapters &ndash; Ensure the &ldquo;IPHTTPSinterface&rdquo; and &ldquo;Teredo Tunneling Pseudo-Interface&rdquo; are enabled. </li>
+    <li>From the Services, Check the &ldquo;IP Helper&rdquo; service startup type is Automatic and the status is up and running. </li>
+    <li>IPconfig /all to check which interfaces are up and which interfaces have IPV6 address. </li>
+    <li>Ensure the Machine is located outside the Corporate Network by running the following command: </li>
+</ol>
+<p style="margin:0in 0in 10pt 0.5in;"><b><span style="font-family:calibri;">Netsh dnsclient show state</span></b></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1070.DNSCLIENT.png"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1070.DNSCLIENT.png" /></a></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;"></span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:calibri;text-decoration:underline;">Which Transition Technology is my DA client using?</span></p>
+1. If the Direct Access client has a public IPV4 address (Assigned to his Ethernet or Wireless NIC) and the IP Protocol 41 is allowed on Company Corporate Firewall/UAG/TMG then the client will connect using the 6to4 Transition Technology<br />
+<p><span style="font-family:calibri;">The Three main Netsh Commands that should be used for Troubleshooting are:</span></p>
+<ul>
+    <li>Netsh interface 6to4 show state (The State should be Default or Enabled, Disabled means the DA client will never bring 6to4 Interface up) </li>
+    <li>Netsh interface 6to4 show relay (This should list the First Consecutive public IPV4 address configured on the DA server) </li>
+    <li>Netsh interface 6to4 show interface (Displays the Configuration Information) </li>
+    <li>For detailed 6to4 Troubleshooting <a href="http://technet.microsoft.com/en-us/library/ee844172(v=ws.10).aspx"><span style="color:#0066dd;">http://technet.microsoft.com/en-us/library/ee844172(v=ws.10).aspx</span></a> </li>
+</ul>
+<p>&nbsp;</p>
+<p><span style="font-family:calibri;"></span></p>
+<p><span style="font-family:calibri;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4812.6to4.png"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4812.6to4.png" /></a></span></p>
+<p><span style="font-family:calibri;"></span></p>
+2. If the 6to4 Interface didn&rsquo;t come up (For DA clients with public IPV4 Addresses) then the DA client will automatically fall back to IPHTTPS Interface connection.<br />
+<p><span style="font-family:calibri;">The main Netsh command for IPHTTPS is: </span></p>
+<ul>
+    <li>Netsh interface httpstunnel show interfaces (This will list the IPHTTPS URL and the status were active means the Interface is up and running, deactivated means the DA client is connected using other transition technology) </li>
+    <li>For detailed Direct access HTTPS troubleshooting <a href="http://technet.microsoft.com/en-us/library/ee844126(v=ws.10).aspx"><span style="color:#0066dd;">http://technet.microsoft.com/en-us/library/ee844126(v=ws.10).aspx</span></a> </li>
+</ul>
+<p><span style="font-family:calibri;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2844.IPHTTPS.png"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2844.IPHTTPS.png" /></a></span></p>
+<p><span style="font-family:calibri;"></span></p>
+<p>3. If the DA client is behind a NAT device then it should connect using Teredo provided that Port 3544 (UDP) is enabled and allowed all the way to the DA Server</p>
+<p><span style="font-family:calibri;">The main Netsh command used with Teredo is:</span></p>
+<p><span style="font-family:calibri;"></span></p>
+<ul>
+    <li>Netsh Interface Teredo show state (If the state is qualified then Teredo is functioning normally, otherwise there will be a problem mostly with the UDP port blocked) </li>
+    <li>For Detailed Teredo Troubleshooting <a href="http://technet.microsoft.com/en-us/library/ee844188(v=ws.10).aspx"><span style="color:#0066dd;">http://technet.microsoft.com/en-us/library/ee844188(v=ws.10).aspx</span></a> </li>
+</ul>
+<p><span style="font-family:calibri;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1263.Teredo.png"><img alt=" " style="border:0px solid;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1263.Teredo.png" /></a></span></p>
+<p>4. If the Teredo didn&rsquo;t work (Clients behind NAT) then the DA client will fall Automatically to the IPHTTPS option (Step 2)<br />
+<br />
+<br />
+For more details on UAG 2010 Portal and Direct Access please check my blog <a href="http://itcalls.blogspot.com/"><span style="color:#0066dd;">http://itcalls.blogspot.com/</span></a><br />
+<br />
+</p></div>
+    
+    

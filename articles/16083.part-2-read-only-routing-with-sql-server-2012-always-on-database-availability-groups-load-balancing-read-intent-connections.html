@@ -1,0 +1,270 @@
+---
+layout: default
+title: Part 2 - Read-Only Routing with SQL Server 2012 Always On Database Availability Groups (Load Balancing Read Intent Connections) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="border-bottom:#4f81bd 1pt solid;border-left:medium none;padding-bottom:4pt;padding-left:0in;padding-right:0in;border-top:medium none;border-right:medium none;padding-top:0in;">
+<a name="Overview"></a><span style="font-family:Segoe UI;color:#365f91;font-size:24px;">Overview</span></div>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Segoe UI;color:#000000;">In a previous post titled “</span><a href="http://social.technet.microsoft.com/wiki/contents/articles/13503.read-only-routing-with-sql-server-2012-always-on-database-availability-groups-en-us.aspx"><span style="font-family:Segoe UI;color:#1364c4;">Read
+ Only Routing with SQL Server 2012 Always On Database Availability Groups</span></a><span style="font-family:Segoe UI;color:#000000;">” I walked through the details of how SQL Server 2012 can scale read-only connections from an application that only intends
+ to read from the database to a specific node in the cluster.&nbsp; &nbsp;&nbsp;</span></p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Segoe UI;color:#000000;">In the previous post I showed a script that I used to configure the read-only routing list in order of priority.&nbsp; In this post I will go one step further and show a way to load
+ balance read intent connections across the secondary replicas. &nbsp;&nbsp;This involves a script that will rotate the priority of the Read Only Routing list to provide a load balancing affect.<br />
+<br />
+</span></p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Overview_of_SQL_Server_Always_On_Infrastructure"></a><span style="font-family:Segoe UI;color:#365f91;font-size:24px;">Overview of SQL Server Always On Infrastructure</span></h1>
+<p style="margin:0in 0in 10pt;">To facilitate the load balancing example I am using the same SQL Server 2012 Always On infrastructure as the last example.&nbsp; Below is an overview:</p>
+<p style="margin:0in 0in 10pt;"><strong>Always On Database Availability Group Diagram:<br />
+</strong><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4745.ServerDiagram_5F00_2.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4745.ServerDiagram_5F00_2.jpg" style="border-bottom:0px solid;border-left:0px solid;border-top:0px solid;border-right:0px solid;" /></a><br />
+<br />
+</p>
+<p>&nbsp;</p>
+<p style="margin:0in 0in 10pt;"><span style="font-family:Calibri;"><strong><span style="font-family:Segoe UI;">Diagram of Server Manager:</span></strong><br />
+</span></p>
+<p style="margin:0in 0in 10pt;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6082.ServerManager.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6082.ServerManager.JPG" style="border-bottom:0px solid;border-left:0px solid;border-top:0px solid;border-right:0px solid;" /></a></p>
+<p style="margin:0in 0in 10pt;"><strong>My Windows 2008 R2 server names are (3 node cluster):<br />
+</strong></p>
+<ul>
+<li>SP-DENALI1 </li><li>SP-DENALI3 </li><li>SP-DENALI4</li></ul>
+<p style="margin:0in 0in 10pt;"><strong>I have loaded a SQL 2012 named instance on each server with the following names:</strong></p>
+<ul>
+<li>SP-DENALI1\SQL1 (PRIMARY REPLICA) </li><li>SP-DENALI3\SQL1 (SECONDARY REPLICA) </li><li>SP-DENALI4\SQL1 (SECONDARY REPLICA)</li></ul>
+<p style="margin:0in 0in 10pt;"><strong>Availability Group Listener (This is required to be setup for read-only routing):</strong><br />
+SQL1</p>
+<p style="margin:0in 0in 10pt;">NOTE: The Availability Group Listener is much like a virtual network name in traditional SQL clustering as it is a pointer to the SQL Instance that currently hosts the database availability group.&nbsp;&nbsp;
+</p>
+<p style="margin:0in 0in 10pt;"><span style="color:#365f91;font-size:24px;">Read-Only Routing list</span></p>
+<p style="margin:0in 0in 10pt;">The Read-Only routing URL’s and Read-Only routing list is configured using the script below:</p>
+<p><span style="color:#0000ff;font-size:10pt;">--Set ROR URL’s</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI3\SQL1&#39;</span><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Secondary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_URL <span style="color:#808080;">
+=</span> <span style="color:#ff0000;">N&#39;tcp://SP-Denali3.contoso.com:56537&#39;</span><span style="color:#808080;">))</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI1\SQL1&#39;</sp00ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI3\SQL1&#39;</span><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Secondary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_URL <span style="color:#808080;">
+=</span> <span style="color:#ff0000;">N&#39;tcp://SP-Denali3.contoso.com:56537&#39;</span><span style="color:#808080;">))</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI1an><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Secondary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_URL <span style="color:#808080;">
+=</span> <span style="color:#ff0000;">N&#39;tcp://SP-Denali1.contoso.com:58950&#39;</span><span style="color:#808080;">))</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI4\SQL1&#39;</span><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Secondary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_URL <span style="color:#808080;">
+=</span> <span style="color:#ff0000;">N&#39;tcp://SP-Denali4.contoso.com:64445&#39;</span><span style="color:#808080;">))</span></span>&nbsp;</p>
+<p><span style="color:#0000ff;font-size:10pt;">--Read-Only Routing list</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI1\SQL1&#39;</span><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali4\SQL1&#39;</span><span style="color:#808080;">,</span><span style="color:#ff0000;">&#39;SP-Denali3\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI3\SQL1&#39;</span><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali4\SQL1&#39;</span><span style="color:#808080;">,</span><span style="color:#ff0000;">&#39;SP-Denali1\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="color:#0000ff;font-size:10pt;">ALTER</span><span style="font-size:10pt;"> AVAILABILITY
+<span style="color:#0000ff;">GROUP</span> [AGAdvWorks1]</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">Modify</span><span style="font-size:10pt;"> Replica
+<span style="color:#0000ff;">on</span></span></p>
+<p><span style="color:#ff0000;font-size:10pt;">N&#39;SP-DENALI4\SQL1&#39;</span><span style="color:#0000ff;font-size:10pt;"> with</span></p>
+<p><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali1\SQL1&#39;</span><span style="color:#808080;">,</span>
+<span style="color:#ff0000;">&#39;SP-Denali3\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p style="margin:0in 0in 10pt;"><b>NOTE: </b>For a deeper explanation and a VERY handy script that will generate the ROR URL for you please see Matt Neerincx’s blog post
+<a title="http://blogs.msdn.com/b/mattn/archive/2012/04/25/calculating-read-only-routing-url-for-alwayson.aspx" href="http://blogs.msdn.com/b/mattn/archive/2012/04/25/calculating-read-only-routing-url-for-alwayson.aspx">
+<span style="line-height:115%;color:#1364c4;font-size:10pt;">http://blogs.msdn.com/b/mattn/archive/2012/04/25/calculating-read-only-routing-url-for-alwayson.aspx</span></a><span style="line-height:115%;font-size:10pt;"><br />
+<br />
+</span>With the above Read-Only Routing URL list when SP-DENALI1\SQL1 is online in the PRIMARY role and an application connects using ApplicationIntent=ReadOnly the connection will be routed to the third node SP-DENALI4\SQL1.&nbsp; It is possible though to rewrite
+ the Read-Only Routing URL list periodically maybe every 15 seconds specifying different readable secondary’s each time.&nbsp; This would in affect load balancing the read only connections across the available secondary’s.</p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Load_Balancing_using_the_Read-Only_Routing_list"></a><span style="font-family:Segoe UI;color:#365f91;font-size:24px;">Load Balancing using the Read-Only Routing list</span></h1>
+<p style="margin:0in 0in 10pt;">It is possible to rewrite the Read-Only Routing list periodically and in effect create load balancing of read intent connections.&nbsp; In my configuration I have two secondary replicas so each node will have a SQL Agent job that will
+ rewrite the Read-Only Routing list accordingly.</p>
+<p style="margin:0in 0in 10pt;">To create a load balancing affect I have created a single script that could be scheduled via SQL Agent job and would run continually.&nbsp; Every 15 seconds the script changes the Read-Only Routing list so that read intent connections
+ are spread across the available nodes.&nbsp; </p>
+<p style="margin:0in 0in 10pt;">The agent job should be created and running continuously on each node.&nbsp; The code within the script checks to see if the instance is in the PRIMARY role and also checks to see if more than one secondary is available only executes
+ if the two conditions are true.&nbsp; The code will only run from the instance that is in the PRIMARY role.</p>
+<p style="margin:0in 0in 10pt;">Below is the code that will produce the load balancing effect:</p>
+<p><span style="color:#0000ff;font-size:10pt;">While</span><span style="font-size:10pt;"> 1<span style="color:#808080;">=</span>1
+</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#0000ff;">Begin</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+If </span><span style="color:#808080;">(</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+SELECT</span> ARS<span style="color:#808080;">.</span>role_desc</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+FROM</span> <span style="color:#008000;">SYS</span><span style="color:#808080;">.</span>availability_replicas AR</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#808080;">
+join</span> <span style="color:#008000;">sys</span><span style="color:#808080;">.</span>dm_hadr_availability_replica_states ARS
+<span style="color:#0000ff;">on</span> AR<span style="color:#808080;">.</span>replica_id
+<span style="color:#808080;">=</span> ARS<span style="color:#808080;">.</span>replica_id
+</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+where</span> AR<span style="color:#808080;">.</span>replica_server_name <span style="color:#808080;">
+=</span> <span style="color:#808080;">(</span><span style="color:#0000ff;">select</span>
+<span style="color:#ff00ff;">@@SERVERNAME</span><span style="color:#808080;">)</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#808080;">
+)</span> <span style="color:#808080;">=</span> <span style="color:#ff0000;">&#39;PRIMARY&#39;</span>
+<span style="color:#808080;">and</span> <span style="color:#808080;">(</span><span style="color:#0000ff;">select</span>
+<span style="color:#ff00ff;">count</span><span style="color:#808080;">(*)</span> <span style="color:#0000ff;">
+from</span> <span style="color:#008000;">sys</span><span style="color:#808080;">.</span>availability_read_only_routing_lists<span style="color:#808080;">)</span><span style="color:#808080;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="color:#808080;font-size:10pt;"></span><span style="color:#808080;font-size:10pt;"></span><span style="color:#808080;font-size:10pt;"></span>&gt;</span>&nbsp;1</span><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">Begin</span></span><span style="font-size:10pt;">&nbsp;&nbsp;
+</span></p>
+<p><span style="font-size:10pt;"></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+Modify</span> Replica <span style="color:#0000ff;">on</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#ff0000;">
+N&#39;SP-DENALI1\SQL1&#39;</span> <span style="color:#0000ff;">with</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">&nbsp;&nbsp;;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+</span><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">Begin</span></span><span style="font-size:10pt;">&nbsp;&nbsp;
+</span></p>
+<p><span style="font-size:10pt;"></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000f&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali3\SQL1&#39;</span><span style="color:#808080;">,</span><span style="color:#ff0000;">&#39;SP-Denali4\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+Modify</span> Replica <span style="color:#0000ff;">on</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#ff0000;">
+N&#39;SP-DENALI3\SQL1&#39;</span> <span style="color:#0000ff;">with</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali1\SQL1&#39;</span><span style="color:#808080;">,</span><span style="color:#ff0000;">&#39;SP-Denali4\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+Modify</span> Replica <span style="color:#0000ff;">on</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#ff0000;">
+N&#39;SP-DENALI4\SQL1&#39;</span> <span style="color:#0000ff;">with</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali3\SQL1&#39;</span><span style="color:#808080;">,</span>
+<span style="color:#ff0000;">&#39;SP-Denali1\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#008000;">
+--print &#39;changing ROR URL in&nbsp;15 seconds...&#39;</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+WAITFOR</span> <span style="color:#0000ff;">DELAY</span> <span style="color:#ff0000;">
+&#39;00:00:15&#39;</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#008000;">
+--print &#39;Changing ROR URL&#39;</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#008000;">
+--Run every&nbsp;15 seconds </span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+Modify</span> Replica <span style="color:#0000ff;">on</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#ff0000;">
+N&#39;SP-DENALI1\SQL1&#39;</span> <span style="color:#0000ff;">with</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali4\SQL1&#39;</span><span style="color:#808080;">,</span><span style="color:#ff0000;">&#39;SP-Denali3\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+Modify</span> Replica <span style="color:#0000ff;">on</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#ff0000;">
+N&#39;SP-DENALI3\SQL1&#39;</span> <span style="color:#0000ff;">with</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali4\SQL1&#39;</span><span style="color;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000:#808080;">,</span><span style="color:#ff0000;">&#39;SP-Denali1\SQL1&#39;</span><span style="color:#808080;">)))</span></span>&nbsp;</p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+ALTER</span> AVAILABILITY <span style="color:#0000ff;">GROUP</span> [AG AdventureWorks]</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+Modify</span> Replica <span style="color:#0000ff;">on</span></span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#ff0000;">
+N&#39;SP-DENALI4\SQL1&#39;</span> <span style="color:#0000ff;">with</span></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><span style="color:#808080;font-size:10pt;">(</span><span style="font-size:10pt;">Primary_Role
+<span style="color:#808080;">(</span>READ_ONLY_ROUTING_LIST <span style="color:#808080;">
+=(</span><span style="color:#ff0000;">&#39;SP-Denali1\SQL1&#39;</span><span style="color:#808080;">,</span>
+<span style="color:#ff0000;">&#39;SP-Denali3\SQL1&#39;</span><span style="color:#808080;">)))</span></span><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></p>
+<p><span style="font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">
+end</span></span></p>
+<p><span style="color:#008000;font-size:10pt;"></span></p>
+<p><span style="color:#0000ff;font-size:10pt;">WAITFOR</span><span style="font-size:10pt;">
+<span style="color:#0000ff;">DELAY</span> <span style="color:#ff0000;">&#39;00:00:15&#39;</span></span></p>
+<p style="margin:0in 0in 10pt;"><span style="line-height:115%;color:#0000ff;font-size:10pt;">End</span></p>
+<p style="margin:0in 0in 10pt;">To complete the procedure either run the code from above in a new query window in SSMS or use the code from above and create a SQL agent job and then start the job.&nbsp; This job will need to be running continuously.</p>
+<p style="margin:0in 0in 10pt;">Verify ROR list is rotating correctly by querying DMV’s:</p>
+<p style="margin:0in 0in 10pt;">The below query shows the Read-Only Routing List for each instance:
+</p>
+<p><span style="color:#0000ff;font-size:10pt;">select</span><span style="font-size:10pt;">
+<span style="color:#0000ff;">distinct</span><span style="color:#808080;">(</span>AR<span style="color:#808080;">.</span>replica_server_name<span style="color:#808080;">),</span> ROR_List<span style="color:#808080;">.</span>routing_priority<span style="color:#808080;">,</span>
+ AR2<span style="color:#808080;">.</span>replica_server_name</span></p>
+<p><span style="color:#0000ff;font-size:10pt;">from</span><span style="font-size:10pt;">
+<span style="color:#008000;">sys</span><span style="color:#808080;">.</span>availability_read_only_routing_lists ROR_List</span></p>
+<p><span style="color:#808080;font-size:10pt;">join</span><span style="font-size:10pt;">
+<span style="color:#008000;">sys</span><span style="color:#808080;">.</span>availability_replicas AR
+<span style="color:#0000ff;">on</span> ROR_List<span style="color:#808080;">.</span>replica_id
+<span style="color:#808080;">=</span> AR<span style="color:#808080;">.</span>replica_id
+</span></p>
+<p><span style="color:#808080;font-size:10pt;">join</span><span style="font-size:10pt;">
+<span style="color:#008000;">sys</span><span style="color:#808080;">.</span>availability_replicas AR2
+<span style="color:#0000ff;">on</span> AR2<span style="color:#808080;">.</span>replica_id
+<span style="color:#808080;">=</span> ROR_List<span style="color:#808080;">.</span>read_only_replica_id
+</span></p>
+<p style="margin:0in 0in 10pt;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1106.Initial_5F00_ROR_5F00_Results.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1106.Initial_5F00_ROR_5F00_Results.JPG" style="border-bottom:0px solid;border-left:0px solid;border-top:0px solid;border-right:0px solid;" /></a><br />
+<br />
+After 15 seconds…&nbsp; As the script continues to run you can see that the ROR list is changing (Rotating to the right):</p>
+<p style="margin:0in 0in 10pt;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8080.After_5F00_LB_5F00_ROR_5F00_Results.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8080.After_5F00_LB_5F00_ROR_5F00_Results.JPG" style="border-bottom:0px solid;border-left:0px solid;border-top:0px solid;border-right:0px solid;" /></a><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6866.Routing_5F00_List_5F00_LB_5F00_Results_5F00_Default.png"></a></p>
+<p>&nbsp;</p>
+<p style="margin:0in 0in 10pt;"><span style="color:#365f91;font-size:24px;">Verify Load Balancing using a reporting application</span></p>
+Using an SSRS report with a data source like seen below you can verify that connections are in fact being routed between the two different nodes:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7026.ScreenShot6.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7026.ScreenShot6.jpg" style="border-bottom:0px solid;border-left:0px solid;border-top:0px solid;border-right:0px solid;" /></a><br />
+<br />
+<p>&nbsp;</p>
+<p style="margin:0in 0in 10pt;"><b>Running the report:</b></p>
+<p style="margin:0in 0in 10pt;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6746.ScreenShot9.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6746.ScreenShot9.jpg" style="border-bottom:0px solid;border-left:0px solid;border-top:0px solid;border-right:0px solid;" /></a><br />
+<br />
+</p>
+<p style="margin:0in 0in 10pt;">Close out and reopen the report in SQL Server Data Tools every 15 seconds to verify that the server name is changing.&nbsp; You can chose to run a SQL profiler trace on both secondary’s to see the load balancing as it is happening
+ or you can use SQL Server Data Tools.&nbsp; I would recommend closing out of SQL Server Data Tools and also deleting the data cache files *.rdl.data.</p>
+<h1 style="margin:24pt 0in 0pt;"><a name="Summary"></a><span style="font-family:Segoe UI;color:#365f91;font-size:24px;">Summary</span></h1>
+<p style="margin:0in 0in 10pt;">Extending the Read-Only Routing feature in SQL Server 2012 with a script similar to the one used in this blog makes it possible to provide load balancing of read intent connections.&nbsp; Load balancing using this technique provides
+ a way to get even more use from server hardware that host secondary’s databases and provide reporting applications with better performance and throughput.</p>
+<p style="margin:0in 0in 10pt;">&nbsp;</p>
+
+</div>
+    
+    

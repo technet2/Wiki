@@ -1,0 +1,283 @@
+---
+layout: default
+title: Configure Failover Clustering on Windows Server 2008 R2 Server Core - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div>In this post I will explain how to build a Windows Server 2008 cluster with Server Core and Hyper-V.
+</div>
+<di
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Configure Failover Clustering on Windows Server 2008 R2 Server Core</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div>In this post I will explain how to build a Windows Server 2008 v>Below are the steps that we will be covering in detail.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Prepare_the_Nodes">Prepare the Nodes</a></li><li class="hierarchy-item"><a href="#Configure_ISCSI_Initiator_and_disks">Configure ISCSI Initiator and disks</a></li><li class="hierarchy-item"><a href="#Install_Powershell">Install PowerShell</a></li><li class="hierarchy-item"><a href="#Enable_Failover_Cluster_Feature">Enable Failover Cluster Feature</a></li><li class="hierarchy-item"><a href="#Run_Cluster_Validation_Tests">Run Cluster Validation Tests</a></li><li class="hierarchy-item"><a href="#Create_a_Cluster">Create a Cluster</a></li><li class="hierarchy-item"><a href="#Managing_your_Failover_Cluster">Managing your Failover Cluster</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Add_a_Service_to_Failover_Cluster">Add a Service to Failover Cluster</a></li><li class="hierarchy-item"><a href="#Move_the_Services_from_one_Node_to_another_Node">Move the Services from one
+ Node to another Node</a></li><li class="hierarchy-item"><a href="#Add_Nodes_to_an_existing_failover_cluster">Add Nodes to an existing failover cluster</a></li><li class="hierarchy-item"><a href="#Remove_Nodes_from_your_failover_cluster">Remove Nodes from your failover cluster</a></li><li class="hierarchy-item"><a href="#Destroy_an_existing_failover_cluster">Destroy an existing failover cluster</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+</div>
+<hr />
+<h2><strong><a name="Prepare_the_Nodes"></a>Prepare the Nodes</strong></h2>
+<strong></strong>
+<p>I had created 2 VMs with Windows Server 2008 Enterprise(Server core)<span>&nbsp; </span>
+as the operating system.<br />
+<br />
+Follow the below steps to prepare the Nodes to form failover cluster. Required command to achieve the goal is given for each step.<br />
+<span><br />
+<span style="font-size:13px;">1.</span><span style="line-height:normal;font-style:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Get the computer Name.<br />
+<br />
+<strong>HOSTNAME<br />
+</strong><span><strong><br />
+</strong><span style="font-size:13px;">2.</span><span style="line-height:normal;font-style:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Change computer Name. (This would require a reboot.)<br />
+<br />
+<strong>NETDOM RENAMECOMPUTER</strong><span style="font-weight:bold;">&nbsp; </span><strong>&lt;machinename&gt;</strong><span style="font-weight:bold;">&nbsp;
+</span><strong>/NEWNAME:newmachinename<br />
+<br />
+</strong>To reboot the server: <strong>SHUTDOWN –r<span>&nbsp; </span>–t<span>&nbsp; </span>
+0<br />
+</strong><span><strong><br />
+</strong><span style="font-size:13px;">3.</span><span style="line-height:normal;font-style:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Set the IP configuration<br />
+<br />
+<strong>NETSH INTERFACE IPV4 SET ADDRESS NAME= ”Local Area Connection”</strong><span style="font-weight:bold;">&nbsp;
+</span><strong>STATIC 192.168.1.10 255.255.255.0<br />
+</strong><strong><span><br />
+<span style="font-size:13px;">NETSH INTERFACE IPV4 ADD DNSSERVERS &nbsp;”Local Area Connection”&nbsp; 192.168.1.1<br />
+</span></span></strong><span><span style="font-size:13px;"><strong><br />
+</strong>4.</span><span style="line-height:normal;font-style:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Join the Node to the domain<br />
+<br />
+<strong>NETDOM JOIN</strong><span style="font-weight:bold;">&nbsp; </span><strong>&lt;NodeName&gt;</strong><span style="font-weight:bold;">&nbsp;
+</span><strong>/DOMAIN: &lt;domain name&gt; /UserD:domain\Administrator /Passwordd:*<br />
+<br />
+</strong>Reboot the server after joining it to domain.<br />
+<br />
+Repeat the steps for Other Nodes as well.<br />
+<br />
+</p>
+<hr />
+<div><strong></strong></div>
+<h2><a name="Configure_ISCSI_Initiator_and_disks"></a><strong>Configure ISCSI Initiator and disks<br />
+</strong></h2>
+<div>&nbsp;<br />
+Its Assumed that you have already created the Virtual Disks/iSCSI targets as required. These steps only cover how we are connecting to the Target from the Server Core nodes.<br />
+<br />
+</div>
+<div>On the Server Core Node, type &quot;Iscsicpl.exe&quot;.&nbsp;If the Service is not already started, it will prompt you to start the service and then will open the iSCSI initiator Properties.</div>
+<div>In the Target box, Type the Target IP Address and click “<strong>Quick Connect</strong>”<br />
+<br />
+</div>
+<div>Once you refresh, the discovered targets will be displayed in the bottom box.<br />
+<br />
+</div>
+<div>Select the targets and click <strong>Connect</strong> to connect to the target one by one.&nbsp;Once you are connected to the Targets successfully, the disks will be loaded in Disk Management.<br />
+<br />
+</div>
+<div>To configure disks we could use DISKPART command. While testing I had created 3 disks 2GB each.</div>
+<p>DISKPART</p>
+<p><strong><span lang="EN" style="font-size:10pt;color:#333333;">LISTDISK&nbsp; </span>
+</strong>(this will return the disks available in your system. (Disk 0 being the OS disk normally.)</p>
+<p>Further steps will select the target disk, clear the readonly attribute, bring it online and create an NTFS partition</p>
+<p><strong><span lang="EN" style="font-size:10pt;color:#333333;">SELECT DISK 1 </span>
+</strong><strong><br />
+<strong><span>ATTRIBUTE DISK CLEAR READONLY </span></strong><br />
+<strong><span>ONLINE DISK </span></strong><br />
+<strong><span>CREATE PART PRIMARY </span></strong><br />
+<strong><span>SELECT PART 1 </span></strong><br />
+ASSIGN LETTER=Q </strong></p>
+<p>Repeat the steps for other disks. Put the Disk Number and Drive letter accordingly.</p>
+<p>Quit DISKPART. Format each disk by typing FORMAT<span>&nbsp; </span>D: /q&nbsp; where D is your Drive letter. No need to provide any label.</p>
+<p>The servers are now completely configured to form a Windows Server 2008 R2 Failover Cluster.</p>
+<hr />
+<p><strong></strong></p>
+<h2><strong><a name="Install_Powershell"></a>Install PowerShell</strong></h2>
+<strong></strong>
+<p>In Windows Server 2008 R2 we are introducing PowerShell as the new scripting language for clustering technologies.<span style="font-size:12px;">&nbsp;
+</span>PowerShell with Failover Clustering will replace Cluster.exe and the Windows Server 2008 R2 release will be the deprecation release for Cluster.exe.<span style="font-size:12px;">&nbsp;
+</span>This means it will still be available for use so it doesn’t break legacy scripts, but no improvements have been made and Cluster.exe will be completely removed in the next release of Windows Server.</p>
+<p><span style="font-size:12px;color:#000000;">By default, Windows PowerShell is not installed on a computer that is running Windows Server 2008 R2 Core. You can use the below method to install Windows PowerShell on a computer that is running Windows Server
+ 2008 R2 Core.</span><strong></strong></p>
+<div
+<hr />
+<p><strong></strong></p>
+<h2><strong><a name="Install_Powershell"></a>Install PowerShell</strong></h2>
+<strong></strong>
+<p>In Windows Server 2008 R2 we are introducing PowerShell as the new scripting language for clustering technologies.<span style="font-size:12px;">&nbsp;
+</span>PowerShell with Failover Clustering will replace Cluster.exe and the Windows Server 2008 R2 release will be the deprecation release for Cluster.exe.<span style="font-size:12px;">&nbsp;
+</span>This means it will still be available for use so it doesn’t break legacy scripts, but no improvements have been made and Cluster.exe will be completely removed in the next release of Windows Server.</p>
+<p><span style="font-size:12px;color:#000000;">By default, Windows PowerShell is not in><span style="font-size:10pt;color:#000000;">1.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Run <strong>SCONFIG</strong>. </div>
+<div><span style="font-size:10pt;color:#000000;">2.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Select option 4 (Configure Remote Management). </div>
+<div><span style="font-size:10pt;color:#000000;">3.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Select option 2 (Enable Windows PowerShell). </div>
+<div><span style="font-size:10pt;color:#000000;">4.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Click OK. </div>
+<p><span lang="EN" style="font-size:10pt;color:#333333;">Ref:&nbsp; </span><a href="http://support.microsoft.com/kb/976736"><span lang="EN" style="font-size:10pt;">http://support.microsoft.com/kb/976736</span></a></p>
+<strong><span style="text-decoration:none;">
+<hr />
+</span></strong>
+<p><strong></strong></p>
+<h2><strong><a name="Enable_Failover_Cluster_Feature"></a>Enable Failover Cluster Feature</strong></h2>
+<strong></strong>
+<p>You could use OCLIST command to find which all features/Roles are already installed.</p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;">Use OCSETUP to install the required Features</span></p>
+<p><strong><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span style="font-size:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Start /w OCSETUP FailoverCluster-Core</span></strong></p>
+<p><strong><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span style="font-size:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Start /w OCSETUP FailoverCluster-Core-WOW64</span></strong></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;">Also add additional Features/Roles that you was Cluster Services.</span></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;">In this scenario I have added File Server and DFSR roles</span></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span style="font-size:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><strong>Start /w OCSETUP CoreFileServer</strong></span></p>
+<p><strong><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span style="font-size:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Start /w OCSETUP DFSNServer</span></strong></p>
+<p><strong><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span style="font-size:12px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Start /w OCSETUP DFSR-Infrastructure-ServerEdition</span></strong></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;">You may also use <strong>
+DISM /Online /Get-Features </strong>command to list the features. </span></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span lang="EN" style="font-size:12px;color:#333333;">And to install features you can use
+</span><strong>DISM /Online /Enable-Feature /FeatureName:&lt;featureName&gt;</strong></span></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><strong><span style="font-size:12px;color:#000000;">Example:
+</span></strong><span style="font-size:12px;color:#000000;">DISM /Online /Enable-Feature /FeatureName: MicrosoftWindowsPowerShell
+</span></span></p>
+<p><span style="font-size:12px;font-family:&#39;segoe ui&#39;;"><span style="font-size:12px;">Repeat the tests on ot</span>her Nodes as well.</span></p>
+<hr />
+<p><strong></strong></p>
+<h2><strong><a name="Run_Cluster_Validation_Tests"></a>Run Cluster Validation Tests</strong></h2>
+<strong></strong>
+<p>In Windows&nbsp;Server®&nbsp;2008 and Windows Server&nbsp;2008&nbsp;R2, the way that clusters are qualified is changing significantly with the introduction of the cluster validation wizard. The cluster validation wizard is a feature that is integrated into failover clustering
+ in Windows Server&nbsp;2008 and Windows Server&nbsp;2008&nbsp;R2. With the cluster validation wizard, you can run a set of focused tests on a collection of servers that you intend to use as nodes in a cluster. This cluster validation process tests the underlying hardware
+ and software directly, and individually, to obtain an accurate assessment of how well failover clustering can be supported on a given configuration.</p>
+<p>A cluster validation report is required by Microsoft® Customer Support Services (CSS) as a condition of Microsoft supporting a given configuration.</p>
+<p>To run the cluster validation tests using Power shell in Windows Server 2008 R2 Core:</p>
+<p><span lang="EN" style="font-size:10pt;color:#333333;">1.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Start Power shell and import the Failover Cluster module</p>
+<p><strong>POWERSHELL</strong></p>
+<p><strong>IMPORT-MODULE FAILOVERCLUSTERS</strong></p>
+<p><span lang="EN" style="font-size:12px;color:#333333;">2.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:12px;">&nbsp;&nbsp;&nbsp;
+</span></span>Run the cluster Validation against the proposed cluster nodes</p>
+<p><strong><span lang="EN" style="font-size:12px;color:#333333;">TEST-CLUSTER –NODE Node1,Node2</span></strong></p>
+<strong>
+<h2>
+<hr />
+</h2>
+<strong>
+<h2 class="MsoNormal"><a name="Create_a_Cluster"></a>Create a Cluster </h2>
+</strong></strong>
+<div><span style="font-size:12px;"><br />
+Once the cluster validations </span>are passed, you can proceed with creating a cluster. You would provide a Name and IP for the cluster.</div>
+<p>To create a Failover Cluster using Power shell in Windows Server 2008 R2 Core:</p>
+<p><span lang="EN" style="font-size:10pt;color:#333333;">1.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Start Power shell and import the Failover Cluster module</p>
+<p><strong>POWERSHELL</strong></p>
+<p><strong>IMPORT-MODULE FAILOVERCLUSTERS</strong></p>
+<p><span lang="EN" style="font-size:10pt;color:#333333;">2.<span style="line-height:normal;font-style:normal;font-weight:normal;font-size:7pt;">&nbsp;&nbsp;&nbsp;
+</span></span>Create the cluster with the proposed cluster nodes</p>
+<p><strong>NEW-CLUSTER –NAME “CoreCluster” –NODE Node1,Node2,Node3 –STATICADDRESS 192.168.1.15</strong></p>
+<p>Wait for the Failover Cluster configuration to be complete.</p>
+<p><strong>Note</strong>: You may also perform these steps from a Windows Server 2008 R2 Full version using Failover Cluster Management RSAT tools.</p>
+<strong><span style="text-decoration:none;">
+<hr />
+</span></strong>
+<p><strong></strong></p>
+<h2><strong><span style="font-size:20px;"></span>
+<h1><span style="font-size:20px;"><a name="Managing_your_Failover_Cluster"></a>Managing your Failover Cluster</span></h1>
+</strong></h2>
+<strong></strong>
+<p>Let’s discuss few commands to manage your Server Core failover cluster<br />
+<br />
+</p>
+<hr />
+<p><strong></strong></p>
+<h3><a name="Add_a_Service_to_Failover_Cluster"></a><strong>Add a Service to Failover Cluster</strong></h3>
+<p><span style="font-family:&#39;segoe ui semibold&#39;,&#39;segoe ui&#39;,&#39;lucida grande&#39;,verdana,arial,helvetica,sans-serif;"><strong><br />
+</strong></span>Let’s try adding a File server Service to the Failover Cluster.</p>
+<div class="MsoNormal"><strong>ADD-CLUSTERFILESERVERROLE -STORAGE “Cluster Disk 1” –NAME “CoreFileServer” –STATICADDRESS 192.162.1.20<br />
+<br />
+</strong></div>
+<h3><strong>
+<hr />
+</strong></h3>
+<h3><a name="Move_the_Services_from_one_Node_to_another_Node"></a><span style="line-height:25px;font-size:20px;font-family:&#39;segoe ui semibold&#39;,&#39;segoe ui&#39;,&#39;lucida grande&#39;,verdana,arial,helvetica,sans-serif;color:#3a3e43;"><strong>Move the Services from one
+ Node to another Node</strong></span></h3>
+<p><strong>Move-ClusterGroup CorePrintServer -Node node2</strong></p>
+<p>This command moves the clustered service called MyPrintServer from the current owner node to node2.</p>
+<p><strong>Get-ClusterNode node3 | Get-ClusterGroup | Move-ClusterGroup</strong></p>
+<p>This command moves all clustered services and applications (resource groups) that are currently owned by node3 to other nodes. You can use this command before performing maintenance on the specified node.</p>
+<p><strong>Move-ClusterGroup CorePrintServer -Node node2 -Wait 0</strong></p>
+<p>This command moves the clustered service (resource group) called MyPrintServer from the current owner node to node2. Information about MyPrintServer is displayed immediately, while it is in the process of being moved.</p>
+<span lang="EN" style="font-size:10pt;color:#333333;">
+<hr />
+</span>
+<p><strong></strong></p>
+<strong><spaans-serif;color:#3a3e43;"><strong>Move the Services from one
+ Node to another Node</strong></span></h3>
+<p><strong>Move-ClusterGroup CorePrintServer -Node node2</strong></p>
+<p>This command moves the clustered service called MyPrintServer from the current owner node to node2.</p>
+<p><strong>Get-ClusterNode node3 | Get-ClusterGroup | Move-ClusterGroup</strong></p>
+<p>This command moves all clustered services and applications (resource groups) that are currently owned by node3 to other nodes. You can use this command before performing maintenance on the specified node.</p>
+<p><strong>Move-ClusterGroup CorePrintServer -Node node2 -Wait 0</strong></p>
+<p>This command moves the clustered service (resource group) called MyPrintServer from the current owner node to node2. Information about MyPrintServer is displayed immediately, while it is in the process of being moved.<n style="font-size:20px;"></span>
+<h3><span style="font-size:20px;"><a name="Add_Nodes_to_an_existing_failover_cluster"></a>Add Nodes to an existing failover cluster</span></h3>
+</strong><strong></strong>
+<p><strong>Get-Cluster CoreCluster | Add-ClusterNode node3</strong></p>
+<p>This command adds node3 to cluster1.<br />
+<br />
+</p>
+<hr />
+<h3><a name="Remove_Nodes_from_your_failover_cluster"></a><span style="line-height:25px;font-size:20px;font-family:&#39;segoe ui semibold&#39;,&#39;segoe ui&#39;,&#39;lucida grande&#39;,verdana,arial,helvetica,sans-serif;color:#3a3e43;"><strong>Remove Nodes from your failover cluster</strong></span></h3>
+<strong></strong>
+<p><strong>Remove-ClusterNode node4</strong></p>
+<div>This command removes node4 from the local cluster.</div>
+<div><strong>Remove-ClusterNode node4 -force</strong></div>
+<div>This command removes node4 from the local cluster without prompting for confirmation.</div>
+<h2><span style="font-size:12px;">
+<hr />
+</span></h2>
+<div><strong></strong></div>
+<h2><strong></strong></h2>
+<h2><strong><span style="font-size:20px;"></span>
+<h2></h2>
+<h3><span style="font-size:20px;"><a name="Destroy_an_existing_failover_cluster"></a>Destroy an existing failover cluster</span></h3>
+</strong></h2>
+<strong></strong>
+<p><strong>Remove-Cluster</strong></p>
+<div>After prompting for confirmation, this command destroys the local failover cluster and removes cluster configuration information from the cluster nodes.<br />
+<br />
+</div>
+<div><strong>Remove-Cluster –Force<br />
+<br />
+</strong></div>
+<div>This command destroys the local failover cluster and removes cluster configuration information from the cluster nodes. The command does not prompt for confirmation.<br />
+<br />
+</div>
+<div><strong>Get-Cluster CoreCluster | Remove-Cluster -Force –CleanupAD<br />
+<br />
+</strong></div>
+<div>This command destroys Cluster1, removes cluster configuration information from the cluster nodes, and deletes the cluster objects in Active Directory.<span>&nbsp;
+</span>The command does not prompt for confirmation.</div>
+<span style="font-size:10pt;">
+<hr />
+<div><strong>NOTE</strong>:&nbsp;</div>
+</span>
+<div><span lang="EN" style="font-size:10pt;color:#333333;">I am working on few more commands and screenshots to be added to this. Good Luck with your Windows Server 2008 R2 Server Core Failover Cluster. Let me know your feedback.<br />
+&nbsp;</span></div>
+
+</div>
+    
+    

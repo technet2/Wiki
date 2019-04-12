@@ -1,0 +1,122 @@
+---
+layout: default
+title: 精通 NLB：單點傳播(Unicast) 與 多點傳送(Multicast) 的差異 (zh-TW) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>在&nbsp;<b>網路負載平衡</b> (<b>NLB</b>) 機制中有 3 種<b>叢集操作模式</b>，主要涵蓋了兩種封包傳輸協定，分別是&nbsp;<b>單點傳播 (Unicast)</b>&nbsp;與&nbsp;<b>多點傳送 (Multicast)</b>，要瞭解其中的差異必須對網路底層有一定的認識，否則將難以理解實際運作的差異。</p>
+<p>對於網際網路數據交換的基本觀念我是建議閱讀&nbsp;<a href="http://www.cisco.com/en/US/docs/internetworking/design/guide/nd2002.html" id="ctl00_mainContentContainer_ctl01">Internetworking Design Basics</a>&nbsp;這篇文章，他將原理寫的相當清楚，對理解 NLB 的底層運作機制有非常大的幫助，也建議各位閱讀。當然我也閱讀了很多其他相關文件，我都會放在本文最下方的<b>相關連結</b>中。</p>
+<p>本文專注的重點在於&nbsp;<b>單點傳播 (Unicast)</b>&nbsp;與&nbsp;<b>多點傳送 (Multicast)</b>&nbsp;的差異，對於如何安裝設定 NLB 也可以參考本文最下方的<b>相關連結</b>。</p>
+<h2><a name="網路負載平衡在_Unicast_mode_的注意事項"></a><a name="網路負載平衡在_Unicast_mode_的注意事項"></a><a name="網路負載平衡在_Unicast_mode_的注意事項"></a><a name="網路負載平衡在_Unicast_mode_的注意事項"></a>網路負載平衡在 Unicast mode 的注意事項</h2>
+<p>由於 Unicast 模式的 NLB 會先設定讓<b>兩台主機</b><b>NLB</b><b>網路介面的</b><b>MAC</b><b>位址變成完全一樣</b>，以至於讓兩台主機彼此無法互相連線。如果你是透過遠端桌面連線到該主機做 Unicast NLB 設定的話，建議在設定時最好每台成員伺服器都有<b>兩張網路卡</b>，且透過另一張網卡 (<b>非</b><b>NLB</b><b>叢集使用的介面</b>) 進行遠端連線，避免設定時被中斷連線。如果你只有一張網卡，在設定 Unicast 模式加入叢集後會斷線很久，那是因為兩台主機使用相同的 MAC 位址，導致 Switch 無法將封包傳遞到正確的 ports，有些 Switch 甚至無法使用 NLB 成員伺服器的 IP 連線，所以還是建議用兩張網卡進行設定。</p>
+<p>至於「設定讓<b>兩台主機</b><b>NLB</b><b>網路介面的</b><b>MAC</b><b>位址變成完全一樣</b>」這個動作是在設定&nbsp;<b>NLB</b><b>成員伺服器</b>&nbsp;加入&nbsp;<b>NLB Cluster</b>&nbsp;的時候就會<b>自動完成</b>的工作，你可以透過 Windows 內建的&nbsp;<a target="_blank" href="http://technet.microsoft.com/en-us/library/bb490913.aspx" id="ctl00_mainContentContainer_ctl02">getmac</a>&nbsp;指令查詢加入叢集後的成員伺服器的 MAC 位址是否一樣。</p>
+<h2><a name="網路負載平衡在_Multicast_mode_的注意事項"></a><a name="網路負載平衡在_Multicast_mode_的注意事項"></a><a name="網路負載平衡在_Multicast_mode_的注意事項"></a><a name="網路負載平衡在_Multicast_mode_的注意事項"></a>網路負載平衡在 Multicast mode 的注意事項</h2>
+<p>如果你是透過遠端桌面連線到該主機做 Multicast NLB 設定的話，建議在設定時最好每台成員伺服器都有<b>兩張網路卡</b>，且透過另一張網卡 (<b>非</b><b>NLB</b><b>叢集使用的介面</b>) 進行遠端連線，避免設定時被中斷連線，但這是<b>非必要</b>的要求，你只要重新連線即可。</p>
+<p>設定 Multicast 模式的 NLB 須注意你的 Layer 2 switch 是否支援，若不支援 Multicast 的 Switch 可能會導致 NLB 運作發生異常或無法達到負載平衡的目的。</p>
+<h2><a name="網路負載平衡在_Unicast_mode_的運作原理"></a><a name="網路負載平衡在_Unicast_mode_的運作原理"></a><a name="網路負載平衡在_Unicast_mode_的運作原理"></a><a name="網路負載平衡在_Unicast_mode_的運作原理"></a>網路負載平衡在 Unicast mode 的運作原理</h2>
+<ul>
+<li>成員伺服器加入 NLB 叢集的時候，提供給 NLB 叢集介面的 MAC Address 會先被修改成 NLB 叢集專用的 MAC Address</li>
+<li>NLB 叢集介面在傳送 Ethernet frame 至 switch 時會透過&nbsp;<b>MAC address masking</b>&nbsp;修改成一個假的(bogus) MAC 位址並註冊到 switch 上，Switch 會自動註冊進 mac address table 做參照</li>
+<li>當封包透過 Router (Layer 3 switch) 並傳送至 Switch (Layer 2 switch)，並透過 ARP 廣播查詢 NLB 叢集 IP 時會有以下判斷： 
+<ul>
+<li>由於 switch 上的 mac address table 並無該 IP-MAC 的對應，所以會發送 ARP 廣播封包到所有 switch ports</li>
+<li>NLB 叢集電腦會透過 ARP 回應 NLB 叢集 MAC位址 (Unicast MAC address, 亦即原本Interface 的 MAC address)，switch 便會將封包送至 NLB 叢集的 switch ports</li>
+</ul>
+</li>
+</ul>
+<h2><a name="網路負載平衡在_Multicast_mode_的運作原理"></a><a name="網路負載平衡在_Multicast_mode_的運作原理"></a><a name="網路負載平衡在_Multicast_mode_的運作原理"></a><a name="網路負載平衡在_Multicast_mode_的運作原理"></a>網路負載平衡在 Multicast mode 的運作原理</h2>
+<ul>
+<li>成員伺服器加入 NLB 叢集的時候，提供給 NLB 叢集介面的 MAC Address 不會被修改!</li>
+<li>NLB 叢集介面在傳送 Ethernet frame 至 switch 時會直接用原本網卡(網路介面)的 MAC Address 註冊到 switch 上的 mac address table 做參照</li>
+<li>當封包透過 Router (Layer 3 switch) 並傳送至 Switch (Layer 2 switch)，並透過 ARP 廣播查詢 NLB 叢集 IP 時會有以下判斷： 
+<ul>
+<li>由於 switch 上的 mac address table 並無該 IP-MAC 的對應，所以會發送 ARP 廣播封包到所有 switch ports</li>
+<li>NLB 叢集電腦會透過 ARP 回應 NLB 叢集 MAC 位址 (Multicast MAC address)，switch 便會將封包送至 NLB 叢集的 switch ports&nbsp;<span style="color:green;">[註:有些 switch 無法處理 Multicast MAC address]</span></li>
+</ul>
+</li>
+</ul>
+<h2><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a>如何區分 Unicast MAC address 與 Multicast MAC address？</h2>
+<p>首先我們先看看 MAC address 的結構，共有 32bits 如下，在 IP Multicast 中的前 23 個 Bits 是固定的，源由請看【<a target="_blank" href="http://showipprotocols-tw.blogspot.com/2009/05/ip-multicast-mac-address-23.html" id="ctl00_mainContentContainer_ctl03">為何 IP Multicast 位址的 MAC address 必須擠到 23 位元裡面?</a>】有詳細的說明，但是在 NLB 使用的 Multicast 模式中沒有這個限制，因為 NLB 的 Multicast 只有使用到 Layer 2 的 Multicast 協定：</p>
+<p><span id="ctl00_mainContentContainer_ctl04">
+<div class="libCScode" id="ctl00_mainContentContainer_ctl04_">
+<div class="CodeSnippetTitleBar">
+<div class="CodeDisplayLanguage"></div>
+</div>
+ 叢集的 switch ports&nbsp;<span style="color:green;">[註:有些 switch 無法處理 Multicast MAC address]</span></li>
+</ul>
+</li>
+</ul>
+<h2><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a><a name="如何區分_Unicast_MAC_address_與_Multicast_MAC_address"></a>如何區分 Unicast MAC address 與 Multicast MAC address？</h2>
+<p>首先我們先看看 MAC address 的結構，共有 32bits 如下，在 IP Multicast 中的前 23 個 Bits 是固定的，源由請看【<a target="_blank" href="http://showipprotocols-tw.blogspot.com/2009/05/ip-multicast-mac-address-23.html" id="ctl00_mainContentContainer_ctl03">為何 IP Multicast 位址的 MAC address 必須擠到 23 位元裡面?</a>】有詳細的說明，但是在 NLB 使用的 Multicast 模式中沒有這個限制，因為 NLB 的 Multicast 只有使用到 Layer 2 的<div dir="ltr" style="background-color:#dddddd;">
+<pre class="libCScode" id="ctl00_mainContentContainer_ctl04_code">|&lt;------- 23 bits -----&gt;|<br />00000001-00000000-01011110-0XXXXXXX-XXXXXXXX-XXXXXXXX<br />   01   -   00   -   5E   -(00~7F) -(00~FF) - (00~FF)</pre>
+</div>
+</div>
+</span></p>
+<p>如上例，要區分&nbsp;<b>Unicast MAC address</b>&nbsp;與&nbsp;<b>Multicast MAC address</b>&nbsp;最簡單的方式就是判斷 MAC 位址在<b>最高位元組</b>的<b>最低位元</b>為是否為&nbsp;<span style="color:red;">1</span>&nbsp;即可判斷出來：</p>
+<ul>
+<li>如果這個 bit 為 1，那麼這個 MAC address 就屬於 Multicast MAC address</li>
+<li>如果這個 bit 為 0，那麼這個 MAC address 就屬於 Unicast MAC address</li>
+</ul>
+<p>如果在進一步對照 NLB 的設定畫面 (如下圖)，以 Windows Server 2008 的<b>網路負載平衡管理員</b>中<b>叢集參數</b>的設定畫面為例，在選取不同<b>叢集操作模式</b>時，在畫面上預設的「網路位址 (MAC address)」就可以看出這個 bit 的變化，如下圖示：</p>
+<p><b>單點傳播</b><br /><img src="http://i.technet.microsoft.com/ff359098.image_01%28zh-tw,MSDN.10%29.png" align="bottom" alt=" " /></p>
+<p>&nbsp;</p>
+<p><b>多點傳送</b>&nbsp;<br /><img src="http://i.technet.microsoft.com/ff359098.image_02%28zh-tw,MSDN.10%29.png" align="bottom" alt=" " /></p>
+<p>&nbsp;</p>
+<p><b>NLB Multicast</b>&nbsp;與&nbsp;<b>IP Multicast</b>&nbsp;一樣都要&nbsp;<b>Layer 2 switch</b>&nbsp;支援才行，但是應用的方向卻不太一樣：</p>
+<ul>
+<li>NLB Multicast 講的是封包<b>從外到內</b>時如何透過廣播達到負載平衡的目的 
+<ul>
+<li>例如: 負載平衡應用、HA 叢集架構、&hellip; 需同時將封包傳送到多台伺服器提供服務的情況</li>
+</ul>
+</li>
+<li>IP Multicast 講的是封包<b>從內到外</b>如何有效減少封包的傳輸數量以加速內容傳遞 
+<ul>
+<li>例如: 語音會議、視迅會議、封包廣播應用、&hellip; 需同時間傳送大量封包到多點目的的情況</li>
+</ul>
+</li>
+</ul>
+<h2><a name="相關連結"></a><a name="相關連結"></a><a name="相關連結"></a><a name="相關連結"></a>相關連結</h2>
+<ul>
+<li><a href="http://www.dotblogs.com.tw/dotjason/archive/2009/04/27/8209.aspx" id="ctl00_mainContentContainer_ctl05">Windows Server 2008 怎麼設定網路負載 (Network LoadBalance)</a></li>
+<li><a href="http://www.isaserver.org/articles/basicnlbpart2.html" id="ctl00_mainContentContainer_ctl06">Using NLB with ISA Server Part 2: Layer 2 Fun with Unicast and Multicast Modes</a></li>
+<li><a href="http://showipprotocols-tw.blogspot.com/2009/05/ip-multicast-mac-address-23.html" id="ctl00_mainContentContainer_ctl07">為何 IP Multicast 位址的 MAC address 必須擠到 23 位元裡面?</a></li>
+<li><a href="http://www.informit.com/articles/article.aspx?p=29244" id="ctl00_mainContentContainer_ctl08">Interdomain Multicast Fundamentals</a></li>
+<li><a id="ctl00_mainContentContainer_ctl09">ftp://ftp-eng.cisco.com/ipmulticast/training/Module2.pdf</a></li>
+<li><a href="http://www.tshopping.com.tw/archiver/?tid-7058.html" id="ctl00_mainContentContainer_ctl10">何謂 Layer 3 Switch (第三層交換器)</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc758834%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl11">Network Load Balancing: Frequently Asked Questions for Win2k and Win2k3</a> 
+<ul>
+<li><a href="http://technet.microsoft.com/en-us/library/cc780254%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl12">NLB Basics</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc776332%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl13">NLB and Other Clustering Technologies</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc757552%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl14">NLB for Scalability</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc739690%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl15">NLB for High Availability</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc738464%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl16">NLB Fundamentals - FAQ</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc783135%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl17">Deployment Issues</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc736597%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl18">Set up and Configuration</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc782879%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl19">Management and Operations</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc738968%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl20">Support for Sessions</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc784414%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl21">Application and Protocol Support</a></li>
+</ul>
+</li>
+<li><a href="http://www.cisco.com/en/US/products/hw/switches/ps708/products_configuration_example09186a0080a07203.shtml" id="ctl00_mainContentContainer_ctl22">Catalyst Switches for Microsoft Network Load Balancing Configuration Example</a></li>
+<li><a href="http://msmvps.com/blogs/clusterhelp/archive/2005/08/07/61965.aspx" id="ctl00_mainContentContainer_ctl23">Unicast vs. Multicast</a></li>
+<li><a href="http://www.cisco.com/en/US/docs/internetworking/design/guide/nd2002.html" id="ctl00_mainContentContainer_ctl24">Internetworking Design Basics</a>&nbsp;(非常推薦的一篇文章，觀念講得非常清楚) 
+<ul>
+<li><a href="http://www.cisco.com/en/US/docs/internetworking/design/guide/nd2002.html#wp3317" id="ctl00_mainContentContainer_ctl25">Layer 2 and Layer 3 Switching</a></li>
+<li><a href="http://www.cisco.com/en/US/docs/internetworking/design/guide/nd2002.html#wp3890" id="ctl00_mainContentContainer_ctl26">Broadcast and Multicast Capabilities</a></li>
+</ul>
+</li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc759510%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl27">Network Load Balancing Clusters</a> 
+<ul>
+<li><a href="http://technet.microsoft.com/en-us/library/cc779254%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl28">Checklist: Enabling and configuring Network Load Balancing</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc759590%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl29">New ways to do familiar Network Load Balancing tasks</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc740265%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl30">Network Load Balancing Best practices</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc780225%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl31">Network Load Balancing How To...</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc728312%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl32">Network Load Balancing Concepts</a></li>
+<li><a href="http://technet.microsoft.com/en-us/library/cc781160%28WS.10%29.aspx" id="ctl00_mainContentContainer_ctl33">Network Load Balancing Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+<p>&nbsp;</p>
+<p>[ 本文同步刊載於 <a href="http://blog.miniasp.com/post/2010/01/Master-NLB-Compare-Unicast-Multicast.aspx">http://blog.miniasp.com/post/2010/01/Master-NLB-Compare-Unicast-Multicast.aspx</a> ]</p></div>
+    
+    

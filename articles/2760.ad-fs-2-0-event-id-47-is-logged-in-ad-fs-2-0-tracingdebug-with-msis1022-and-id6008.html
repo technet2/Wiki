@@ -1,0 +1,197 @@
+---
+layout: default
+title: AD FS 2.0&#58; Event ID 47 is Logged in AD FS 2.0 Tracing/Debug with MSIS1022 and ID6008 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div >
+                        History
+                    </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Symptoms">Symptoms</a></li><li class="hierarchy-item"><a href="#Cause">Cause</a></li><li class="hierarchy-item"><a href="#Resolution">Resolution</a></li><li class="hierarchy-item"><a href="#More_Information">More Information</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+<h2><a name="Symptoms"></a><span style="font-size:18px;"><strong>Symptoms</strong></span></h2>
+<br />
+<br />
+<ul>
+<li>AD FS 2.0 is the Relying Party (RP) </li><li>An error occurs while consuming a security token from a trusted Claims Provider (CP)
+</li><li>The AD FS 2.0 Tracing/Debug log shows an event similar to the following: </li></ul>
+<br />
+<br />
+Log Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>AD FS 2.0 Tracing/Debug<br />
+<br />
+</strong>Source:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AD FS 2.0 Tracing<br />
+<br />
+Date:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4/8/2011 8:48:24 AM<br />
+<br />
+Event ID:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <strong>47<br />
+<br />
+</strong>Task Category: None<br />
+<br />
+Level:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Error<br />
+<br />
+Keywords:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ADFSSamlProtocol<br />
+<br />
+User:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NETWORK SERVICE<br />
+<br />
+Computer:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DNS-Name&gt;<br />
+<br />
+Description:<br />
+<br />
+Microsoft.IdentityServer.Service.SamlProtocol.SamlProtocolException: <strong>MSIS1022: Cannot process SAML Response from &#39;&#39;.<br />
+<br />
+Inner exception: ID6008: Cannot resolve the &#39;&#39; URI in the signature to compute the digest.<br />
+<br />
+</strong>&nbsp;&nbsp; at Microsoft.IdentityServer.Service.Tokens.SamlMessageSecurityTokenHandler.ReadToken(XmlReader reader)<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityModel.Tokens.SecurityTokenHandlerCollection.ReadToken(XmlReader reader)<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityModel.Tokens.SecurityTokenElement.ReadSecurityToken(XmlElement securityTokenXml, SecurityTokenHandlerCollection securityTokenHandlers)<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityModel.Tokens.SecurityTokenElement.GetSecurityToken()<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityModel.Tokens.SecurityTokenElement.CreateSubject(XmlElement securityTokenXml, SecurityTokenHandlerCollection securityTokenHandlers)<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityModel.Tokens.SecurityTokenElement.GetSubject()<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SamlProtocol.SamlProtocolService.GetEffectivePrincipal(SecurityTokenElement securityTokenElement)<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SamlProtocol.SamlProtocolService.Issue(IssueRequest issueRequest)<br />
+<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SamlProtocol.SamlProtocolService.ProcessRequest(Message requestMessage)<br />
+<br />
+<br />
+<h2><a name="Cause"></a><span style="font-size:18px;"><strong>Cause</strong></span></h2>
+<br />
+<br />
+<ul>
+<li>The Claims Provider is signing either the protocol message, the assertion, or
+<br />
+<br />
+both, and they are not providing an appropriate Reference URI value within the <br />
+<br />
+Signature section(s). </li></ul>
+<br />
+<br />
+<h2><a name="Resolution"></a><span style="font-size:18px;"><strong>Resolution</strong></span></h2>
+<ul>
+<li>The Claims Provider has the option of digitally signing the protocol message, the assertion, or both
+</li><li>The SAML Response is required to have an ID property </li><li>The SAML Assertion is required to have an ID property </li><li>If the SAML Response is signed, its Signature portion must have a Reference URI value which equals the SAML Response ID value
+</li><li>If the SAML Assertion is signed, its Signature portion must have a Reference URI value which equals the SAML Assertion ID value
+</li><li>The Claims Provider must make changes on their side in order to enable the Reference URI to be populated with an appropriate value
+</li></ul>
+<br />
+<br />
+<h2><a name="More_Information"></a><span style="font-size:18px;"><strong>More Information</strong></span></h2>
+<br />
+<br />
+<span style="text-decoration:underline;">Snippet of appropriate signed SAML Response:<br />
+<br />
+</span><br />
+<br />
+<em>&lt;Response<br />
+<br />
+IssueInstant=&quot;2011-04-04T00:46:02Z&quot; Version=&quot;2.0&quot;<br />
+<br />
+<strong><span style="font-size:14px;">ID=&quot;_c7055387-af61-4fce-8b98-e2927324b306</span></strong>&quot;<br />
+<br />
+xmlns=&quot;urn:oasis:names:tc:SAML:2.0:protocol&quot;<br />
+<br />
+xmlns:saml=&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;&gt;<br />
+<br />
+&lt;saml:Issuer&gt;https://www.contoso.com/IDP&quot;&lt;/saml:Issuer&gt;<br />
+<br />
+&lt;ds:Signature xmlns:ds=&quot;http://www.w3.org/2000/09/xmldsig#&quot;&gt;<br />
+<br />
+&lt;ds:SignedInfo&gt;<br />
+<br />
+&lt;ds:CanonicalizationMethod<br />
+<br />
+Algorithm=&quot;http://www.w3.org/2001/10/xml-exc-c14n#&quot;/&gt;<br />
+<br />
+&lt;ds:SignatureMethod<br />
+<br />
+Algorithm=&quot;http://www.w3.org/2000/09/xmldsig#rsa-sha1&quot;/&gt;<br />
+<br />
+&lt;ds:<strong><span style="font-size:14px;">Reference URI=&quot;#_c7055387-af61-4fce-8b98-e2927324b306</span></strong>&quot;&gt;<br />
+<br />
+&lt;ds:Transforms&gt;<br />
+<br />
+</em>....<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<span style="text-decoration:underline;">Snippet of appropriate signed SAML Assertion:<br />
+<br />
+</span><br />
+<br />
+<em>&lt;Assertion <strong><span style="font-size:14px;">ID=&quot;_a75adf55-01d7-40cc-929f-dbd8372ebdfc&quot;</span></strong><br />
+<br />
+IssueInstant=&quot;2011-04-04T00:46:02Z&quot; Version=&quot;2.0&quot;<br />
+<br />
+xmlns=&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;&gt;<br />
+<br />
+&lt;Issuer&gt;https://w&quot;&gt;<br />
+<br />
+&lt;ds:SignedInfo&gt;<br />
+<br />
+&lt;ds:CanonicalizationMethod<br />
+<br />
+Algorithm=&quot;http://www.w3.org/2001/10/xml-exc-c14n#&quot;/&gt;<br />
+<br />
+&lt;ds:SignatureMethod<br />
+<br />
+Algorithm=&quot;http://www.w3.org/2000/09/xmldsig#rsa-sha1&quot;/&gt;<br />
+<br />
+&lt;ds:<strong><span style="font-size:14px;">Reference URI=&quot;#_c7055387-af61-4fce-8b98-e2927324b306</span></strong>&quot;&gt;<br />
+<br />
+&lt;ds:Transforms&gt;<br />
+<br />
+</em>....<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<span style="text-decoration:underline;">Snippet of appropriate signed SAML Assertion:<br />
+<br />
+</span><br />
+<br />
+<em>&lt;Assertion <strong><span style="font-size:14px;">ID=&quot;_a75adf55-01d7-40cc-929f-dbd8372ebdfc&quot;</span></strong><br />
+<br />
+IssueInstant=&quot;2011-04-04T00:46:02Z&quot; Version=&quot;2.0&quot;<br />
+<br />
+xmlns=&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;&gt;<br />
+<br />
+&lt;Issuer&ww.contoso.com/IDP&lt;/Issuer&gt;<br />
+<br />
+&lt;ds:Signature xmlns:ds=&quot;</em><em>http://www.w3.org/2000/09/xmldsig</em><em>#&quot;&gt;<br />
+<br />
+&lt;ds:SignedInfo&gt;<br />
+<br />
+&lt;ds:CanonicalizationMethod<br />
+<br />
+Algorithm=&quot;</em><em>http://www.w3.org/2001/10/xml-exc-c14n#&quot;/</em><em>&gt;<br />
+<br />
+&lt;ds:SignatureMethod<br />
+<br />
+Algorithm=&quot;</em><em>http://www.w3.org/2000/09/xmldsig#rsa-sha1&quot;/</em><em>&gt;<br />
+<br />
+&lt;ds:<strong><span style="font-size:14px;">Reference URI=&quot;#_a75adf55-01d7-40cc-929f-dbd8372ebdfc</span></strong>&quot;&gt;<br />
+<br />
+....<br />
+</em><br />
+
+</div>
+    
+    

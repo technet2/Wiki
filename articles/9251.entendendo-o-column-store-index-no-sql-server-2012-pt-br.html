@@ -1,0 +1,335 @@
+---
+layout: default
+title: Entendendo o Column Store Index no SQL Server 2012 (pt-BR) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0px;padding:8px 0px;">
+<span style="font-family:&#39;segoe ui&#39;;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introdu_ccedil_atilde_o">Introduçs="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Entendendo o Column Store Index noão</a></li><li class="hierarchy-item"><a href="#Row_Store_x_Column_Store">Row Store x Column Store</a></li><li class="hierarchy-item"><a href="#Demos">Demos</a></li><li class="hierarchy-item"><a href="#Mais_Informa_ccedil_otilde_es">Mais Informações</a></li></ul><div class="hierarchy-list-footer"> </div></div>&nbsp;&nbsp;<br />
+<br />
+</span><br />
+<strong style="font-size:large;font-style:italic;text-decoration:underline;"></strong></p>
+<h1><a name="Introdu_ccedil_atilde_o"></a><strong style="font-size:large;font-style:italic;text-decoration:underline;">Introdução</strong></h1>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Com a chegada do novo SQL Server 2012 Codename “Denali”, algumas features foram incluídas nesta nova release, sendo&nbsp;um dos grandes melhoramentos da Engine do banco de dados é&nbsp;um novo recurso denominado ColumnStore Indexes.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+O grande foco desta feature é possibilitar uma maior performance&nbsp; de consultas realizadas dentro de um Data Warehouse, ou seja dentro de um sistema OLAP (Online Analytical Processing). O aumento de performance pode ser de 10x a 100x maior.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Para se beneficiar das qualidades do novo recurso, podemos utilizá-lo preferencialmente em esquemas Star Joins (Modelo Estrela), agregações, filtros, grupos de dados e principalmente tabelas de fatos (Fact Table) que utilizem esses recursos descritos acima.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Quando utilizamos o ColumnStore Index ,&nbsp; a tabela na qual receberá o índice se tornará “Read-Only, sendo assim os dados armazenados neste índice possuirão uma compressão de colunas ao invés de compressão de linhas, com isso temos um grande ganho de performance
+ e armazenamento. Além disso, temos um novo modo de execução dentro do QO (Query Optimizer), o&nbsp;“batch mode”, que pode realizar um processamento de 1.000 linhas enquanto no nossso modelo convencional&nbsp;teriamos um&nbsp; processamento linha-a-linha e dependendo dos
+ fatores e filtros que forem utilizados na consulta, esse índice poderá se beneficiar da nova tecnologia “segment elimination” tendo um algoritmo que pode eliminar os dados que não serão selecionados (segmentados) reduzindo assim grandemente o impacto de I/O.</p>
+<h1><a name="Row_Store_x_Column_Store"></a><strong><em><span style="font-size:large;text-decoration:underline;">Row Store x Column Store</span></em></strong></h1>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Antigamente nas versões anteriores do SQL Server, os dados eram armazendos em modo de linhas, agora com este novo recurso, os dados podem ter um maior aproveitamento, aqui veremos alguns pontos importantes para a implementação deste recurso.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/image12.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image_thumb12.png?w=612&amp;h=357" width="612" height="357" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/des.jpg" style="text-decoration:underline;"><img title="des" alt="des" src="http://luanmorenodba.files.wordpress.com/2012/03/des_thumb.jpg?w=363&amp;h=268" width="363" height="268" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></p>
+<strong style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;"><em><span>Pontos Positivos:<br />
+</span></em></strong><br />
+<ul>
+<li style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">
+Batch Mode = Blocos de 1.000 linhas que são retornados a consulta ao invés de linha-a-linha.
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">&nbsp;Algoritmo de Redução de Custo de I/O, tornando a consulta assim mais eficiente.</span>
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">“Segment&nbsp; Elimination” de acordo com os filtros passados ao QO, possibilitará trazer a consulta mais rápido, isso
+ porque o mecanismo possibilita a quebra da partição em diversas partes selecionando assim os dados de uma forma mais eficiente.</span>
+</li></ul>
+<strong style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;"><em><span>Pontos Negativos:<br />
+</span></em></strong><br />
+<ul>
+<li style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">
+&nbsp;A tabela se torna “Read-Only”, não podendo ser permitido operações de DML tais como: INSERT/UPDATE/DELETE e MERGE. Sendo assim só é possivel alterá-la se o ColumnsStore Index for desabilitada ou excluída.
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Algumas operações não são possíveis no novo modo “Batch Mode” como: Outer Joins, Join entre strings, NOT IN, IN,
+ EXISTS e agregações escalares.</span> </li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Se houver pressão na memória ou um grande uso de paralelismo, provavelmente o QO utilizirá o modo linha-a-linha
+ para a execução da consulta.</span> </li></ul>
+<strong style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">Candidatos à ColumnStore Indexes<br />
+</strong><br />
+<ul>
+<li style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">
+Tabelas contendo milhões a bilhões de registros (Fact Tables). </li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Scan x Seek (ColumnStore Indexes não suporta operações de Seek, somente Scan).</span>
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Operações de agregação como SUM(), AVG, joins e filtros utilizados na pesquisa.</span>
+</li&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Se houver pressão na memória ou um grande uso de paralelismo, provavelmente o QO utilizirá o modo linha-a-linha
+ para a e></ul>
+<strong style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;"><span>Definições do ColumnStore Index<br />
+</span></strong><br />
+<ul>
+<li style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">
+Só podem ser índices non-clustered e non-unique. </li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Não podem ser criados em Views, Indexes Views e Sparse Columns.</span>
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Não podem possuir relacionamento, logo não podem atuar como Primary Key ou Foreign Key.</span>
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Sem conceito da opção INCLUDE na criação do índice non-clustered.</span>
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Sem permissão da utilização do operador Sort ou seja ordernação dos dados ASC ou DESC.</span>
+</li><li><span style="line-height:20px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;font-style:italic;">Varchar(MAX), NVarchar(Max), Lob, FileStream, Numeric e Decimal com precisão &gt;18 e Datetimeoffset &gt;2 não são permitidos.</span>
+</li></ul>
+<p style="margin:0px;padding:8px 0px;font-size:13px;">
+<strong><em></em></strong></p>
+<h1><a name="Demos"></a><strong><em><span style="font-size:large;text-decoration:underline;">Demos</span></em></strong></h1>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Usando o SSMS do SQL Server 2012 e o banco de dados AdventureWorksDW2012 que pode ser baixado aqui –&nbsp;<a href="http://msftdbprodsamples.codeplex.com/releases/view/55330" style="text-decoration:underline;">http://msftdbprodsamples.codeplex.com/releases/view/55330</a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+iremos visualizar como o ColumnStoreIndexes podem nos dar um bom ganho de performance.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>USE&nbsp;</span><span>AdventureWorksDW2012</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">go</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">DBCC&nbsp;</span><span style="font-family:consolas;">FREEPROCCACHE</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">SET</span><span style="font-family:consolas;">&nbsp;</span><span style="font-family:consolas;">STATISTICS</span><span style="font-family:consolas;">&nbsp;</span><span style="font-family:consolas;">TIME</span><span style="font-family:consolas;">&nbsp;</span><span style="font-family:consolas;">ON</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>SET</span>&nbsp;<span>STATISTICS</span>&nbsp;<span>IO</span>&nbsp;<span>ON</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Agora iremos visualizar os índices criados da tabela&nbsp;<strong>dbo.FactProductIventory</strong></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>sp_helpindex</span><span>‘FactProductInventory’</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/image13.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image_thumb13.png?w=576&amp;h=65" width="576" height="65" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Realizando a seguinte consulta vemos que:</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">SELECT&nbsp;</span><span style="font-family:consolas;"><span>DP</span><span>.</span><span>EnglishProductName</span>&nbsp;<span>AS&nbsp;</span><span>NomeProduto</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>DP</span><span>.</span><span>Color</span>&nbsp;<span>AS</span>&nbsp;<span>Cor</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>D</span><span>.</span><span>CalendarYear</span>&nbsp;<span>AS</span>&nbsp;<span>Ano</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>AVG</span><span>(</span><span>F</span><span>.</span><span>UnitCost</span><span>)</span>&nbsp;<span>AS</span>&nbsp;<span>Preco</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>D</span><span>.</span><span>WeekNumberOfYear</span>&nbsp;<span>AS&nbsp;</span><span>QtdSemamas</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>SUM</span><span>(</span><span>F</span><span>.</span><span>UnitsOut</span><span>)</span>&nbsp;<span>AS</span>&nbsp;<span>QtdUnidades</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>FROM</span>&nbsp;<span>FactProductInventory</span>&nbsp;<span>AS</span>&nbsp;<span>F</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>INNER</span>&nbsp;<span>JOIN</span>&nbsp;<span>DimProduct</span>&nbsp;<span>AS</span>&nbsp;<span>DP</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>F</span><span>.</span><span>ProductKey</span>&nbsp;<span>=</span>&nbsp;<span>DP</span><span>.</span><span>ProductKey</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>INNER</span>&nbsp;<span>JOIN</span>&nbsp;<span>DimDate</span>&nbsp;<span>AS</span>&nbsp;<span>D</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>D</span><span>.</span><span>DateKey</span>&nbsp;<span>=</span>&nbsp;<span>F</span><span>.</span><span>DateKey</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>WHERE</span>&nbsp;<span>WeekNumberOfYear</span>&nbsp;<span>BETWEEN</span>&nbsp;20&nbsp;<span>AND</span>&nbsp;50</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>GROUP</span>&nbsp;<span>BY</span>&nbsp;<span>DP</span><span>.</span><span>EnglishProductName</span><span>,</span>&nbsp;<span>DP</span><span>.</span><span>Color</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>WeekNumberOfYear</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>CalendarYear</span></span></p>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+</div>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<strong>(58968 row(s) affected)<br />
+Table ‘DimProduct’. Scan count 5, logical reads&nbsp;<span>1804</span>, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+Table ‘DimDate’. Scan count 5, logical reads&nbsp;<span>130</span>, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+Table ‘FactProductInventory’. Scan count 5, logical reads&nbsp;<span>6396</span>, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+Tor</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>WeekNumberOfYear</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>CalendarYear</span></span></p>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+</div>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<strong>(58968 row(s) affected)<br />
+Table ‘DimProduct’. Scan count 5, logical reads&nbsp;<span>1804</span>, physical reads 0, read-ahead reads 0, able ‘Worktable’. Scan count 0, logical reads 0, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.</strong></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/image61.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image6_thumb.png?w=1153&amp;h=174" width="1153" height="174" style="margin:0px 0px 6px;padding:0px 0px 5px;border:0px currentColor;display:inline;" /></a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Analisando o que foi descrito anteriormente, esse seria um ótimo cenário para que seja implementado o ColumnStore Index,&nbsp;pois no plano de execução existe operações de agregações, agrupamento de dados&nbsp;além de&nbsp;envolver uma&nbsp;tabela&nbsp;com&nbsp;grande número de registros,
+ a tabela fato&nbsp;&nbsp;(Fact Table). Olhando um pouco mais atentamente para&nbsp;o plano de execução gerado, observa-se que o operador&nbsp;<strong>Hash Match&nbsp;</strong>é utilizado quando é requerido&nbsp;ao QO (Query Optimizer)&nbsp;operações de agregações, joins e para retirar valores
+ duplicados da consulta, o que, neste caso ilustrado acima, está custando 41% do plano total da consulta.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Sendo assim criaremos o ColumnStore Index na tabela&nbsp;<strong>dbo.FactProductIventory.</strong></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>CREATE</span>&nbsp;<span>NONCLUSTERED</span>&nbsp;<span>COLUMNSTORE</span>&nbsp;<span>INDEX</span>&nbsp;<span>CSIidxNCL_FactProductInventory</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>dbo</span><span>.</span><span>FactProductInventory</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">(</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>ProductKey</span><span>,<br />
+</span></span><span style="font-family:consolas;">&nbsp; &nbsp; &nbsp;DateKey</span><span style="font-family:consolas;">,<br />
+</span><span style="font-family:consolas;">&nbsp; &nbsp; &nbsp;UnitCost</span><span style="font-family:consolas;">,<br />
+</span><span style="font-family:consolas;">&nbsp; &nbsp; &nbsp;UnitsOut<br />
+</span><span style="font-family:consolas;">)</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Assim temos o novo plano de execução mostrando as seguintes informações:</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/image15.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image_thumb15.png?w=319&amp;h=67" width="319" height="67" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/image16.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image_thumb16.png?w=460&amp;h=363" width="460" height="363" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+De fato vemos que o QO utilizou o novo “Batch Mode” para retornar os valores em lotes, sendo assim comparando as consultas utilizando a Hint –&nbsp;<strong>OPTION (IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX),&nbsp;</strong>temos:</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">SELECT&nbsp;</span><span style="font-family:consolas;"><span>DP</span><span>.</span><span>EnglishProductName</span>&nbsp;<span>AS</span>&nbsp;<span>NomeProduto</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>DP</span><span>.</span><span>Color</span>&nbsp;<span>AS</span>&nbsp;<span>Cor</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>D</span><span>.</span><span>CalendarYear</span>&nbsp;<span>AS</span>&nbsp;<span>Ano</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>AVG</span><span>(</span><span>F</span><span>.</span><span>UnitCost</span><span>)</span>&nbsp;<span>AS</span>&nbsp;<span>Preco</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>D</span><span>.</span><span>WeekNumberOfYear</span>&nbsp;<span>AS</span>&nbsp;<span>QtdSemamas</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>SUM</span><span>(</span><span>F</span><span>.</span><span>UnitsOut</span><span>)</span>&nbsp;<span>AS</span>&nbsp;<span>QtdUnidades</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>FROM</span>&nbsp;<span>FactProductInventory</span>&nbsp;<span>AS</span>&nbsp;<span>F</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>INNER</span>&nbsp;<span>JOIN</span>&nbsp;<span>DimProduct</span>&nbsp;<span>AS</span>&nbsp;<span>DP</span></span></p>
+<p style="margin:0px;padding:8px span><span>.</span><span>WeekNumberOfYear</span>&nbsp;<span>AS</span>&nbsp;<span>QtdSemamas</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13p0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>F</span><span>.</span><span>ProductKey</span>&nbsp;<span>=</span>&nbsp;<span>DP</span><span>.</span><span>ProductKey</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>INNER</span>&nbsp;<span>JOIN</span>&nbsp;<span>DimDate</span>&nbsp;<span>AS</span>&nbsp;<span>D</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>D</span><span>.</span><span>DateKey</span>&nbsp;<span>=</span>&nbsp;<span>F</span><span>.</span><span>DateKey</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>WHERE</span>&nbsp;<span>WeekNumberOfYear</span>&nbsp;<span>BETWEEN</span>&nbsp;20&nbsp;<span>AND</span>&nbsp;50</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>GROUP</span>&nbsp;<span>BY</span>&nbsp;<span>DP</span><span>.</span><span>EnglishProductName</span><span>,</span>&nbsp;<span>DP</span><span>.</span><span>Color</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>WeekNumberOfYear</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>CalendarYear</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>OPTION&nbsp;</span><span>(</span><span>IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX</span><span>);</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">&nbsp;</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">SELECT&nbsp;</span><span style="font-family:consolas;"><span>DP</span><span>.</span><span>EnglishProductName</span>&nbsp;<span>AS</span>&nbsp;<span>NomeProduto</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>DP</span><span>.</span><span>Color</span>&nbsp;<span>AS</span>&nbsp;<span>Cor</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>D</span><span>.</span><span>CalendarYear</span>&nbsp;<span>AS</span>&nbsp;<span>Ano</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>AVG</span><span>(</span><span>F</span><span>.</span><span>UnitCost</span><span>)</span>&nbsp;<span>AS</span>&nbsp;<span>Preco</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>D</span><span>.</span><span>WeekNumberOfYear</span>&nbsp;<span>AS</span>&nbsp;<span>QtdSemamas</span><span>,</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>SUM</span><span>(</span><span>F</span><span>.</span><span>UnitsOut</span><span>)</span>&nbsp;<span>AS</span>&nbsp;<span>QtdUnidades</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>FROM</span>&nbsp;<span>FactProductInventory</span>&nbsp;<span>AS</span>&nbsp;<span>F</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>INNER</span>&nbsp;<span>JOIN</span>&nbsp;<span>DimProduct</span>&nbsp;<span>AS</span>&nbsp;<span>DP</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>F</span><span>.</span><span>ProductKey</span>&nbsp;<span>=</span>&nbsp;<span>DP</span><span>.</span><span>ProductKey</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>INNER</span>&nbsp;<span>JOIN</span>&nbsp;<span>DimDate</span>&nbsp;<span>AS</span>&nbsp;<span>D</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>D</span><span>.</span><span>DateKey</span>&nbsp;<span>=</span>&nbsp;<span>F</span><span>.</span><span>DateKey</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>WHERE</span>&nbsp;<span>WeekNumberOfYear</span>&nbsp;<span>BETWEEN</span>&nbsp;20&nbsp;<span>AND</span>&nbsp;50</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>GROUP</span>&nbsp;<span>BY</span>&nbsp;<span>DP</span><span>.</span><span>EnglishProductName</span><span>,</span>&nbsp;<span>DP</span><span>.</span><span>Color</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>WeekNumberOfYear</span><span>,</span>&nbsp;<span>D</span><span>.</span><span>CalendarYear</span></span></p>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+</div>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<a href="http://luanmorenodba.files.wordpress.com/2012/03/image17.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image_thumb17.png?w=1007&amp;h=216" width="1007" height="216" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Definitivamente observa-se um grande ganho de performance entre as duas consultas, porém para realmente termos uma real idéia de ganho efetivo, é necessário também&nbsp;observar&nbsp;as estatísticas de comparação de tempo e I/O.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<strong><em>Consulta Sem ColunmStore Indexes<br />
+</em></strong><span style="font-style:italic;"><br />
+(58968 row(s) affected)<br />
+</span><span style="font-style:italic;">Table ‘DimProduct’. Scan count 5, logical reads 1804, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+</span><span style="font-style:italic;">Table ‘DimDate’. Scan count 5, logical reads 130, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+</span><span style="font-style:italic;">Table&nbsp;</span><strong style="font-style:italic;">‘FactProductInventory’</strong><span style="font-style:italic;">. Scan count 5, logical reads&nbsp;</span><strong style="font-style:italic;"><span>6396</span></strong><span style="font-style:italic;">,
+ physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+</span><span style="font-style:italic;">Table ‘Worktable’. Scan count 0, logical reads 0, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<strong><em>Consulta&nbsp;<span>Com</span>&nbsp;ColumnStore Indexes<br />
+<br />
+</em></strong><span style="font-style:italic;">(58968 row(s) affected)<br />
+</span><span style="font-style:italic;">Table ‘DimDate’. Scan count 5, logical reads 130, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+</span><span style="font-style:italic;">Table ‘DimProduct’. Scan count 5, logical reads 1804, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+</span><span style="font-style:italic;">Table&nbsp;</span><strong style="font-style:italic;">‘FactProductInventory’</strong><span style="font-style:italic;">. Scan count 4, logical reads&nbsp;</span><strong style="font-style:italic;"><span>695</span></strong><span style="font-style:italic;">,
+ physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.<br />
+</span><span style="font-style:italic;">Table ‘Worktable’. Scan count 0, logical reads 0, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<em><strong>Obs</strong></em>: Houve, no exemplo acima, uma diferença considerável de<em>&nbsp;<strong>6.496</strong></em>&nbsp;para&nbsp;<em><strong>695</strong></em>&nbsp;leituras lógicas no nível folha do índice.&nbsp;
+</p>
+<p style="margin:0px;padding:8px 0px;font-size:13px;">
+<strong><em><br />
+</em></strong></p>
+<h1><a name="Mais_Informa_ccedil_otilde_es"></a><strong><em>Mais Informações</em></strong></h1>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Como informado anteriormente, quando é criado o ColumnStore Index em uma tabela, essa tabela passa a ser “Read-Only” com isso se tentarmos alterar ou adicionar um novo registro a essa tabela, veremos que:</p>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<p style="margin:0px;padding:8px 0px;"><span>BEGIN&nbsp;</span><span>TRANSACTION</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>SELECT&nbsp;</span><span>@@TRANCOUNT</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>UPDATE</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>SET</span>&nbsp;<span>UnitPrice</span>&nbsp;<span>=</span>&nbsp;<span>’2500′</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>WHERE</span>&nbsp;<span>SalesOrderNumber</span>&nbsp;<span>=&nbsp;</span><span>‘SO43701′</span></p>
+</div>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span>‘Msg 35330, Level 15, State 1, Line 1<br />
+UPDATE statement failed because data cannot be updated in a table with a columnstore index.<br />
+Consider disabling the columnstore index before issuing the UPDATE statement, then rebuilding the columnstore index after UPDATE is complete.’</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ROLLBACK&nbsp;</span><span>TRANSACTION</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">GO</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Desabilitando o índice e tentando novamente….</p>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<p style="margin:0px;padding:8px 0px;"><span>ALTER</span>&nbsp;<span>INDEX</span>&nbsp;<span>CSIidxNCL_FactInternetSales</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>ON</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span>&nbsp;<span>DISABLE</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>GO</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>BEGIN&nbsp;</span><span>TRANSACTION</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>SELECT&nbsp;</span><span>@@TRANCOUNT</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>UPDATE</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>SET</span>&nbsp;<span>UnitPrice</span>&nbsp;<span>=</span>&nbsp;<span>’1300′</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>WHERE</span>&nbsp;<span>SalesOrderNumber</span>&nbsp;<span>=</span>&nbsp;<span>‘SO43701′</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>SELECT&nbsp;</span><span>*</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>FROM</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>WHERE</span>&nbsp;<span>SalesOrderNumber</span>&nbsp;<span>=</span>&nbsp;<span>‘SO43701′</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>–&nbsp;&nbsp; COMMIT TRANSACTION</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>ROLLBACK</span><span>TRANSACTION</span></p>
+<pre><a href="http://luanmorenodba.files.wordpress.com/2012/03/image18.png" style="text-decoration:underline;"><img title="image" alt="image" src="http://luanmorenodba.files.wordpress.com/2012/03/image_thumb18.png?w=991&amp;h=57" width="991" height="57" style="margin:0px 0px 6px;padding:0px 0px 5px;display:inline;" /></a></pre>
+</div>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Na versão&nbsp;<em>RC0 do SQL Server 2012</em>&nbsp;Codename Denali, não era possível utilizar a opção REBUILD PARTITION, para poder utilizar novamente o ColumnStore Index na tabela era necessário realizar a exclusão e criação novamente do índice, agora com a versão
+ RTM é possivel realizar o REBUILD.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ALTER</span>&nbsp;<span>INDEX</span>&nbsp;<span>CSIidxNCL_FactInternetSales</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>ON</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span>&nbsp;<span>REBUILD</span>&nbsp;<span>PARTITION</span>&nbsp;<span>=</span>&nbsp;<span>ALL</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;">GO</span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+ou se optar poderá excluir e criá-lo novamente</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>DROP</span>&nbsp;<span>INDEX</span>&nbsp;<span>FactInternetSales</span><span>.</span><span>CSIidxNCL_FactInternetSales</span></span></p>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+</div>
+<div class="csharpcode" style="font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<p style="margin:0px;padding:8px 0px;"><span>CREATE</span>&nbsp;<span>NONCLUSTERED</span>&nbsp;<span>COLUMNSTORE</span>&nbsp;<span>INDEX</span>&nbsp;<span>CSIidxNCL_FactInternetSales</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>ON</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>(</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>ProductKey</span><span>,</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>UnitPrice</span><span>,</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>ProductStandardCost</span><span>,</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>SalesAmount</span><span>,</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>TaxAmt</span><span>,</span></p>
+<p style="margin:0px;padding:8px 0px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span>Freight</span></p>
+<p style="margin:0px;padding:8px 0px;"><span>)</span></p>
+</div>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+Forçando a utilização do ColumnStore Index, veremos agora que o dado foi atualizado com sucesso.</p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>SELECT</span><span>*</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>FROM</span>&nbsp;<span>dbo</span><span>.</span><span>FactInternetSales</span>&nbsp;<span>WITH</span><span>(</span><span>INDEX</span><span>(</span><span>CSIidxNCL_FactInternetSales</span><span>))</span></span></p>
+<p style="margin:0px;padding:8px 0px;font-family:georgia,&#39;times new roman&#39;,times,serif;font-size:13px;">
+<span style="font-family:consolas;"><span>WHERE</span>&nbsp;<span>SalesOrderNumber</span>&nbsp;<span>=</span>&nbsp;<span style="font-family:consolas;font-size:13px;">&#39;</span><span>SO43701&#39;<br />
+<br />
+<br />
+</span></span></p>
+Para maiores informações verifique também as informações da documentação oficial:<br />
+<br />
+<strong>Índices Columnstore</strong>: <a href="http://msdn.microsoft.com/pt-br/library/gg492088.aspx">
+http://msdn.microsoft.com/pt-br/library/gg492088.aspx</a><br />
+<br />
+<br />
+
+</div>
+    
+    

@@ -1,0 +1,440 @@
+---
+layout: default
+title: MDX - Basics to Advanced ASAP - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+So been visiting a couple of sites recently to collect information on MDX from basic information to advanced but almost every site had some advantages to it and some disadvantages to it. Now just to make the information on MDX querying more concise, I am writing
+ up this article. Lets start with the basics....<br />
+<br />
+<strong>Step 1:</strong><br />
+Syntax--&gt;<br />
+SELECT Measure/Dimension on 0/Axis(0)/Columns,<br />
+Measure/Dimension on 1/Axis(1)/Rows,<br />
+Measure/Dimension on 2/Axis(2) [Note: From this point onwards... even though this MDX is valid, SSMS editor will not accept the information as it strictly adheres to cell information encapsulated between rows and columns].<br />
+. on 3/Axis(3)<br />
+.<br />
+.<br />"r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></di
+.<br />
+from [Cube Name] where slicer information<br />
+<br />
+<strong>Step 2:</strong><br />
+Figure out what information it is that you exactly want from the cube......<br />
+Extremely important here is to follow the rules below:<br />
+Update the cube to take in a default measure.<br />
+<span style="font-size:8pt;font-family:&#39;courier new&#39;;color:#0000ff;">ALTER</span><span style="font-size:8pt;font-family:&#39;courier new&#39;;"><span style="color:#000000;">
+</span><span style="color:#0000ff;">CUBE</span><span style="color:#000000;">&nbsp;[CUBENAME]</span><span style="color:#000000;">
+</span><span style="color:#0000ff;">UPDATE</span><span style="color:#000000;"> </span>
+<span style="color:#0000ff;">DIMENSION</span><span style="color:#000000;"> Measures,
+</span><span style="color:#0000ff;">DEFAULT_MEMBER</span><span style="color:#000000;">=DefaultMeasure;<br />
+</span></span>Now once this is performed, all the infromation that you slice without explicitly specifying a measure will take the default measure used by the update statement as mentioned above.<br />
+<span style="font-size:8pt;font-family:&#39;courier new&#39;;color:#0000ff;">SELECT <span style="color:#000000;">
+Measures</span>.<span style="color:#c00000;">DefaultMember</span>&nbsp;FROM&nbsp;<span style="color:#000000;">[CUBENAME]</span>&nbsp;</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3124.CCORDINATE.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x250/__key/communityserver-wikis-components-files/00-00-00-00-05/3124.CCORDINATE.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<p style="margin:0in;font-family:calibri;font-size:11pt;">In the above diagram, we have the traditional Co-ordinate system with the positive X and Y planes indicated by straight lines, However when it comes to MDX we have to realize that barring the X and
+ Y co-ordinates we can write queries across multiple axes as indicated by the dotted lines. Hence the term &quot;<strong>Multidimensional Expressions</strong>&quot;.&nbsp;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Coming back to the MDX aspects we divide the MDX into 3 categories--&gt;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">1] CellSpace/CellSet/Cell</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">2] Member</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">3] Tuple</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">4] Set</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">&nbsp;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">If we go with the standard definitions we could define that the CellSpace/CellSet/Cell (Cell) is the value of intersection between all the axes.</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">A member is any of the co-ordinate intersections which defines a particular behavior along one of the axes.</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Another layer of abstraction over the member is called tuple and it basically is a collection of members from different access but share the same behavior.</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">A collection of tuples is called a Set.</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">&nbsp;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Now we can get more clarity by reading the article as mentioned below (It is a quick read):</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">&nbsp;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;"><a href="http://msdn.microsoft.com/en-us/library/aa216769(v=sql.80).aspx">http://msdn.microsoft.com/en-us/library/aa216769(v=sql.80).aspx</a></p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">&nbsp;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Once you have read this article, let us continue our foray into the world of MDX:-</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">General Syntax--&gt;</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">With CalculatedMember as CalculatedMember formaula</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Select&nbsp; Measure/Dimension/CalculatedMember (Cell/Member/Tuple/Set) as Columns/0/Axes(0),</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Measure/Dimension/CalculatedMember (Cell/Member/Tuple/Set) as Columns/0/Axes(1)</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">from [CubeName] where slicerinformation</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Let us take a couple of examples from our AdventureWorks 2008 R2 cube.</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">In the following example we are taking the Measure amount and verifying it across the different members belonging to the Account dimension:</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">select [Measures].[Amount] on 0,</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">{[Account].[Account Number].[Account Number]} on 1</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">from [Adventure Works]</p>
+[This is the basic MDX statement&nbsp;that&nbsp;is normally written by Analysts and Dev to verify information]<br />
+<span style="font-size:11px;"><br />
+Let us continue with other examples:<br />
+select<br />
+[Account].[Account Number].[Account Number] on 0 //Columns<br />
+from<br />
+[Adventure Works]<br />
+<br />
+In this case we will still get a value for all the [Account Number] member&#39;s present in the Account dimension&nbsp;and the value we will get is the information pertaining to the default measure member as discussed earlier.<br />
+<br />
+Now let us fetch the information for only one cell:<br />
+select [Account].[Account Number].[Account Number].&amp;[4] on 0<br />
+from [Adventure Works]<br />
+This will fetch the Cell/Cell Space with the Reseller Sales (which is my default measure)&nbsp;for the Account numbered 4 from the Account dimension.<br />
+<br />
+Now let us fetch a member using MDX: <br />
+select [Geography].[Geography].&amp;[United States].Children on 0 from [Adventure Works]<br />
+The result wi;is normally written by Analysts and Dev to verify information]<br />
+<span style="font-size:11px;"><br />
+Let us continue with other examples:<br />
+select<br />
+[Account].[Account Number].[Account Number] on 0 //Columns<br />
+from<br />
+[Adventure Works]<br />
+<br />
+In this case we will still get a value for all the [Account Number] member&#39;s present in the Account dimension&nbsp;and the value we will get is the information pertaining to the default measure member as discussed earlier.<br />
+<br />
+Now let us fetch the information for only one cell:<br />
+select [Account].[Account Number]ll give us the cumulative Reseller Sales Amount for all the states belonging to the United States. So all the information returned represents one or more occurrence of the states belonging to the United States.<br />
+<br />
+Let us discuss a couple of concepts here for <strong>Members</strong>: <br />
+Calculated Member:- <br />
+A calculated member is a custom calculation that we perform on the existing MDX query. The calculated member is generated from the storage engine once it determines that the expression is a valid expression. The following gives a return value of &quot;TRUE&quot; or &quot;FALSE&quot;
+ based on the whether the reseller&#39;s internet sales is greater than the amount specified in the query:<br />
+WITH member x as<br />
+IIF([Measures].[Reseller Sales Amount] &gt; 45450<br />
+,&quot;TRUE&quot;<br />
+,&quot;FALSE&quot;)<br />
+select {[Measures].[Reseller Sales Amount],x} on 0,<br />
+{[Geography].[Geography].&amp;[United States].Children} on 1<br />
+from [Adventure Works]<br />
+<br />
+Here I am using the IIF statement which is similar to the if statement in traditional T-SQL. Here the concept is that if the condition is verified it returns the first argument else it returns the second argument : - IIF(Condition,Argument 1,Argument 2)<br />
+Something very similar to the IIF is the CASE function which can be utilized in the following manner:
+<p>WITH member x as<br />
+CASE WHEN ([Measures].[Reseller Sales Amount] &gt; 45450) <br />
+THEN &quot;TRUE&quot;<br />
+ELSE &quot;FALSE&quot;<br />
+END<br />
+select {[Measures].[Reseller Sales Amount],x} on 0,<br />
+{[Geography].[Geography].&amp;[United States].Children} on 1<br />
+from [Adventure Works]</p>
+<br />
+The CASE statement in an MDX expression follows the T-SQL convention to the &quot;T&quot;.<br />
+In the above MDX expressions, the calculated member x is derived by our custom expression which is using an IIF in one and a CASE function&nbsp;in the other.<br />
+<br />
+<br />
+Now let us move on to a tuple:<br />
+If we would like to consider the total internet sales per&nbsp;product sold in the st semester of a financial year(2007) like the following will fetch all the tuples in that section of the cube:<br />
+select<br />
+CROSSJOIN([Product].[Product].[Product].Members,<br />
+[Date].[Fiscal Semester of Year].&amp;[FY H1]) on 0,<br />
+[Measures].[Internet Sales Amount] on 1<br />
+from [Adventure Works] <br />
+where<br />
+[Date].[Fiscal Year].&amp;[2007]<br />
+<br />
+The CROSSJOIN is similar to the CROSS JOIN in a T-SQL query.<br />
+<br />
+Note: In the above query it is not necessary to provide the CROSSJOIN, however I feel that it is a good practice to use it because you know exactly what one is doing rather than&nbsp;write the query in&nbsp;the following manner-<br />
+select<br />
+([Product].[Product].[Product].Members,<br />
+[Date].[Fiscal Semester of Year].&amp;[FY H1]) on 0,<br />
+[Measures].[Internet Sales Amount] on 1<br />
+from [Adventure Works] <br />
+where<br />
+[Date].[Fiscal Year].&amp;[2007]<br />
+<br />
+<span style="font-size:13px;">Also a very good approach when time constraints are less and someone is approaching MDX from a beginners perspective (or to Test the MDX query) is to verify it against the underlying datawarehouse (Let us verify it for a particular
+ product say.....&quot;<span style="font-size:13px;">Mountain-200 Silver, 46&quot;:</span><br />
+</span>select SUM(SalesAmount) from FactInternetSales <br />
+where ProductKey=356<br />
+and OrderDateKey in <br />
+(select datekey from DimDate where FiscalYear=2007 and FiscalSemester=1)<br />
+Ans: 103570.98<br />
+<br />
+Let us take a look at the final key aspect which are Sets:<br />
+In the adventureworks datawarehouse the Fiscal Semester starts from the month of July every year, Now let us pull up the same information as&nbsp;the previous query&nbsp;for a set of tuples belonging to the 1st semester (July to December) for the year 2007 but let us
+ restrict the set from July to September only:<br />
+select<br />
+([Product].[Product].[Product].Members,<br />
+[Date].[Month of Year].&amp;[7]:[Date].[Month of Year].&amp;[9]) on 0,<br />
+[Measures].[Internet Sales Amount] on 1<br />
+from [Adventure Works] <br />
+where<br />
+([Date].[Fiscal Year].&amp;[2007],[Date].[Fiscal Semester of Year].&amp;[FY H1])<br />
+<br />
+In the above MDX query we are considering the set of months &quot;<span style="font-size:13px;">[Date].[Month of Year].&amp;[7]:[Date].[Month of Year].&amp;[9]&quot;</span>, we can replace this expression in the MDX query&nbsp;with the
+<br />
+expression &quot;<span style="font-size:13px;">{[Date].[Month of Year].&amp;[7],[Date].[Month of Year].&amp;[8],[Date].[Month of Year].&amp;[9]}</span>&quot;<br />
+<br />
+We can verify the same at the DW (Adventure Works 2008 DataWarehouse)&nbsp;for the product &quot;<span style="font-size:13px;">Mountain-200 Silver, 38</span>&quot; in the month of July with the following query:<br />
+select SUM(SalesAmount) from FactInternetSales <br />
+where ProductKey in (352,353)<br />
+and OrderDateKey in <br />
+(select datekey from DimDate where FiscalYear=2007 and FiscalSemester=1 and EnglishMonthName<br />
+in (&#39;July&#39;))<br />
+<br />
+Quick Recap on what we have learnt so far:<br />
+1. What is an MDX query?<br />
+2. Cell/Cell Space<br />
+3. Member<br />
+4. Tuple<br />
+5. Set<br />
+<br />
+Let us ramp up on some functions.... There are functions @ the member level and there are functions at the tuple leve. But before that there are some attributes of members or cell&#39;s that needs to be explained(In MSDN, these have been mentioned as functions
+ but I feel that attributes is a better definition for the following).<br />
+Parent:<br />
+In a hierarchy, when we define the attribute relationships in SSAS, we also define a root attribute which can further be sliced along any of it&#39;s child attributes. And intermediate attributes are also parents of their respective children. A diagram to emphasize
+ this is as follows:<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6403.Hierarchy.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6403.Hierarchy.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+If we would like to select the parent of the City attribute, which in our case is the State-Province we could go about doing it in this manner:<br />
+<p style="margin:0in;font-family:calibri;font-size:11pt;">select [Geography].[Geography].[City].&amp;[Coffs Harbour]&amp;[NSW].PARENT on 0 from [Adventure Works]</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">Ans: New South Wales</p>
+<br />
+The above MDX query gives us the parent for a specific city which in this case is New South Wales.
+<br />
+<br />
+Children:<br />
+This will give us the child for any intermediate Hierarchy member present in the&nbsp; above diagram--&gt;<br />
+<p style="margin:0in;font-family:calibri;font-size:11pt;">select [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].Children on 0</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">from [Adventure Works]</p>
+<br />
+It will give all the cities belonging to the State-Province of &quot;<strong>British-Columbia</strong>&quot;<br />
+<br />
+Then we have the firstchild, lastchild, lastsibling, firstsibling and NextMember set of attributes.<br />
+select [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].lastchild on 0 from [Adventure Works]<br />
+This will return the lastchild belonging to the State-Province of &quot;<strong>British-Columbia</strong>&quot;. Since the order of the cities is in ascending order, the query will return &quot;<strong>Westminster</strong>&quot;.<br />
+<br />
+select [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].firstchild on 0 from [Adventure Works]<br />
+<span style="font-size:13px;">This will return the firstchild belonging to the State-Province of &quot;<strong>British-Columbia</strong>&quot;. Since the order of the cities is in ascending order, the query will return &quot;<strong>Burnaby</strong>&quot;.<br />
+</span><br />
+select [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].lastsibling on 0 from [Adventure Works]<br />
+This will return the last member in the State-Province which is a sibling to the State-Province of &quot;<strong>British-Columbia&quot;
+</strong>which in this case will the state of &quot;<strong>Quebec</strong>&quot;<br />
+<br />
+select [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].firstsibling on 0 from [Adventure Works]<br />
+This will return the first member in the State-Province which is a sibling to the State-Province of &quot;<strong>British-Columbia</strong>&quot; which in this case will the state of &quot;<strong>Alberta</strong>&quot;<br />
+<br />
+<span style="font-size:13px;">Moving on Let us consider the Hierarchy and Level functions which are provided to us.<br />
+<strong>Hierarchy Functions:</strong><br />
+A] Dimension: This will return the dimension of the respective member used in the MDX query.</span><br />
+With member test as [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].Dimension.Name
+<br />
+select test on 0 from [Adventure Works]<br />
+This will return the name of the dimension to which the State-Province of &quot;<strong>British-Columbia</strong>&quot; belongs to which in our case is &quot;<strong>Geography</strong>&quot;.<br />
+<br />
+<br />
+<span style="font-size:13px;">B] Hierarchy: This will return the&nbsp;hierarchy of the respective member used in the MDX query.</span><br />
+With member test as [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].Hierarchy.Name<br />
+select test on 0 from [Adventure Works]<br />
+This will return the name ofg>Al the hierarchy to which the State-Province of &quot;British-Columbia&quot; belongs to which in our case is &quot;Geography&quot;.<br />
+<br />
+<strong><span style="font-size:13px;">Level&nbsp;Functions:</span></strong><br />
+As the name indicates, it is used to find all the level related information belonging to a specific member.<br />
+A] LEVEL: This will return the level (from the root) of a specific member used in the MDX query.<br />
+With member test as [Geography].[Geography].[State-Province].&amp;[BC]&amp;[CA].Level.Name<br />
+select test on 0 from [Adventure Works]<br />
+B] LEVELS: This is used to fetch a particular level in a hierarchy (or member relationship)<br />
+With member test as [Geography].[Geography].Levels(0).name<br />
+select test on 0 from [Adventure Works]<br />
+Ans: All<br />
+With member test as [Geography].[Geography].Levels(1).name<br />
+select test on 0 from [Adventure Works]<br />
+Ans: Country<br />
+With member test as [Geography].[Geography].Levels(2).name<br />
+select test on 0 from [Adventure Works]<br />
+Ans: State-Province<br />
+With member test as [Geography].[Geography].Levels(3).name<br />
+select test on 0 from [Adventure Works]<br />
+Ans: City<br />
+<br />
+<strong>String Functions</strong><br />
+<br />
+A] UserName: This will return the current user&#39;s credentials under which the MDX queries are being executed.<br />
+WITH MEMBER test AS UserName<br />
+SELECT test ON COLUMNS<br />
+FROM [Adventure Works]<br />
+<br />
+B] Name: This will give us the name of the dimension, measure or hierarchy (We have gone through some examples in the Hierarchy and Level Functions)<br />
+<br />
+C] UniqueName: The only difference between Name and UniqueName attributes is the fact that the Unique Name will return the entire sequence of members from the root till the child member but the Name will only return the name of the member instance. Let us take
+ a look at both:-<br />
+WITH <br />
+MEMBER ExampleUniqueName <br />
+&nbsp;&nbsp; AS [Product].[Product Categories].UniqueName<br />
+MEMBER ExampleName <br />
+&nbsp;&nbsp; AS [Product].[Product Categories].Name<br />
+SELECT <br />
+&nbsp;&nbsp; {ExampleUniqueName<br />
+&nbsp;&nbsp; , ExampleName<br />
+&nbsp;&nbsp; }<br />
+&nbsp;&nbsp; ON 0<br />
+FROM [Adventure Works]<br />
+Results:<br />
+&nbsp;&nbsp;&nbsp;&nbsp;ExampleUniqueName&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ExampleName<br />
+[Product].[Product Categories]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Product Categories<br />
+<br />
+D]MemberToStr: <span style="font-size:13px;">As the name suggests, this function is used to return a name for the&nbsp;member used. I have not used this function a whole lot of times but it is extremely useful when you want to send information between different teams
+ as to what&nbsp;members need to be used for a specific pivot during a particular&nbsp;sprint.</span><br />
+&nbsp;With member Test as <br />
+&nbsp;MemberToStr([Geography].[Geography].&amp;[United States])<br />
+&nbsp;select Test on 0 from [Adventure Works]<br />
+<span style="font-size:13px;">The result from the following query is <strong>[Geography].[Geography].[Country].&amp;[United States]</strong></span><br />
+<br />
+E] TupleToStr: As the name suggests, this function is used to return a name for the tuple used. I have not used this function a whole lot of times but it is extremely useful when you want to send information between different teams as to what tuples need to
+ be used for a specific sprint.<br />
+With member test as<br />
+TUPLETOSTR(([Product].[Category].&amp;[1],<br />
+&nbsp;[Date].[Fiscal Semester of Year].&amp;[FY H1]))<br />
+select<br />
+&nbsp;test on 0<br />
+&nbsp; from [Adventure Works] <br />
+The result from the following query is <strong>([Product].[Category].&amp;[1],[Date].[Fiscal Semester of Year].&amp;[FY H1])<br />
+<br />
+<br />
+</strong><span style="font-size:13px;">F] SetToStr: As the name suggests, this function is used to return a name for the Set used in the MDX query. I have not used this function a whole lot of times but it is extremely useful when you want to send information
+ between different teams as to what&nbsp;Sets need to be used for specific pivots.<br />
+</span>WITH member Test as <br />
+SetToStr([Date].[Month of Year].&amp;[7]:[Date].[Month of Year].&amp;[9])<br />
+&nbsp;select (Test)<br />
+&nbsp; on 0<br />
+&nbsp; from [Adventure Works]<br />
+<span style="font-size:13px;">The result from the following query is</span> <strong>
+{[Date].[Month of Year].&amp;[7],[Date].[Month of Year].&amp;[8],[Date].[Month of Year].&amp;[9]}<br />
+</strong><br />
+G] LookUpCube: This function is extremely useful in order to fetch information from a cube located on the same server on which one is running queries against a different cube. A great example here is that one might create a history cube to collect statistics
+ on the past, and there might be a need to compare the statistics from the History Cube to the current cube. In the following example I am executing the query from a different perspectives just to showcase how the function works.<br />
+Current Perspective: [Channel Sales]<br />
+Measure Considered/Cube: [Measures].[Customer Count]/[Direct Sales] <br />
+General Syntax: LookUpCube(CubeName,String or Numeric Expression)<br />
+WITH member Test as <br />
+LookUpCube(&quot;[Direct Sales]&quot;,&quot;[Measures].[Customer Count]&quot;)<br />
+select Test&nbsp; on 0<br />
+from [Channel Sales]<br />
+<br />
+Note: This query will always take a little time to execute, Do this only when necessary. So it is a peformance intensive function....<br />
+<br />
+H] Properties: This function will get specific properties of a member based on values/expressions (these might need to be memorized)&nbsp;that a user requires. I do not use this function on a regular basis but I suggest going through the following link in case someone
+ does feel the necessity to do so:<br />
+<a href="http://msdn.microsoft.com/en-us/library/ms144821.aspx">http://msdn.microsoft.com/en-us/library/ms144821.aspx</a><br />
+<br />
+I] CoalesceEmpty: Now this is an MDX function that can haveSales]<br />
+Measure Considered/Cube: [Measures].[Customer Count]/[Direct Sales] <br />
+General Syntax: LookUpCube(CubeName,String or Numeric Expression)<br />
+WITH member Test as <br />
+LookUpCube(&quot;[Direct Sales]&quot;,&quot;[Measures].[Customer Count]&quot;)<br />
+select Test&nbsp; on 0<br />
+from [Channel Sales]<br />
+<br />
+Note: This query will always take a little time to execute, Do this only when necessary. So it is a peformance intensive function....<br />
+<br />
+H] Properties: This function will get specific properties of a member based on values/expressions (these might need to be memorized)&nbsp;that a user requires. I do not use this function on a regular basis but I sugg regular usage in almost everybody&#39;s queries. Similar to the Coalesce function in T-SQL, it basically return the first non empty (non nullable) value present in the argument set. The general syntax
+ is CoalesceEmpty(MemberValue,value1,value2,.....)
+<p style="margin:0in;font-family:calibri;font-size:11pt;">WITH member Test as </p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">CoalesceEmpty([Measures].[Customer Count],0)</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">select [Product].[Category].Members on 0,Test on 1</p>
+<p style="margin:0in;font-family:calibri;font-size:11pt;">from [Adventure Works]<br />
+Wherevr we get a null value, it will be replaced by the 0 digit in this case.<br />
+<br />
+<br />
+Let us now move onto some <strong>Math functions</strong>:<br />
+<br />
+Min: Will give us the minimum value in a given Set.&nbsp;<br />
+Example- We want to find the minimum discounted amount value for reseller sales based on the country--&gt;<br />
+With member test as min(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]<br />
+<br />
+Max: Will give us the maximum value in a given Set.<br />
+Example- We want to find the&nbsp;maximum discounted amount value for reseller sales based on the country--&gt;<br />
+With member test as max(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]<br />
+<br />
+Median: Will give us the median of a defined Set.<br />
+Going back to Math 101, the median of a defined set is not the average of a given set of numbers which will be the sum of all the numbers in a particular set divided by the count of numbers. Let us consider the set of numbers --&gt; {12,21,34,45,51},<br />
+the average is (12&#43;21&#43;34&#43;45&#43;51)/5 = 32.6 but the median is taken by arranging the numbers in an ascending fashion and taking the number in the middle which in this case is 32.6<br />
+Example-We want to find the&nbsp;median of the&nbsp;discounted amount value for reseller sales based on the country--&gt;<br />
+With member test as median(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]</p>
+<br />
+Var: This is the variance for a specific set of data points based on their distance from the Mean.<br />
+Let us take {1,2,3,4,5}<br />
+The Mean is 3.<br />
+The variance will be given by ((1-3)^2 &#43; (2-3)^2 &#43; (3-3)^2&#43;(4-3)^2&#43;(5-3)^2)/5 = (4&#43;1&#43;0&#43;1&#43;4)/5=10/5=2<br />
+Example-We want to find the variance of the discounted amount value for reseller sales based on the country--&gt;<br />
+With member test as var(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]<br />
+<br />
+stddev: This is the standard deviation for a specific set of data. The standard Deviation will be the squareroot of the variance.<br />
+The Standard Deviation for the set of numbers {1,2,3,4,5} is basically sqrt(2)<br />
+Example - <br />
+<span style="font-size:13px;">With member test as stddev(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]</span><br />
+<br />
+<br />
+Count: We have two different counts...Count(Tuple) and Count(Set)<br />
+Example - Count(Set)<br />
+<span style="font-size:13px;">With member test as Count(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]</span><br />
+<br />
+Count(Tuple)<br />
+With member test as <br />
+&nbsp;Count(CROSSJOIN([Product].[Product].[Product].Members,<br />
+&nbsp;[Date].[Fiscal Semester of Year].&amp;[FY H1]))<br />
+select<br />
+&nbsp;test on 0<br />
+&nbsp;from [Adventure Works] <br />
+<br />
+Aggregate: Aggregate operations are applied on Sets. <br />
+Example - <br />
+<span style="font-size:13px;">With member test as Aggregate(Geography.Geography.Country.allmembers,[Measures].[Discount Amount])
+<br />
+select test on 0<br />
+from [Adventure Works]</span><br />
+<br />
+<br />
+<p>Let us now move onto some Date Related Functions. This is extremely important and is almost the fundamental key principles for business analysts to succeed when querying against Cubes.</p>
+<p>Let us start with the highest level which is Year and keep moving down to lower levels like Quarter--&gt; Month --&gt; Week --&gt; Day --&gt; Hour<br />
+1. YTD (Year to date) This function will return the values for the specific year upto a specific date within the year.<br />
+For example this following MDX query will give us the count of the customers for the entire year:<br />
+SELECT ([Measures].[Customer Count],YTD([Date].[Calendar Year].&amp;[2003])) on 0 from [Adventure Works]</p>
+<p>2. QTD(Quarter To Date) This function is used to return all the values belonging to a quarter defined within the cube. For example Jan - March might be considered as the first quarter and every 3 months from March can be grouped into a quarter group.<br />
+SELECT ([Measures].[Customer Count],QTD([Date].[Calendar].[Calendar Quarter].&amp;[2001]&amp;[3])) ON 0 from [Adventure Works]</p>
+<p>3. WTD(Week To Date) This function returns a set of members from the date and time dimension starting with the first day of the week up to the specified member.
+<br />
+In case an invalid grain is given as part of the function then the following error will be raised:<br />
+Executing the query ... <br />
+Query (1, 37) By default, a week level was expected. No such level was found in the cube.<br />
+&nbsp;<br />
+Execution complete<br />
+&nbsp;<br />
+4. MTD(Month to Date) This function is used to return the required aggregation from a measure based on the number of months(always the beginning of the year)&nbsp; till a specified date in a year<br />
+&nbsp;SELECT ([Measures].[Customer Count],MTD([Date].[Calendar].[Date].&amp;[2])) on 0 from [Adventure Works]</p>
+<p>5. We have a higher grain greater than the years which is the PeriodsToDate function which basically gives us all the information upto a particular period in time.<br />
+The periods to date function utilizes any level within the time hierarchy&nbsp; to find the periodic information. The general syntax for this function is PeriodsToDate(LEVEL, MEMBER).
+</p>
+<p>SELECT</p>
+<p>PeriodsToDate([Date].[Calendar].[Month], [Date].[Calendar].[Date].&amp;[28]) on 0 FROM [Adventure Works]
+</p>
+<p>6. Parallel Period is a function that is regularly used. Now parallel period is used to fetch information from a specific time range that occurred but in a different time period. The genral syntax is ParallelPeriod( [ Level_Expression [ ,Index [ , Member_Expression
+ ] ] ] )<br />
+Ex: The following will return the values from January 2003 as it is less than 3 quarters away from October 2003.
+<br />
+SELECT ParallelPeriod ([Date].[Calendar].[Calendar Quarter],3,[Date].[Calendar].[Month].[October 2003])ON 0 FROM [Adventure Works]<br />
+This is where our MDX function expedition comes <br />
+to an end. The next part of the Article will deal with the storage and function engine in SSAS and how MDX queries are executed.</p>
+<p>&nbsp;</p>
+</span>
+
+</div>
+    
+    

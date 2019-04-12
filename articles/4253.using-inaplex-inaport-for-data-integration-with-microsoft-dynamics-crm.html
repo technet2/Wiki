@@ -1,0 +1,122 @@
+---
+layout: default
+title: Using InaPlex Inaport for data integration with Microsoft Dynamics CRM - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>The Medical Physics department at a hospital trust in                   </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Using InaPlex Inaport for data integration with Microsoft Dynamics CRM</h1>
+    
+
+    <div class="post-c London needed to replace an ageing medical device asset management system. Their application strategy was to implement customised Microsoft Dynamics CRM and SharePoint applications when the time came
+ to replace their 700 line of business systems.</p>
+<p>So I set about implementing Microsoft Dynamics CRM 4.0 using an agile methodology and working closely with the Medical Physics users to prioritise and implement the features they needed. Towards the end of the development we needed to migrate 125,000 historical
+ engineering jobs (a ‘job’ is a customised version of the ‘case’ system entity in this project). However, you can’t import resolved cases using the CRM 4.0 Data Import Wizard. I was working alongside a talented CRM developer, but he was busy adding new features
+ and upgrading our development environment to CRM 2011, so I didn’t want to distract him with data migration work. I needed to find an alternative data migration solution that didn’t involve custom development. [Sorry dear readers, but this is not the first
+ time I’ve had to admit this is public: I am not a CRM developer!].</p>
+<p>I quickly tested the much-improved CRM 2011 Data Import Wizard but this doesn’t allow resolved cases to be imported either. After a quick review of the
+<a title="TechNet CRM wiki - CRM date integration options" href="http://social.technet.microsoft.com/wiki/contents/articles/integrate-microsoft-dynamics-crm.aspx" target="_blank">
+available options</a>, I started working with Inaport 7.2 from <a title="InaPlex" href="http://www.inaplex.com/" target="_blank">
+InaPlex</a>*.</p>
+<p>Inaport has native connectors for Microsoft Dynamics CRM 4.0 and 2011 and supports CRM Online, on-premise and partner-hosted deployment models. It also supports a variety of other CRM systems – such as, Goldmine, ACT!, Sage CRM and SalesLogix – as well as
+ generic data sources such as text files, SQL Server, Oracle and Ingres databases. It uses the CRM web services API so all its features use supported methods without requiring the user to understand the CRM SDK.</p>
+<p>The Inaport help file offers some good advice for working with Microsoft CRM’s unique data types (owner, relationship lookup ID, status and status reason options, picklists/option sets, date and time) and Notes (annotation) entity for handling attachments.
+ It can be installed on a PC or server and configured with minimal programming skills, which played to my weaknesses. Some SQL skills and previous experience with regular expressions will help if you have more complex requirements.</p>
+<p>Inaport’s data transformations are carried out in memory, so you don’t need a local staging database; although you might choose to use one if maximum performance is an important requirement. For my simple import routines I managed to achieve a throughput
+ of approximately 60 records per second in a my development system (a virtual machine on my laptop with 5GB memory running Windows Server 2008 R2, SQL Server 2008 R2 and Microsoft Dynamics CRM 2011 UR2). For my most complex routines, throughput fell to three
+ or four records per second. These commonly involved dozens of queries against the CRM database, which Inaport supports via web services, reassigning records or resolving cases where each operation requires lots of web service API calls.</p>
+<p>My data source was a Linux-based pseudo-relational system and the data was given to me as a series of text files. Inaport seemed happy to consume the files as long as I remembered to convert the ANSI text files to Unicode text files so that some non-Roman
+ characters could be resolved (Inaport has full international support; InaPlex tells me they have customers using text import in Japan and China, for example). I configured an Inaport import profile for each file (equivalent to a CRM data map). I started with
+ reference data such as job codes, departments and product categories, followed by products, then assets and finally jobs.</p>
+<p>I found that Inaport had several useful features that allowed me to meet requirements that I just couldn’t have met using the CRM 2011 Data Import Wizard:</p>
+<ol style="list-style-type:decimal;">
+<li style="color:black;line-height:14.25pt;">
+<p>Inaport supports SQL queries if connecting to a source database but if your source is a text file it also supports filters so that I could exclude unnecessary records from my source files without having to manually edit the files.</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>It has some powerful data manipulation features that I could use to split text strings into separate fields, format dates correctly for import into CRM, and convert source values into CRM option set values.</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>I could use the ‘dbselect’ feature to lookup GUID values in CRM which enabled me to associate child records to the correct parent records much more accurately than relying on a name match using the CRM Import Wizard.</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>I could daisy-chain import routines together and run the end-to-end import process for all entities as a single batch process. I could also send the results of an import profile run to my email inbox which was great for reviewing the results of a weekend-long
+ import routine without having to sit at my PC all weekend.</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>And, most importantly, I was able import records with any Status and Status Reason combination. This enabled me to import and close historic records, especially resolved cases, which I simply couldn’t have done with the CRM Import Wizard.</p>
+</li></ol>
+<p>You could probably configure Inaport to migrate all your data from an on-premise CRM organization to a CRM Online organization, or mirror your CRM Online organization to a local database. However, configuring Inaport profiles for all your entities could
+ be a time-consuming task and InaPlex could do a lot more to help speed up this configuration for customers with this requirement.</p>
+<h3 style="line-height:14.25pt;"><a name="Hints_and_Tips_ll entities as a single batch process. I could also send the results of an import profile run to my email inbox which was great for reviewing the results of a weekend-long
+ import routine without having to sit at my PC all weekend.</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>And, most importantly, I was able import records with any Status and Status Reason combination. This enabled me to import and close historic records, especially resolved cases, which I simply couldn’t have done with the CRM Import Wizard.</p>
+</li></ol>
+<p>You could probably configure Inaport to migrate all your data from an on-premise CRM organization to a CRM Online organization, or mirror your CRM Online organization to a local database. However, configuring Inaport profiles for all your entities could
+ be a time-consuming task andfor_using_Inaport_with_Microsoft_CRM"></a></h3>
+<h3><a name="Hints_and_Tips_for_using_Inaport_with_Microsoft_CRM"></a>Hints and Tips for using Inaport with Microsoft CRM</h3>
+<h4 style="line-height:14.25pt;"><a name="Connectors"></a></h4>
+<h4><a name="Connectors"></a>Connectors</h4>
+<p>Configuring a source or target connector takes less than a minute. If you want to update records inside your existing CRM database, you’ll need two connectors – one source and one target – both pointed at the same CRM organization. After importing all the
+ job records I used this feature to close or cancel the historic jobs based on text data I had imported into another field.</p>
+<h4 style="line-height:14.25pt;"><a name="Using_Preview"></a></h4>
+<h4><a name="Using_Preview"></a>Using Preview</h4>
+<p>Inaport provides a preview pane that shows up to 10,000 records from your source data, and most importantly shows what your data transformation expressions have done to the data. This allowed me to check the results of my expressions before importing a byte
+ of information into CRM.</p>
+<h4 style="line-height:14.25pt;"><a name="Working_with_Numbers"></a>
+<p>Working with Numbers</p>
+</h4>
+<p>I was able to use some of Inaport’s conversion and arithmetical functions in order to import values into integer fields. For example, “sum((s2n(#[repair time hours])* 60),#[repair time mins])” combined the number values from two text fields ready to be loaded
+ into a integer (duration) field in CRM.</p>
+<h4 style="line-height:14.25pt;"><a name="Working_with_Dates"></a>
+<p>Working with Dates</p>
+</h4>
+<p>Microsoft CRM accepts dates in the following formats: “yyyy-MM-ddTHH:mm:ss” or “yyyy-MM-ddTHH:mm:ss &#43;00:00”. As my source data had the dates and times spread across three fields, I had to combine them, which I was able to do using expressions such as “d2s(date(#[start
+ date]),&quot;yyyy-MM-dd&quot;)&amp;&quot;T&quot;&amp;padl(#[start time hours],2,&quot;0&quot;)&amp;&quot;:&quot;&amp;padl(#[start time mins],2,&quot;0&quot;)&amp;&quot;:00&quot;”. Occasionally, I had to use the ‘skip’ function to avoid trying to insert blank date values into CRM (which would cause a
+<a title="CRM datetime error" href="http://social.msdn.microsoft.com/Forums/en/biztalkr2adapters/thread/5645f7b6-eb8b-4101-bc03-dcabc069e4e8" target="_blank">
+0x80040203 error message</a>).</p>
+<h4 style="line-height:14.25pt;"><a name="Working_with_Lookups_Parent-Child_Relationships"></a>
+<p>Working with Lookups (Parent-Child Relationships)</p>
+</h4>
+<p>Inaport allows you to import into multiple entities in a single pass, and will automatically populate the parent and foreign key values. However, it also allows you to do run time queries against the target CRM system, and use the results of those queries
+ to build associations if necessary.</p>
+<p>I made significant use of Inaport’s ‘dbselect’ feature to associate child records with a parent record. For example, I used the following expression: “dbselect(&quot;T&quot;, &quot;SELECT accountid FROM account WHERE gstt_departmentcode = &#39;gstt_parentdepartment&quot;)&amp;&quot;::account&quot;”
+ to associate an asset with the hospital department that owned the asset. (A ‘department’ was a renamed ‘account’ entity in this project).</p>
+<p>While dbselect functions are very useful, they are also a performance drag as Inaport has to convert the query into a CRM SDK call, receive a response from the CRM server and then process the response. Some of my import profiles used dozens of dbselects
+ and as a result Inaport could only process three or four records per second.</p>
+<p>InaPlex offered some advice for using cross-reference tables to improve the performance of dbselect functions (although a blog article with an expanded explanation would have been better). Unfortunately, I didn’t have database rights to create new tables
+ on my customer’s database server so I couldn’t make use of this technique.</p>
+<h4 style="line-height:14.25pt;"><a name="Other_Functionality"></a>
+<p>Other Functionality</p>
+</h4>
+<p>Inaport supports other functionality that tried out but didn’t need to use, such as:</p>
+<ul style="list-style-type:disc;">
+<li style="color:black;line-height:14.25pt;">
+<p>A range of matching techniques, including fuzzy matching that allows matching of misspelt company names</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>Dynamic record ownership reassignment (very useful for migrations from legacy CRM systems)</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>Pre- and post-operation expressions, which get executed before or after a record is modified; the post operation has access to the primary keys of the record and all parent records, which provides enormous flexibility.</p>
+</li><li style="color:black;line-height:14.25pt;">
+<p>Ability to define custom code using any Microsoft .NET compatible language, and have the code accessible from any point that an expression can be executed.</p>
+</li></ul>
+<h3 style="line-height:14.25pt;"><a name="Summary"></a>
+<p>Summary</p>
+</h3>
+<p>InaPlex Inaport 7.2 enables data analysts, with little or no programming skills, to meet sophisticated data integration requirements involving Microsoft CRM. It offers a rich set of features way beyond the CRM Data Import Wizard and comparable with much
+ more expensive mid-market ETL tools such as Scribe Insight. InaPlex provided fantastic customer service and support throughout my project.</p>
+<p>* Full disclosure: InaPlex provided a temporary license for Inaport 7.2 free of charge to my customer in return for me taking a one hour training class and agreeing to blog about my experience using their product.</p>
+
+</div>
+    
+    

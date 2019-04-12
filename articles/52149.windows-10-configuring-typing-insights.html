@@ -1,0 +1,55 @@
+---
+layout: default
+title: 介紹 IIS 7.5 的應用程式集區與新增的「虛擬帳戶」特性 (zh-TW) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>從 Windows 7 與 Windows Server 2008 R2 開始，新增了兩種特殊的帳戶類型，分別是「受管理的服務帳戶(Managed service accounts)」與「虛擬帳戶(virtual accounts)」，可有效隔離各種網路服務以提升安全性，我今天會集中在講解 IIS 7.5 與虛擬帳戶之間的實際運用與範例。</p>
+<p>要學會設定 IIS 一定要熟悉應用程式集區(Application Pool)與身份識別(Identity)的關係，我們都知道 IIS6 與 IIS7 預設的應用程式集區身份識別都是 <span style="color:blue;">NETWORK SERVICE</span> 這個系統帳戶，不過 <span style="color:blue;">NETWORK SERVICE</span> 這個帳戶可不是只有 IIS 在用而已，還有許多其他系統中與網路有關的服fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-務程序也是用 <span style="color:blue;">NETWORK SERVICE</span> 這個身份在運作，例如：SQLEXPRESS 服務。</p>
+<p><img height="478" width="424" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/2185AD72/image.png" alt="SQL Server (SQLEXPRESS) Properties" border="0" title="SQL Server (SQLEXPRESS) Properties" style="border:0px none;display:inline;" /> </p>
+<p>這也代表著就算 IIS 沒有淪陷，只要有其他使用 <span style="color:blue;">NETWORK SERVICE</span> 的網路服務淪陷的話，也會有可能連帶影響 IIS 的運作。這樣說你可能沒感覺，我反過來說，如果 IIS 被植入木馬程式，駭客可以大搖大擺的利用 <span style="color:blue;">NETWORK SERVICE</span> 下載你的 SQLEXPRESS 資料庫備份檔、刪除備份檔、刪除或下載你暫時卸離的資料庫、甚至於偷天換日將另一組資料庫上傳上去，讓你完全不知發生何事。</p>
+<p>礙於時間與篇幅我沒辦法說太多，如果有機會我可以做很多現場的展示，包你大開眼界，<strong>資訊安全</strong>這檔事真的是博大精深，不瞭解各種細節與原理的人永遠是在霧裡看花。</p>
+<p>有了「虛擬帳戶」的概念，各種不同的網路服務不需要再共用同一組 <span style="color:blue;">NETWORK SERVICE</span> 身份識別，甚至於同一個 IIS 下個別不同的應用程式集區也可以用完全區隔開來的「虛擬帳戶」執行 Web 應用程式，除了<strong>工作處理程序 </strong>(Worker Process) (w3wp.exe) 執行的身份可以完全切開外，對於不同站台所操作的檔案或目錄也可以將 NTFS 權限的設定做有效區隔，讓不同<strong>工作處理程序</strong>之間對系統或檔案安全性的影響降至最低，非常的有意義！</p>
+<p>首先，我們先來看看 IIS 7.5 內建的 <span style="color:blue;">DefaultAppPool</span> 應用程式集區的 [進階設定]</p>
+<p><img height="438" width="373" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/2BD6D1D2/image.png" alt="IIS 7.5 :: Application Pools" border="0" title="IIS 7.5 :: Application Pools" style="border:0px none;display:inline;" /> </p>
+<p><img height="554" width="454" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/43FA3C2D/image.png" alt="IIS 7.5 :: Application Pools :: Advanced Settings" border="0" title="IIS 7.5 :: Application Pools :: Advanced Settings" style="border:0px none;display:inline;" /> </p>
+<p>在這裡你會看到 IIS 7.5 這次才新增的 <span style="color:blue;">ApplicationPoolIdentity</span> 內建帳戶，而這就是為 IIS 7.5 特別訂製的「虛擬帳戶」。</p>
+<p><img height="251" width="440" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/17DD3F3C/image.png" alt="IIS 7.5 :: Application Pools :: Advanced Settings :: Application Pool Identity" border="0" title="IIS 7.5 :: Application Pools :: Advanced Settings :: Application Pool Identity" style="border:0px none;display:inline;" /> </p>
+<p>當我們的 ASP.NET 程式需要上傳或寫入檔案到 Web Server 時，就必須要設定目錄的 NTFS 權限讓<strong>工作處理程序</strong>能夠寫入檔案，在以往我們要設定的是 <span style="color:blue;">NETWORK SERVICE</span> 帳戶，但現在要輸入的卻是一組特殊的「虛擬帳戶」，我們在檔案總管設定權限時「虛擬帳戶」是無法被<strong>選取</strong>的，只能手動輸入這組特殊的帳戶名稱，IIS 應用程式集區的虛擬帳戶名稱表示方式為：【<span style="color:blue;">IIS AppPool</span>\<span style="color:blue;">應用程式集區名稱</span>】，例如內建的應用程式名稱就稱為: 【<span style="color:blue;">IIS AppPool</span>\<span style="color:blue;">DefaultAppPool</span>】，如果你新增了一個應用程式集區名為 <span style="color:#0000ff;">MyAppPool </span>的話，虛擬帳戶的表示法就是：【<span style="color:blue;">IIS AppPool</span>\<span style="color:#0000ff;">MyAppPool</span>】。</p>
+<p>如下圖示，在設定 NTFS 權限選取使用者時需先手動輸入虛擬帳戶帳號</p>
+<p><img height="262" width="476" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/62647D16/image.png" alt="Select Users or Groups" border="0" title="Select Users or Groups" style="border:0px none;display:inline;" /> </p>
+<p>當按下 [檢查名稱] 或 [Check Names] 時，名稱若出現「底線」就代表該「虛擬帳戶」是有效的：</p>
+<p><img height="262" width="476" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/1DB7E2D5/image.png" alt="Select Users or Groups" border="0" title="Select Users or Groups" style="border:0px none;display:inline;" /> </p>
+<p>最後，我們看一下 [工作管理員] 中呈現的<strong>工作處理程序 </strong>(w3wp.exe) 的執行身份也是虛擬帳戶<span style="color:blue;">DefaultAppPool </span>這個身份。</p>
+<p><img height="463" width="416" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/683F20AF/image.png" alt="Windows Task Manager" border="0" title="Windows Task Manager" style="border:0px none;display:inline;" /> </p>
+<p>我覺得<strong>虛擬帳戶</strong>這個概念實在是太棒了，以後在設定多個站台時也不需要新增一堆無意義的系統帳戶或人工管理這堆系統帳戶的密碼與到期日，對於系統的可管理性也增強了，當你不需要虛擬帳戶時，也可以選擇原本的 <span style="color:blue;">NetworkService </span>或自行指定帳戶執行。</p>
+<p>---</p>
+<p><strong>虛擬帳戶</strong>雖然在 Windows 7 與 Windows Server 2008 R2 才出現，但 Windows Server 2008 在更新到 <a target="_blank" rel="nofollow" href="http://technet.microsoft.com/en-us/windowsserver/dd262148.aspx">Service Pack 2</a> (SP2) 之後也會支援虛擬帳戶的設定，只是經我實測後發現 Windows Server 2008 SP2 雖然有支援虛擬帳戶，在 IIS 7 的應用程式集區 [進階設定] 視窗中也會看到 <span style="color:blue;">ApplicationPoolIdentity</span> 的選項，但在<strong>檔案總管</strong>中設定 NTFS 權限時卻無法透過 [檢查名稱] 或 [Check Names] 按鈕進行名稱檢查，因此你將無法透過 GUI 介面設定授權給虛擬帳戶，只能透過 <a target="_blank" rel="nofollow" href="http://technet.microsoft.com/en-us/library/cc753525%28WS.10%29.aspx">icacls</a> 工具設定檔案或目錄權限，使用範例如下：</p>
+<p>‧設定 <span style="color:blue;">UploadFiles</span> 目錄授予 <span style="color:blue;">IIS AppPool</span>\<span style="color:blue;">DefaultAppPool</span> 虛擬帳戶擁有<strong>完全控制</strong>(Full)權限</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">icacls C:\Inetpub\wwwroot\UploadFiles /grant <span class="str">&quot;IIS AppPool\DefaultAppPool&quot;</span>:F</pre>
+</div>
+<p><img height="113" width="584" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/IIS7.5/0715948E/image.png" alt="icacls C:\Inetpub\wwwroot\UploadFiles /grant &quot;IIS A之後也會支援虛擬帳戶的設定，只是經我實測後發現 Windows Server 2008 SP2 雖然有支援虛擬帳戶，在 IIS 7 的應用程式集區 [進階設定] 視窗中也會看到 <span style="color:blue;">ApplicationPoolIdentity</span> 的選項，但在<strong>檔案總管</strong>中設定 NTFS 權限時卻無法透過 [檢查名稱] 或 [Check Names] 按鈕進行名稱檢查，因此你將無法透過 GUI 介面設定授權給虛擬帳戶，只能透過 <a target="_blank" rel="nofollow" href="http://technet.microsoft.com/en-us/library/cc753525%28WS.10%29.aspx">icacls</a> 工具設定檔案或目錄權限，使用範例如下：</p>
+<p>‧設定 <span style="color:blue;">UploadFiles</span> 目錄授予 <span style="color:blue;">IIS AppPool</span>\<span style="color:blue;">DefaultAppPool</span> 虛擬帳戶擁有<strong>完全控制</strong>(Full)權限</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">icacls C:\Inetpub\wwwroot\UploadFiles /grant <span class="str">&quot;IIS AppPool\DefaultAppPool&quot;</span>:F</pre>
+</div>
+<p><img heigppPool\DefaultAppPool&quot;:F" border="0" title="icacls C:\Inetpub\wwwroot\UploadFiles /grant &quot;IIS AppPool\DefaultAppPool&quot;:F" style="border:0px none;display:inline;" /> </p>
+<p><strong>相關連結</strong></p>
+<ul>
+<li><a target="_blank" rel="nofollow" href="http://technet.microsoft.com/en-us/library/dd548356%28WS.10%29.aspx">Service Accounts Step-by-Step Guide</a></li>
+<li><a target="_blank" rel="nofollow" href="http://learn.iis.net/page.aspx/624/application-pool-identities/">Application Pool Identities</a></li>
+<li><a target="_blank" rel="nofollow" href="http://blogs.iis.net/mailant/archive/2009/01/11/iis7-in-windows-server-2008-r2.aspx">IIS7 in Windows Server 2008 R2</a></li>
+<li><a target="_blank" rel="nofollow" href="http://technet.microsoft.com/en-us/windowsserver/dd262148.aspx">Service Pack 2 for Windows Server 2008 and Windows Vista</a></li>
+<li><a target="_blank" rel="nofollow" href="http://www.goodman-lai.idv.tw/2006/09/iis-7.html">IIS 7 技術文章列表</a></li>
+<li><a target="_blank" rel="nofollow" href="http://adopenstatic.com/cs/blogs/ken/archive/2008/01/29/15759.aspx">New in IIS 7 - App Pool Isolation</a></li>
+<li><a target="_blank" rel="nofollow" href="http://blogs.iis.net/thomad/archive/2009/03/28/what-account-is-your-apppool-running-as.aspx">What account is your AppPool running as?</a></li>
+<li><a target="_blank" rel="nofollow" href="http://connect.microsoft.com/WindowsServerFeedback/feedback/ViewFeedback.aspx?FeedbackID=466502">Display Virtual User Accounts in permission dialog | Microsoft Connect</a></li>
+</ul></div>
+    
+    

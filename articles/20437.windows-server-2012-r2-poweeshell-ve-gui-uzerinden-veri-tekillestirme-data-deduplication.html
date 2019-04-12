@@ -1,0 +1,158 @@
+---
+layout: default
+title: Windows Server 2012 R2 PoweeShell ve GUI Uzerinden Veri Tekillestirme (Data Deduplication) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Merhabalar, bu makalemde Server 2012 &amp; R2 sürümü ile gelen yeniliklerden bir diğeri Veri Tekilleştirme (Data Deduplication) özelliğini inceleyeceğiz. Veri Tekilleştirme veri depolama üniteleri, yedekleme yazılımları ve WAN Optimizasyon cihazlarında işletmelerde
+ depolama alanlarında tasarruf sağlıyarak kaynakları verimli kullanımı açısında son yıllarda büyük önem kazanmıştır. Günümüzde Data Deduplication işlemini yapan farklı yazılım var da mevcutdur. Buna yanısıra Microsoft Server 2012 &amp; R2 sürümlerinde Veri Tekilleştime
+ işlemini NTFS Volume’ ler üzerinde yapılabilmesine olanak veriyor.<span id="more-1699"></span></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Data Deduplication’ ın çalışma yapısı 32 KB ve 128 KB arasında değişin chunk (yığın) lardan oluşur. Bu yığınlar Windows’ un chunk storage deposunda toplanan kopyalardır ve disk’ in System Volume bilgisi altında tutulurlar ve arkaplanda veri tekilleştirme işlemini
+ gerçekleştirirler. Tekilleştirme sürecine giren veriler benzersiz veri blokları ve byte lar halinde tekilleştirme alanında depolanmaktadırlar.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Data Deduplication’ ın Özellikleri…</p>
+<ol style="margin:16px 0px;padding:0px 0px 0px 40px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<li>Volume Seviyesinde uygulanabiliyor. </li><li>Bu volumelerin NTFS Volumler olması gerekmektedir. Başak dosyalama formatlarını desteklemiyor.
+</li><li>CSV (Cluster Shared Volum) kullanmayan yapılarda destekleniyor. </li><li>Encryption yapılmış dosyalar üzerinde yapılamaz. </li><li>Background mod da çalıştırılabileceği gibi zamanlanmış görevler halindede çalıştırılabilir.
+</li></ol>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Data Deduplication’ ın System ve Boot sürücü yani C: sürücüsü üzerinde aktifleştirilmesi desteklenmemektedir.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Kısa bilgiden sonra ilk olarak PowerShell üzerinden Data Deduplication özelliğinin kurulumu ve uygulanmasını göstereceğim. Sonra GUI üzerinde bu işlemleri nasıl yapıldığını göreceğiz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ1.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Öncelikle Server 2012 R2 Sunucum üzerinde depolama alanım olarak kullandığım E: sürücümün içerisinde örnek ISO dosyalarım var ve bu E: sürümcü Veri Tekilleştirme özelliğini bu sürücüm için gerçekleştireceğim. Burada gördüğünüz gibi toplamda 6GB’ lık bir alım
+ var ve üzerinde 2.97GB lık bir boş alan var. Burada Data Deduplication’ ı aktifleştireceğim ve disk alanından nekadarlık bir tasarruf sağlıyacağım göreceğiz…</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<span style="font-size:16pt;"><strong>Data Deduplication PoweShell 3.0 üzerinde kurulumunu ve aktifleştirme</strong></span>&nbsp;işlemine geçelim artık…</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ2.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+İlk olarak Data Deduplication özelliğini kuracağız. Bunun için PowerShell konsolumuzda çalıştıracağımız ilk parametre “<strong>Add-WindowsFeature –Name FS-DATA-Deduplication</strong>” dır. Bu komutumuzu çalıştırıyoruz ve kurulumun tamamlanmasını bekliyoruz.
+ Kurulum tamamlandıkdan sonra mevcut data deduplication komutlarının listesine bir göz atmak için “<strong>Help Dedup</strong>” yazıyoruz ve Veri Tekilleştirmede kullanabileceğimiz komutların listesini görüyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ3.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Veri Tekilleştirme komutlarını görebilmenin bir diğer yoluda Data Deduplication Modulünü belirterekde alabilirsiniz. Bunun için kullanacağınız komut “<strong>Get-Command –Module Deduplication</strong>” dır.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ4.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Veri Tekilleştirme işelmimizi PowerShell üzerinden gerçekleştireceğimiz için Deduplication komutlarını kullanabilmemiz için “<strong>Import-Module Deduplication</strong>” komutunu veriyoruz ki diğer deduplication komutlarını kullanabilelim.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Yapacağımız ilk işlem Veri Tekilleştirme özelliğini E: sürücümüz üzerinde aktifleştirmek. Bunun için “<strong>Enable-DedupVolum E:</strong>” komutunu çalıştırıyoruz. Gördüğünüz gibi yukarıda belirtdiğimiz Volume üzerinde Data Deduplication özelliği
+ aktifleştirildi.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ5.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Artık sıra Veri Tekilleştirme işlemini tetiklemeye geldi. Bunun için çalıştıracağımız komut “<strong>Start-DedupJob –Type Optimization –Volume E:</strong>” Yukarıda ki ilk satırda gördüğünüz gibi veri tekilleştirme işlemimizi tetiklemiş olduk. Daha
+ sonra tetiklediğimiz Data Deduplication’ ın hangi oranda yapıldığını kontrol etmek için “<strong>Get-DedupVole</strong>” komutunu veriyoruz. Görüldüğü gibi SavingSpace kısmında nekadarlık bir alan tasarrfu edildiği ve SavingsRate kısmında da disk
+ üzerinde tasarruf edilme oranı nı görüyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ6.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Tetiklenmiş olan bir Veri Tekilleştirmenin anlık durumunu öğrenebilmek için “<strong>Get-DedupJob</strong>” komutunu çalıştırıyoruz. Karşımıza gelen bilgiden tekilleştirmenin nezaman başladığını, Nekadarının tamamlandığını, durumunu ve hangi Volume
+ üzerinde gerçekletiğinin bilgisini görebiliyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ7.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Veri Tekilleştirme yapılan Volume’ lere ait MetaData bilgilerini görebilmek için “<strong>Get-DedupMetada</strong>” komutunu çalıştırıyor. Böylelikle volumeler üzerindeki MetaData bilgilerini görebilmekteyiz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ8.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Mevcut Volume üzerinde Veri Tekilleştirmesi Optimizasyonu için bir schedule oluşturabilirsiniz. Bunun için “<strong>New-DedupSchedule –Name “YeniTetikleme” –Type Optimization –Days Mon,Wed –Start 06:00 –DurationHours 8</strong>” komutunu kullanarak
+ kendi schedule’ ınızı oluşturabilirsiniz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Tekilleştirme için oluşturulmuş olan schedule ları görebilmek için kullanıcağımız komut “<strong>Get-DedupSchedule</strong>” bu komut sayesinde zamanlanmış görevleri görebilrsiniz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Tabiki Veri Tekilleştirmeyi Volume üzerinden devre dışı bırakmak için kullanılacak komut “<strong>Disable-DedupVolum –Volume E:</strong>” dir. Bu komut ile veri tekilleştirmeyi devre dışı bırakabilirsiniz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ9.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Veri Tekilleştirme uyguladığımız Volume mümüz üzerinde en başta gösterdiğimi gibi 2.97 GB’ lık boş alan mevcutken Tekilleştirme özelliğini aktif ettikden sonra 3.35 GB boş alana sahip olduğumuzu görüyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Data Deduplication işlemimizi PowerShell üzerinden gerçekleştirdik. Şimdi Görsel arayüzden kurulumunu ve aktifleştirilmesini yapalım.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<span style="font-size:16pt;"><strong>Data Deduplication GUI Kurulumu ve Aktifleştirilmesi…<br />
+</strong></span></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ10.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Server Manager konsolumuzdan&nbsp;<strong>Manage &gt; Add Roles and Features</strong>&nbsp;diyoruz. Karşımıza gelen Before you begin penceresinde Next diyerek devam ediyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ11.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<strong>Select installation type</strong>&nbsp;penceresinde&nbsp;<strong>Role-based or feature-based installations</strong>&nbsp;seçili olarak Next diyerek devam ediyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ12.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<strong>Select destination server</strong>&nbsp;penceresinde Data Deduplication özelliğini yükleyeceğimiz sunucumuzu seçiyoruz ve Next diyerek bir sonraki adıma geçiyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ13.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Select Server Roles penceresinde&nbsp;<strong>File and Storage Services</strong>&nbsp;rolünü açıyoruz ve burada<strong>Data Deduplication</strong>‘ ı işaretleyip Next diyerek devam ediyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ14.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Select features penceresinde bir değişiklik yapmadan Next diyerek devam ediyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ15.png" style="border:0px;verticaervices</strong>&nbsp;rolünü açıyoruz ve burada<strong>Data Deduplication</strong>‘ ı işaretleyip Next diyerek devam ediyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-famil-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Confirm installation selections penceresinde&nbsp;<strong>Restart the destination server automatically of requiremend</strong>&nbsp;kutucuğunu işaretliyoruz ve&nbsp;<strong>Install</strong>&nbsp;diyerek Data Deduplication kurulumumuzu başlatıyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ16.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Data Deduplication kurulumumuz tamamlandıkdan sonra&nbsp;<strong>Close</strong>&nbsp;diyerek Kurulum Sihirbazımızı kapatıyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ17.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Kurulumumuz tamamlandığına göre bunu istediğimiz Volumeler üzerinde aktifleştireceğiz. Bunun için&nbsp;<strong>Server Manager</strong>&nbsp;konsolumuzdan sol menüden bulunan&nbsp;<strong>File and Storage Services</strong>&nbsp;kısmına geliyoruz. Açılan menü üzerinde&nbsp;<strong>Volumes</strong>‘
+ e geliyoruz. Burada Sunucumuz üzerinde bulunan Volumelerin bir listesini göreceksiniz. Veri Tekilleştirme’ yi aktif edeceğimiz Volume üzerinde sağ click yapıyoruz ve&nbsp;<strong>Configure Data Deduplication…</strong>&nbsp;diyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ18.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Karşımıza gelen&nbsp;<strong>Deduplication Settings</strong>&nbsp;penceresinde&nbsp;<strong>Data Deduplication</strong>&nbsp;kısmında<strong>General Purpose file server</strong>‘ ı seçiyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ19.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Bu pencerede ilk alan olan&nbsp;<strong>Data Deduplication</strong>‘ ı General Purpose file server’ ı seçtikden sonra alt kısımda&nbsp;<strong>Deduplication files older than (in days)</strong>&nbsp;kısmı default olarak 3 olarak gelir. Burada volume üzerinde
+ bulunan dosyaların veya bilgilerin kaç gün önceden sonraki verilerin Veri Tekilleştirmeye uğriyacağını belirliyoruz. Ben bu volume konan her dosyanın hemen veri tekilleştirmeye uğraması için “<strong>0</strong>” diyorum.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Alt kısımda bulunan&nbsp;<strong>Custom file extensions to exclude</strong>&nbsp;kısmında veri tekilleştirmenin dışında tutulacak olan dosya uzantılarını belirtebiliriz. Böylelikle belirtdiğimiz uzantıdaki dosyalar Data Deduplication dışında tutulacaktır.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Yine alt kısımda bulunan&nbsp;<strong>To exclude selected folders</strong>&nbsp;kısmında da Veri Tekilleştirmenin haricinde tutulacak olan folderları belirtebiliriz. Böylelikde belirttiğimiz folderlar Data Deduplication dışında tutulurlar.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Set Deduplication Schedule’ a geliyoruz…</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ20.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Set Deduplication Schedule penceresinde Veri Tekilleştirme optimizasyonu için zamanlanmı görevler oluşturabilirsiniz. Burada bulunan Background Optimization ile Throughput Optimization kısımlarınızda yapacağınız seçimler disk I/O üzerinde iki kata kadar fark
+ etmektedir.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Ben Schedule’ ımı ayarladım ve Veri Tekilleştirme işleminin başlamasını bekliyorum.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0 style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Set Deduplication Schedule penceresinde Veri Tekilleştirme optimizasyonu için zamanlanmı görevler oluşturabilirsiniz. Burada bulunan Background Optimization ile Throughput Optimization kısımlarınızda yapacağınız seçimler disk I/O üzerinde iki kata kadar fark
+ etmektedir.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Ben Schedule’ ımı ayarladım ve Veri Tekilleştirme işleminin başlamasını bekliyorum.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">606_WindowsServ21.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Veri Tekilleştirme işlemi gerçekleştikden sonra Volume üzerindeki Veri Tekilleştirme oranı nı, Tekilleştirmeden sonra tasarruf edilen disk kapasitesini görebiliyoruz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+<img alt=" " src="http://www.asilmutlu.com/wp-content/uploads/2013/10/102113_0606_WindowsServ22.png" style="border:0px;vertical-align:middle;height:auto;" /></p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Veri Tekilleştirmeden sonra Volumemümüz üzerindeki filelarımızın özelliklerine bakıyoruz. İlk kısım Size : 2.47 Gb lik bir boyuta sahip olan dosyamızın ikinci kısımda Veri Tekilleştirmeden sonra Size on disk kısmına bakıyoruz ve 0 Byte yani disk üzerinde kapladığı
+ alanı görebilirsiniz.</p>
+<p style="margin:0px 0px 24px;color:#141412;font-family:&#39;Source Sans Pro&#39;,Helvetica,sans-serif;font-size:16px;line-height:24px;background-color:#ffffff;">
+Görüldüğü gibi Data Deduplication’ ın özelliğinin kullanımından sonra oluşan disk alanındaki kazanç göz önünde tutulursa Veri Tekilleştirme ile depolama alanlarında tasarruf edilen alan önemli seviyelerde olacaktır.</p>
+
+</div>
+    
+    

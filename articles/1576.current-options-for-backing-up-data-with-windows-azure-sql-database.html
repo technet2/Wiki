@@ -1,0 +1,62 @@
+---
+layout: default
+title: Current Options for Backing up Data with Windows Azure SQL Database - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Backups are performed for a number of reasons including: security against hardware failure and protection against user error. Windows Azure SQL&nbsp;Database provides good options for handling both these scenarios. This white paper will cover the current backup
+ operations for SQL Database.<br />
+<br />
+For the latest information on SQL Database backup and restore strategy, see&nbsp;<a href="http://msdn.microsoft.com/en-us/library/jj650016.aspx"><span style="color:#0066dd;">Windows</span> Azure SQL Database Backup and Restore
+</a>article in the Windows Azure SQL Database MSDN library.</p>
+<h2><a name="Backing_Up_For_Hardware_Failure"></a>Backing Up For Hardware Failure</h2>
+<p>SQL Database maintains multiple instances of your data at any one time, on different independent hardware in the data center. We call these instances replicas. At any one time, we are keeping three replicas of data running – one primary replica and two secondary
+ replicas. We use a quorum based commit scheme where data is written to the primary and one secondary replica before we consider the transaction committed. At the same time we are perform periodic offsite backups of the data in case of a catastrophic failure
+ at the data center. These mechanisms protect against hardware failure and are in essence a backup for your data in case of hardware failure.</p>
+<h2><a name="Backing_Up_Against_User_Error"></a>Backing Up Against User Error</h2>
+<p>The second type of backup that is needed is one to protect against user error. The type of errors that we are concerned about are ones in which the user modified the data or the schema and there is a need to roll back to a previous version of the database.
+ To protect against these errors, users can create a copy of their database and store it within the datacenter. This copy can be put online in place of the database at any time, or copied back to the database to restore the backup.</p>
+<p>The backup is performed in the SQL Database datacenter using a transactional mechanism without downtime to the source database. The database is copied in full to a new database in the same datacenter. You can choose to copy to a different server (in the
+ same data center) or the same server with a different database name. </p>
+<p>A new database created from the copy process is transactionally consistent with the source database at the point in time when the copy completes. This means that the snapshot time is the end time of the copy, not the start time of the copy.</p>
+<h2><a name="Getting_Started"></a>Getting Started</h2>
+<p>The Transact SQL looks like this:</p>
+<p>CREATE DATABASE destination_database_name</p>
+<p>AS COPY OF [source_server_name.]source_database_name</p>
+<p>To copy the Adventure Works database to the same server, I execute this:</p>
+<p>CREATE DATABASE [AdvetureWorksBackup] AS COPY OF [AdventureWorksLTAZ2008R2]</p>
+<p>This command must be execute when connected to the master database of the destination SQL Database server.</p>
+<h4><a name="Monitoring_the_Copy"></a>Monitoring the Copy</h4>
+<p>You can monitor the currently copying database by querying a new dynamic managed view called
+<strong>sys.dm_database_copies.</strong></p>
+<p>An example query looks like this:</p>
+<p>SELECT *</p>
+<p>FROM sys.dm_database_copies</p>
+<p>Here is my output from the Adventures Works copy above:</p>
+<p><a><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3580.12.png" style="border:0px solid currentcolor;" /><br />
+</a></p>
+<h2><a name="Permissions_Required"></a>Permissions Required</h2>
+<p>When you copy a database to a different SQL Database server, the exact same login/password executing the command must exist on the source server and destination server. The login must have
+<strong>db_owner</strong> permissions on the source server and <strong>dbmanager</strong> on the destination server. More about permissions can be found in the MSDN article:
+<a href="http://msdn.microsoft.com/en-us/library/ff951624.aspx">Copying Databases in Windows Azure SQL Database</a>.</p>
+<p>One thing to note is that the server you copy your database to does not have to be in the same service account. In fact you can give or transfer your database to a third party by using this database copy command. As long the user transferring the database
+ has the correct permissions on the destination server and the login/password match you can transfer the database.</p>
+<h2><a name="Summary"></a>Summary</h2>
+<p>More information about copying can be found in the MSDN article: <a href="http://msdn.microsoft.com/en-us/library/ff951624.aspx">
+Copying Databases in Windows Azure SQL Database</a>. <br />
+<br />
+</p>
+<hr />
+<h2 style="line-height:25px;"><a name="Other_Languages"></a>&nbsp;Other Languages</h2>
+<p>&nbsp;This article is also available in other languages, including Russian.<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Wiki: Доступные в данный &#1084;о&#1084;ент воз&#1084;ожности по резервированию данных в Windows Azure SQL Database (ru-RU)&nbsp;</p>
+<ul>
+<li>&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/7912.sql-azure-ru-ru.aspx" target="_blank">Доступные в данный &#1084;о&#1084;ент воз&#1084;ожности по резервированию данных в Windows Azure SQL Database (ru-RU)</a>&nbsp;
+</li></ul>
+
+</div>
+    
+    

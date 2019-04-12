@@ -1,0 +1,234 @@
+---
+layout: default
+title: How to Acquire and Publish Content from / to NFC Tags and Proximity Peers - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>The Proximity framework in the Windows 8 Platform is about enabling “Tap and Do” actions. One of the main Near Field lass="navigation-list-footer"></div></div>
+<div class="content-fragment-footer"></div>
+<div class="content-fragment-bottom fiji-content-fragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div clasCommunication (NFC) scenarios involves acquiring content from NFC tags and other peer devices. To talk back, you can also publish messages
+ to other peers, or even write NFC tags. </p>
+<p>This article gives an overview of the possibilities as well as snippets how to get started with developing proximity apps. It’s based on the slides of the&nbsp;<a href="http://slidesha.re/UJAefK">Windows 8 Platform NFC Development lecture</a>, but adds all the
+ needed background information. </p>
+<h1><a name="Acquiring_Content_from_NFC_Tags_and_Peers"></a>Acquiring Content from NFC Tags and Peers</h1>
+<p>Content can be acquired in a multitude of forms, for different scenarios. The simplest possible case is a tag that contains a link to your company website. A more involving type is to offer a visitor more information by tapping, e.g., for a piece of art
+ in a museum or to buy a concert ticket by tapping the poster. For a higher impact advertising solution, it’s also possible to create custom app extensions that can be enabled by tapping; for example to unlock a bonus item in a game by touching a tag contained
+ in a magazine, or a plush toy in the form of an additional bird. </p>
+<p>Let’s take a look at acquiring content from the developer’s perspective. You mainly need to remember two classes:
+<span style="font-family:courier new;">ProximityDevice</span> and <span style="font-family:courier new;">
+ProximityMessage</span>. The first will create the connection to the hardware, detect devices as they come in proximity range and allow you to publish &amp; subscribe to messages. Those messages are then delivered by the
+<span style="font-family:courier new;">ProximityMessage</span> class. Before you can use those classes in your app however, you need to activate the “Proximity” capability in your manifest file.
+</p>
+<h2><a name="Subscribing_to_URIs"></a>Subscribing to URIs</h2>
+<p>The most straightforward use case for acquiring content is subscribing for URIs. First, activate the proximity device – usually, it’s fine to simply get the default. We’re using the variable name
+<span style="font-family:courier new;">_device</span> here – create the according instance variable in your class. Then, choose to subscribe for the
+<span style="font-family:courier new;">WindowsUri</span> message type and specify your callback handler method. The return value is a numeric subscription ID, which you can use to unsubscribe again at a later stage, as well as to find out which subscription
+ the message is coming from in case you use multiple subscriptions with the same handler method.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">_device = ProximityDevice.GetDefault();</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">_subscribedMessageId = _device.SubscribeForMessage(</code><code style="color:blue;">&quot;WindowsUri&quot;</code><code style="color:#000000;">, MessageReceivedHandler);</code></span></div>
+</div>
+<p>Through the second parameter in the handler method (<span style="font-family:courier new;">message</span>), your code will get the message that it received – in case of the
+<span style="font-family:courier new;">WindowsUri</span> type, it’s directly the URI, no matter how it’s actually stored on the NFC tag. You only need to convert the Unicode-encoded data of the Proximity message to a string / URI:
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">private</code>
+<code style="color:#006699;font-weight:bold;">void</code> <code style="color:#000000;">
+MessageReceivedHandler(ProximityDevice sender, ProximityMessage message) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var msgArray = message.Data.ToArray();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var url = Encoding.Unicode.GetString(msgArray, 0, msgArray.Length);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Debug.WriteLine(</code><code style="color:blue;">&quot;URI: &quot;</code>
+<code style="color:#000000;">&#43; url);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+When reading an NFC tag, it will most likely contain a standardized NDEF message (more on that later), not a
+<span style="font-family:courier new;">WindowsUri</span> type. Luckily, when subscribing for
+<span style="font-family:courier new;">WindowsUri</span>, your app will get informed about the URI contained on the tag, no matter if it’s formatted as a URI NDEF record or a Smart Poster. So you can ready every standard tag with the code above and don’t need
+ to worry about its format. However, you’ll miss additional information stored in Smart Posters, like the title text.
+<p>To unsubscribe in case you don’t need the message subscription anymore, just call the following method with the URI you got when subscribing (which we also stored in a member variable):
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">_device.StopSubscribingForMessage(_subscribedMessageId);</code></span></div>
+</div>
+<h1><a name="Spread_the_Word_ndash_Publish_amp_Write"></a>Spread the Word – Publish &amp; Write</h1>
+<p>Instead of just receiving content, your app might also want to inform other peers or write information back to tags. Publishing to other peers can also be used for pushing content to another instance of your app running on another device, through using a
+ custom URI scheme that your app is registered for (a custom URI scheme is for example
+<span style="font-family:courier new;">skype:<em>username</em>?call</span> instead of
+<span style="font-family:courier new;">http://www.skype.com/</span>).</p>
+<h2><a name="Publishing_to_Peers"></a>Publishing to Peers</h2>
+<p>Sending out a URI to peers is even easier than subscribing for messages, and can be done with just one line of code (after acquiring the default proximity device, as shown in the previous section):
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style=/code></span></div>
+</div>
+<h1><a name="Spread_the_Word_ndash_Publish_amp_Write"></a>Spread the Word – Publish &amp; Write</h1>
+<p>Instead of just receiving content, your app might also want to inform other peers or write information back to tags. Publishing"background-color:#ffffff;"><span><code style="color:#000000;">_publishingMessageId = _device.PublishUriMessage(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">Uri(</code><code style="color:blue;">&quot;<a href="http://nokia.com/">http://nfcinteractor.com</a>&quot;</code><code style="color:#000000;">));</code></span></div>
+</div>
+<p>Note that this call will just send the URI over to peer devices, but will not write the URI to tags. Communication to other devices is encapsulated in the standardized
+<a href="http://www.nfc-forum.org/news/pr/view?item_key=5402493c8567665b798810de1f34580295a0ad30">
+SNEP protocol</a>, so most other NFC devices and phones are able to receive and understand the message; they don’t have to be Windows-based.
+</p>
+<p>Specifically, your Windows device will actually send two NDEF messages, each containing one record:
+</p>
+<ol>
+<li>A standardized URI NDEF record. This one can be read by any other device and contains just the URI you specify in your code.
+</li><li>An NDEF record of type “windows.com/UriSchemeToAppHint” (type name format: Absolute URI), which contains the scheme, platform and app ID. This type is obviously specific to Windows, and helps other Windows devices finding an app that can handle a custom
+ URI scheme. Read more about <a href="http://social.technet.microsoft.com/wiki/contents/articles/13539.how-to-launch-apps-via-proximity-apis-nfc.aspx">
+custom URIs and launching apps</a>. </li></ol>
+<h2><a name="Writing_Tags"></a>Writing Tags</h2>
+<p>If you’d rather like to write the message to a tag, you need to call a slightly different method. Most of the work before that call is to convert the URI string to a byte array in the mandated little endian UTF-16 encoding.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var dataWriter =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+Windows.Storage.Streams.DataWriter {</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf16LE };</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">dataWriter.WriteString(</code><code style="color:blue;">&quot;<a href="http://nokia.com/">http://nfcinteractor.com</a>&quot;</code><code style="color:#000000;">);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">var dataBuffer = dataWriter.DetachBuffer();</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">_device.PublishBinaryMessage(</code><code style="color:blue;">&quot;WindowsUri:WriteTag&quot;</code><code style="color:#000000;">, dataBuffer);</code></span></div>
+</div>
+<p>In contrast to the <span style="font-family:courier new;">PublishUriMessage()</span> method, which sends two messages to peers, the
+<span style="font-family:courier new;">PublishBinaryMessage()</span> with the type “<span style="font-family:courier new;">WindowsUri:WriteTag</span>” only writes a single standardized NDEF URI message to the tag, and doesn’t add a Windows specific message. Keep
+ in mind that the size of a typical NFC tag is limited to very few bytes, so every single character matters and a second message might not even fit on the tag.
+</p>
+<h2><a name="Tag_Size"></a>Tag Size</h2>
+<p>If you want to find out the writable tag size before attempting to store your information on it, you can subscribe to a special type:
+<span style="font-family:courier new;">WriteableTag</span>. </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">_device.SubscribeForMessage(</code><code style="color:blue;">&quot;WriteableTag&quot;</code><code style="color:#000000;">, MessageReceivedHandler);</code></span></div>
+</div>
+<p>Whenever the <span style="font-family:courier new;">ProximityDevice</span> will discover a tag that is suitable for writing information, your handler will be called, and the
+<span style="font-family:courier new;">ProximityMessage</span> contains the writable tag size in bytes:
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var tagSize = BitConverter.ToInt32(message.Data.ToArray(), 0);</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">Debug.WriteLine(</code><code style="color:blue;">&quot;Writeable tag size: &quot;</code>
+<code style="color:#000000;">&#43; tagSize);</code></span></div>
+</div>
+<p>While we’re at it: you can also find out some information about the proximity hardware – most useful will be the transfer rate; the driver specifications mandate a minimum of 16kB/sec. Available as well is the maximum size of a message that you can publish
+ (&gt;= 10kB). </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">var bps = _device.BitsPerSecond;
+</code><code style="color:#008200;">// &gt;= 16kB/s</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">var mmb = _device.MaxMessageBytes;
+</code><code style="color:#008200;">// &gt;= 10kB</code></span></div>
+</div>
+<h1><a name="NDEF_Handling"></a>NDEF Handling</h1>
+<p>We’ve seen NDEF messages and records before; so what is <a href="http://www.nfc-forum.org/specs/spec_list/" title="NFC Forum Technical Specifications, including NDEF">
+NDEF</a>? The NFC Forum standardized the <em>NFC Data Exchange Format</em>, which essentially defines how contents have to be formatted in the world of NFC.
+</p>
+<p>Each <em>NDEF record</em> has a header, which contains – amongst other bits of information – the type of the record. For example the URI record has the name “<span style="font-family:courier new;">U</span>”. The URI record definition then also specifies how
+ the payload of the record has to look like; for example, the URI itself needs to be stored in UTF-8 format. To save some precious space on a tag, common URI protocols and prefixes are shortened. This allows encoding the long and expensive “<span style="font-family:courier new;">http://www.</span>”
+ into a single byte in the header. </p>
+<p>The <em>Smart Poster</em> can then be seen as a meta record, which wraps a URI with some other bits of information; most commonly one or more title texts, in various languages.
+</p>
+<p>An <em>NDEF message</em> can then be thought of as a box that contains several individual NDEF records, to also let the reader know when to stop reading the tag.
+</p>
+<p>Subscribing to the <span style="font-family:courier new;">WindowsUri</span> type will read URI records and Smart Posters – and give you only the URI. What if you’d like to read the remaining information of a Smart Poster, or subscribe to a totally different
+ NDEF record? This is the corresponding subscription call: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">_subscribedMessageId = _device.SubscribeForMessage(</code><code style="color:blue;">&quot;NDEF&quot;</code><code style="color:#000000;">, MessageReceivedHandler);</code></span></div>
+</div>
+<p>Your handler will receive call-backs for all discovered NDEF messages, no matter which type. The parameter will then contain the raw payload of the message. It’s up to you to figure out the contents of the message; e.g., if it’s a simple URI, you need to
+ convert the shortened byte back to the full “<span style="font-family:courier new;">http://www.</span>”, as defined in the NFC Forum specifications. That’s a lot of work and requires much low-level code, working with bits and bytes. Even parsing a simple URI
+ record is already more than one page of source code. </p>
+<h1><a name="NDEF_Library_for_Proximity_APIs"></a>NDEF Library for Proximity APIs</h1>
+<p>To save you from wasting your time with implementing NDEF message parsing according to technical specification white papers, you can download and use the open source
+<a href="http://ndef.codeplex.com/">NDEF Library</a>. </p>
+<p>Written in C#, it can convert the raw byte array that you get from the Proximity APIs into a NDEF message. Specialized classes for each record type will allow you to simply extract the information present in the record, without needing to know how exactly
+ it’s encoded in the raw data. </p>
+<p>Additionally, the library allows creating NDEF messages, which can then easily be written to a tag or published to another peer.
+</p>
+<p>The library is released under the LGPL license, which is one of the most permissive open source licenses. It allows using the library in closed source, commercial applications as well. The library is partly based on the Connectivity module of the
+<a href="http://doc.qt.nokia.com/qtmobility/connectivity-api.html">Qt Mobility</a> library, which is also licensed under LGPL.
+</p>
+<p>To read and parse a Smart Poster from the raw byte array you get from the handler callback of the proximity APIs, the following code snippet is enough. Of course, you can also extract more information from the
+e raw byte array that you get from the Proximity APIs into a NDEF message. Specialized classes for each record type will allow you to simply extract the information present in the record, without needing to know how exactly
+ it’s encoded in the raw data. </p>
+<p>Additionally, the library allows creating NDEF messages, which can then easily be written to a tag or published to another peer.
+</p>
+<p>The library is released under the L<span style="font-family:courier new;">NdefSpRecord</span>, like additional titles, the size of the linked content, etc. – depending on what is actually defined on the tag.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">// Parse raw byte array to NDEF message</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">var msg = NdefMessage.FromByteArray(rawMsg);</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">foreach</code>
+<code style="color:#000000;">(NdefRecord record </code><code style="color:#006699;font-weight:bold;">in</code>
+<code style="color:#000000;">msg)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Go through each record, check if it&#39;s a Smart Poster</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">if</code>
+<code style="color:#000000;">(record.CheckSpecializedType() == </code><code style="color:#006699;font-weight:bold;">typeof</code>
+<code style="color:#000000;">(NdefSpRecord))</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">// Convert and extract Smart Poster info</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">var spRecord =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+NdefSpRecord(record);</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Debug.WriteLine(</code><code style="color:blue;">&quot;URI: &quot;</code>
+<code style="color:#000000;">&#43; spRecord.Uri);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Debug.WriteLine(</code><code style="color:blue;">&quot;Titles: &quot;</code>
+<code style="color:#000000;">&#43; spRecord.TitleCount());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Debug.WriteLine(</code><code style="color:blue;">&quot;1. Title: &quot;</code>
+<code style="color:#000000;">&#43; spRecord.Titles[0]);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Debug.WriteLine(</code><code style="color:blue;">&quot;Action set: &quot;</code>
+<code style="color:#000000;">&#43; spRecord.ActionInUse());</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+</div>
+<p>If on the other hand you’d like to write a Smart Poster to a tag, the following piece of code first creates the corresponding record and adds a single title to it. Then, it encapsulates the record in a NDEF message and converts it to a byte array. This is
+ then published with the Proximity APIs using the type “<span style="font-family:courier new;">NDEF:WriteTag</span>”, which allows writing raw NDEF messages.
+</p>
+<p>Note: be careful with the raw byte arrays – if your NDEF message contains errors, the APIs might refuse writing them to the tag, and not necessarily inform you about the issue. Therefore, it’s recommended to use the NDEF Library, which always creates standard-compliant
+ messages. </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">// Initialize Smart Poster record with URI, Action &#43; 1 Title</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">var spRecord =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+NdefSpRecord {</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Uri =
+</code><code style="color:blue;">&quot;<a href="http://nokia.com/">http://nokia.com</a>&quot;</code><code style="color:#000000;">,</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">NfcAction = NdefSpActRecord.NfcActionType.DoAction };</code></span></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">spRecord.AddTitle(</code><code style="color:#006699;font-weight:bold;">new</code>
+<code style="color:#000000;">NdefTextRecord {</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Text =
+</code><code style="color:blue;">&quot;Nokia&quot;</code><code style="color:#000000;">, LanguageCode =
+</code><code style="color:blue;">&quot;en&quot;</code> <code style="color:#000000;">});</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">// Add record to NDEF message</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">var msg =
+</code><code style="color:#006699;font-weight:bold;">new</code> <code style="color:#000000;">
+NdefMessage { spRecord };</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">// Publish NDEF message to a tag / phone<br />
+// AsBuffer(): add -&gt; using System.Runtime.InteropServices.WindowsRuntime;<br />
+</code></span></div>
+<div style=&nbsp;</code><span><code style="color:#000000;">Text =
+</code><code style="color:blue;">&quot;Nokia&quot;</code><code style="color:#000000;">, LanguageCode =
+</code><code style="color:blue;">&quot;en&quot;</code> <code style="color:#000000;">});</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span"background-color:#ffffff;"><span><code style="color:#000000;">_device.PublishBinaryMessage(</code><code style="color:blue;">&quot;NDEF:WriteTag&quot;</code><code style="color:#000000;">, msg.ToByteArray().AsBuffer());</code></span></div>
+</div>
+<h1><a name="References"></a>References</h1>
+<p>This article is based on the corresponding presentation by Andreas Jakl and provides background explanations that you wouldn’t get when only browsing through the slides. The slides can be viewed and downloaded here:
+<a href="http://slidesha.re/UJAefK">http://slidesha.re/UJAefK</a> </p>
+<p>To find out more about Proximity APIs, check out the <a href="http://bit.ly/ProximityAPI">
+API documentation</a>. </p>
+<p>For some cases also helpful is the <a href="http://bit.ly/ProximitySpec">specification for Proximity driver implementers</a> – you should not need to know it, but it might help with some background knowledge if you want to go to lower levels or need details
+ about encodings or limitations. </p>
+<p>The NDEF Library for Proximity APIs can be downloaded for free from CodePlex: <a href="http://ndef.codeplex.com/">
+http://ndef.codeplex.com/</a></p>
+
+</div>
+    
+    

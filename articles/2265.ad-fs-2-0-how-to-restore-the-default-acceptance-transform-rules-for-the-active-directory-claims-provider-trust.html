@@ -1,0 +1,104 @@
+---
+layout: default
+title: AD FS 2.0&#58; How to Restore the Default Acceptance Transform Rules for the Active Directory Claims Provider Trust - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>If you are experiencing a Federation Service outage after modifying the claim rules on the Active Directory Claims Provider (CP) Trust, follow the steps below to restore the default Acceptance Transform Rules.<br />
+<br />
+<br />
+<br />
+Perform the following steps on a Federation Server that has write access to the configuration database:</p>
+<p><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong>1. <strong>Copy</strong> the following text to file and save as
+<strong>C:\adcprules-default.txt</strong></p>
+<table>
+<tbody>
+<tr>
+<td>@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Windows account name claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim
+ = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Name claims&quot; c:[Type == &quot;http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Primary SID claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/primarysid&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Group SID claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/groupsid&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Primary group SID claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/primarygroupsid&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Deny only group SID claims&quot; c:[Type == &quot;http://schemas.xmlsoap.org/ws/2005/05/identity/claims/denyonlysid&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Deny only primary SID claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarysid&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim
+ = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Deny only primary group SID claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarygroupsid&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;]
+ =&gt; issue(claim = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Authentication method claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/authenticationmethod&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim
+ = c);<br />
+<br />
+<br />
+<br />
+@RuleTemplate = &quot;PassThroughClaims&quot; @RuleName = &quot;Pass through all Authentication time stamp claims&quot; c:[Type == &quot;http://schemas.microsoft.com/ws/2008/06/identity/claims/authenticationinstant&quot;, Issuer =~ &quot;^(AD AUTHORITY|SELF AUTHORITY|LOCAL AUTHORITY)$&quot;] =&gt; issue(claim
+ = c);</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2. Launch <strong>PowerShell<br />
+<br />
+<br />
+<br />
+</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3. Execute the following commands:</p>
+<p><strong><em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Add-PSSnapin Microsoft.Adfs.Powershell<br />
+<br />
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set-AdfsClaimsProviderTrust -TargetName &quot;Active Directory&quot; -AcceptanceTransformRulesFile &quot;C:\adcprules-default.txt&quot;<br />
+<br />
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</em></strong>4. Verify your changes:<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a. Launch the <strong>AD FS 2.0 Management</strong> console<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b.&nbsp;Expand <strong>Trust Relationships</strong> and select <strong>
+Claims Provider Trusts<br />
+<br />
+</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c. Right-click <strong>Active Directory</strong> and select&nbsp;<strong>Edit Claim Rules...<br />
+<br />
+<br />
+</strong><strong><span style="font-size:16px;">More Information<br />
+</span>*************************<br />
+<br />
+</strong>When the default rules have been removed the there will be events 364, 501 and 502 events in the AD FS 2.0 Admin log. You may notice that some of your claims are identified and have values and some others do not.
+<br />
+<br />
+In the case where required elements of the claim are not available because the default rules are not in place you may get an exception in the AD FS 2.0 Tracing Debug log.
+<br />
+<br />
+MSIS7012: An error occurred while processing the request.<br />
+MSIS3126: Access denied<br />
+<br />
+<strong></strong></p>
+
+</div>
+    
+    

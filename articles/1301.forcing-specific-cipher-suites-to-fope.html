@@ -1,0 +1,74 @@
+---
+layout: default
+title: Forcing specific Cipher Suites to FOPE - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>See <a href="http://www.ietf.org/rfc/rfc2246.txt">http://www.ietf.org/rfc/rfc2246.txt</a>&nbsp;for the TLS RFC</p>
+<p>Brief background on how this works from the RFC.</p>
+<ul>
+<li>Client Hello from sending SMTP server to FOPE server
+<ul>
+<li>RFC2246 7.4.1.2&nbsp;The CipherSuite list, passed from the client to the server in the<br />
+&nbsp;&nbsp; client hello message, contains the combinations of cryptographic<br />
+&nbsp;&nbsp; algorithms supported by the client in order of the client&#39;s<br />
+&nbsp;&nbsp; preference (favorite choice first). Each CipherSuite defines a key<br />
+&nbsp;&nbsp; exchange algorithm, a bulk encryption algorithm (including secret key<br />
+&nbsp;&nbsp; length) and a MAC algorithm. The server will select a cipher suite<br />
+&nbsp;&nbsp; or, if no acceptable choices are presented, return a handshake<br />
+&nbsp;&nbsp; failure alert and close the connection. </li></ul>
+</li><li>FOPE server responds with Server Hello
+<ul>
+<li>RFC 2246 7.4.1.3 The single cipher suite selected by the server from the list in<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ClientHello.cipher_suites. For resumed sessions this field is the<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; value from the state of the session being resumed. </li></ul>
+</li></ul>
+<p>Example scenario:</p>
+<p>Customer needs to enforce TLS_RSA_WITH_AES_256_CBC_SHA256 cipher suite while sending to FOPE or some comparable all 256 bit level suite for both symmetric and hashing algorithms.</p>
+<p>Sending a cipher suite list in the Client Hello message&nbsp;with the following:</p>
+<p>TLS_RSA_WITH_AES_256_CBC_SHA256<br />
+TLS_RSA_WITH_AES_128_CBC_SHA<br />
+TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA_P256<br />
+TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA_P256<br />
+TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA_P256</p>
+<p>Would result in TLS_RSA_WITH_AES_128_CBC_SHA being the agreed upon cipher by the Server.&nbsp; The reason behind this is that the TLS spec does not say that it has to use the highest available encryption algorithm or&nbsp;that the server must honor the client&#39;s preference
+ if it does have that cipher suite available. </p>
+<p>When a Windows server receives the Hello message it goes down the Cipher Suite list&nbsp;that Schannel supports on the system and picks the first one on the server that matches up to one that is available in the Client Hello message.&nbsp; When looking at
+<a href="http://msdn.microsoft.com/en-us/library/aa374757(VS.85).aspx">http://msdn.microsoft.com/en-us/library/aa374757(VS.85).aspx</a>&nbsp;the first&nbsp;match on the&nbsp;cipher suite list order for 2008 is TLS_RSA_WITH_AES_128_CBC_SHA so when it compares this entry to
+ the Client Hello cipher suite list it will find a match and present this to the client as the agreed upon cipher suite to proceed with.</p>
+<p>This presents a quandary to a system that examines the session afterwards and requires a certain level or type of suite to be agreed on for the exchange.&nbsp; Cipher list suites could be changed on the server to change the higher level suites to be higher on
+ the list however from a performance perspective you typically want the more commonly used suites to be closer to the top of the order.</p>
+<p>So in order to remedy and indeed &quot;force&quot; a specific level or specific cipher suite then the sending server must dictate which cipher suites are acceptable to it as the server side must be able to accept many different cipher suite levels in order to accommodate
+ all the various different SMTP servers that send to it.</p>
+<p>Limiting Ciphersuites used&nbsp;by Sendmail</p>
+<ul>
+<li>&nbsp;In order to limit cipher suites offered by Sendmail you must make use of the<a href="http://sial.org/howto/sendmail/cipherlist/"> CipherList
+</a>feature which is located under the LOCAL_CONFIG section of the sendmail.mc file.
+<ul>
+<li>You will need to ensure that &#43;HIGH is part of the line </li><li>You will also want to exclude AES 128 by adding a -AES12-SHA to the line </li><li>For a full list of cipher suites see the following list <a href="http://www.openssl.org/docs/apps/ciphers.html">
+http://www.openssl.org/docs/apps/ciphers.html</a>&nbsp;(you have to use the corresponding short names)
+</li><li>Once modified you will need to remake your sendmail.cf file and restart the sendmail daemon
+</li></ul>
+</li></ul>
+<p>Limiting Ciphersuites used&nbsp;by Postfix</p>
+<ul>
+<li>Modify the main.cf config file for Postfix to include the following
+<ul>
+<li>Set <a href="http://www.postfix.org/postconf.5.html#smtp_tls_mandatory_ciphers">
+smtp_tls_mandatory_ciphers</a> to &quot;high&quot; </li><li>Add &quot;AES128-SHA&quot; to <a href="http://www.postfix.org/postconf.5.html#smtp_tls_exclude_ciphers">
+smtp_tls_exclude_ciphers</a> </li></ul>
+</li></ul>
+<p>Limiting Ciphersuites used for Schannel (i.e. Windows SMTP service, Exchange)</p>
+<ul>
+<li>For Windows 2003 use <a href="http://support.microsoft.com/kb/245030/">http://support.microsoft.com/kb/245030/</a>&nbsp;to limit which cipher suites the OS utilizes, if you need 256bit/AES ciphers in 2003 you will need to install
+<a href="http://support.microsoft.com/kb/948963">http://support.microsoft.com/kb/948963</a>&nbsp;to add those.
+</li><li>For Windows 2008 you have to use the SSL Cipher Suite Order and create a custom list with the order you prefer see
+<a href="http://technet.microsoft.com/en-us/library/cc766285(WS.10).aspx">http://technet.microsoft.com/en-us/library/cc766285(WS.10).aspx</a>&nbsp;for more detail regarding this.
+</li></ul>
+<p>&nbsp;</p>
+
+</div>
+    
+    

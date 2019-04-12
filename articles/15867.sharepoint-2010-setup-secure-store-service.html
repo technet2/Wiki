@@ -1,0 +1,64 @@
+---
+layout: default
+title: SharePoint 2010&#58; Setup Secure Store Service - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="Point_and_click_installation"></a>Point and click installation</h1>
+In <strong>Central Administration</strong>, under <strong>System Settings</strong>, click
+<strong>Manage Services</strong> <strong>on Server.</strong><br />
+Start <strong>Secure Store Service</strong> (link on the right side).<br />
+Click Application Management (left menu) and under Service Applications, Manage service applications, New (div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SharePoint 2010: Setup Secure Store Service</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<h1><a name="Point_and_click_installation"></a>Point and click installation</h1>
+In <strong>Central Administration</strong>, under <strong>System Settings</strong>, click
+<strong>Manage Sertop, left), Secure Store Service Application and fill out the page as follows:<br />
+<br />
+<strong>Name:</strong> &lt;Secure Store Service Applcation Name&gt;<br />
+Click Register new managed account and fill out the page as follows:<br />
+<strong>Username:</strong> &lt;domain&gt;\&lt;Managed Account&gt;<br />
+Choose to, enable or disable automatic password change and click [OK].<br />
+<strong>Database, Database Name:</strong> &lt;EnvironmentPrefix&gt;_SharePoint_SecureStore_service.<br />
+<strong>Application Pool, Application pool name:</strong> &lt;Secure Store Application Pool Name&gt;<br />
+<strong>Configurable:</strong> &lt;domain&gt;\&lt;SecureS&gt; and click [OK], [OK].<br />
+<br />
+Click &lt;Secure Store Service Application&gt;<br />
+Click [Generate New Key], select passphrase (32 random, alphanumeric characters are sufficient) and click [OK].<br />
+<br />
+<h1><a name="PowerShell"></a>PowerShell</h1>
+$EnvironmentName = &#39;&lt;ENVIRONMENTPREFIX&gt;&#39;<br />
+$ApplicationName = &#39;Secure Store Service Application&#39;<br />
+$ApplicationPoolName = $ApplicationProxyName<br />
+$ApplicationPoolAccount = &#39;&lt;APPPOOLACCT (domain\account)&gt;&#39;<br />
+$ApplicationProxyName = $ApplicationName<br />
+$Auditing = $false<br />
+<br />
+$DBServer = (Get-SPServer | Where-Object {$_.Role -eq &#39;Invalid&#39;}).Address<br />
+$DBName = $EnvironmentName &#43; &#39;_SharePoint_service_&#39;<br />
+$ApplicationName.Split(&#39; &#39;) | ForEach-Object {$DBName &#43;= $_}<br />
+<br />
+$ManagedAccount = $ApplicationPoolAccount<br />
+<br />
+$ErrorActionPreference = &quot;Stop&quot;<br />
+try {Get-SPManagedAccount $ApplicationPoolAccount} catch {New-SPManagedAccount (Get-Credential $ManagedAccount)}<br />
+$ErrorActionPreference = &quot;Continue&quot;<br />
+<br />
+New-SPSecureStoreServiceApplication -ApplicationPool (New-SPServiceApplicationPool -Name $ApplicationPoolName -Account (Get-SPManagedAccount $ApplicationPoolAccount)) -AuditingEnabled:$Auditing -DatabaseServer $DBServer -DatabaseName $DBName -Name $ApplicationName<br />
+New-SPSecureStoreServiceApplicationProxy -Name $ApplicationProxyName -ServiceApplication (Get-SPServiceApplication | Where-Object {$_.DisplayName -eq $ApplicationName})
+<br />
+<br />
+
+</div>
+    
+    

@@ -1,0 +1,129 @@
+---
+layout: default
+title: Exchange 2010 Multi-Tenant AutoDiscover and DNS Configuration - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span style="font-size:14px;">The majority of the calls we getting in CSS are autodiscover problems in regards to Multi-Tenant Environments and this is mostly due to incorrectly configured public DNS configuration.&nbsp; As I stated in my other blogs there are
+ two methods to publish the autodiscover records for your tenants.&nbsp; &nbsp;The majority of the customers I do work with are able to get the hosting domain working but end up having problems with the Tenants domain.&nbsp; This article will walk you through configuration
+ your tenant’s autodiscover records using both methods. <br />
+<br />
+</span><span style="font-size:14px;">Let first go through the difference between the Hosting Organization and Tenant Organization Domain.<br />
+</span><span style="font-size:16px;"><strong><span style="font-size:16px;"><br />
+Hosting Organization </span></strong></span></p>
+<p><span style="font-size:14px;">When you first install Exchange with the hosting switch it will create a top level organization.&nbsp; The Root organization is designed for administrating your Exchange multi-tenant Organization so you will notice that some functionality
+ will not work properly out of the box. &nbsp;&nbsp;If you use the same SMTP domain as your Active directory Domain but it will add additional DNS complexity since this will be in a split DNS configuration.</span></p>
+<p><strong><span style="font-size:16px;">Tenant Organization </span></strong></p>
+<p><strong></strong></p>
+<p><span style="font-size:14px;">The tenant domain will be your customers smtp domain that you will be hosting on your Exchange Organization. &nbsp;&nbsp;You will be responsible configuring inbound traffic to you Exchange organization for the tenants smtp domain and allow
+ remote access for the tenant subscribers. </span></p>
+<p><span style="font-size:14px;"><span style="font-size:14px;">In the following scenario we will be using the following domains</span><span style="font-size:14px;">&nbsp;</span></span></p>
+<p><span style="font-size:11pt;"><span style="font-size:14px;">Hosting Domain = </span>
+<strong><span style="font-size:14px;">Contoso.com<br />
+</span></strong></span><span style="font-size:14px;">Tenant Domain = <strong>Tenant1.com</strong></span></p>
+<p><span style="font-size:14px;"><span style="font-size:14px;">You will first want to setup your hosting</span> domain and request a certificate for a public CA.&nbsp; Here you would request your certificate using the
+</span><a href="http://technet.microsoft.com/en-us/library/dd351057.aspx"><span style="font-size:14px;color:#0000ff;">New-ExchangeCertificate</span></a><span style="font-size:14px;"> command and below are some of typical FQDN’s you would request for your certificate.</span></p>
+<p><span style="font-size:14px;">Autodiscover.contoso.com<br />
+</span><span style="font-size:14px;"><span style="font-size:14px;">Mail.contoso.com<br />
+</span><span style="font-size:14px;">Webmail.contoso.com</span></span></p>
+<p><span style="font-size:14px;">The above are the typical public names you will use but will all depend on what you choose to use for your virtual directory ExternalURL’s.&nbsp; As per the naming convention of the FQDN you can easily tell which FQDN will be for
+ what. Now that you requested and imported your Certificate into Exchange using the&nbsp;</span><a href="http://technet.microsoft.com/en-us/library/bb124424.aspx"><span style="font-size:14px;">Import-ExchangeCertificate</span></a><span style="font-size:14px;"><span style="font-size:14px;">&nbsp;you
+ will need to configure the ExternalURL’s for your virtual directories. <br />
+</span><br />
+</span><strong><span style="font-size:18px;">Autodiscover with IIS Redirection</span></strong></p>
+<p><span style="font-size:14px;">In our scenario we will configure the autodiscover Externalurl&#39;s to use
+<strong><span style="background-color:yellow;font-size:14px;">mail.contoso.com</span></strong> to make things simpler.&nbsp; For more information, see
+</span><a href="http://technet.microsoft.com/en-us/library/ff923256.aspx"><span style="font-size:14px;">Configure Autodiscover Redirection for the Multi-Tenant Organization</span></a><span style="font-size:14px;">.<br />
+</span><span style="font-size:11pt;"><br />
+<span style="font-size:14px;"><strong>NOTE:</strong> This configuration&nbsp;will require 2 public ip addresses for autodiscover redirection to work.&nbsp; The first IP address is for the Exchange Server and the second ip address is for the IIS Redirection Server.<br />
+</span><br />
+<span style="font-size:11pt;"><strong>Public DNS Configuration (Exchange Organization)</strong></span></span></p>
+<p><span style="font-size:14px;">In this example we are only going to use mail.contoso.com for all your records for Exchange. You will then need to create an A record pointing to the public ip address of your Exchange server. This ip address will point to the
+ public ip address assigned for your Exchange CAS Servers. If your Exchange Server is a CAS/HUB role you can also setup your MX record.<br />
+<br />
+</span></p>
+<p><span style="font-size:11pt;"></span>Public IP = 192.168.10.25<br />
+Mail.Contoso.Com (A Record) = 192.168.10.25<br />
+Contoso.Com (MX Record) = 192.168.10.25</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2570.DNS-1.JPG"><img alt=" " width="663" height="244" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2570.DNS-1.JPG" style="border:0px solid currentcolor;width:664px;height:257px;" /></a><br />
+<br />
+</p>
+<p><strong><span style="font-size:16px;">Public DNS configuration (IIS Redirection)</span></strong></p>
+<p><span style="font-size:14px;">Once you configured your Public records for your Exchange Server you will now need to create an A record for your IIS Redirection Server.&nbsp; In this scenario we will use
+<strong>redirect.contoso.com</strong> in your DNS zone that will point to the public ip address assigned for your IIS Redirection servers.</span></p>
+<p><span style="font-size:14px;">Redirect.contoso.com = 192.168.10.30</span></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8171.DNS-2.JPG"><img alt=" " width="559" height="125" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8171.DNS-2.JPG" style="border:0px solid currentcolor;" /></a><br />
+<br />
+<br />
+</p>
+<p><strong><span style="font-size:16px;">Public DNS Configuration (Tenant Organization)</span></strong></p>
+<p><span style="font-size:14px;">We created a tenant called <strong>Tenant1.com</strong> in which we will now have to create an autodiscover record for that domain.&nbsp;&nbsp; So now we will have to create a CNAME autodiscover record that will use the
+<strong>redirect.contoso.com</strong> A record we just created in your DNS zone. <br />
+<br />
+(CNAME) Autodiscover.Tenant1.com = Redirect.contoso.com <br />
+</span></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0815.DNS-3.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0815.DNS-3.JPG" style="border:0px solid currentcolor;" /></a><br />
+<br />
+</p>
+<p><span style="font-size:14px;">As you can see we are looking up <strong>autodiscover.tenant1.com</strong> which will now resolve to the
+<strong>redirect.contoso.com</strong> record.&nbsp; The outlook client will connect to your IIS server which will then be redirected it to your Exchange Server URL.<br />
+</span><strong><br />
+<span style="font-size:16px;">Configure IIS Redirection</span></strong><span style="font-size:16px;">&nbsp;</span>&nbsp;</p>
+<p><span style="font-size:14px;">You will now have to </span><a href="http://technet.microsoft.com/en-us/library/ff923256.aspx"><span style="font-size:14px;">Setup the Autodiscover redirection site</span></a><span style="font-size:14px;"> using the following Steps
+ for IIS7.&nbsp; &nbsp;&nbsp;Please note the Prerequisites for configuring the AutoDiscover redirection which is also in the provided article.
+<br />
+<br />
+<strong>Prerequisites:</strong>&nbsp; You must be running Internet Information Services (IIS) 7.&nbsp;
+<strong><span style="background-color:yellow;font-size:14px;color:#333333;">The Client Access Server and the Domain Controller can&#39;t be
+<span style="font-size:14px;">the same server.&nbsp;</span></span></strong></span><span style="font-size:14px;">&nbsp;</span></p>
+<p><span style="font-size:14px;">This is where most administrators make the first mistake when building their environment. &nbsp;When setting up locally on the same server you will break Remote Powershell and you will still get the certificate prompt.<br />
+</span></p>
+<p><span style="font-size:14px;">Here is a snapshot of the Autodiscover Virtual directory configured to redirect incoming requests to mail.contoso.com.</span></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1185.IIS.JPG"><img alt=" " width="664" height="369" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1185.IIS.JPG" style="border:0px solid currentcolor;" /></a><br />
+<br />
+</p>
+<p><span style="font-size:14px;">At this point when the outlook client connects to your IIS server using
+</span><span style="font-size:14px;color:#0000ff;"><strong>http://Autodiscover.tenant1.com</strong></span><span style="font-size:14px;">, the request will be redirected to the exact URL
+</span><span style="font-size:14px;color:#0000ff;"><strong>https://mail.contoso.com/autodiscover/autodiscover.xml</strong></span><span style="font-size:14px;">.&nbsp; Because the URL matches the already assigned certificate name you will not get a certificate error.<br />
+</span></p>
+<p><strong><span style="font-size:18px;">Autodiscover with SRV Record</span></strong></p>
+<p><span style="font-size:14px;">Using SRV records is more optimal since you will only require a single public ip address which will point to your Exchange Server.&nbsp; You will not require a second ip address or an IIS Server to perform any redirection.&nbsp; All you
+ will need to do is create a SRV record for you tenant that will point to your Exchange Servers DNS name.&nbsp; In this scenario we will create a SRV record that will point to
+<strong>mail.contoso.com</strong>. &nbsp;To create a SRV record using a windows server you can use
+</span><a href="http://support.microsoft.com/kb/940881"><span style="font-size:14px;color:#0000ff;">KB940881</span></a><span style="font-size:14px;">.</span></p>
+<p><strong><span style="font-size:16px;">Public DNS Configuration </span></strong></p>
+<p><span style="font-size:14px;">In this example we are going to create a public SRV record for our
+<strong>tenant1.com</strong> domain.<br />
+</span><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8662.SRV-1.JPG"><img alt=" " width="340" height="448" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8662.SRV-1.JPG" style="border:0px solid currentcolor;width:371px;height:454px;" /></a>&nbsp;
+</p>
+<p><span style="font-size:14px;">You can use Nslookup against a public dns server to verify if the record is correctly configured.&nbsp;
+</span></p>
+<p><span style="font-size:14px;">1)<span style="line-height:normal;font-size:14px;font-style:normal;font-weight:normal;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>In the command prompt type </span><span style="font-size:14px;"><strong>nslookup<br />
+</strong>2)<span style="line-height:normal;font-size:14px;font-style:normal;font-weight:normal;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Type </span><span style="font-size:14px;"><strong>set type=srv<br />
+</strong>3)<span style="line-height:normal;font-size:14px;font-style:normal;font-weight:normal;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Type <strong>_autodiscover._tcp.tenant1.com</strong></span></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5430.SRV-2.JPG"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5430.SRV-2.JPG" style="border:0px solid currentcolor;" /></a><br />
+<br />
+<strong><span style="font-size:18px;">Conclusion</span></strong></p>
+<p><span style="font-size:14px;">The easiest way to configure autodiscover for you tenants is by creating SRV records.&nbsp; You will only require one public ip address and there is no need to bring up any additional server to perform the IIS redirect.&nbsp; The only
+ problem is that some DNS providers do not have the ability to create SRV records in which you will have to use the IIS redirection method.&nbsp;
+<br />
+<br />
+</span></p>
+<p>&nbsp;</p>
+<p><strong><span><span style="font-family:calibri;">This article is in reference to Exchange 2010 Multi-tenant deployments when the Exchange organization was installed with the /hosting switch.&nbsp; Please reference
+</span><a href="http://social.technet.microsoft.com/wiki/contents/articles/5830.aspx"><span style="font-family:calibri;color:#0000ff;">Exchange Server 2010 Hosting Deployment</span></a><span style="font-family:calibri;"> to determine if your Exchange organization
+ has been deployed in /hosting mode.</span></span></strong>&nbsp;</p>
+<p><strong><a href="http://social.technet.microsoft.com/wiki/contents/articles/exchange-2010-sp1-information-for-hosted-service-providers.aspx"><span style="font-family:calibri;color:#0000ff;">Exchange 2010 Multi-Tenant Hosting Wiki</span></a></strong></p>
+<p>- Ed Bringas</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

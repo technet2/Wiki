@@ -1,0 +1,169 @@
+---
+layout: default
+title: How to Resolve SharePoint Server Dependencies Problems - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h1><a name="I_Context_After_upgrade_or_operation_on_SharePoint_Databases_Contents_Databases_you_can_get_problems_report_by_SharePoint_Integrity_Analyzer_Integrity_Analyzer_can_report_integrity_problem_between_installation_files_and_data_in_SQL_databases_For_example_you_uninstall_SharePoint_farm_solution_and_an_problem_cause_the_data_in_content_databases_are_not_deleted_but_/div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div clasthe_farm_solution_is_uninstall_It_causing_integrity_problem_but_you_SharePoint_farm_work_This_guide_give_some_methods_to_resolve_these_integrity_problems_note_Backup_your_contents_databases_after_all_operations_II_Use_Database_SQL_query_to_resolve_problems_To_use_this_method_you_need_SQL_management_studio_tool_Sharepoint_central_administration_access_a_MissingSetupFile_In_the_SharePoint_integrity_analizer_if_you_have_missingsetupfile_error_you_have_got_link_to_this_setup_file_You_need_to_use_this_link_to_execute_SQL_query_in_content_database_Copy_this_link_and_replace_in_this_SQL_query_Execute_this_query_to_get_setupFile_id_select_from_AllDocs_where_SetupPath_like_File_link_here-This_query_return_all_references_of_this_feature_in_your_content_database_you_just_need_to_copy_the_feature_id_like_that_Now_you_need_to_delete_this_database_reference_with_this_query_Replace_quot_file_id_here_quot_by_id_returned_by_the_last_query_delete_from_AllDocs_where_id_File_Id_Here-You_need_to_execute_DELETE_query_for_all_retuned_feature_id_b_MissingFeature_To_resolve_this_problem_is_the_same_procedure_as_MissingSetupFile_Is_just_different_query_execute_this_query_to_get_feature_id_select_from_features_join_webs_on_features_webid_webs_id_where_featureid_Feature_Id_here-After_copy_feature_id_and_execute_delete_query_delete_from_AllDocs_where_id_Feature_Id_Here-c_MissingAssembly_Copy_assembly_missing_link_from_error_message_in_SharePoint_integrity_analizer_and_replace_in_this_query_SELECT_from_EventReceivers_event_join_webs_on_event_webid_webs_id_join_sites_site_on_site_id_event_siteid_where_Assembly_Assembly_link-Copy_id_and_execute_delete_query_delete_from_AllDocs_where_id_Assembly_Id_Here-d_MissingSiteDefinition_Copy_template_id_from_error_message_and_execute_this_query_to_select_database_id_select_from_webs_where_webtemplate_Template_id_here_Now_execute_delete_query_delete_from_AllDocs_where_id_Template_Id_Here-e_MissingWebPart_Copy_the_missing_id_webpart_from_error_message_and_replate_in_this_query_select_from_AllWebParts_webpart_join_alldocs_doc_on_webpart_tp_PageUrlID_doc_ID_join_sites_site_on_site_id_webpart_tp_siteid_where_tp_WebPartTypeId_webpart_id_Get_the_webpart_id_s_and_execute_delete_query_delete_from_AllDocs_where_id_webpart_Id_Here-III_Use_tool_to_resolve_problems_PowerShell_Solution_Application_Solution_Feature_admin_cleanup_tool"></a><span style="font-family:&#39;Segoe UI&#39;;"><span style="font-family:&#39;Segoe UI&#39;;">I
+ - Context</span><br />
+<div style="text-align:center;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3056.dependancyproblem.PNG"><span style="font-size:11px;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3056.dependancyproblem.PNG" width="322" height="48" style="border-width:0px;border-style:solid;" /></span></a></div>
+</span>
+<p><span style="font-size:12px;">​After upgrade or operations on SharePoint Databases or Contents Databases, you can get problems reported by SharePoint Analyzer. The Analyzer can report integrity problem between installation files and data in SQL databases.
+<br />
+For example, you uninstall a&nbsp;SharePoint farm solution and an problem cause the&nbsp;data&nbsp;in content databases are not deleted but the farm solution is uninstall. It&#39;s causing integrity problem but you SharePoint farm work. This guide give some methods to resolve
+ these integrity problems.<br />
+</span><span style="color:red;font-size:14px;"><span style="text-decoration:underline;">note</span>: Please backup your contents databases before all operations!</span></p>
+<span style="font-family:&#39;Segoe UI&#39;;"><span style="font-family:&#39;Segoe UI&#39;;">II - Use Database SQL query to resolve problems</span><br />
+<span style="font-family:&#39;Segoe UI&#39;;font-size:12px;">​To use this method you need:<br />
+</span><span style="font-size:14px;">- SQL management studio tool</span><br />
+<span style="font-size:14px;">- Sharepoint central administration access ( SharePoint Farm Global Administrator Account )<br />
+</span><br />
+</span><strong style="color:darkslategray;line-height:22px;font-size:14px;background-color:white;"><span class="Apple-tab-span" style="white-space:pre;"></span>a) MissingSetupFile<br />
+<br />
+</strong>
+<div><span style="line-height:22px;font-size:14px;">In the SharePoint Analizer, if you have missingsetupfile error, you have got link to this setup file. You need to use this link
+ to execute SQL query in content database. Copy this link and replace in this SQL query. Execute this query to get setupFile id.</span><br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;width:410px;height:54px;line-height:22px;font-size:14px;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">select</code>
+<code style="color:black;">* </code><code style="color:teal;font-weight:bold;">from</code>
+<code style="color:black;">AllDocs </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">where</code>
+<code style="color:black;">SetupPath </code><code style="color:gray;">like</code> <code style="color:blue;">
+&#39;%-File link here-%&#39;</code></span></div>
+</div>
+<br />
+<span style="line-height:22px;font-size:14px;">This query returns all references of this feature in your content database, you just need to copy the feature id like that</span><br />
+<p style="text-align:left;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5241.resultselectmissingsetupfile.png" style="line-height:22px;font-size:14px;"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5241.resultselectmissingsetupfile.png" style="border-width:0px;border-style:solid;" /></a></p>
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5241.resultselectmissingsetupfile.png" style="line-height:22px;font-size:14px;">
+<div style="text-align:center;">&nbsp;</div>
+</a>
+<p>&nbsp;</p>
+<div style="text-align:left;"><span><span style="line-height:22px;font-size:14px;">Now, you &nbsp;need to delete this database reference with this query.Replace &quot;file id here&quot; by
+ id returned by the last query.</span><br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;width:411px;height:26px;line-height:22px;font-size:14px;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">delete</code>
+<code style="color:teal;font-weight:bold;">from</code> <code style="color:black;">
+AllDocs </code><code style="color:teal;font-weight:bold;">where</code> <code style="color:black;">
+id = </code><code style="color:blue;">&#39;-File Id Here-&#39;</code></span></div>
+</div>
+<br />
+<span style="line-height:22px;font-size:14px;">You need to execute <strong>DELETE</strong> query for all&nbsp;returned&nbsp;feature id.</span><br />
+<br />
+<strong style="line-height:22px;font-size:14px;"><span class="Apple-tab-span" style="white-space:pre;"></span>b)&nbsp;</strong></span><span style="background-color:white;"><strong style="line-height:22px;font-size:14px;">MissingFeature</strong><br />
+<br />
+<span style="line-height:22px;font-size:14px;">To resolve this kind of problems, it&#39;s the same procedure as MissingSetupFile. Bx;height:26px;line-height:22px;font-size:14px;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">delete</code>
+<code style="color:teal;font-weight:bold;">from</code> <code style="color:black;">
+AllDocs </code><code style="color:teal;font-weight:bold;">where</code> <code style="cout just&nbsp;a different&nbsp;query. Execute the query below&nbsp;to
+ get feature id:<br />
+</span>
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span style="font-size:14px;"><code style="color:teal;font-weight:bold;">select</code>
+<code style="color:black;">*</code></span></div>
+<div style="background-color:whitesmoke;"><span style="font-size:14px;"><code style="color:teal;font-weight:bold;">from</code>
+<code style="color:black;">features </code></span></div>
+<div style="background-color:white;"><span style="font-size:14px;"><code style="color:gray;">join</code>
+<code style="color:black;">webs </code><code style="color:teal;font-weight:bold;">on</code>
+<code style="color:black;">(features.webid = webs.id) </code></span></div>
+<div style="background-color:whitesmoke;"><span style="font-size:14px;"><code style="color:teal;font-weight:bold;">where</code>
+<code style="color:black;">featureid = </code><code style="color:blue;">&#39;-Feature Id here-&#39;</code></span></div>
+</div>
+<br />
+<span style="font-size:12px;">​After, copy this&nbsp;feature id and execute delete query<br />
+</span>
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span style="font-size:14px;"><code style="color:teal;font-weight:bold;">delete</code>
+<code style="color:teal;font-weight:bold;">from</code> <code style="color:black;">
+AllDocs </code><code style="color:teal;font-weight:bold;">where</code> <code style="color:black;">
+id = </code><code style="color:blue;">&#39;-Feature Id Here-&#39;</code></span></div>
+</div>
+<br />
+</span><span style="line-height:22px;font-size:14px;background-color:white;"><span class="Apple-tab-span" style="font-weight:bold;white-space:pre;"></span><strong>c)MissingAssembly</strong><br />
+<br />
+Copy assembly missing link from error message in SharePoint integrity analizer and replace in this query<br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">SELECT</code>
+<code style="color:black;">*</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">from</code>
+<code style="color:black;">EventReceivers event</code></span></div>
+<div style="background-color:white;"><span><code style="color:gray;">join</code>
+<code style="color:black;">webs </code><code style="color:teal;font-weight:bold;">on</code>
+<code style="color:black;">(event.webid = webs.id) </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:gray;">join</code>
+<code style="color:black;">sites site </code><code style="color:teal;font-weight:bold;">on</code>
+<code style="color:black;">(site.id = event.siteid) </code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">where</code>
+<code style="color:black;">Assembly = ‘-Assembly link-&#39;</code></span></div>
+</div>
+<br />
+Copy id and execute delete query<br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">delete</code>
+<code style="color:teal;font-weight:bold;">from</code> <code style="color:black;">
+AllDocs </code><code style="color:teal;font-weight:bold;">where</code> <code style="color:black;">
+id = </code><code style="color:blue;">&#39;-Assembly&nbsp; Id Here-&#39;</code></span></div>
+</div>
+<br />
+</span><span style="line-height:22px;font-size:14px;background-color:white;"><span class="Apple-tab-span" style="font-weight:bold;white-space:pre;"></span><span style="font-weight:bold;">d)MissingSiteDefinition</span><br />
+<br />
+<span style="font-family:&#39;Segoe UI&#39;;font-size:12px;"><strong>​</strong>Copy template id from error message and execute this query to select database id<br />
+</span>
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">select</code>
+<code style="color:black;">* </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">from</code>
+<code style="color:black;">webs </code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">where</code>
+<code style="color:black;">webtemplate = </code><code style="color:blue;">&#39;Template id here&#39;<br />
+</code></span></div>
+</div>
+<br />
+&nbsp;Now, execute delete query<br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">delete</code>
+<code style="color:teal;font-weight:bold;">from</code> <code style="color:black;">
+AllDocs </code><code style="color:teal;font-weight:bold;">where</code> <code style="color:black;">
+id = </code><code style="color:blue;">&#39;-Template Id Here-&#39;</code></span></div>
+</div>
+<br />
+</span><span style="line-height:22px;font-size:14px;background-color:white;"><span class="Apple-tab-span" style="font-weight:bold;white-space:pre;"></span><strong>e)MissingWebPart<br />
+</strong><br />
+Copy the missing id webpart from error message and replate in this query<br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">select</code>
+<code style="color:black;">*</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:teal;font-weight:bold;">from</code>
+<code style="color:black;">AllWebParts webpart</code></span></div>
+<div style="background-color:white;"><span><code style="color:gray;">join</code>
+<code style="color:black;">alldocs doc </code><code style="color:teal;font-weight:bold;">on</code>
+<code style="color:black;">(webpart.tp_PageUrlID = doc.ID)</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:gray;">join</code>
+<code style="color:black;">sites site </code><code style="color:teal;font-weight:bold;">on</code>
+<code style="color:black;">(site.id = webpart.tp_siteid)</code></span></div>
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">where</code>
+<code style="color:black;">tp_WebPartTypeId&nbsp; = ‘webpart id’</code></span></div>
+</div>
+<br />
+Get the webpart id&#39;s and execute delete query<br />
+<div class="reCodeBlock" style="border:1px solid lightslategray;overflow-y:auto;">
+<div style="background-color:white;"><span><code style="color:teal;font-weight:bold;">delete</code>
+<code style="color:teal;font-weight:bold;">from</code> <code style="color:black;">
+AllDocs </code><code style="color:teal;font-weight:bold;">where</code> <code style="color:black;">
+id = </code><code style="color:blue;">&#39;-webpart Id Here-&#39;</code></span></div>
+</div>
+</span></div>
+<div style="text-align:center;"></div>
+</div>
+<span style="font-family:&#39;Segoe UI&#39;;"><br />
+<span style="font-family:&#39;Segoe UI&#39;;">III - Use tool to resolve problems</span><br />
+<br />
+<span style="font-size:12px;"><a href="http://get-spscripts.com/2011/06/diagnosing-missingsetupfile-issues-from.html" target="_blank">PowerShell Solution</a><br />
+<a href="http://featureadmin.codeplex.com/">Application Solution - Feature admin cleanup tool</a></span></span></h1>
+
+</div>
+    
+    

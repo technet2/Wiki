@@ -1,0 +1,474 @@
+---
+layout: default
+title: ASP.NET Core 2.0 and Docker on MacOS - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a></li><li class="hierarchy-item"><a href="#Prerequisites">Prerequisites</a></li><li class="hierarchy-item"><a href="#Docker_Images_for_NETCore_2_o_and_ASP_NET_Core_2_o">Docker Images for .NETCore 2.0 and ASP.NET Core 2.0</a></li><li class="hierarchy-item"><a href="#Creating_Your_First_ASP_NET_Core_2_o_Project">Creating Your First ASP.NET Core 2.0 Project</a></li><inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">ASP.NET Core 2.0 and Docker on MacOS</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><divli class="hierarchy-item"><a href="#Running_the_Project_for_the_First_Time">Running the Project for the First Time</a></li><li class="hierarchy-item"><a href="#Let_s_Get_Going">Let&#39;s Get Going!</a></li><li class="hierarchy-item"><a href="#Adding_a_Docker_File">Adding a Docker File</a></li><li class="hierarchy-item"><a href="#Integrating_EF_Core_and_PostgreSql">Integrating EF Core and PostgreSql</a></li><li class="hierarchy-item"><a href="#Creating_the_Application">Creating the Application</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Setting_Up_a_Database_ConnectionString">Setting Up a Database ConnectionString</a></li><li class="hierarchy-item"><a href="#Creating_a_Model">Creating a Model</a></li><li class="hierarchy-item"><a href="#Defining_a_DbContext">Defining a DbContext</a></li><li class="hierarchy-item"><a href="#Registering_Services_with_Dependency_Injection">Registering Services with Dependency Injection</a></li><li class="hierarchy-item"><a href="#Adding_Migrations">Adding Migrations</a></li><li class="hierarchy-item"><a href="#Creating_a_Web_API_Controller">Creating a Web API Controller</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Running_the_Application_on_Docker">Running the Application on Docker</a></li><li class="hierarchy-item"><a href="#Testing_the_Web_API_Endpoints">Testing the Web API Endpoints</a></li><li class="hierarchy-item"><a href="#References">References</a></li><li class="hierarchy-item"><a href="#Summary">Summary</a></li></ul><div class="hierarchy-list-footer"> </div></div>
+<h1><a name="Introduction"></a>Introduction</h1>
+<p>In previous article, we&#39;ve talked about &quot;<a href="https://social.technet.microsoft.com/wiki/contents/articles/36247.net-core-on-mac-building-an-asp-net-core-app-with-web-api-ef-postgresql-and-running-it-on-docker.aspx" target="_blank">.NET Core On Mac -
+ Building An ASP.NET Core App With Web API, EF, PostgreSQL And Running It On Docker</a>&quot;. The article was using .NET Core 1.1 version and If you&#39;ve been following the same steps mentioned from the article using .NET Core/ ASP.NET Core 2.0, then it&#39;s expected
+ that the steps won&#39;t work anymore.</p>
+<p>Over a year, there has been some changes from .NET Core 1.x to version 2.0. In this article, we&#39;ll explore ASP.NET Core 2.0 and Docker by building a simple Web API application and deploying it on a Docker container.</p>
+<p><em>Note: Before you move down further, make sure that you have a basic understanding on ASP.NET Core and Docker because I will not talk about the details about each technology in this article.</em></p>
+<h1><a name="Prerequisites"></a>Prerequisites</h1>
+<p>Before getting our hands dirty, we&#39;ll need to update/install the required tools and SDKs for us to build and run the application in MAC environment. Go ahead and install the following:</p>
+<ul>
+<li><strong>.NET SDK for MAC</strong> (The latest version used as of this time of writing is 2.0.3)
+</li><li><strong>Visual Studio for MAC</strong> (Visual Studio 2017) </li><li><strong>Docker for MAC</strong> (The latest version used as of this time of writing is 17.06.2-ce)
+</li></ul>
+<h1><a name="Docker_Images_for_NETCore_2_o_and_ASP_NET_Core_2_o"></a>Docker Images for .NETCore 2.0 and ASP.NET Core 2.0</h1>
+<p>Once you have installed all the prerequisites, we need to pull the required docker images for both .NET Core and ASP.NET Core from Docker Hub. Go ahead and open the terminal and run the following command separately:</p>
+<ul>
+<li>docker pull microsoft/dotnet:2.0.0-sdk </li><li>docker pull microsoft/aspnetcore:2.0.0 </li><li>docker pull microsoft/aspnetcore-build:2.0.0 </li></ul>
+<p>After pulling the docker images, you can verify it by running the following command:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker images</code></span></div>
+</div>
+<p>The command above should result to something like this:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/782145.img1.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/782145.img1.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 1:Docker images</p>
+<h1><a name="Creating_Your_First_ASP_NET_Core_2_o_Project"></a>Creating Your First ASP.NET Core 2.0 Project</h1>
+<p>Now, fire up Visual Studio 2017 and create an empty ASP.NET Core project just like in the figure below.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4064.img2.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4064.img2.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 2: New ASP.NET Core 2 Empty Project</p>
+<p>Click &quot;Next&quot;. On the next screen, select .NET Core 2.0 as target framework and then click &quot;Next&quot;. It should now bring you to the following screen:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2352.img3.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2352.img3.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 3: Configure ASP.NET Core Project</p>
+<p>For the simplicity of this demo, just name the project as &quot;aspnetcoredemo-wikis-components-files/00-00-00-00-05/4064.img2.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/406&quot; and then browse the location to where you would want the project to be created. Click &quot;Create&quot; to let Visual Studio generate the default files for you. You should be able to see something
+ like this:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1526.img4.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1526.img4.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 4: The Generated Files</p>
+<h1><a name="Running_the_Project_for_the_First_Time"></a>Running the Project for the First Time</h1>
+<p>Click the &quot;Play&quot; button to build and run the project. When everything builds successfully, it should display something like this in your browser:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0647.img5.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0647.img5.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 5: Output</p>
+<p>That&#39;s it! We now have an ASP.NET Core app running in MAC.</p>
+<h1><a name="Let_s_Get_Going"></a>Let&#39;s Get Going!</h1>
+<p>Now, to make this demo more exciting, we will move a bit further and create a simple Web API that handles a basic CRUD operations and use Posgres as our database. We will then run our application and database inside a Docker container.</p>
+<h1><a name="Adding_a_Docker_File"></a>Adding a Docker File</h1>
+<p>The first thing we need is to create a Docker in our project. The Dockerfile contains the instruction to build the docker image. For more information, see: Dockerfile Reference</p>
+<p>Add the following command within the Dockerfile:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">FROM microsoft/aspnetcore-build:</code><code style="color:green;">2.0</code><code style="color:black;">.</code><code style="color:green;">0</code>
+<code style="color:black;">AS build</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">WORKDIR /</code><code style="color:green;">code</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">COPY . .</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">RUN dotnet restore</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">RUN dotnet publish --output /output --configuration Release</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">FROM microsoft/aspnetcore:</code><code style="color:green;">2.0</code><code style="color:black;">.</code><code style="color:green;">0</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">COPY --from=build /output /app</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:black;">WORKDIR /app&nbsp;
+</code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">ENTRYPOINT [</code><code style="color:blue;">&quot;dotnet&quot;</code><code style="color:black;">,
+</code><code style="color:blue;">&quot;aspnetcoredemo.dll&quot;</code><code style="color:black;">]</code></span></div>
+</div>
+<h1><a name="Integrating_EF_Core_and_PostgreSql"></a>Integrating EF Core and PostgreSql</h1>
+<p>Switch back to Visual Studio and install the latest Nuget packages below:</p>
+<ul>
+<li>Npgsql.EntityFrameworkCore.PostgreSQL </li><li>Microsoft.EntityFrameworkCore.Tools </li><li>Microsoft.EntityFrameworkCore.Design </li></ul>
+<p>The packages above enable us to use EntityFramework Core as our data access mechanism. We&#39;ll be using EF Core to sync and update database from PosgreSql database and then use Web API to serve data requests.</p>
+<p>Entity Framework Core now supports a variety of database providers. In this particular demo, we will integrate PostgreSQL in our .NET Core application.The easiest way to install Postgres is using Homebrew which should be included upon installing the .NET
+ Core SDK. Now run the following command to download and install PostreSQL:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ brew install postgresql</code></span></div>
+</div>
+<p>If the installation goes well, then the database manager should be installed. Now, let&#39;s launch the PostgreSQL service container by running the following command:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker run -d --name localdb -e POSTGRES_PASSWORD=supersecret postgres</code></span></div>
+</div>
+<p>The <strong>-d</strong> option runs a container in the background and prints the container ID. The
+<strong>--name</strong> assigns a name to the container, in this case we named our container as &quot;localdb&quot;. The
+<strong>-e</strong> allow us to set the environment variables, which in this case, we&#39;ve set a password to &quot;supersecret&quot; for our
+<strong>Postgres</strong> image using the <strong>POSTGRES_PASSWORD</strong> variable.</p>
+<p>Running the command above will expose the postgres port <strong>5432</strong> which allow a standard container to be available to the linked containers. The
+<strong>initdb</strong> will also be generated with default user and database.</p>
+<p>To verify that our PostgresSQL Docker container is up and running, do:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker ps</code></span></div>
+</div>
+<p>To test the connection, you can do:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker run -it --rm --link pg-db:postgres postgres psql -h postgres -U postgres</code></span></div>
+</div>
+<h1><a name="Creating_the_Application"></a>Creating the Application</h1>
+<p>Now that we have our database ready inside a docker container, it&#39;s time for us to build the application.</p>
+<h2><a name="Setting_Up_a_Database_ConnectionString"></a>Setting Up a Database ConnectionString</h2>
+<p>Add a new empty <em>.jsonfile</em> and then name the file as &quot;appsettings&quot; just like in the figure below:</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.img6.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5684.img6.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 6: Add New File</p>
+<p>then copy the following setting below:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:blue;">&quot;DbContextSettings&quot;</code><code style="color:black;">: {</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:blue;">&quot;ConnectionString&quot;</code><code style="color:black;">:
+</code><code style="color:blue;">&quot;User ID=postgres;Password=supersecret;Server=postgres;Port=5432;Database=POSTGRES_USER;Integrated Security=true;Pooling=true;&quot;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+</div>
+<p>The <em>ConnectionsSring</em> above will allow us to connect to the PostgreSql service container that we ran earlier.</p>
+<h2><a name="Creating_a_Model"></a>Creating a Model</h2>
+<p>For this demo we will be using EF Code-First approach which means, we will create the Model first and then run a migration to let EF generate the database/schema based on our Model.</p>
+<p>Create a new class at the root of your project and name the file as &quot;Student&quot;. Copy the following code below:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">namespace</code>
+<code style="color:black;">aspnetcoredemo&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">class</code> <code style="color:black;">
+Student</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">int</code> <code style="color:black;">
+Id { </code><code style="color:cornflowerblue;font-weight:bold;">get</code><code style="color:black;">;
+</code><code style="color:cornflowerblue;font-weight:bold;">set</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">string</code> <code style="color:black;">
+FirstName { </code><code style="color:cornflowerblue;font-weight:bold;">get</code><code style="color:black;">;
+</code><code style="color:cornflowerblue;font-weight:bold;">set</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">string</code> <code style="color:black;">nt-weight:bold;">int</code> <code style="color:black;">
+Id { </code><code style="color:cornflowerblue;font-weight:bold;">get</code><code style="color:black;">;
+</code><code style="color:cornflowerblue;font-weight:bold;">set</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weig
+LastName { </code><code style="color:cornflowerblue;font-weight:bold;">get</code><code style="color:black;">;
+</code><code style="color:cornflowerblue;font-weight:bold;">set</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+<h2><a name="Defining_a_DbContext"></a>Defining a DbContext</h2>
+<p>EF Core Code-First development approach require us to define a data access context class that inherits from the DbContext class. Now, let&#39;s add a new class at the root of our project. Name the file as &quot;StudentContext&quot; and then copy the following code below:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EntityFrameworkCore;</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">namespace</code>
+<code style="color:black;">aspnetcoredemo&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">class</code> <code style="color:black;">
+StudentContext: DbContext</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">StudentContext</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">(DbContextOptions&lt;StudentContext&gt; options)&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">:
+</code><code style="color:cornflowerblue;font-weight:bold;">base</code><code style="color:black;">(options)&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{ }</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">DbSet&lt;Student&gt; Students { </code><code style="color:cornflowerblue;font-weight:bold;">get</code><code style="color:black;">;
+</code><code style="color:cornflowerblue;font-weight:bold;">set</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+<h2><a name="Registering_Services_with_Dependency_Injection"></a>Registering Services with Dependency Injection</h2>
+<p>Next thing that we need is to register the DbContext as a service and enable MVC service to enable Web API. Open
+<em>startup.cs</em> and replace the existing code with the following:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System.Collections.Generic;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System.Linq;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System.Threading.Tasks;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore.Builder;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore.Hosting;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore.Http;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EntityFrameworkCore;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.Extensions.Configuration;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.Extensions.DCore.Builder;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore.Hosting;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cependencyInjection;</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">namespace</code>
+<code style="color:black;">aspnetcoredemo&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">class</code> <code style="color:black;">
+Startup</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">Startup(IHostingEnvironment env)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">var builder =
+</code><code style="color:cornflowerblue;font-weight:bold;">new</code> <code style="color:black;">
+ConfigurationBuilder()</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">.SetBasePath(env.ContentRootPath)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">.AddJsonFile(</code><code style="color:blue;">&quot;appsettings.json&quot;</code><code style="color:black;">, optional:
+</code><code style="color:cornflowerblue;font-weight:bold;">false</code><code style="color:black;">, reloadOnChange:
+</code><code style="color:cornflowerblue;font-weight:bold;">true</code><code style="color:black;">)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">.AddJsonFile($</code><code style="color:blue;">&quot;appsettings.{env.EnvironmentName} .json&quot;</code><code style="color:black;">, optional:
+</code><code style="color:cornflowerblue;font-weight:bold;">true</code><code style="color:black;">)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">.AddEnvironmentVariables();</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">Configuration = builder.Build();</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">IConfigurationRoot Configuration { </code><code style="color:cornflowerblue;font-weight:bold;">get</code><code style="color:black;">; }</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:green;">// This method gets called by the runtime. Use this method to add services to the container.</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:green;">// For more information on how to configure your application, visit
+<a href="https://go.microsoft.com/fwlink/?LinkID=398940">https://go.microsoft.com/fwlink/?LinkID=398940</a></code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">void</code> <code style="color:black;">
+ConfigureServices(IServiceCollection services)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">services.AddMvc();</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">var connectionString = Configuration[</code><code style="color:blue;">&quot;DbContextSettings:ConnectionString&quot;</code><code style="color:black;">];</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">services.AddDbContext&lt;StudentContext&gt;(opts =&gt; opts.UseNpgsql(connectionString));</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:green;">// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">void</code> <code style="color:black;">
+Configure(IApplicationBuilder app, IHostingEnvironment env)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">if</code>
+<code style="color:black;">(env.IsDevelopment())</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">app.UseDeveloperExceptionPage();</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">app.UseMvc();</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+<p>Let&#39;s modify the <em>Program.cs</em> to create a database on startup. Here&#39;s the full code below:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore.Hosting;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.EntityFrameworkCore;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.Extensions.DependencyInjection;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.Extensions.Logging;</code></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">namespace</code>
+<code style="color:black;">aspnetcoredemo&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">class</code> <code style="color:black;">
+Program</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">static</code> <code style="color:cornflowerblue;font-weight:bold;">
+void</code> <code style="color:black;">Main(</code><code style="color:cornflowerblue;font-weight:bold;">string</code><code style="color:black;">[] args)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">BuildWebHost(args).Run();</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">var host = BuildWebHost(args);</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">(var scope = host.Services.CreateScope())</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">var services = scope.ServiceProvider;</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-colo</code><span><code style="color:black;">BuildWebHost(args).Run();</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">var host = BuildWebHost(args);</code></span></span></r:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">try</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">services.GetService&lt;StudentContext&gt;().Database.Migrate();</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">catch</code>
+<code style="color:black;">(Exception ex)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">var logger = services.GetRequiredService&lt;ILogger&lt;Program&gt;&gt;();</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">logger.LogError(ex,
+</code><code style="color:blue;">&quot;An error occurred seeding the DB.&quot;</code><code style="color:black;">);</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">host.Run();</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">static</code> <code style="color:black;">
+IWebHost BuildWebHost(</code><code style="color:cornflowerblue;font-weight:bold;">string</code><code style="color:black;">[] args) =&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">WebHost.CreateDefaultBuilder(args)</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">.UseStartup&lt;Startup&gt;()</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">.Build();</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:white;"><span><code style="color:black;">}</code></span></div>
+</div>
+<p>EF Core does not do the migration automatically, that&#39;s why we need the pieces of configuration above for us to use Code-First migrations. The
+<em>Database.Migrate()</em> method piece is responsible for two things: (1) The creation of database in PostgreSQL if it does not exist yet. (2) Migrating the database schemas to the latest version.</p>
+<h2><a name="Adding_Migrations"></a>Adding Migrations</h2>
+<p>We will be using EF Core tools to scaffold our migration and updating the database. We&#39;ll be using the command line (dotnet CLI) to run our migrations. We can&#39;t add the
+<em>Microsoft.EntityFrameworkCore.Tools.DotNet</em> package from Nuget as of this time of writing because of this error:</p>
+<p><em>&quot;Package &#39;Microsoft.EntityFrameworkCore.Tools.DotNet 2.0.0&#39; has a package type &#39;DotnetCliTool&#39; that is not supported by project&quot;</em></p>
+<p>As a workaround, we can edit the project file (.csproj) and add the following configuration below:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">&lt;</code><code style="color:cornflowerblue;font-weight:bold;">ItemGroup</code><code style="color:black;">&gt;</code></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">&lt;</code><code style="color:cornflowerblue;font-weight:bold;">DotNetCliToolReference</code>
+<code style="color:gray;">Include</code><code style="color:black;">=</code><code style="color:blue;">&quot;Microsoft.EntityFrameworkCore.Tools.DotNet&quot;</code>
+<code style="color:gray;">Version</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0.0&quot;</code>
+<code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">&lt;/</code><code style="color:cornflowerblue;font-weight:bold;">ItemGroup</code><code style="color:black;">&gt;</code></span></span></div>
+</div>
+<p>Now open the terminal to the location where your project root is located and then do:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ dotnet ef migrations add InitialMigration</code></span></div>
+</div>
+<p>The <em>ef migration add</em> is the command to add migrations. When the migration is successful, you should be able to see a new folder named &quot;Migrations&quot; that contains the migration files as showcode><code style="color:blue;">&quot;Microsoft.EntityFrameworkCore.Tools.DotNet&quot;</code>
+<code style="color:gray;">Version</code><code style="color:black;">=</code><code style="color:blue;">&quot;2.0.0&quot;</code>
+<code style="color:black;">/&gt;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">&lt;/</code><code style=n in the figure below.</p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6862.img7.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6862.img7.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 7: Migration Files</p>
+<p>The files generated above will be used to create the database on initial run.</p>
+<h2><a name="Creating_a_Web_API_Controller"></a>Creating a Web API Controller</h2>
+<p>It&#39;s time for us to create a simple Web API methods to work with simple GET and POST requests. Add a new Web API Controller class and copy the following code:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System.Collections.Generic;&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">System.Linq;&nbsp; </code></span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">using</code>
+<code style="color:black;">Microsoft.AspNetCore.Mvc;</code></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code style="color:cornflowerblue;font-weight:bold;">namespace</code>
+<code style="color:black;">aspnetcoredemo.API&nbsp; </code></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">{</code></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">[Route(</code><code style="color:blue;">&quot;api/[controller]&quot;</code><code style="color:black;">)]</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:cornflowerblue;font-weight:bold;">class</code> <code style="color:black;">
+StudentsController : Controller</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">private</code>
+<code style="color:cornflowerblue;font-weight:bold;">readonly</code> <code style="color:black;">
+StudentContext _context; </code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">StudentsController(StudentContext context)</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">_context = context;</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:green;">// GET: api/students&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">IEnumerable&lt;Student&gt; Get()&nbsp; </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">return</code>
+<code style="color:black;">_context.Students.ToList();&nbsp; </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:green;">// GET api/students/1&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">[HttpGet(</code><code style="color:blue;">&quot;{id}&quot;</code><code style="color:black;">)]&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">Student Get(</code><code style="color:cornflowerblue;font-weight:bold;">int</code>
+<code style="color:black;">id)&nbsp; </code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">{&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">return</code>
+<code style="color:black;">_context.Students.FirstOrDefault(x =&gt; x.Id == id);&nbsp; </code>
+</span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">}&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span>&nbsp;</span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:green;">// POST api/students&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">[HttpPost]&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">public</code>
+<code style="color:black;">IActionResult Post([FromBody]Student value)&nbsp; </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">{&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:black;">_context.Students.Add(value);&nbsp;
+</code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">_context.SaveChanges();&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code>&nbsp;</code><span><code style="color:cornflowerblue;font-weight:bold;">return</code>
+<code style="color:black;">StatusCode(201, value);&nbsp; </code></span></span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}&nbsp;
+</code></span></span></div>
+<div style="background-color:whitesmoke;"><span>&nbsp;</span></div>
+<div style="background-color:white;"><span><code>&nbsp;</code><span><code style="color:black;">}</code></span></span></div>
+<div style="background-color:whitesmoke;"><span><code style="color:black;">}</code></span></div>
+</div>
+<p>Nothing really fancy there, the code above just contains a few basic methods that communicates to StudentContext. Notice that we&#39;ve injected an instance of our StudentContext in the Controller&#39;s constructor, so we can interact with our database, and use
+ the it for querying the data.</p>
+<h1><a name="Running_the_Application_on_Docker"></a>Running the Application on Docker</h1>
+<p>At this point, we are ready to deploy the application on Docker. First let&#39;s build the app by running the following command:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker build -t dockerdemo .</code></span></div>
+</div>
+<p>The command above will generate a new instance of image within our docker machine. You can check the list of image by running
+<em>docker images</em> in the command line.</p>
+<p>Now, run the following command to ensure that our PostgreSQL database image is up and running:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker ps</code></span></div>
+</div>
+<p>Now, let&#39;s run our ASP.NET Core 2.0 application and link the database that we&#39;ve created using the following command:</p>
+<div class="reCodeBlock">
+<div style="background-color:white;"><span><code style="color:black;">$ docker run -it -p
+</code><code style="color:green;">5000:</code><code style="color:green;">80</code> <code style="color:black;">
+--link localdb:postgres dockerdemo</code></span></div>
+</div>
+<h1><a name="Testing_the_Web_API_Endpoints"></a>Testing the Web API Endpoints</h1>
+Here are some of the screenshots of the Endpoint test results, using Postman.
+<p><strong>POST</strong></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5661.img8.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5661.img8.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 8: Output</p>
+<p><strong>GET</strong></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7028.img9.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7028.img9.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 9: Output</p>
+<p><strong>GET/Id</strong></p>
+<p><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7838.img10.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7838.img10.png" style="border-width:0px;border-style:solid;" /></a></p>
+<p>Figure 10: Output</p>
+<p>That&#39;s it! I hope you will find this article useful.</p>
+<h1><a name="References"></a>References</h1>
+<ul>
+<li><a href="https://social.technet.microsoft.com/wiki/contents/articles/36247.net-core-on-mac-building-an-asp-net-core-app-with-web-api-ef-postgresql-and-running-it-on-docker.aspx" target="_blank">.NET Core On Mac - Building An ASP.NET Core App With Web API,
+ EF, PostgreSQL And Running It On Docker</a> </li><li><a href="https://docs.docker.com/docker-for-mac/" target="_blank">Get started with Docker for Mac</a>
+</li><li><a href="https://docs.docker.com/engine/reference/commandline/docker/" target="_blank">Docker Commands</a>
+</li><li><a href="https://docs.microsoft.com/en-us/aspnet/core/" target="_blank">Introduction to ASP.NET Core</a>
+</li></ul>
+<h1><a name="Summary"></a>Summary</h1>
+<p>In this article, we&#39;ve learned the basics on setting up .NET Core 2 on MAC environment and learned how to create a simple ASP.NET Core 2 application with Web API, EF, PostgreSQL and running it on Docker.</p>
+
+</div>
+    
+    

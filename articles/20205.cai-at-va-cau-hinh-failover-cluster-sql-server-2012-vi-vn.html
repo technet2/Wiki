@@ -1,0 +1,593 @@
+---
+layout: default
+title: Cài đặt và cấu hình Failover Cluster SQL Server 2012 (vi-VN) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in"></div>
+<div cl 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">I- GIỚI THIỆU</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+&nbsp;</p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trong hệ thống mạng hiện đại ngày nay, SQL server đóng vai trò rất quan trọng, SQL lưu trữ dữ liệu cho các ứng dụng và dịch vụ như SharePoint, System Center…. Vì vậy việc xây dựng một hệ thống SQL có tính chịu
+ lỗi (Failover) và khả năng sẵn sàng cao (High Availability) là hết sức cần thiết</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trong bài viết này tôi sẽ trình bày thao tác cài đặt và cấu hình Failover Cluster cho SQL Server 2012 trên Windows 2012 sử dụng dịch vụ lưu trữ iSCSI SAN Storage có sẵn trên Windows Server 2012</span></p>
+<p style="margin:1pt 0in;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+&nbsp;</p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">II- TRIỂN KHAI CHI TIẾT</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bài LAB sử dụng 3 server:</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- DC2012 (IP Address 172.16.0.10) :</span></em></strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;Domain Controller (domain&nbsp;<strong><em>mcthub.local</em></strong>) chạy Windows Serrer 2012.
+ Trong bài LAB, server này đảm nhận vai trò lưu trự cho Cluster (iSCSI Target Server)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- SQLSERVER1 (IP Address 172.16.0.21):&nbsp;</span></em></strong><span style="font-size:10pt;font-family:Verdana;">Domain member chạy Windows Server 2012 đóng vai trò SQL Server (Node 1)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><em><span style="font-size:10pt;font-family:Verdana;">- SQLSERVER2 (IP Address 172.16.0.22):&nbsp;</span></em></strong><span style="font-size:10pt;font-family:Verdana;">Domain member chạy Windows Server 2012 đóng vai trò SQL Server (Node 2)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bài LAB gồm các bước chính sau đây</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">1- Chuẩn bị hệ thống lưu trữ</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">2- Kêt nối hệ thống lưu trữ</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">3- Tạo Failover Cluster</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">4- Cài đặt SQL Node 1</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">5- Kết nối SQL Node 2 vào Failover Cluster</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">6- Kiểm tra hoạt động và khả năng chịu lỗi</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">1- Chuẩn bị hệ thống lưu trữ</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trên máy DC2012, bạn cần cài đặt iSCSI Target Server</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image001.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau đó tạo sẵn các iSCSI Virtual Disk và đưa và 1 iSCSI Target và cho phép 2 máy có IP address là 172.16.0.21 và 172.16.0.22 kết nối như hình bên dưới</span></p>
+<p style="margin:0in 0in 0.00Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">1- Chuẩn bị hệ thống lưu trữ</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trên máy DC2012, bạn cần cài đặt iSCSI Target Server</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image001.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau đó tạo sẵn các iSCSI Virtual Disk và đưa và 1 iSCSI Target và cho phép 2 máy có IP address là 172.16.0.21 và 172.16.0.22 kết nối như hình bên dưới</span></p>01pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="446" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image002.jpg" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nếu bạn chưa từng thực hiện các thao tác này thì có thể&nbsp;<a href="http://www.mcthub.com/technologies/microsoft/windows-server/187-storage-services-tren-windows-server-2012-ph-n-1-can-b-n.html" style="color:purple;text-decoration:underline;">tham
+ khảo bài viết này</a>&nbsp;để thực hiện chi tiết</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">2- Kêt nối hệ thống lưu trữ</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trên 2 máy&nbsp;<strong><em>SQLSERVER1</em></strong>&nbsp;và&nbsp;<strong><em>SQLSERVER2</em></strong>, thực hiện kết nối vào iSCSI Target bằng công cụ&nbsp;<strong><em>iSCSI Initiator</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="485" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image003.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Yes</em></strong>&nbsp;để xác nhận khởi động dịch vụ&nbsp;<strong><em>Microsoft iSCSI services</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="496" height="185" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image004.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trong khung&nbsp;<strong><em>Target</em></strong>, nhập IP của iSCSI Target Server (<strong><em>172.16.0.10</em></strong>) - Nhấn nút&nbsp;<strong><em>Quick Connect</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="495" height="698" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image005.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Kiểm tra trạng thái kết nối là&nbsp;<strong><em>Connected</em></strong>&nbsp;- Nhấn nút&nbsp;<strong><em>Done</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="463" height="517" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image006.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="495" height="698" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image007.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo bạn cần tạo volume từ các đĩa đã kết nối. Trên máy SQLSERVER1, mở&nbsp;<strong><em>Disk Management</em></strong>, quan sát bạn đã kết nối được 3 ổ đĩa (Disk1, Disk2 và Disk3) . Bấm phải chuột lên&nbsp;<strong><em>Disk1</em></strong>&nbsp;-
+ Chọn<strong><em>Online</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="516" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image008.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bấm phải chuột lên&nbsp;<strong><em>Disk1</em></strong>&nbsp;- Chọn&nbsp;<strong><em>Initialize Disk</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="516" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image009.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="415" height="315" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image010.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo bạn tạo 1 Simple volume. Bấm phải chuột lên vùng trống trên&nbsp;<strong><em>Disk1</em></strong>&nbsp;- Chọn&nbsp;<strong><em>New Simple Volume</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="516" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image011.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Thực hiện các bước tạo volume và định dạng để tạo và định dạng một volume tên là&nbsp;<strong><em>ClusterDisk1</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="516" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image012.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Thực hiện tương tự để tạo và định dạng thêm 2 simple volume tên là&nbsp;<strong><em>ClusterDisk2</em></strong>&nbsp;và&nbsp;<strong><em>ClusterDisk3</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="516" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image013.jpg" style="border-width:0px;borderpt;font-family:Verdana;"><img alt=" " width="719" height="516" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image012.-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">3- Tạo Failover Cluster</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trên cả 2 máy&nbsp;<strong><em>SQLSERVER1</em></strong>&nbsp;và&nbsp;<strong><em>SQLSERVER2</em></strong>, cài đặt feature Failover Clustering</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="510" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image014.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trên&nbsp;<strong><em>SQLSERVER1</em></strong>, mở&nbsp;<strong><em>Failover Clustering Manager</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="293" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image015.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tạo một Failover Cluster: Bấm phải chuột lên&nbsp;<strong><em>Failover Cluster Manager</em></strong>&nbsp;- Chọn&nbsp;<strong><em>Create Cluster</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="416" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image016.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image017.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Lần lượt đưa 2 máy&nbsp;<strong><em>SQLSERVER1</em></strong>&nbsp;và&nbsp;<strong><em>SQLSERVER2</em></strong>&nbsp;vào danh sách&nbsp;<strong><em>Selected servers</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image018.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>No ….</em></strong>&nbsp;Nhấn&nbsp;<strong><em>Next</em></strong>&nbsp;(tôi sẽ kiểm tra tính tương thích cho Cluster ở bước sau)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image019.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Khung&nbsp;<strong><em>Cluster Name</em></strong>: Nhập tên tùy ý cho Failover Cluster (tôi đặt tên là&nbsp;<strong><em>SQLCluster</em></strong>). Nhập IP tùy ý cho Cluster (<strong><em>172.16.0.100</em></strong>). Lưu
+ ý IP này phải chưa được sử dụng. Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image020.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p styyle:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Khung&nbsp;<strong><em>Cluster Name</em></strong>: Nhập tên tùy ý cho Failover Cluster (tôi đặt tên là&nbsp;<strong><em>SQLCluster</em></strong>). Nhập IP tùy ý cho Cluster (<strong><em>172.16.0.100</em></strong>). Lưu
+ ý IP này phải chưa được sử dụng. Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLClle="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Kiểm tra đã đánh dấu&nbsp;<strong><em>Add all eligible storage to the cluster</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image021.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Finish</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="462" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image022.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>SQLCluster.mcthub.local - Storage - Disks</em></strong>&nbsp;- quan sát&nbsp;<strong><em>ClusterDisk3</em></strong>&nbsp;đã được sử dụng làm&nbsp;<strong><em>Disk Witness Quorum</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="416" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image023.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo tôi kiểm tra tính tương thích cho Failover Cluster bằng cách bấm phải chuột vào&nbsp;<strong><em>SQLCluster.mcthub.local</em></strong>&nbsp;- Chọn&nbsp;<strong><em>Validate Cluster</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="416" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image024.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="470" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image025.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Run all tests</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="470" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image026.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="470" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image027.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="470" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image028.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi quá trình kiểm tra hoàn tất, nhấn nút&nbsp;<strong><em>View Report</em></strong>&nbsp;để xem báo cáo</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="470" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image029.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Quan sát báo cáo và bảo đảm rằng không có tiêu chí nào có kết quả là&nbsp;<strong><em>Fail -&nbsp;</em></strong>Đóng báo cáo</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="541" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image030.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn nút&nbsp;<strong><em>Finish</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="683" height="470" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image031.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">4- Cài đặt SQL Node 1</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi đã tạo Failover Cluster, tiếp theo tôi sẽ cài đặt SQL Server 2012 đầu tiên vào cluster. Trên máy SQLSERVER1, đưa đĩa cài đặt SQL Server 2012 vào DVD và chạy File&nbsp;<strong><em>setup.exe</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="453" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image032.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Installation&nbsp; - New SQL Server failover cluster installation</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image033.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Show details</em></strong>&nbsp;để xem chi tiết - Nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image034.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Specify a free edition</em></strong>. Nhấn&nbsp;<strong><em>Next&nbsp;</em></strong>(nếu bạn có bản quyền SQL Server 2012 thì có thể chọn&nbsp;<strong><em>Enter the product key</em></strong>&nbsp;và nhập key)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image035.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chấp nhận thông tin bản quyền - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image036.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chương trình cài đặt yêu cầu cập nhật các bản update cần thiết - Nhấn&nbsp;<strong><em>Next</em></strong>&nbsp;(chú ý để hoàn tất bước này server cần có kết nối internet). Nếu không có kết nối internet, bản có thể bỏ
+ qua quá trình cập nhật bằng cách bỏ dấu check&nbsp;<strong><em>Include SQL Server product updates</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image037.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Show details</em></strong>&nbsp;để xem chi tiết - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image038.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>SQL Server Feature Installation</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image039.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn các thành phần cần thiết tùy thuộc vào nhu cầu sử dụng SQL của bạn - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image040.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Show details</em></strong>&nbsp;để xem chi tiết - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image041.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Khung SQL&nbsp;<strong><em>Server Network Name</em></strong>: Đặt tên tùy ý cho SQL Failover Cluster, tôi đặt là&nbsp;<strong><em>SQLCLU</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image042.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image043.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image044.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn đĩa tùy ý để lưu trữ thông tin của cluster - Mặc định chương trình cài đặt sẽ chọn đĩa đầu tiên. Tôi chọn&nbsp;<strong><em>ClusterDisk2</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image045.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trong khung&nbsp;<strong><em>IP Address</em></strong>, nhập một IP chưa sử dụng cho Cluster (<strong><em>172.16.0.111</em></strong>) - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image046.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chỉ định 2 account&nbsp;<strong><em>SQL Server Agent</em></strong>&nbsp;và&nbsp;<strong><em>SQL Server Database Engine</em></strong>&nbsp;là account domain administrator (MCTHUB\Administrator). Nhập password ở khung&nbsp;<strong><em>Passsord</em></strong>&nbsp;-
+ Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image047.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn nút&nbsp;<strong><em>Add Current User</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image048.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image049.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image050.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Show details</em></strong>&nbsp;để xem chi tiết - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image051.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn nút&nbsp;<strong><em>Install</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image052.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình cài đặt</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image053.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-fn&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image052.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình cài đặt</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthubamily:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi quá trình cài đặt hoàn tất - Nhấn nút&nbsp;<strong><em>Close</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image054.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Mở Failover Cluster Manager kiểm tra. Chọn&nbsp;<strong><em>SQLCluster.mcthub.local - Roles</em></strong>. Bạn sẽ thấy role&nbsp;<strong><em>SQL Server (MSSQLSERVER)</em></strong>&nbsp;đang chạy (trạng thái&nbsp;<strong><em>Running</em></strong>)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image055.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn<strong><em>&nbsp;SQLCluster.mcthub.local - Storage - Disk:&nbsp;</em></strong>quan sát&nbsp;<strong><em>Cluster Disk 2</em></strong>&nbsp;đã được sử dụng cho&nbsp;<strong><em>SQL Server (MSSQLSERVER)</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image056.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">5- Cài đặt và kết nối SQL Node 2 vào Failover Cluster</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo tôi sẽ cài đặt SQL Server 2012 và gia nhập&nbsp;<strong><em>SQLSERVER2</em></strong>&nbsp;vào Cluster có sẵn. Trên máy&nbsp;<strong><em>SQLSERVER2</em></strong>, đưa đĩa DVD cài đặt SQL Server 2012 vào DVD và chạy
+ File&nbsp;<strong><em>setup.exe</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="507" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image057.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Installation - Add node to a SQL Server failover cluster&nbsp;</em></strong>sau đó thực hiện các bước tương tự như bước 4</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image058.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Quan sát&nbsp;<strong><em>SQL Server instance name</em></strong>&nbsp;đã cài đặt trước đó trên node SQLSERVER1 - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image059.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Quan sát IP Address của Cluster đã cấu hình trước đó - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#ng><em>SQL Server instance name</em></strong>&nbsp;đã cài đặt trước đó trên node SQLSERVER1 - Nhấn&nbsp;<strong><em>Next</em></strong></span39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image060.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhập password của account domain admin (<strong><em>MCTHUB\Administrator</em></strong>) ở khung&nbsp;<strong><em>Password</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image061.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image062.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Show details</em></strong>&nbsp;để xem chi tiết - Nhấn&nbsp;<strong><em>Next</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image063.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Nhấn&nbsp;<strong><em>Install</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image064.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Sau khi quá trình cài đặt hoàn tất - Nhấn nút&nbsp;<strong><em>Close</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="720" height="540" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image065.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<strong><span style="font-size:10pt;font-family:Verdana;">6- Kiểm tra hoạt động và khả năng chịu lỗi</span></strong></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trên một trong 2 máy&nbsp;<strong><em>SQLSERVER1&nbsp;</em></strong>hoặc<strong><em>&nbsp;SQLSERVER2</em></strong>, mở&nbsp;<strong><em>Failover Cluster Manager</em></strong>&nbsp;kiểm tra, chọn&nbsp;<strong><em>Roles</em></strong>, quan
+ sát<strong><em>&nbsp;SQL Server (MSSQLSERVER)</em></strong>&nbsp;đang chạy (<strong><em>Running</em></strong>) và có&nbsp;<strong><em>Owner Node</em></strong>&nbsp;là<strong><em>SQLSERVER1</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image066.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Nodes - SQLSERVER1</em></strong>&nbsp;quan sát thấy server này đang đảm nhận dịch vụ&nbsp;<strong><em>SQL Server (MSSQLSERVER)</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image067.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Nodes - SQLSERVER2</em></strong>&nbsp;quan sát thấy server này hiện không đảm nhận dịch vụ nào</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image068.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Trước khi kiểm tra khả năng chịu lỗi của Failover Cluster tôi sẽ kiểm tra hoạt động của Cluster bằng cách di chuyển dịch vụ&nbsp;<strong><em>SQL Server (MSSQLSERVER)&nbsp;</em></strong>sang<strong><em>&nbsp;SQLSERVER2.&nbsp;</em></strong>Chọn<strong><em>&nbsp;Roles,&nbsp;</em></strong>bấm<strong><em>&nbsp;</em></strong>phải
+ chuột lên<strong><em>&nbsp;SQL Server (MSSQLSERVER)-&nbsp;</em></strong>Chọn<strong><em>&nbsp;Move - Select Node</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image069.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>SQLSERVER2</em></strong>&nbsp;- Nhấn&nbsp;<strong><em>OK</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="410" height="500" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image070.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình di chuyển (trạng thái sẽ hiển thị là&nbsp;<strong><em>Pending</em></strong>)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image071.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Kiểm tra quá trình di chuyển thành công,&nbsp;<strong><em>SQL Server (MSSQLSERVER)&nbsp;</em></strong>đang có trạng thái<strong><em>&nbsp;Running&nbsp;</em></strong>và<strong><em>">
+<span style="font-size:10pt;font-family:Verdana;">Chờ đợi quá trình di chuyển (trạng thái sẽ hiển thị là&nbsp;<strong><em>Pending</em></strong>)</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image071.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:&nbsp;</em></strong>đang có<strong><em>&nbsp;Owner Node&nbsp;</em></strong>là<strong><em>&nbsp;SQLSERVER2</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image072.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Nodes - SQLSERVER1</em></strong>&nbsp;quan sát thấy server không đảm nhận dịch vụ nào</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image073.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Nodes - SQLSERVER2</em></strong>&nbsp;quan sát thấy server này đang đảm nhận dịch vụ&nbsp;<strong><em>SQL Server (MSSQLSERVER)</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image074.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Tiếp theo tôi sẽ kiểm tra tính chịu lỗi của Failover Cluster bằng cách giả lập lỗi trên server đang đảm nhận dịch vụ là&nbsp;<strong><em>SQLSERVER2</em></strong>. Sang máy&nbsp;<strong><em>SQLSERVER2</em></strong>, disable
+ card mạng</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="599" height="401" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image075.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">SAng máy SQLSERVER1, chọn&nbsp;<strong><em>Nodes</em></strong>&nbsp;kiểm tra trạng thái của&nbsp;<strong><em>SQLSERVER2</em></strong>&nbsp;là&nbsp;<strong><em>Down</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image076.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Chọn&nbsp;<strong><em>Roles</em></strong>, chờ đợi giây lát bạn sẽ thấy dịch vụ được tự động chuyển sang Node đang hoạt động là&nbsp;<strong><em>SQLSERVER1</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image077.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Kiểm tra dịch vụ&nbsp;<strong><em>SQL Server (MSSQLSERVER)</em></strong>&nbsp;đã chạy bình thường trên Node đang hoạt động là&nbsp;<strong><em>SQLSERVER1</em></strong></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><img alt=" " width="719" height="435" src="http://mcthub.com/images/ContentLab/SQLCluster_files/image078.jpg" style="border-width:0px;border-style:solid;" /></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#an&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">&nbsp;</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verd39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;">Bài viết liên quan</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><a href="http://www.mcthub.com/technologies/microsoft/virtualization-technologies/227-c%E1%BA%A5u-h%C3%ACnh-high-availabitity-cho-m%C3%A1y-%E1%BA%A3o-ph%E1%BA%A7n-2-c%E1%BA%A5u-h%C3%ACnh-failover-cluster-cho-hyper-v.html" style="color:purple;text-decoration:underline;">Cấu
+ hình Failover Cluster cho Hyper-V trên Windows Server 2012</a></span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;">
+<span style="font-size:10pt;font-family:Verdana;"><a href="http://www.mcthub.com/technologies/microsoft/windows-server/187-storage-services-tren-windows-server-2012-ph-n-1-can-b-n.html" style="color:purple;text-decoration:underline;">Cấu hình iSCSI SAN Storage
+ services trên Windows Server 2012</a></span></p>
+<p style="margin:0in 0in 0.0001pt;color:#000000;"><span style="font-family:Verdana;font-size:13px;"><br />
+</span></p>
+<p style="margin:0in 0in 0.0001pt;font-size:medium;font-family:&#39;Times New Roman&#39;;color:#000000;text-align:right;">
+<span style="font-size:10pt;font-family:Verdana;"><br />
+</span></p>
+<a href="https://plus.google.com/u/0/112033633797932207224?rel=author">By Đồng Phương Nam</a>
+<br />
+<a href="http://www.mcthub.com/technologies/microsoft/others/231-c%C3%A0i-%C4%91%E1%BA%B7t-v%C3%A0-c%E1%BA%A5u-h%C3%ACnh-failover-cluster-cho-sql-server-2012.html">mcthub.com</a>
+
+</div>
+    
+    

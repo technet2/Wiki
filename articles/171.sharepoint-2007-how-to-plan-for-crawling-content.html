@@ -1,0 +1,759 @@
+---
+layout: default
+title: SharePoint 2007&#58; How to Plan for Crawling Content - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>The purpose of this article is to help search services administrators understand how Microsoft Office SharePoint Server 2007 crawls and indexes content and to help them plan to crawl content.
+</p>
+<br />
+<table align="center" style="border:1px solid #aaaaaa;background-color:#eeeeee;width:80%;">
+<tbody>
+<tr>
+<td style="text-align:center;"><img alt=" " src="htt3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">SharePoint 2007: How to Plan for Crawling Cp://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer.Wikis.Components.Files/articles/0474.howto03.png" />
+</td>
+<td><strong>This topic is a <em>how to.</em><br />
+</strong>Please keep it as clear and simple as possible. Avoid speculative discussions as well as a deep dive into underlying mechanisms or related technologies.
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#About_crawling_and_indexing_content">About crawling and indexing content</a></li><li class="hierarchy-item"><a href="#Identify_the_sources_of_content_that_you_want_to_crawl">Identify the sources of content that you want to crawl</a></li><li class="hierarchy-item"><a href="#Plan_content_sources">Plan content sources</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Crawl_different_types_of_content">Crawl different types of content</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Plan_content_sources_for_business_data">Plan content sources for business data</a></li><li class="hierarchy-item"><a href="#Crawl_content_on_different_schedules">Crawl content on different schedules</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Downtimes_and_periods_of_peak_usage">Downtimes and periods of peak usage</a></li><li class="hierarchy-item"><a href="#Content_that_is_updated_frequently">Content that is updated frequently</a></li><li class="hierarchy-item"><a href="#Full_and_incremental_crawl_schedules">Full and incremental crawl schedules</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Limit_or_increase_the_quantity_of_content_that_is_crawled">Limit or increase the quantity of content that is crawled</a></li><li class="hierarchy-item"><a href="#Plan_file-type_inclusions_and_IFilters">Plan file-type inclusions and IFilters</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#IFilters_and_Microsoft_Office_OneNote">IFilters and Microsoft Office OneNote</a></li><li class="hierarchy-item"><a href="#Limit_or_exclude_content_by_using_crawl_rules">Limit or exclude content by using crawl rules</a></li><li class="hierarchy-item"><a href="#Other_considerations_when_planning_content_sources">Other considerations when planning content sources</a></li><li class="hierarchy-item"><a href="#Content_sources_summary">Content sources summary</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Plan_for_authentication">Plan for authentication</a></li><li class="hierarchy-item"><a href="#Plan_protocol_handlers">Plan protocol handlers</a></li><li class="hierarchy-item"><a href="#Plan_to_manage_the_impact_of_crawling">Plan to manage the impact of crawling</a></li><li class="hierarchy-item"><a href="#Plan_crawl_rules">Plan crawl rules</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Specify_a_different_content_access_account">Specify a different content access account</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Plan_search_settings_that_are_managed_at_the_farm_level">Plan search settings that are managed at the farm level</a></li><li class="hierarchy-item"><a href="#Indexing_content_in_different_languages">Indexing content in different languages</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+Before end users can use the enterprise search functionality in Office SharePoint Server 2007 to search for content, you must first crawl the content that you want to make available for users to query.</p>
+<p>For the purpose of this article, content is any item that can be crawled, such as a Web page, a Microsoft Office Word document, business data, or an e-mail message file.</p>
+<p>When planning to crawl content, you should consider the following questions:</p>
+<ul>
+<li>
+<p>Where is the content that you want to crawl physically located? </p>
+</li><li>
+<p>Is some of the content that you want to crawl stored in different types of sources, such as file shares, SharePoint sites, Web sites, or other places?</p>
+</li><li>
+<p>Do you want to crawl all the content at specific sources or just some of it?</p>
+</li><li>
+<p>What types of files make up the content that you want to crawl?</p>
+</li><li>
+<p>When and how often should you crawl content?</p>
+</li><li>
+<p>How is this content secured?</p>
+</li></ul>
+<p>Use the information in this article to help you answer these questions and make the necessary planning decisions about the content you want to crawl and how and when you want to crawl that content.</p>
+<p>Office SharePoint Server 2007 includes the Office SharePoint Server Search service, which is used to crawl and index content. This service is part of an SSP and all content crawled using a particular SSP is indexed in a single index. For information about
+ choosing the number of SSPs to use to index content, see <a href="http://technet.microsoft.com/en-us/library/cc263276.aspx" id="ctl00_MTCS_main_ctl02">
+<span style="color:#0033cc;">Plan Shared Services Providers</span></a>.</p>
+<h2><a name="About_crawling_and_indexing_content"></a>About crawling and indexing content</h2>
+<p>Crawling and indexing content is the process by which the system accesses and parses content and its properties, sometimes called metadata, to build a content index from which search queries can be served.
+</p>
+<p>The result of successfully crawling content is that the individual files or pieces of content that you want to make available to search queries are accessed and read by the crawler. The keywords and metadata for those files are stored in the content index,
+ sometimes called the index. The index consists of the keywords that are stored in the file system of the index server and the metadata that is stored in the search database. The system maintains a mapping between the keywords, the metadata associated with
+ the individual pieces of content from which the keywords were crawled, and the URL of the source from which the content was crawled.
+</p>
+<p><strong>Note: </strong>The crawler does not change the files on the host servers in any way. Instead, the files on the host servers are simply accessed, read, and the text and metadata for those files are sent to the index server to be indexed. However,
+ because the crawler reads the content on the host server, some servers that host certain sources of content might update the last accessehe individual files or pieces of content that you want to make available to search queries are accessed and read by the crawler. The keywords and metadata fod date on files that have been crawled.</p>
+<h2><a name="Identify_the_sources_of_content_that_you_want_to_crawl"></a>Identify the sources of content that you want to crawl</h2>
+<p>In many cases, the needs of your organization might only require that you crawl all the content contained by the SharePoint sites in your organization&#39;s server farm. In this case, you might not need to identify the sources of content you want to crawl because
+ all site collections in a server farm can be crawled using the default content source. For more information about the default content source, see &quot;Plan content sources&quot;&nbsp;later in this article.
+</p>
+<p>Many organizations also need to crawl content that is external from the server farm, such as file shares or Web sites on the Internet. Office SharePoint Server 2007 can crawl and index content that is hosted on other Windows SharePoint Services or Office
+ SharePoint Server farms, Web sites, file shares, Microsoft Exchange public folders, IBM Lotus Notes servers, and business data that is stored in databases. This greatly increases the amount of content that can be made available to search queries.</p>
+<p>In many cases, however, you might not want to crawl every site collection in your server farm, because content stored in some site collections might not be relevant in search results. In this case, you must do one or both of the following:</p>
+<ul>
+<li>
+<p>Note the site collections that you do not want to crawl. If you decide to use the default content source, you must ensure that the start addresses for the site collections you do not want to crawl are not listed in the default content source.</p>
+</li><li>
+<p>Note the individual start addresses of the site collections that you do want to crawl. If you decide to create additional content sources to use to crawl this content, you need to know these start addresses. For information about when to use one or more
+ content sources, see &quot;Plan content sources&quot;&nbsp;later in this article.</p>
+</li></ul>
+<p>With the Infrastructure Update for Microsoft Office Servers installed, there are two ways to process search queries in order to return search results to users. You can query the Search Server content index, or you can use federated search.&nbsp;Note that the
+ Infrastructure Update for Microsoft Office Servers provides Office SharePoint Server 2007 with the federated search capability that first appeared in Search Server 2008.</p>
+<p>There are advantages to each approach. For a comparison of these two approaches to processing search queries, see
+<a href="http://go.microsoft.com/fwlink/?LinkID=122651&amp;clcid=0x409" id="ctl00_MTCS_main_ctl05">
+<span style="color:#0033cc;">Federated Search Overview</span></a> (http://go.microsoft.com/fwlink/?LinkID=122651). For a list and brief description of articles about understanding and using federation, see
+<a href="http://technet.microsoft.com/en-us/library/cc788937.aspx" id="ctl00_MTCS_main_ctl06">
+<span style="color:#0033cc;">Working with Federation (Office SharePoint Server)</span></a>. For more information about the Infrastructure Update for Microsoft Office Servers, see
+<a href="http://technet.microsoft.com/en-us/library/cc718729.aspx" id="ctl00_MTCS_main_ctl07">
+<span style="color:#0033cc;">Install the Infrastructure Update for Microsoft Office Servers (Office SharePoint Server 2007)</span></a>.</p>
+<h2><a name="Plan_content_sources"></a>Plan content sources</h2>
+<p>Before you can crawl content, you must first determine where the content is and on what types of servers the content is hosted. After this information is gathered, a shared services administrator can create one or more content sources that are used to crawl
+ that content. These content sources provide the following information to the crawler during a crawl:</p>
+<ul>
+<li>
+<p>Type of content you want to crawl&nbsp;— for example, a SharePoint site or a file share.
+</p>
+</li><li>
+<p>Start address from which to start crawling.</p>
+</li><li>
+<p>Behavior to use when crawling&nbsp;— for example, how deep to crawl from the start address, or how many server hops to allow.</p>
+</li><li>
+<p>Crawling schedule.&nbsp;</p>
+</li></ul>
+<p>This section helps you plan for the content sources needed by your organization.
+</p>
+<p>The default content source is called <strong>Local Office SharePoint Server sites</strong>. Shared services administrators can use this content source to crawl and index all content in all Web applications associated with the SSP. By default, Office SharePoint
+ Server 2007 adds the start address (in this case a URL) of the top-level site of each site collection created in the Web application that uses the same SSP to the default content source.</p>
+<p>For some organizations, simply using the default content source to crawl all sites in their site collections satisfies their search requirements. However, many organizations need additional content sources.
+</p>
+<p>Reasons for creating additional content sources include the need to:</p>
+<ul>
+<li>
+<p>Crawl different types of content.</p>
+</li><li>
+<p>Crawl some content on different schedules than other content.</p>
+</li><li>
+<p>Limit or increase the quantity of content that is crawled. </p>
+</li></ul>
+<p>Shared services administrators can create up to 500 content sources in each SSP and each content source can contain up to 500 start addresses. To keep administration as simple as possible, you should create only as many content sources as you need.</p>
+<h3 class="subHeading"><a name="Crawl_different_types_of_content"></a>Crawl different types of content</h3>
+<div class="subSection">
+<p>You can only crawl one type of content per content source. That is, you can create a content source that contains URLs for SharePoint sites and another that contains URLs for file shares, but you cannot create a single content source that contains URLs to
+ both SharePoint sites and file shares. The following table lists the types of content sources that can be configured</p>
+<table border="1" style="width:585px;height:512px;">
+<tbody>
+<tr>
+<td><strong>This type of content source</strong></td>
+<td><strong>Includes this type of content</strong></td>
+</tr>
+<tr>
+<td>
+<p>SharePoint sites</p>
+</td>
+<td>
+<p>SharePoint sites from the same farm or different Office SharePoint Server 2007, Windows SharePoint Services 3.0, or Search Server 2008 farms.
+</p>
+<p>SharePoint sites from Microsoft Office SharePoint Portal Server 2003 or Microsoft Windows SharePoint Services 2.0 farms.</p>
+<p>Note: <span class="mtps-cell">Unlike crawling SharePoint sites on Office SharePoint Server 2007, Windows SharePoint Services 3.0, or Search Server 2008, the crawler cannot automatically crawl all subsites in a site collection from previous versions of SharePoint
+ Products and Technologies. Therefore, when crawling SharePoint sites from previous versions, you must specify the URL of each top-level site and each subsite that you want to crawl. Sites listed in the Site Directory of Microsoft Office SharePoint Portal Server
+ 2003 farms are crawled when the portal site is crawled. For more information about the Site Directory, see
+<a href="http://go.microsoft.com/fwlink/?LinkId=88227&amp;clcid=0x409" id="ctl00_MTCS_main_ctl11">
+<span style="color:#0033cc;">About the Site Directory</span></a> (http://go.microsoft.com/fwlink/?LinkId=88227&amp;clcid=0x409).</span>&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Web sites</p>
+</td>
+<td>
+<p>Other Web content in your organization not found on SharePoint sites</p>
+<p>Content on Web sites on the Internet</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>File shares</p>
+</td>
+<td>
+<p>Content on file shares within your organization</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Exchange public folders</p>
+</td>
+<td>
+<p>Microsoft Exchange Server content</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Lotus Notes</p>
+</td>
+<td>
+<p>E-mail messages stored in Lotus Notes databases</p>
+<p>Note: <span class="mtps-cell">Unlike all other types of content sources, the Lotus Notes content source option does not appear in the user interface until you have installed and configured the appropriate prerequisite software. For more information, see
+<a href="http://technet.microsoft.com/en-us/library/cc262927.aspx" id="ctl00_MTCS_main_ctl14">
+<span style="color:#0033cc;">Configure Office SharePoint Server Search to crawl Lotus Notes (Office SharePoint Server 2007)</span></a>.</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Business data</p>
+</td>
+<td>
+<p>Business data stored in line-of-business applications</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h2><a name="Plan_content_sources_for_business_data"></a>Plan content sources for business data&nbsp;</h2>
+</div>
+<p>Business data content sources require that the applications hosting the data are first registered in the Business Data Catalog. You must create one or more separate content sources of the Business Data content source types to crawl business data. You can
+ create one content source to crawl all applications registered in the Business Data Catalog, or you can create separate content sources to crawl individual applications that are registered in the Business Data Catalog.
+</p>
+<p>Often, the people who plan for integration of business data into your site collections are not the same people involved in the overall content planning process. Therefore, include business application administrators in your content planning teams so that
+ thtd>
+<p>Business data</p>
+</td>
+<td>
+<p>Business data stored in line-of-business applications</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h2><a name="Plan_content_sources_for_business_data"></a>Plan content sources for business data&nbsp;</h2>
+</div>
+<p>Business data content sources require that the applications hosting the data are first registered in the Business Data Catalog. You must create one or more separate content sources of the Business Data conteney can advise you how to integrate their data into your other content and effectively present it in your site collections.
+</p>
+<p>For more information about planning business data search, see <a href="http://technet.microsoft.com/en-us/library/cc262159.aspx" id="ctl00_MTCS_main_ctl15">
+<span style="color:#0033cc;">Plan for business data search</span></a>.</p>
+<h2><a name="Crawl_content_on_different_schedules"></a>Crawl content on different schedules</h2>
+<p>Shared services administrators often must decide whether some content is crawled more frequently than other content. The larger the volume of content that you crawl, the more likely it is that you are crawling content from different sources. These different
+ sources might or might not be of the same type and might be hosted on servers of varying speeds in relation to one another.</p>
+<p>These factors make it more likely that you need additional content sources to crawl those different sources of content at different times.
+</p>
+<p>Primary reasons that content is crawled on different schedules are:</p>
+<ul>
+<li>
+<p>To accommodate downtimes and periods of peak usage.</p>
+</li><li>
+<p>To more frequently crawl the content that is updated more frequently.</p>
+</li><li>
+<p>To crawl content hosted on slower host servers separately from content crawled on faster host servers.</p>
+</li></ul>
+<p>In many cases, not all of this information can be known until after Office SharePoint Server 2007 is deployed and running for some time. Instead, some of these decisions are made during the operations phase. However, it is a good idea to consider these factors
+ during planning so that you can plan your crawl schedules based on the information at hand.
+</p>
+<p>The following two sections provide more information about crawling content on different schedules.</p>
+<h3 class="subHeading"><a name="Downtimes_and_periods_of_peak_usage"></a>Downtimes and periods of peak usage</h3>
+<p class="subSection">Consider the downtimes and peak usage times of the servers that host the content you want to crawl. For example, if you are crawling content hosted by many different servers outside your server farm, it is likely that these servers are
+ backed-up on different schedules and have different peak usage times. The administration of servers outside your server farm is typically out of your control. Therefore, we recommend that you coordinate your crawls with the administrators of the servers that
+ host the content you want to want to crawl to ensure you do not attempt to crawl content on their servers during a downtime or peak usage time.
+</p>
+<p class="subSection">A common scenario involves content outside the control of your organization that relates to the content on your SharePoint sites. You can add the start addresses for this content to an existing content source or create a new content source
+ for external content. Because availability of external sites varies widely, it is helpful to add separate content sources for different external content. In this way, the content sources for external content can be crawled at different times than your other
+ content sources. You can then update external content on a crawl schedule that accounts for the availability of each site.
+</p>
+<h3 class="subSection"><a name="Content_that_is_updated_frequently"></a>Content that is updated frequently</h3>
+<p class="subSection">When planning crawl schedules, consider that some sources of content are typically updated more frequently than others. For example, if you know that content on some site collections or external sources are updated only on Fridays, it
+ would be a waste of resources to crawl that content more frequently than once each week. However, your server farm might contain other site collections that are continually updated Monday through Friday, but not typically updated on Saturdays and Sundays.
+ In this case, that you might want to crawl several times each week day, but only once or twice on weekends.</p>
+<p class="subSection">The way in which content is stored across the site collections in your environment can guide you to create additional content sources for each of your site collections in each of your Web applications. For example, if a site collection
+ stores only archived information, you may not need to crawl that content as frequently as you crawl a site collection that stores frequently updated content. In this case, you might want to crawl these two site collections using different content sources so
+ that they can be crawled on different schedules without having to crawl the archive sites as frequently as the other content.
+</p>
+<h3 class="subSection"><a name="Full_and_incremental_crawl_schedules"></a>Full and incremental crawl schedules</h3>
+<div class="subSection">
+<p>Shared services administrators can configure the crawl schedules independently for each content source. For each content source, they can specify a time to do full crawls and a separate time to do incremental crawls. Note that you must run a full crawl for
+ a particular content source before you can run an incremental crawl. If you choose an incremental crawl for content that has not yet been crawled, the system performs a full crawl.</p>
+</div>
+<p>Because a full crawl crawls all content that the crawler encounters and has at least read access to, regardless of whether that content has been previously crawled, full crawls can take significantly more time to complete than incremental crawls.</p>
+<p>We recommend that you plan crawl schedules based on the availability, performance, and bandwidth considerations of the servers running the search service and the servers hosting the crawled content.
+</p>
+<p>When you plan crawl schedules, consider the following best practices:</p>
+<ul>
+<li>
+<p>Group start addresses in content sources based on similar availability and with acceptable overall resource usage for the servers that host the content.</p>
+</li><li>
+<p>Schedule incremental crawls for each content source during times when the servers that host the content are available and when there is low demand on the resources of the server.
+</p>
+</li><li>
+<p>Stagger crawl schedules so that the load on the servers in your farm is distributed over time.</p>
+</li><li>
+<p>Schedule full crawls only when necessary for the reasons listed in the next section. We recommend that you do full crawls less frequently than incremental crawls.
+</p>
+</li><li>
+<p>Schedule administration changes that require a full crawl to occur shortly before the planned schedule for full crawls. For example, we recommend that you attempt to schedule the creation of the crawl rule before the next scheduled ful
+<p>When you plan crawl schedules, consider the following best practices:</p>
+<ul>
+<li>
+<p>Group start addresses in content sources based on similar availability and with acceptable overall resource usage for the servers that host the content.</p>
+l crawl so that an
+ additional full crawl is not necessary.</p>
+</li><li>
+<p>Base simultaneous crawls on the capacity of the index server to crawl them. We recommend that you typically stagger your crawl schedules so that the index server does not crawl using multiple content sources at the same time. For best performance, we suggest
+ that you stagger the crawling schedules of content sources. The performance of the index server and the servers hosting the content determines the extent to which crawls can be overlapped. A strategy for crawl scheduling can be developed over time as you can
+ become familiar with the typical crawl durations for each content source.&nbsp;</p>
+</li></ul>
+<p class="subSection">Reasons for a search services administrator to do a full crawl include:</p>
+<div class="subSection">
+<ul>
+<li>
+<p>One or more hotfix or service pack was installed on servers in the farm. See the instructions for the hotfix or service pack for more information.</p>
+</li><li>
+<p>An SSP administrator added a new managed property.</p>
+</li><li>
+<p>To re-index ASPX pages on Windows SharePoint Services 3.0 or Office SharePoint Server 2007 sites. The crawler cannot discover when ASPX pages on Windows SharePoint Services 3.0 or Office SharePoint Server 2007 sites have changed. Because of this, incremental
+ crawls do not re-index views or home pages when individual list items are deleted. We recommend that you periodically do full crawls of sites that contain ASPX files to ensure that these pages are re-indexed.</p>
+</li><li>
+<p>To detect security changes that were made on a file share after the last full crawl of the file share.</p>
+</li><li>
+<p>To resolve consecutive incremental crawl failures. In rare cases, if an incremental crawl fails one hundred consecutive times at any level in a repository, the index server removes the affected content from the index.</p>
+</li><li>
+<p>Crawl rules have been added, deleted, or modified.</p>
+</li><li>
+<p>To repair a corrupted index.</p>
+</li><li>
+<p>The search services administrator has created one or more server name mappings.</p>
+</li><li>
+<p>The account assigned to the default content access account or crawl rule has changed.</p>
+</li></ul>
+</div>
+<p>The system does a full crawl even when an incremental crawl is requested under the following circumstances:</p>
+<ul>
+<li>
+<p>An SSP administrator stopped the previous crawl.</p>
+</li><li>
+<p>A content database was restored from backup. If you are running the Infrastructure Update for Microsoft Office Servers, you can use the restore operation of the stsadm command-line tool to change whether a content database restore causes a full crawl.</p>
+</li><li>
+<p>A farm administrator has detached and reattached a content database.</p>
+</li><li>
+<p>A full crawl of the site has never been done.</p>
+</li><li>
+<p>The change log does not contain entries for the addresses that are being crawled. Without entries in the change log for the items being crawled, incremental crawls cannot occur.</p>
+</li><li>
+<p>The account assigned to the default content access account or crawl rule has changed.</p>
+</li><li>
+<p>To repair a corrupted index. Depending upon the severity of the corruption, the system might attempt to perform a full crawl if corruption is detected in the index.</p>
+</li></ul>
+<p>You can adjust schedules after the initial deployment based on the performance and capacity of servers in the farm and the servers hosting content.&nbsp;&nbsp;</p>
+<h2 class="subHeading"><a name="Limit_or_increase_the_quantity_of_content_that_is_crawled"></a>Limit or increase the quantity of content that is crawled</h2>
+<div class="subSection">
+<p>For each content source, you can select how extensively to crawl the start addresses in that content source. You also specify the behavior of the crawl, sometimes called the crawl settings. The options you can choose for a particular content source vary
+ somewhat based on the content source type that you select. However, most options determine how many levels deep in the hierarchy from each start address listed in the content source are crawled. Note that this behavior is applied to all start addresses in
+ a particular content source. If you need to crawl some sites at deeper levels, you can create additional content sources that encompass those sites.
+</p>
+<p>The options available in the properties for each content source vary depending upon the content source type that is selected. The following table describes the crawl settings options for each content source type.&nbsp;</p>
+</div>
+<table border="1" style="width:560px;height:368px;">
+<tbody>
+<tr>
+<td><strong>Content source type</strong></td>
+<td><strong>Crawl settings options</strong></td>
+</tr>
+<tr>
+<td>
+<p>SharePoint sites</p>
+</td>
+<td>
+<p>Everything under the host name for each start address</p>
+<p>Only the SharePoint site of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Web sites</p>
+</td>
+<td>
+<p>Only within the server of each start address</p>
+<p>Only the first page of each start address</p>
+<p>Custom&nbsp;— Specify page depth and number of server hops. </p>
+<p><span class="mtps-cell">The default setting for this option is unlimited page depths and server hops.</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>File shares</p>
+</td>
+<td>
+<p>The folder and all subfolders of each start address</p>
+<p>Only the folder of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Exchange public folders</p>
+</td>
+<td>
+<p>The folder and all subfolders of each start address</p>
+<p>Only the folder of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Business data</p>
+</td>
+<td>
+<p>Crawl entire Business Data Catalog</p>
+<p>Crawl selected applications </p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>As the preceding table shows, shared services administrators can use crawl setting options to limit or increase the quantity of content that is crawled.
+</p>
+<p>The following table describes best practices when configuring crawl setting options.</p>
+<table border="1" style="width:546px;height:873px;">
+<tbody>
+<tr>
+<td><strong>For this content source type</strong></td>
+<td><strong>Use this crawl setting option</strong> </td>
+<td><strong>Use this crawl setting option </strong></td>
+</tr>
+<tr>
+<td>
+<p>SharePoint sites</p>
+</td>
+<td>
+<p>You want to include the content on the site itself.</p>
+<p>-or-</p>
+<p>You do not want to include the content available on subsites, or you want to crawl them on a different schedule.</p>
+</td>
+<td>
+<p>Crawl only the SharePoint site of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>SharePoint sites</p>
+</td>
+<td>
+<p>You want to include the content on the site itself.</p>
+<p>-or-</p>
+<p>You want to crawl all content under the start address on the same schedule.</p>
+</td>
+<td>
+<p>Crawl everything under the host name of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Web sites</p>
+</td>
+<td>
+<p>Content on the site itself is relevant.</p>
+<p>-or-</p>
+<p>Content available on linked sites is not likely to be relevant.</p>
+</td>
+<td>
+<p>Crawl only within the server of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Web sites</p>
+</td>
+<td>
+<p>Relevant content is on only the first page. </p>
+</td>
+<td>
+<p>Crawl only the first page of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Web sites</p>
+</td>
+<td>
+<p>You want to limit how deep to crawl the links on the start addresses.</p>
+</td>
+<td>
+<p>Custom&nbsp;— Specify the number of pages deep and number of server hops to crawl</p>
+<p><span class="mtps-cell">We recommend you start with a small number on a highly connected site because specifying more than three pages deep or more than three server hops can crawl the entire Internet.</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p>File shares</p>
+<p>Exchange public folders</p>
+</td>
+<td>
+<p>Content available in the subfolders is not likely to be relevant.</p>
+</td>
+<td>
+<p>Crawl only the folder of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>File shares</p>
+<p>Exchange public folders</p>
+</td>
+<td>
+<p>Content in the subfolders is likely to be relevant.</p>
+</td>
+<td>
+<p>Crawl the folder and subfolder of each start address</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Business data</p>
+</td>
+<td>
+<p>All applications that are registered in the Business Data Catalog contain relevant content.</p>
+</td>
+<td>
+<p>Crawl the entire Business Data Catalog</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>Business data</p>
+</td>
+<td>
+<p>Not all applications that are registered in the Business Data Catalog contain relevant content.</p>
+<p>-or-</p>
+<p>You want to crawl some applications on a different schedule.</p>
+</td>
+<td>
+<p>Crawl selected applications</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<h2 class="subHeading"><a name="Plan_file-type_inclusions_and_IFilters"></a>Plan file-type inclusions and IFilters</h2>
+<div class="subSection">
+<p>Content is only crawled if the relevant file name extension is included in the file-type inclusions list and an IFilter is installed on the index server that supports those file types. Several file types are included automatically during initial installation.
+ When you plan for content sources in your initial deployment, determine whether content you want to crawl uses file types that are not included. If file types are not included, you must add those file types on the Manage File Types page during deployment and
+ ensure that an IFilter is installed and registered to support that file type. </p>
+<p>Office SharePoint Server 2007 provides several IFilters, and more are available from Microsoft and third-party vendors. For information about how to install and register additional IFilters that are available from Microsoft, see
+<a href="http://go.microsoft.com/fwlink/?LinkId=110532&amp;clcid=0x409" id="ctl00_MTCS_main_ctl24">
+<span style="color:#0033cc;">How to register Microsoft Filter Pack with SharePoint Server 2007 and with Search Server 2008</span></a> (http://go.microsoft.com/fwlink/?LinkId=110532). If necessary, software developers can create IFilters for new file types.</p>
+<p>On the other hand, if you want to exclude certain file types from being crawled, you can delete the file name extension for that file type from the file type inclusions list. Doing so excludes file names that have that extension from being crawled.
+</p>
+<p>For a table that lists which file types are supported by the IFilters that are installed by default and which file types are enabled on the
+<strong>Manage File Types</strong> page by default, see <a href="http://social.technet.microsoft.com/wiki/contents/articles/ifilters-in-office-sharepoint-server-2007.aspx">
+IFilters in Office SharePoint Server 2007</a>.</p>
+<h3 class="subHeading"><a name="IFilters_and_Microsoft_Office_OneNote"></a>IFilters and Microsoft Office OneNote</h3>
+<div class="subSection">
+<p>An IFilter is not provided for the .one file name extension used by Microsoft Office OneNote. If you want users to be able to search content in Office OneNote files, you must install an IFilter for OneNote. To do this, you must do one of the following.
+</p>
+<ul>
+<li>
+<p>Install the Microsoft Office OneNote 2007 client application on the index server.
+</p>
+<p>The IFilter provided by Office OneNote 2007 can be used to crawl both Office OneNote 2003 and Office OneNote 2007 files. The IFilter installed by Office OneNote 2003 can crawl Office OneNote 2003 files only. For more information, see
+<a href="http://technet.microsoft.com/en-us/library/cc262185.aspx" id="ctl00_MTCS_main_ctl25">
+<span style="color:#0033cc;">Install and register the OneNote IFilter (Office SharePoint Server 2007)</span></a>.</p>
+</li><li>
+<p>Install and register the Microsoft Filter Pack. </p>
+<p>The OneNote IFilter provided by this filter pack can be used to crawl Office OneNote 2007 files only. For more information, see
+<a href="http://go.microsoft.com/fwlink/?LinkId=110532&amp;clcid=0x409" id="ctl00_MTCS_main_ctl26">
+<span style="color:#0033cc;">How to register Microsoft Filter Pack with SharePoint Server 2007 and with Search Server 2008</span></a>.</p>
+</li></ul>
+</div>
+</div>
+<h3 class="subHeading"><a name="Limit_or_exclude_content_by_using_crawl_rules"></a>Limit or exclude content by using crawl rules</h3>
+<div class="subSection">
+<p>When you add a start address to a content source and accept the default behavior, all subsites or folders below that start address are crawled unless you exclude them by using one or more crawl rules.</p>
+<p>For more information about crawl rules, see <a href="http://social.technet.microsoft.com/wiki/contents/articles/171.how-to-plan-for-crawling-content-in-office-sharepoint-server-2007-en-us/edit.aspx#section7">
+<span style="color:#0033cc;">Plan crawl rules</span></a> later in this article.</p>
+</div>
+<h3 class="subHeading"><a name="Other_considerations_when_planning_content_sources"></a>Other considerations when planning content sources</h3>
+<div class="subSection">
+<p>You cannot crawl the same addresses using multiple content sources. For example, if you use a particular content source to crawl a site collection and all of its subsites, you cannot use a different content source to crawl one of those subsites separately
+ on a different schedule. To accommodate this restriction, you might need to crawl some of these sites separately. Consider the following scenario:</p>
+<p>The SSP administrator at Contoso wants to crawl http://contoso, which contains the http://contoso/sites/site1 and http://contoso/sites/site2 subsites. He wants to crawl http://contoso/sites/site2 on a different schedule than the other sites. To achieve this,
+ he adds the addresses http://contoso and http://contoso/sites/site1 to one content source and selects the
+<strong>Crawl only the SharePoint site of each start address</strong> setting. He then adds http://contoso/sites/site2 to another content source and specifies a different schedule for that content source.
+</p>
+<p>In addition to crawl schedules, there are other things to consider when planning content sources. For example, whether you group start addresses in a single content source or create additional content sources to crawl those start addresses depends largely
+ upon administration considerations. Administrators often make changes that require a full update of a particular content source. Changes to a content source require a full crawl of that content source. To make administration easier, organize content sources
+ in such a way that updating content sources, crawl rules, and crawling content is convenient for administrators.
+</p>
+</div>
+<h3 class="subHeading"><a name="Content_sources_summary"></a>Content sources summary</h3>
+<div class="subSection">
+<p>Consider the following when planning your content sources:</p>
+<ul>
+<li>
+<p>A particular content source can be used to crawl only one of the following content types: SharePoint sites, Web sites that are not SharePoint sites, file shares, Exchange public folders, Lotus Notes databases, and business data.</p>
+</li><li>
+<p>Shared services administrators can create up to 500 content sources in each SSP, and each content source can contain up to 500 start addresses. To keep administration as simple as possible, you should create only as many content sources as you absolutely
+ need.</p>
+</li><li>
+<p>Each URL in a particular content source must be of the same content source type.</p>
+</li><li>
+<p>For a particular content source, you can choose how deep to crawl from the start addresses. These configuration settings apply to all start addresses in the content source. The available choices on how deep you can crawl the start addresses differ depending
+ upon the content source type that is selected. </p>
+</li><li>
+<p>You can schedule when to perform either a full or incremental crawl for the entire content source. For more information about scheduling crawls, see &quot;Full and incremental crawl schedules&quot; earler in this article.</p>
+</li><li>
+<p>Shared services administrators can modify the default content source, create additional content sources for crawling other content, or both. For example, they can configure the default content source to also crawl content on a different server farm or they
+ can create a new content source to crawl other content.</p>
+</li><li>
+<p>To effectively crawl all the content needed by your organization, use as many content sources as make sense for the types of sources you want to crawl, and for the frequency at which you plan to crawl them.</p>
+</li></ul>
+</div>
+<h2 class="heading"><a name="Plan_for_authentication"></a>Plan for authentication</h2>
+<p class="seeAlsoNoToggleSection">When the crawler accesses the start addresses that are listed in content sources, the crawler must be authenticated by and granted access to the servers that host that content. This means that the domain account used by the
+ crawler must have at least read permission to the content. </p>
+<p class="seeAlsoNoToggleSection">The default content access account is the account that is used by default when crawling content sources. This account is specified by the shared services administrator. Alternatively, you can use crawl rules to specify a different
+ content access account to use when crawling particular content. Regardless whether you use the default content access account or a different content access account specified by a crawl rule, the content access account that you use must have read access to
+ all content that is crawled, or the content is not crawled and is not available to queries.</p>
+<p class="seeAlsoNoToggleSection">We recommend that you select a default content access account that has the broadest access to most of your crawled content, and only use other content access accounts when security considerations require separate content access
+ accounts. For information about creating a separate content access accounts to crawl content that cannot be read using the default content access account, see
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/171.how-to-plan-for-crawling-content-in-office-sharepoint-server-2007-en-us/edit.aspx#section7">
+<span style="color:#0033cc;">Plan crawl rules</span></a> later in this article.</p>
+<p class="seeAlsoNoToggleSection">For each content source you plan, identify the start addresses that cannot be accessed by the default content access account and plan to add crawl rules for URL patterns that encompass those start addresses.&nbsp;&nbsp;</p>
+<p class="seeAlsoNoToggleSection">Ensure that the domain account used for the default content access account or any other content access account is not the same domain account that is used by an application pool associated with any Web application you crawl.
+ Doing so can cause unpublished content in SharePoint sites and minor versions of files (history) in SharePoint sites to be crawled and indexed.</p>
+<p class="seeAlsoNoToggleSection">Another important consideration is that the crawler must use the same authentication method as the host server. By default, the crawler attempts to authenticate using NTLM authentication. You can configure the crawler to use
+ a different authentication method, if necessary. For more information, see &quot;Authentication requirements for crawling content&quot; in
+<a href="http://technet.microsoft.com/en-us/library/cc262350.aspx" id="ctl00_MTCS_main_ctl30">
+<span style="color:#0033cc;">Plan authentication methods (Office SharePoint Server)</span></a>.
+</p>
+<h2 class="heading"><a name="Plan_protocol_handlers"></a>Plan protocol handlers</h2>
+<p class="seeAlsoNoToggleSection">All content that is crawled requires the use of a protocol handler to gain access to that content. Office SharePoint Server 2007 provides protocol handlers for all common Internet protocols. However, if you want to crawl content
+ that requires a protocol handler that is not installed with Office SharePoint Server 2007, you must install the third-party or custom protocol handler before you can crawl that content.</p>
+<p class="seeAlsoNoToggleSection">For a list that shows the protocol handlers that are installed by default, see
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/protocol-handlers-in-office-sharepoint-server-2007.aspx">
+Protocol handlers in Office SharePoint Server 2007</a>.&nbsp;</p>
+<h2 class="heading"><a name="Plan_to_manage_the_impact_of_crawling"></a>Plan to manage the impact of crawling</h2>
+<div id="sectionSection5" class="seeAlsoNoToggleSection">
+<p>Crawling content can significantly decrease the performance of the servers that host the content. The impact that this has on a particular server varies depending upon the load that the host server is experiencing and whether the server has sufficient resources
+ (particularly CPU and RAM) to maintain service level agreements under normal or peak usage.
+</p>
+<p>Crawler impact rules enable farm administrators to manage the impact your crawler has on the servers being crawled. For each crawler impact rule, you can specify a single URL or use wildcard characters in the URL path to include a block of URLs to which
+ the rule applies. You can then specify how many simultaneous requests for pages are made to the specified URL or choose to request only one document at a time and wait a number of seconds that you choose between requests.</p>
+<p>Crawler impact rules reduce or increase the rate at which the crawler requests content from a particular start address or range of start addresses (sometimes called a site name), regardless of the content source used to crawl those addresses. The following
+ table shows the wildcard characters that you can use in the site name when adding a rule.&nbsp;</p>
+</div>
+<table border="1" style="width:536px;height:130px;">
+<tbody>
+<tr>
+<td><strong>Wildcard to use</strong></td>
+<td><strong>Result</strong></td>
+</tr>
+<tr>
+<td>
+<p>* as the site name</p>
+</td>
+<td>
+<p>Applies the rule to all sites.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>*.* as the site name</p>
+</td>
+<td>
+<p>Applies the rule to sites with dots in the name.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>*.<em>site_name</em>.com as the site name</p>
+</td>
+<td>
+<p>Applies the rule to all sites in the <em>site_name</em>.com domain (for example, *.adventure-works.com).</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>*.<em>top-level_domain_name</em> as the site name</p>
+</td>
+<td>
+<p>Applies the rule to all sites that end with a specific top-level domain name, for example, *.com or *.net.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p>?</p>
+</td>
+<td>
+<p>Replaces a single character in a rule. For example, *.adventure-works?.com applies to all sites in the domains adventure-works1.com, adventure-works2.com, and so on.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>You can create a crawler impact rule that applies to all sites within a particular top-level domain. For example, *.com applies to all Internet sites with addresses that end in .com. For example, an administrator of a portal site might add a content source
+ for samples.microsoft.com. The rule for *.com applies to this site unless you add a crawler impact rule specifically for samples.microsoft.com.</p>
+<p>For content within your organization that other administrators are crawling, you can coordinate with those administrators to set crawler impact rules based on the performance and capacity of the servers. For most external sites, this coordination is not
+ possible. Requesting too much content on external servers or making requests too frequently can cause administrators of those sites to limit your future access if your crawls are using too many resources or too much bandwidth. Therefore, the best practice
+ is to crawl more slowly. In this way, you can mitigate the risk of losing access to crawl the relevant content.
+</p>
+<p>During initial deployment, set the crawler impact rules to make as small an impact on other servers as possible while still crawling enough content frequently enough to ensure the freshness of the crawled content.
+</p>
+<p>During the operations phase, you can adjust crawler impact rules based on your experiences and data from crawl logs.&nbsp;&nbsp;</p>
+<h2 class="heading"><a name="Plan_crawl_rules"></a>Plan crawl rules</h2>
+<div id="sectionSection6" class="seeAlsoNoToggleSection">
+<p>Crawl rules apply to a particular URL or set of URLs represented by wildcards (also referred to as the path affected by the rule). You use crawl rules to do the following things:</p>
+<ul>
+<li>
+<p>Avoid crawling irrelevant content by excluding one or more URLs. This also helps to reduce the use of server resources and network traffic, and to increase the relevance of search results.
+</p>
+</li><li>
+<p>Crawl links on the URL without crawling the URL itself. This option is useful for sites with links of relevant content when the page containing the links does not contain relevant information.</p>
+</li><li>
+<p>Enable complex URLs to be crawled. This option crawls URLs that contain a query parameter specified with a question mark. Depending upon the site, these URLs might or might not include relevant content. Because complex URLs can often redirect to irrelevant
+ sites, it is a good idea to enable this option on only sites where the content available from complex URLs is known to be relevant.</p>
+</li><li>
+<p>Enable content on SharePoint sites to be crawled as HTTP pages. This option enables the index server to crawl SharePoint sites that are behind a firewall or in scenarios in which the site being crawled restricts access to the Web service used by the crawler.</p>
+</li><li>
+<p>Specify whether to use the default content access account, a different content access account, or a client certificate for crawling the specified URL.&nbsp;</p>
+</ion is useful for sites with links of relevant content when the page containing the links does not contain relevant information.</p>
+</li><li>
+<p>Enable complex URLs to be crawled. This option crawls URLs that contain a query parameter specified with a question mark. Depending upon the site, these URLs might or might not include relevant content. Because complex URLs can often redirect to irrelevant
+ sites, it is a good idea to enable this option on only sites where the content available from complex URLs is known to be relevant.</p>
+</li><li>
+<p>Enable content on SharePoint sites to be crawled as HTTP pages. This option enables the index server to crawl SharePoint sites that are behind a firewall or in scenarios in which the site being crawled restricts access to the Web service used by the crawler.</p>
+</li><li>
+<p>Specify whether to use the default content access account, a different content access account, or a client certificate for crawling the specified Uli></ul>
+</div>
+<p>Crawl rules apply simultaneously to all content sources in the SSP.&nbsp;</p>
+<p>Often, most of the content for a particular site address is relevant, but not a specific subsite or range of sites below that site address. By selecting a focused combination of URLs for which to create crawl rules that exclude unneeded items, shared services
+ administrators can maximize the relevance of the content in the index while minimizing the impact on crawling performance and the size of search databases. Creating crawl rules to exclude URLs is particularly useful when planning start addresses for external
+ content, the impact on resource usage of which is not under the control of people in your organization.
+</p>
+<p>When creating a crawl rule, you can use standard wildcard characters in the path. For example:</p>
+<ul>
+<li>
+<p>http://server1/folder* contains all Web resources with a URL that starts with http://server1/folder.</p>
+</li><li>
+<p>*://*.txt includes every document with the .txt file name extension.</p>
+</li></ul>
+<p>Because crawling content consumes resources and bandwidth, it is better to include a smaller amount of content that you know is relevant than a larger amount of content that might be irrelevant. After the initial deployment, you can review the query and
+ crawl logs and adjust content sources and crawl rules to be more relevant and include more content.&nbsp;&nbsp;</p>
+<h3 class="subHeading"><a name="Specify_a_different_content_access_account"></a>Specify a different content access account</h3>
+<div class="subSection">
+<p>For crawl rules that include content, administrators have the option of changing the content access account for the rule. The default content access account is used unless another account is specified in a crawl rule. The main reason to use a different content
+ access account for a crawl rule is that the default content access account does not have access to all start addresses. For those start addresses, you can create a crawl rule and specify an account that does have access.
+</p>
+</div>
+<p>Ensure that the domain account used for the default content access account or any other content access account is not the same domain account that is used by an application pool associated with any Web application you crawl. Doing so can cause unpublished
+ content in SharePoint sites and minor versions of files (history) in SharePoint sites to be crawled and indexed.&nbsp;</p>
+<h2 class="heading"><a name="Plan_search_settings_that_are_managed_at_the_farm_level"></a>Plan search settings that are managed at the farm level</h2>
+<div id="sectionSection7" class="seeAlsoNoToggleSection">
+<p>In addition to the settings that are configured at the SSP level, several settings that are managed at the farm level affect how content is crawled. Consider the following farm-level search settings while planning for crawling:
+</p>
+<ul>
+<li>
+<p><strong>Contact e-mail address:</strong> Crawling content affects the resources of the servers that are being crawled. Before you can crawl content, you must provide in the configuration settings the e-mail address of the person in your organization whom
+ administrators can contact in the event that the crawl adversely affects their servers. This e-mail address appears in logs for administrators of the servers being crawled so that those administrators can contact someone if the impact of crawling on their
+ performance and bandwidth is too great, or if other issues occur.</p>
+<p>The contact e-mail address should belong to a person who has the necessary expertise and availability to respond quickly to requests. Alternatively, you can use a closely monitored distribution-list alias as the contact e-mail address. Regardless of whether
+ the content crawled is stored internally to the organization or not, quick response time is important.</p>
+</li><li>
+<p><strong>Proxy server settings:</strong> You can choose whether to use a proxy server when crawling content. The proxy server to use depends upon the topology of your Office SharePoint Server 2007 deployment and the architecture of other servers in your organization.</p>
+</li><li>
+<p><strong>Time-out settings:</strong> The time-out settings are used to limit the time that the search server waits while connecting to other services.</p>
+</li><li>
+<p><strong>SSL setting:</strong> The Secure Sockets Layer (SSL) setting determines whether the SSL certificate must exactly match to crawl content.&nbsp;</p>
+</li></ul>
+</div>
+<h2 class="heading"><a name="Indexing_content_in_different_languages"></a>Indexing content in different languages</h2>
+<div id="sectionSection8" class="seeAlsoNoToggleSection">
+<p>When crawling content, the crawler determines each individual word in the content it finds. Languages that have words separated by spaces make it relatively easy for the crawler to distinguish each word. In other languages, finding the boundary between words
+ can be more complex.</p>
+<p>Office SharePoint Server 2007 provides word breakers and stemmers by default to help crawl and index content in many languages. Word breakers find word boundaries in full-text indexed data, while stemmers conjugate verbs.</p>
+<p>If you are crawling any of the languages in the article <a href="http://social.technet.microsoft.com/wiki/contents/articles/word-breakers-and-stemmers-by-language-in-office-sharepoint-server-2007.aspx">
+Word breakers and stemmers by language in Office SharePoint Server 2007</a>, Office SharePoint Server 2007 automatically uses the appropriate word breaker and stemmer for that language. An asterisk (*) indicates that the stemming feature is on by default.&nbsp;</p>
+</div>
+<p>When the crawler indexes content for a language that is not supported, the neutral breaker is used. If the neutral breaker does not give you the results you expect, you can try third-party solutions that work with Office SharePoint Server 2007.</p>
+<p>As a best practice, be sure that you install the appropriate word breaker and stemmer for each of the languages that you need to support. Word breakers and stemmers must be installed on all of the servers that are running the Office SharePoint Server Search
+ service. </p>
+<p>For more information about word breakers and stemmers, see <a href="http://technet.microsoft.com/en-us/library/cc262055.aspx" id="ctl00_MTCS_main_ctl37">
+<span style="color:#0033cc;">Plan for multilingual sites</span></a>.&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+07 automatically uses the appropriate word breaker and stemmer for that language. An asterisk (*) indicates that the stemming feature is on by default.&nbsp;</p>
+</div>
+<p>When the crawler indexes content for a language that is not supported, the neutral breaker is used. If the neutral breaker does not give you the results you expect, you can try third-party solutions that work with Office SharePoint Server 2007.</p>
+<p>As a best practice<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

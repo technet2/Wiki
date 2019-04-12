@@ -1,0 +1,107 @@
+---
+layout: default
+title: AD FS 2.0&#58; The AD FS 2.0 Windows Service Fails to Start, Event 102 and 220 Logged - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div>
+<h2 class="subHeading"><a name="Symptoms"></a>Symptoms</h2>
+<div class="section">
+<ul>
+<li>Starting <span id="#h3" class="KeywordHighlight">AD FS 2.0</span> Windows Service fails
+</li></ul>
+<p>&nbsp;</p>
+<p>From the Services console:</p>
+<p>&quot;Windows could not start the <span id="#h4" class="KeywordHighlight">AD FS 2.0</span> Windows Service service on Local Computer.</p>
+<p>Error 1064: An exception occurred in the service when handling the control request.&quot;</p>
+<p>&nbsp;</p>
+<p>From the command line:</p>
+<p>&quot;The <span id="#h5" class="KeywordHighlight">AD FS 2.0</span> Windows Service service could not be started.</p>
+<p>A system error has occurred.</p>
+<p>An exception occurred in the service when handling the control request.&quot;</p>
+<p>&nbsp;</p>
+<p>During execution of FsConfig.exe:</p>
+<p>&quot;Failed: An error occurred while trying to perform the configuration task: Unable to start the
+<span id="#h6" class="KeywordHighlight">AD FS 2.0</span> Windows Service. Check Event Viewer for details.&quot;</p>
+<p>&nbsp;</p>
+<p>The following 2 events are logged in <span id="#h7" class="KeywordHighlight">AD FS 2.0</span> Eventing:</p>
+<p>Log Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span id="#h8" class="KeywordHighlight">AD FS 2.0</span> Eventing/Admin<br />
+Source:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span id="#h9" class="KeywordHighlight">AD FS 2.0</span> Eventing<br />
+Date:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 11/30/2009 11:06:33 AM<br />
+Event ID:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 102<br />
+Task Category: None<br />
+Level:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Error<br />
+Keywords:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AD FS<br />
+User:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NETWORK SERVICE<br />
+Computer:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GB2ResourceSTS.treyresearch.net<br />
+Description:<br />
+There was an error in enabling endpoints of Federation Service. Fix configuration errors using PowerShell cmdlets and restart the Federation Service.
+</p>
+<p>Additional Data <br />
+Exception details: <br />
+System.UriFormatException: <strong>Invalid URI: The hostname could not be parsed.<br />
+</strong>&nbsp;&nbsp; at System.Uri.CreateThis(String uri, Boolean dontEscape, UriKind uriKind)<br />
+&nbsp;&nbsp; at System.ServiceModel.ServiceHost.AddServiceEndpoint(Type implementedContract, Binding binding, String address, Uri listenUri)<br />
+&nbsp;&nbsp; at System.ServiceModel.ServiceHost.AddServiceEndpoint(Type implementedContract, Binding binding, String address)<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.Policy.PolicyServer.Service.PolicyServiceHost.ConfigureWCF()<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SecurityTokenService.MSISConfigurableServiceHost.Configure()<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.Policy.PolicyServer.Service.PolicyServiceHost.Create()<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SecurityTokenService.STSService.CreateAdministrationService(ServiceHostManager serviceHostManager)<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SecurityTokenService.STSService.StartAdministrationService()<br />
+&nbsp;&nbsp; at Microsoft.IdentityServer.Service.SecurityTokenService.STSService.OnStartInternal(Boolean requestAdditionalTime)</p>
+<p>-------------------------------------------------------------------------------------</p>
+<p>Log Name:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span id="#h10" class="KeywordHighlight">AD FS 2.0</span> Eventing/Admin<br />
+Source:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span id="#h11" class="KeywordHighlight">AD FS 2.0</span> Eventing<br />
+Date:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 11/30/2009 11:06:33 AM<br />
+Event ID:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 220<br />
+Task Category: None<br />
+Level:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Error<br />
+Keywords:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AD FS<br />
+User:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NETWORK SERVICE<br />
+Computer:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GB2ResourceSTS.treyresearch.net<br />
+Description:<br />
+The Federation Service configuration could not be loaded correctly from the AD FS configuration database.
+</p>
+<p>Additional Data <br />
+Error:&nbsp; <br />
+<strong>Invalid URI: The hostname could not be parsed.</strong></p>
+<p>-------------------------------------------------------------------------------------</p>
+<p>&nbsp;</p>
+<ul>
+<li>You will also find that if you try to execute FsConfigWizard.exe, you will get stuck on the &quot;Specify the Federation Service Name&quot; step without the ability to click Next or specify another SSL certificate.
+</li></ul>
+<p>&nbsp;</p>
+</div>
+</div>
+<div>
+<h2 class="subHeading"><a name="Cause"></a>Cause</h2>
+<div class="section">
+<ul>
+<li>The Federation Service parses the Federation Service name (hostname) from the SSL certificate configured for the default website. The service fails to start if the certificate you have bound to the website contains a subject and/or SAN which is not a valid
+ Federation Service name. </li></ul>
+</div>
+</div>
+<div>
+<h2 class="subHeading"><a name="Resolution"></a>Resolution</h2>
+<div class="section">
+<ul>
+<li>Bind an SSL certificate to the default website which has a valid Federation Service name and then run the initial configuration again.
+</li></ul>
+</div>
+</div>
+<div>
+<h2 class="subHeading"><a name="More_Information"></a>More Information</h2>
+<div class="section">
+<ul>
+<li>The FsConfig.exe utility has a /federationservicename parameter which you would think might get around this problem, but it will still fail if you try to use the parameter while using an SSL certificate with an invalid subject and/or SAN. It performs a
+ check to see that the federationservicename you specified matches the subject name of the SSL certificate. It fails with the following error:
+</li></ul>
+<p>&quot;The following error occurred: The Federation Service name specified with the parameter federationservicename and the Subject name in the SSL certificate do not match.&quot;</p>
+</div>
+</div>
+
+</div>
+    
+    

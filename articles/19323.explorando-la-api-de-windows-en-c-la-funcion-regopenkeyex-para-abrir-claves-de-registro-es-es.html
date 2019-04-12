@@ -1,0 +1,272 @@
+---
+layout: default
+title: Explorando la API de Windows en C++&#58; La función RegOpenKeyEx para abrir claves de Registro(es-ES) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Explorando_resultados">Explorando resultados</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+Extraído del post original en <a target="_blank" href="http://geeks.ms/blogs/checho/archive/2013/08/21/explorando-la-api-de-windows-en-c-la-funci-243-n-regopenkeyex-para-abrir-claves-de-registro.aspx">
+mi blog.</a><br />
+<br />
+Volviendo a lo que espero sea una larga serie de artículos sobre la <strong>API de Windows</strong>, hemos visto al detalle ya cómo utilizar las funciones de
+<a target="_blank" href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms724844(v=vs.85).aspx">
+RegCreateKeyEx</a> para crear una <a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/19321.explorando-la-api-de-windows-en-c-la-funcion-regopenkeyex-para-abrir-claves-de-registro-es-es.aspx">
+sub-clave de registro</a> y <a target="_blank" href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms724923(v=vs.85).aspx">
+RegSetValueEx</a> para <a href="http://social.technet.microsoft.com/wiki/contents/articles/19322.explorando-la-api-de-windows-en-c-mi-primer-valor-de-registro-utilizando-las-funciones-regcreatekeyex-y-regsetvalueex.aspx">
+</a><a target="_blank" href="http://geeks.ms/blogs/checho/archive/2013/08/04/explorando-la-api-de-windows-en-c-mi-primer-valor-de-registro-utilizando-las-funciones-regcreatekeyex-y-regsetvalueex.aspx">establecer un tipo de valor</a> e indicarle su contenido.
+ Por supuesto, en todas he tocado <a target="_blank" href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms724837(v=vs.85).aspx">
+RegCloseKey</a> para cerrar la operación en la clave o sub-clave de Registro.
+<p style="text-align:justify;">Si fuéramos a resumir, ya sabemos crear una sub-clave de registro, utilizar un apuntador para establecer un valor y cerrarla pero falta algo muy importante en el orden natural que debería tener, y es básicamente abrir la clave
+ para funcionar con ella. Aunque Windows ya lo hace de forma nativa sobre las principales claves (HKCU, HKLM, e.t.c), abrir una clave de producto nos facilitará el acceso para escribir directamente un valor, en vez de tener que crear la sub-clave nosotros mismos.
+ A continuación entonces, pasaré a describir de la misma forma cómo debemos declarar las variables de
+<strong>RegOpenKeyEx</strong> y para que haya algo de valor, unir esta función con
+<strong>RegCreateKeyEx </strong>y <strong>RegSetValueEx</strong>.</p>
+<h2 style="text-align:justify;"><a name="La_función_RegOpenKeyEx"></a><a name="La_función_RegOpenKeyEx"></a><a name="La_función_RegOpenKeyEx"></a><a name="La_función_RegOpenKeyEx"></a><a name="La_función_RegOpenKeyEx"></a><a name="La_función_RegOpenKeyEx"></a>La función RegOpenKeyEx</h2>
+<p style="text-align:justify;">Para poder utilizar correctamente esta función, es necesario realizar las siguientes declaraciones:</p>
+<p style="text-align:justify;"><strong>HKEY hKey:</strong> Como siempre, aquí se debe declarar un apuntador a una clave que esté abierta. Puede ser retornada por
+<strong>RegCreateKeyEx</strong>, o bien utilizar algunas de las que están predefinidas:</p>
+<p><strong><span style="text-decoration:underline;">HKEY_CLASSES_ROOT <br />
+HKEY_CURRENT_CONFIG <br />
+HKEY_CURRENT_USER <br />
+HKEY_LOCAL_MACHINE <br />
+HKEY_USERS</span></strong></p>
+<p style="text-align:justify;"><strong>LPCTSTR lpSubKey:</strong> Aquí en este caso va el nombre de la sub-clave que se va a abrir. En caso de que deseemos utilizar algunas de las claves predefinidas como HKCU, es necesario declararlo como NULL para que no tome
+ la sub-clave.</p>
+<p style="text-align:justify;"><strong>DWORD ulOptions:</strong> Tal cual funciona la variable de
+<strong>Reserved</strong> en las anteriores funciones, esta es la equivalente para
+<strong>RegOpenKeyEx</strong>, por lo tanto debe ser cero <strong>(0).</strong></p>
+<p style="text-align:justify;"><strong>REGSAM samDesired:</strong> Como en todas las otras declaraciones, aquí debemos especificar el acceso que deseamos tener sobre la clave que se va a abrir. Hay que tener presente que como lo indica la documentación, el acceso
+ puede fallar si los descriptores de seguridad que tiene la clave no lo permite. </p>
+<p style="text-align:justify;"><strong>PHKEY phkResult:</strong> Es el apuntador a la variable que va a recibir el apuntador de la clave que se abrió.
+</p>
+<p style="text-align:justify;">Como siempre, en caso de que la operación sea exitosa, se retornará un
+<strong>ERROR_SUCCESS</strong>. Es necesario utilizar una variable de tipo<strong> long</strong> para recibir y funcionar con el resultado.</p>
+<p style="text-align:justify;">Ahora, digamos que deseo abrir una sub-clave llamada
+<strong><span style="text-decoration:underline;">DemoKey</span>,</strong> ubicada en la clave
+<span style="text-decoration:underline;">HKCU</span>, es decir: <strong>HKEY_CURRENT_USER\DemoKey.</strong></p>
+<p style="text-align:justify;">La declaración primero que todo sería entonces:</p>
+<pre class="code"><span style="background-color:white;color:green;">//Declarando variables para RegOpenKeyEx
+        </span><span style="background-color:white;color:#2b91af;">HKEY </span><span style="background-color:white;color:black;">hKey = </span><span style="background-color:white;color:#6f008a;">HKEY_CURRENT_USER</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">LPCTSTR </span><span style="background-color:white;color:black;">lpSubKey = L</span><span style="background-color:white;color:#a31515;">&quot;DemoKey&quot;</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">ulOptions = 0;
+        </span><span style="background-color:white;color:#2b91af;">REGSAM </span><span style="background-color:white;color:black;">samDesired = </span><span style="background-color:white;color:#6f008a;">KEY_READ </span><span style="background-color:white;color:black;">| </span><span style="background-color:white;color:#6f008a;">KEY_WRITE</span><ite;color:#2b91af;">HKEY </span><span style="background-color:white;color:black;">hKey = </span><span style="background-color:white;color:#6f008a;">HKEY_CURRENT_USER</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">LPCTSTR </span><span style="background-color:white;color:black;">lpSubKey = L</span><span style="background-color:white;color:#a31515;">&quot;DemoKey&quot;</span><span style="bspan style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">HKEY </span><span style="background-color:white;color:black;">phkResult;</span></pre>
+<p style="text-align:justify;">Cuando se llame a la función, bastará con especificar todas variables que necesita:</p>
+<pre class="code"><span style="background-color:white;color:green;">//Llamando a la función
+        </span><span style="background-color:white;color:blue;">long </span><span style="background-color:white;color:black;">Result = </span><span style="background-color:white;color:#6f008a;">RegOpenKeyEx</span><span style="background-color:white;color:black;">(hKey, lpSubKey, ulOptions,
+                                   samDesired, &amp;phkResult);</span></pre>
+<p style="text-align:justify;">Por último, para mostrar algún resultado sobre la operación, comprobaríamos lo que devuelva la variable de
+<strong>Result,</strong> así:</p>
+<pre class="code"><span style="background-color:white;color:blue;">if </span><span style="background-color:white;color:black;">(Result == </span><span style="background-color:white;color:#6f008a;">ERROR_SUCCESS</span><span style="background-color:white;color:black;">)
+    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">, L</span><span style="background-color:white;color:#a31515;">&quot;La clave se abrió correctamente.&quot;</span><span style="background-color:white;color:black;">,
+                  L</span><span style="background-color:white;color:#a31515;">&quot;Abriendo clave&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);</span></pre>
+<pre class="code"><span style="background-color:white;color:blue;">else
+    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">, L</span><span style="background-color:white;color:#a31515;">&quot;Error al abrir la clave&quot;</span><span style="background-color:white;color:black;">,
+               L</span><span style="background-color:white;color:#a31515;">&quot;Abriendo clave&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONERROR</span><span style="background-color:white;color:black;">);</span></pre>
+<p style="text-align:justify;">Si recordamos bien, la función de <a target="_blank" href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms724844(v=vs.85).aspx">
+RegCreateKeyEx</a> también abre o crea la sub-clave dependiendo de su existencia. Esta actúa igual, pero sólo abre o no abre. Por supuesto, en el mini ejemplo anterior solo estamos contemplando la posibilidad de que haya abierto, de lo contrario, sin importarnos
+ la razón, mostraremos el mensaje. En un ambiente más controlado, tendríamos que saber que manejar varios errores, como el que la Clave o Sub-Clave no se encuentre, tal como en este caso lo indica
+<a target="_blank" href="http://technet.microsoft.com/es-es/sysinternals/bb896645">
+Process Monitor</a>:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_43A8FF6F.png"><img src="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_thumb_5F00_6C476B76.png" alt="image" title="image" height="61" width="496" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<h2 style="text-align:justify;"><a name="De_la_teoría_a_la_práctica_RegOpenKeyEx_RegCreateKeyEx_y_RegSetValueEx"></a><a name="De_la_teoría_a_la_práctica_RegOpenKeyEx_RegCreateKeyEx_y_RegSetValueEx"></a><a name="De_la_teoría_a_la_práctica_RegOpenKeyEx_RegCreateKeyEx_y_RegSetValueEx"></a><a name="De_la_teoría_a_la_práctica_RegOpenKeyEx_RegCreateKeyEx_y_RegSetValueEx"></a><a name="De_la_teoría_a_la_práctica_RegOpenKeyEx_RegCreateKeyEx_y_RegSetValueEx"></a><a name="De_la_teoría_a_la_práctica_RegOpenKeyEx_RegCreateKeyEx_y_RegSetValueEx"></a>De
+ la teoría a la práctica: RegOpenKeyEx, RegCreateKeyEx y RegSetValueEx</h2>
+<p style="text-align:justify;">Muy bien, para que esta serie de artículos tengan un poco más de sentido, y podamos aprender de
+<strong>Windows Internals,</strong> plantearé un escenario más elaborado donde se pueda combinar las funciones de
+<strong>RegOpenKeyEx</strong>, <strong>RegCreateKeyEx </strong>y <strong>RegSetValueEx
+</strong>ya vistas.</p>
+<p style="text-align:justify;">Tomaremos como base la clave de HKEY_CURRENT_USER, y lo que haremos será básicamente abrir la sub-clave DemoKey, si se puede abrir, crearemos el valor DemoValue pero si la sub-clave no se puede abrir, crearemos la clave con RegCreateKeyEx
+ y posteriormente estableceremos el mismo valor de DemoValue.</p>
+<p style="text-align:justify;">Empecemos con lo primordial, y es el mismo método principal, con su respectiva cabecera:</p>
+<pre class="code"><span style="background-color:white;color:blue;">#include </span><span style="background-color:white;color:#a31515;">&lt;Windows.h&gt;
+
+</span><span style="background-color:white;color:blue;">int </span><span style="background-color:white;color:#6f008a;">WINAPI </span><span style="background-color:white;color:black;">WinMain(</span><span style="background-color:white;color:#2b91af;">HINSTANCE </span><span style="background-color:white;color:gray;">hInstance</span><span style="background-color:white;color:black;">,
+    </span><span style="background-color:white;color:#2b91af;">HINSTANCE </span><span style="background-color:white;color:gray;">hPrevInstance</span><span style="background-color:white;color:black;">,
+    </span><span style="background-color:white;color:#2b91af;">LPSTR </span><span style="background-color:white;color:gray;">lpCmdLine</span><span style="background-color:white;color:black;">,
+    </span><span style="background-color:white;color:blue;">int </span><span style="background-color:white;color:gray;">nCmdShow</span><span style="background-color:white;color:black;">){</span></pre>
+<pre class="code"><span style="background-color:white;color:black;">}</span></pre>
+<p style="text-align:justify;">En conjunto con la declaración anterior para <strong>
+RegOpenKeyEx</strong>, es necesario agregar las correspondientes a <strong>RegCreateKeyEx
+</strong>y <strong>RegSetValueEx:</strong></p>
+<pre class="code"><span style="background-color:white;color:green;">//Declarando variables para RegCreateKeyEx
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">Reserved = 0;
+        </span><span style="background-color:white;color:#2b91af;">LPTSTR </span><span style="background-color:white;color:black;">lpClass = </span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">dwOptions = </span><span style="background-color:white;color:#6f008a;">REG_OPTION_NON_VOLATILE</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">LPSECURITY_ATTRIBUTES </span><span style="background-color:white;color:black;">lpSecurityAttributes = </span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">lpdwDisposition;</span></pre>
+<pre class="code"><span style="background-color:white;color:green;">//Declarando variables para RegSetValueEx
+        </span><span style="background-color:white;color:#2b91af;">LPCTSTR </span><span style="background-color:white;color:black;">lpValueName = L</span><span style="background-color:white;color:#a31515;">&quot;DemoValue&quot;</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">dwType = </span><span style="background-color:white;color:#6f008a;">REG_DWORD</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">lpData = 1;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">cbData = </span><span style="background-color:white;color:blue;">sizeof</span><span style="background-color:white;color:black;">(lpData);</span></pre>
+<p style="text-align:justify;"><strong>*Nota:</strong> Cabe recordar que estas declaraciones están explicadas al detalle en los dos artículos anteriores.</p>
+<p style="text-align:justify;">Tal cual lo hicimos antes, lo primero es buscar que la clave esté o no abierta utilizando la función
+<strong>RegOpenKeyEx:</strong></p>
+<pre class="code"><span style="background-color:white;color:green;">//Llamando a la función
+        </span><span style="background-color:white;color:blue;">long </span><span style="background-color:white;color:bround-color:white;color:black;">;
+        </span><span style="background-color:white;color:#2b91af;">DWORD </span><span style="background-color:white;color:black;">lpData = 1;
+        </span><span style="background-colorlack;">Result = </span><span style="background-color:white;color:#6f008a;">RegOpenKeyEx</span><span style="background-color:white;color:black;">(hKey, lpSubKey, ulOptions,
+                                   samDesired, &amp;phkResult);</span></pre>
+<p style="text-align:justify;">Después haremos uso de un <strong>switch</strong> para controlar diferentes retornos en el resultado de la operación como
+<span style="text-decoration:underline;">Encontrado</span>, <span style="text-decoration:underline;">
+No encontrado </span>o <span style="text-decoration:underline;">Acceso denegado</span>.</p>
+<p style="text-align:justify;">Si la operación devuelve un <strong>ERROR_SUCCESS</strong>, entonces procederemos a crear el valor, así que ese estará como primer “<span style="text-decoration:underline;">case</span>”; si la operación devuelve un
+<strong>ERROR_FILE_NOT_FOUND</strong>, la clave no estará, así que procederemos a crearla con
+<strong>RegCreateKeyEx</strong>; si la operación devuelve un <strong>ERROR_ACCESS_DENIED</strong>, no se tendrán los permisos suficientes para efectuarla, así que solo lo indicaremos desde un mensaje y por último, si no es ninguna de todas las anteriores (“default”),
+ devolveremos un error genérico como los de Windows.</p>
+<p style="text-align:justify;"><strong>*Nota:</strong> Es necesario claro está, validar también los resultados internos de cada “case”.</p>
+<p style="text-align:justify;">En este orden de ideas, el código quedaría:</p>
+<pre class="code"><span style="background-color:white;color:blue;">switch </span><span style="background-color:white;color:black;">(Result)
+        {
+        </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_SUCCESS</span><span style="background-color:white;color:black;">:
+
+            </span><span style="background-color:white;color:green;">//La clave existe.
+            </span><span style="background-color:white;color:black;">R2 = </span><span style="background-color:white;color:#6f008a;">RegSetValueEx</span><span style="background-color:white;color:black;">(phkResult, lpValueName, Reserved,
+                dwType, (</span><span style="background-color:white;color:blue;">const </span><span style="background-color:white;color:#2b91af;">BYTE </span><span style="background-color:white;color:black;">*) &amp;lpData, cbData);
+
+            </span><span style="background-color:white;color:green;">//Validar que se haya creado
+            </span><span style="background-color:white;color:blue;">if </span><span style="background-color:white;color:black;">(R2 == </span><span style="background-color:white;color:#6f008a;">ERROR_SUCCESS</span><span style="background-color:white;color:black;">)
+            {
+                </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                    L</span><span style="background-color:white;color:#a31515;">&quot;La clave existía, se creó el valor.&quot;</span><span style="background-color:white;color:black;">,
+                    L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+
+            }
+                
+            </span><span style="background-color:white;color:blue;">else if </span><span style="background-color:white;color:black;">(R2 == </span><span style="background-color:white;color:#6f008a;">ERROR_ACCESS_DENIED</span><span style="background-color:white;color:black;">)
+            {
+                </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                  L</span><span style="background-color:white;color:#a31515;">&quot;La clave existía, pero hay acceso denegado&quot;</span><span style="background-color:white;color:black;">,
+                    L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONERROR</span><span style="background-color:white;color:black;">);
+
+            }
+                
+            </span><span style="background-color:white;color:blue;">else
+            </span><span style="background-color:white;color:black;">{
+                </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">, L</span><span style="background-color:white;color:#a31515;">&quot;Error creando el valor&quot;</span><span style="background-color:white;color:black;">,
+                    L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONERROR</span><span style="background-color:white;color:black;">);
+
+            }
+                
+            </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">; </span><span style="background-color:white;color:green;">//Fin primer case
+        </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_FILE_NOT_FOUND</span><span style="background-color:white;color:black;">:
+
+            </span><span style="background-color:white;color:green;">//La clave no existe
+            </span><span style="background-color:white;color:black;">R2 = </span><span style="background-color:white;color:#6f008a;">RegCreateKeyEx</span><span style="background-color:white;color:black;">(hKey, lpSubKey, Reserved,
+                lpClass, dwOptions, samDesired,<br />                lpSecurityAttributes,
+                &amp;phkground-color:white;color:#6f008a;">MB_ICONERROR</span><span style="background-color:white;color:black;">);
+
+            }
+                
+            </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">; </span><span style="background-color:white;color:green;">//Fin primer case
+        </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_FILE_NOT_FOUND</span><span style="background-color:white;color:black;">:
+
+   kResult, &amp;lpdwDisposition);
+
+            </span><span style="background-color:white;color:blue;">if </span><span style="background-color:white;color:black;">(lpdwDisposition == </span><span style="background-color:white;color:#6f008a;">REG_CREATED_NEW_KEY</span><span style="background-color:white;color:black;">)
+            {
+                R2 = </span><span style="background-color:white;color:#6f008a;">RegSetValueEx</span><span style="background-color:white;color:black;">(phkResult, lpValueName,<br />                    Reserved,dwType, (</span><span style="background-color:white;color:blue;">const </span><span style="background-color:white;color:#2b91af;">BYTE </span><span style="background-color:white;color:black;">*) &amp;lpData,<br />                    cbData);
+
+                </span><span style="background-color:white;color:blue;">switch </span><span style="background-color:white;color:black;">(R2)
+                {
+                </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_SUCCESS</span><span style="background-color:white;color:black;">:
+                    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                       L</span><span style="background-color:white;color:#a31515;">&quot;La clave no existía, se creó con valor.&quot;</span><span style="background-color:white;color:black;">,
+                        L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+                    </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+                </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_ACCESS_DENIED</span><span style="background-color:white;color:black;">:
+                    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                        L</span><span style="background-color:white;color:#a31515;">&quot;Se creó clave, acceso denegado al valor&quot;</span><span style="background-color:white;color:black;">,
+                        L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+                    </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+                </span><span style="background-color:white;color:blue;">default</span><span style="background-color:white;color:black;">:
+                    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                        L</span><span style="background-color:white;color:#a31515;">&quot;Se creó clave, error al crear valor&quot;</span><span style="background-color:white;color:black;">,
+                        L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+                    </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+
+                }
+                
+    
+            }
+            </span><span style="background-color:white;color:green;">//Aquí no debe llegar si ya estaba, pero se valida.
+            </span><span style="background-color:white;color:blue;">else if </span><span style="background-color:white;color:black;">(lpdwDisposition == </span><span style="background-color:white;color:#6f008a;">REG_OPENED_EXISTING_KEY</span><span style="background-color:white;color:black;">)
+            {
+                R2 = </span><span style="background-color:white;color:#6f008a;">RegSetValueEx</span><span style="background-color:white;color:black;">(phkResult, lpValueName,<br />                    Reserved,dwType, (</span><span style="background-color:white;color:blue;">const </span><span style="background-color:white;color:#2b91af;">BYTE </span><span style="background-color:white;color:black;">*) &amp;lpData,<br />                    cbData);
+                </span><span style="background-color:white;color:blue;">switch </span><span style="background-color:white;color:black;">(R2)
+                {
+                </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_SUCCESS</span><span style="background-color:white;color:black;">:
+                    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                        L</span><span style="background-color:white;color:#a31515;">&quot;Clave modificada, valor creado&quot;</span><span style="background-color:white;color:black;">,
+                        L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+                    </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+                </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_ACCESS_DENIED</span><span style="background-color:white;color:black;">:
+                    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                       L</span><span style="background-color:white;color:#a31515;">&quot;Clave modificada, acceso denegado al valor&quot;</span><span style="background-color:white;color:black;">,
+                       L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+                    </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+                </span><span style="background-color:white;color:blue;">default</span><span style="background-color:white;color:black;">:
+                    </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                        L</span><span style="background-color:white;color:#a31515;">&quot;Clave modifcada, error al crear valor.&quot;</span><span style="background-color:white;color:black;">,
+                        L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONINFORMATION</span><span style="background-color:white;color:black;">);
+                    </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+
+                }
+
+                
+            }
+            </span><span style="background-color:white;color:blue;">else </span><span style="background-color:white;color:green;">//Fin de REG_OPENED_EXISTING_KEY 
+            </span><span style="background-color:white;color:black;">{
+                </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">, L</span><span style="background-color:white;color:#a31515;">&quot;Error creando la clave.&quot;</span><span style="background-color:white;color:black;">,
+                    L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONERROR</span><span style="background-color:white;color:black;">);
+            }
+
+            </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">; </span><span style="background-color:white;color:green;">//Fin         </span><span style="background-color:white;color:black;">{
+                </s del segundo case
+
+        </span><span style="background-color:white;color:blue;">case </span><span style="background-color:white;color:#6f008a;">ERROR_ACCESS_DENIED</span><span style="background-color:white;color:black;">:
+
+            </span><span style="background-color:white;color:green;">//Acceso denegado al abrir la clave
+            </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">,<br />                L</span><span style="background-color:white;color:#a31515;">&quot;No se abrió la clave, Acceso Denegado&quot;</span><span style="background-color:white;color:black;">,
+                L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONERROR</span><span style="background-color:white;color:black;">);
+            </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">;
+        </span><span style="background-color:white;color:blue;">default</span><span style="background-color:white;color:black;">:
+
+            </span><span style="background-color:white;color:green;">//Otro tipo de error no contemplado
+            </span><span style="background-color:white;color:#6f008a;">MessageBox</span><span style="background-color:white;color:black;">(</span><span style="background-color:white;color:#6f008a;">NULL</span><span style="background-color:white;color:black;">, L</span><span style="background-color:white;color:#a31515;">&quot;Error al abrir la clave.&quot;</span><span style="background-color:white;color:black;">,
+                L</span><span style="background-color:white;color:#a31515;">&quot;Explorando la API&quot;</span><span style="background-color:white;color:black;">, </span><span style="background-color:white;color:#6f008a;">MB_ICONEXCLAMATION</span><span style="background-color:white;color:black;">);
+
+            </span><span style="background-color:white;color:blue;">break</span><span style="background-color:white;color:black;">; </span><span style="background-color:white;color:green;">//Fin de default
+            
+        </span><span style="background-color:white;color:black;">} </span><span style="background-color:white;color:green;">//Fin del switch</span></pre>
+<p style="text-align:justify;">Independiente del swith, es necesario cerrar la operación en la sub-clave con RegCloseKey:</p>
+<pre class="code"><span style="background-color:white;color:green;">//Cierra operación en Registro
+        </span><span style="background-color:white;color:black;">RegCloseKey(phkResult);</span></pre>
+<h2 style="text-align:justify;"><a name="Explorando_resultados"></a>Explorando resultados</h2>
+<p style="text-align:justify;">Saliendo del lado desarrollador, <a target="_blank" href="http://technet.microsoft.com/es-es/sysinternals/bb896645">
+Process Monitor</a> nos puede ayudar a explorar el comportamiento en dos de los casos más comunes dentro del swith, que se deba crear todo, o solo modificar, es decir, entrar al primer o segundo case.</p>
+<p style="text-align:justify;">- Si el resultado es <strong>ERROR_FILE_NOT_FOUND</strong>, Process Monitor lo reportaría así:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/ROP1_5F00_373D6CF7.png"><img src="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/ROP1_5F00_thumb_5F00_2D78057F.png" alt="ROP1" title="ROP1" height="138" width="514" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<p style="text-align:justify;">Tal cual se lo indicamos, la primera operación que hace se ve como
+<strong>RegOpenKey</strong>, sobre la sub-clave <strong>DemoKey</strong>, pero como tiene un resultado de
+<strong>NAME NOT FOUND</strong>, es decir, que no la encontró, pasa a llamar a<strong> RegCreateKey</strong> para escribirla, y al obtener resultado
+<strong>SUCCESS</strong>, finaliza creando el valor <strong>DemoValue</strong> con la operación
+<strong>RegSetValue.</strong> </p>
+<p style="text-align:justify;">En algún punto además, cerrará la operación también correctamente sobre la sub-clave:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_7801D40A.png"><img src="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_thumb_5F00_27BF7C8A.png" alt="image" title="image" height="46" width="479" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<p style="text-align:justify;">El mensaje para el usuario, de acuerdo a lo programado, se mostraría así:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_79D4BA82.png"><img src="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_thumb_5F00_1B53EA12.png" alt="image" title="image" height="176" width="317" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<p style="text-align:justify;">- Si el resultado por el contrario es <strong>ERROR_SUCCESS</strong>, Process Monitor lo reportaría así:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/ROP2_5F00_5877A597.png"><img src="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/ROP2_5F00_thumb_5F00_7D0BC3CC.png" alt="ROP2" title="ROP2" height="77" width="534" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<p style="tex="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_thumb_5F00_1B53EA12.png" alt="image" title="image" height="176" width="317" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<p style="text-align:justify;">- Si el resultado por el contrario es <strong>ERROR_SUCCESS</strong>, Process Monitor lo reportaría así:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/ROP2_5F00_5877A597.png"><img src=t-align:justify;">Primero, realizando la operación de <strong>RegOpenKey,</strong> intentaría abrir la sub-clave de
+<strong>DemoKey,</strong> al recibir <strong>SUCCESS,</strong> establecería la información correspondiente y llamaría ahora a la operación de
+<strong>RegSetValue</strong> para escribir el valor de <strong>DemoValue </strong>
+también con <strong>SUCCESS</strong> como resultado. </p>
+<p style="text-align:justify;">El mensaje se mostraría así:</p>
+<p style="text-align:justify;"><a href="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_0EEAE84B.png"><img src="http://geeks.ms/cfs-file.ashx/__key/CommunityServer.Blogs.Components.WeblogFiles/checho/image_5F00_thumb_5F00_7E72774F.png" alt="image" title="image" height="187" width="302" style="border-width:0px;float:none;padding-top:0px;padding-left:0px;margin-left:auto;display:block;padding-right:0px;margin-right:auto;border-style:solid;" /></a></p>
+<p style="text-align:justify;">Bastante interesante el Registro, ¿no les parece?</p>
+<p style="text-align:justify;">Para los que deseen, he subido la solución completa a una carpeta de
+<strong>SkyDrive</strong>, y la pueden descargar desde aquí:</p>
+<p style="text-align:justify;">Espero sea de utilidad. ¡Comentarios bienvenidos!</p>
+
+</div>
+    
+    

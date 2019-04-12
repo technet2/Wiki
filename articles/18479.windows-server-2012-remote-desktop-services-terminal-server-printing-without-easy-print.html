@@ -1,0 +1,83 @@
+---
+layout: default
+title: LogParser 日期相關心得筆記與分析 IIS Logs 技巧分享 (zh-TW) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>最近工作上又有機會用到 <a target="_blank" rel="nofollow" href="http://www.microsoft.com/downloads/details.aspx?FamilyID=890cd06b-abf8-4c25-91b2-f8d975cf8c07">LogParser</a> 來分析 IIS 紀錄，藉此整理一下 <a target="_blank" rel="nofollow" href="http://www.microsoft.com/downloads/details.aspx?FamilyID=890cd06b-abf8-4c25-91b2-f8d975cf8c07">LogParser</a> 對時間、日期處理的各種使用情境，以及在分析 IIS Log 時的一些小技巧。</p>
+<h3><a name="與日期時間相關的操作方法"></a>與日期時間相關的操作方法</h3>
+<p>取得系統時間 ( GMT +0000 )</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csntent-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">LogParser 日期相關心得筆記與分析 IIS Logs 技巧分享 (zh-TW)</h1>
+    
+
+    <div class="post-content user-defined-markup"><p>最近工作上又有機會用到 <a target="_blank" rel="nofollow" href="http://www.microsoft.com/downloads/details.aspx?FamilyID=890cd06b-abf8-4c25-91b2-f8d975cf8c07">LogParser</a> 來分析 IIS 紀錄，藉此整理一下 <a target="_blank" rel="nofollow" href="http://www.microsoft.com/downloads/details.aspx?FamilyID=890cd06b-abf8-4c25-91b2-f8d975cf8c07">LogParser</a> 對時間、日期處理的各種使用情境，以及在分析 IIS Log 時的一些小技巧。</p>
+<h3><a name="與日期時間相關的操作方法"></a>與harpcode" id="codeSnippet">SYSTEM_TIMESTAMP()</pre>
+</div>
+<p>取得系統本地時間 ( 若在台灣就會回傳 GMT +0800 的時間 )</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">TO_LOCALTIME(SYSTEM_TIMESTAMP())</pre>
+</div>
+<p>取得 GMT +1000 的時間</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">ADD</span>(SYSTEM_TIMESTAMP(), <span class="kwrd">TIMESTAMP</span>(<span class="str">&#39;10&#39;</span>, <span class="str">&#39;h&#39;</span>))</pre>
+</div>
+<p>取得<strong>今天的日期時間</strong>字串 （與 .NET 的 <a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/zh-tw/library/ht77y576.aspx">DateTime.ToString 方法</a> 類似）</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">TO_STRING(TO_LOCALTIME(SYSTEM_TIMESTAMP()), <span class="str">&#39;yyyy-MM-dd HH:mm:ss&#39;</span>)</pre>
+</div>
+<p>取得<strong>今天的日期</strong>字串 （與 .NET 的 <a target="_blank" rel="nofollow" href="http://msdn.microsoft.com/zh-tw/library/ht77y576.aspx">DateTime.ToString 方法</a> 類似）</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">TO_STRING(TO_LOCALTIME(SYSTEM_TIMESTAMP()), <span class="str">&#39;yyyy-MM-dd&#39;</span>)</pre>
+</div>
+<p>顯示<strong>昨天</strong>的日期時間</p>
+<p>請注意下例的 TIMESTAMP 函示，由於所有 Timestamp 是從 0000-01-01 00:00:00 開始計算的(代表0)，所以當第一個參數是傳入 2，第二個參數是 d (日期)，則代表 0000-01-02 00:00:00 這個時間點，所以這裡所換算出來的 Timestamp 數值代表 1 天的時間，然後再利用 SUB 相減函示與本地時間計算後，就是昨天的時間了！</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">SUB</span>(TO_LOCALTIME(SYSTEM_TIMESTAMP()), <span class="kwrd">TIMESTAMP</span>(<span class="str">&#39;2&#39;</span>, <span class="str">&#39;d&#39;</span>))</pre>
+</div>
+<p>顯示<strong>明天</strong>的日期時間</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">ADD</span>(TO_LOCALTIME(SYSTEM_TIMESTAMP()), <span class="kwrd">TIMESTAMP</span>(<span class="str">&#39;2&#39;</span>, <span class="str">&#39;d&#39;</span>))</pre>
+</div>
+<p>取得<strong>本月第一天</strong>的開始時間</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">SUB(<br />    TO_LOCALTIME(SYSTEM_TIMESTAMP()), <br />    TO_TIMESTAMP(TO_STRING(TO_LOCALTIME(SYSTEM_TIMESTAMP()), <span class="str">&#39;dd HH:mm:ss&#39;</span>), <span class="str">&#39;dd HH:mm:ss&#39;</span>)<br />   )</pre>
+</div>
+<p><strong>注意事項</strong></p>
+<ul>
+<li>如果你希望用「本地時間」計算日期部分，請不要用 SYSTEM_DATE()，即便你用範例所提供的 TO_LOCALTIME( SYSTEM_DATE() ) 我自己實驗的結果騎日期一樣是錯的，並非系統本地日期！</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>與 IIS 相關的技巧</strong></p>
+<p>由於 IIS Log 的日期、時間是分開兩個欄位，必須用以下語法合併</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">TO_TIMESTAMP([<span class="kwrd">date</span>], [<span class="kwrd">time</span>])</pre>
+</div>
+<p>由於預設 IIS Log 都是以 GMT 標準時間當成 Log 的紀錄，若要轉換成本地時間可用以下語法：</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet">TO_LOCALTIME(TO_TIMESTAMP([<span class="kwrd">date</span>], [<span class="kwrd">time</span>]))</pre>
+</div>
+<p>篩選出特定時間區間的 Log 紀錄</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">SELECT</span><br />    *<br /><span class="kwrd">FROM</span><br />    C:\inetpub\logs\LogFiles\W3SVC1\*.log<br /><span class="kwrd">WHERE</span><br />    TO_TIMESTAMP([<span class="kwrd">date</span>], [<span class="kwrd">time</span>])<br />    <span class="kwrd">BETWEEN</span> TO_TIMESTAMP(<span class="str">&#39;2009-11-13 00:00:00&#39;</span>, <span class="str">&#39;yyyy-MM-dd HH:mm:ss&#39;</span>)<br />    <span class="kwrd">AND</span>     TO_TIMESTAMP(<span class="str">&#39;2009-11-13 23:59:59&#39;</span>, <span class="str">&#39;yyyy-MM-dd HH:mm:ss&#39;</span>)</pre>
+</div>
+<p>讀取 IIS Log 可以不用明確指定路徑，如果要分析本機的 IIS Log 可以直接指定 [<strong>站台識別元</strong>] ( Site ID ) 或 [<strong>站台名稱</strong>] 即可載入該站台下所有 Logs&nbsp; ( 可用 * 萬用字元 )</p>
+<p><img src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/WebFarmIIS_1458B/image_9.png" alt=" " /></p>
+<p>如下範例為載入 Site ID 為 1 與 2232 以及站台名稱為 VWeb 開頭的所有站台的所有 Logs</p>
+<div class="csharpcode-wrapper" id="codeSnippetWrapper">
+<pre class="csharpcode" id="codeSnippet"><span class="kwrd">SELECT</span> * <span class="kwrd">FROM</span> &lt;1&gt;, &lt;2232&gt;, &lt;www.*.com.tw&gt;</pre>
+</div>
+<p>在 IIS 7 / IIS 7.5 如果要用這種簡易的語法必須要安裝 [<strong>IIS 6 Metabase 相容性</strong>] 才能使用：</p>
+<p><img height="252" width="367" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/LogParser/6A6058C1/image.png" alt="網頁伺服器 (IIS) :: 新增角色服務 :: 管理工具 :: IIS 6 管理相容性 :: IIS 6 Metabase 相容性" border="0" title="網頁伺服器 (IIS) :: 新增角色服務 :: 管理工具 :: IIS 6 管理相容性 :: IIS 6 Metabase 相容性" style="border:0px none;display:inline;" /> </p>
+<p><img height="387" width="447" src="http://blog.miniasp.com/image.axd?picture=WindowsLiveWriter/LogParser/57AB5F0A/image.png" alt="Windows Features: IIS Metabase and IIS 6 configuration compatibility" border="0" title="Windows Features: IIS Metabase and IIS 6 configuration compatibility" style="border:0px none;display:inline;" /></p>
+<p>&nbsp;</p>
+<p><strong>相關連結</strong></p>
+<ul>
+<li><a target="_blank" rel="nofollow" href="http://www.microsoft.com/downloads/details.aspx?FamilyID=890cd06b-abf8-4c25-91b2-f8d975cf8c07">LogParser 2.2</a></li>
+</ul></div>
+    
+    

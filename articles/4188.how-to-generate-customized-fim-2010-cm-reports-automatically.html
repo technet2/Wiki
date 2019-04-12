@@ -1,0 +1,577 @@
+---
+layout: default
+title: How to Generate Customized FIM 2010 CM Reports Automatically - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>Though FIM CM has rich built capabilities I missed two features related to Certificate Lifecycle Management reporting in my recent ILM2007 and FIM2010 deployments:
+</p>
+<ul>
+<li>Generate FIM CM reports automatically without requiring any Certificate Manager or Administrator actions.
+</li><li>The capability to specify the output of the report individually, not relying on the built in reports that come with the FIM CM set up.
+</li></ul>
+<p>The following example proposes a solution for both requirements. Hereby the solution relies on a core FIM CM &amp; SQL installation exclusively and avoids setting up additional components, such as SQL Reporting Services, which may provide even smarter solutions.
+ Reason for that is that I wasn’t allowed to use such components in my recent projects.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#The_scenario">The scenario</a></li><li class="hierarchy-item"><a href="#Design_the_report">Design the report</a></li><li class="hierarchy-item"><a href="#Develop_the_solution">Develop the solution</a></li><li class="hierarchy-item"><a href="#Automate_the_solution">Automate the solution</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<h2 style="margin:12pt 0cm 3pt;"><a name="The_scenario"></a>The scenario</h2>
+<p>In the example FIM CM manages three types of soft certificates: Remote Access Certificates, Web Server Certificates and Software Signing Certificates. The FIM CM enrollment model is manager-based: any user who requires one of the three certificates types
+ must contact the CM Hotline, which checks the request and enrolls a certificate requests via the FIM CM Portal, if all checks have been passed. FIM CM distributes a one-time password to the requesting end user, finally the end user can execute the request
+ and install the certificate on its own – a very common FIM CM deployment scenario.</p>
+<p>In this scenario the IT management demands a statistic about the CM Hotline workload. On a weekly basis a report should represent the IT management how many certificate requests have been managed by the CM Hotline. The CM hotline itself asks for FIM CM usage
+ reports on a daily, weekly and monthly basis, distinguished by the three different certificate types. The reports should show how many of the initiated certificate requests have been already executed by the end users and how many of those requests are still
+ pending. Furthermore it is of interest for the CM Hotline to see how requests are distributed over the different FIM CM request types, such as the enrollment-, revocation- or renewal-process.
+</p>
+<a name="Design_the_report"></a>
+<h2 style="margin:12pt 0cm 3pt;"><a name="Design_the_report"></a>Design the report</h2>
+<p>In a first step we’ll collect all data items and dependencies, which should be taken into account by the report. This helps us to map the requirements with available information hold in the FIM CM database. The requested reports can be summarized as follows:
+</p>
+<p>The report should only contain information about requests dependent on… </p>
+<ul>
+<li>…predefined observation windows </li><li>…one of the three managed FIM CM profile templates </li><li>…a given FIM CM request type aka a FIM CM policy </li><li>…state of a given FIM CM request </li></ul>
+<p>Now we investigate the FIM CM database design. The database exists of 11 tables. Each table contains one of the following information:<br />
+<br />
+</p>
+<table class="telerik-reTable-4">
+<tbody>
+<tr class="telerik-reTableHeaderRow-4">
+<td class="telerik-reTableHeaderFirstCol-4">FIM CM database table&nbsp;</td>
+<td class="telerik-reTableHeaderLastCol-4">Table content</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.CertificateAuthority</td>
+<td class="telerik-reTableLastCol-4">All Certification Authorities connected with FIM CM, usually registered by FIM CM exit modules</td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.Certificates</td>
+<td class="telerik-reTableLastCol-4">Details about all certificates , either issued via FIM CM or manually imported from a connected Certification Authorities using clmutil.exe command line tool</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.DatabaseSchemaVersion</td>
+<td class="telerik-reTableLastCol-4">Simply the current database schema version</td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.EventHistory</td>
+<td class="telerik-reTableLastCol-4">Records about all actions executed in FIM CM workflows, such as initiating, approve and execute requests – the
+<strong>History</strong> in the <strong>details of a request</strong> in the FIM CM Portal</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.ExternalRequests</td>
+<td class="telerik-reTableLastCol-4">Details about FIM CM requests initiated using the FIM CM SQL API</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.ProfileCertificates</td>
+<td class="telerik-reTableLastCol-4">The mapping between a certificate (stored in dbo.Certificates) and a FIM CM certificate profile (stored in dbo.Profiles)</td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.Profiles</td>
+<td class="telerik-reTableLastCol-4">All FIM CM certificate profiles as displayed in FIM CM Portal via the
+<strong>Find a user to view or manage their information</strong> page</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.ProfileTemplateHistory</td>
+<td class="telerik-reTableLastCol-4">The change log of the FIM CM profile templates</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.Requests</td>
+<td class="telerik-reTableLastCol-4">Details about all FIM CM requests initiated from the FIM CM Portal</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.Smartcards</td>
+<td class="telerik-reTableLastCol-4">Details about all smartcard devices issued by FIM CM and details about the related FIM CM workflow, which issued the smartcard or token device</td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4">dbo.UsernameCache</td>
+<td class="telerik-reTableLastCol-4">objectGUIDs and samAccountNames of AD user accounts recently used by FIM CM workflows</td>
+</tr>
+</tbody>
+</table>
+<br />
+As we can see the table of interest for our report is the table dbo.requests. The following screenshot shows the column design of the dbo.requests table:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/0250.fimcm_5F00_reporting1.png"><img alt=" " width="279" height="687" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/0250.fimcm_5F00_reporting1.png" style="width:236px;height:344px;border:0px solid;" /></a>
+<p>&nbsp;</p>
+<p><span></span></p>
+<p>Now we can map the report requirements with the request information available in the database table:</p>
+<p>&nbsp;</p>
+<table class="telerik-reTable-4" style="width:417px;height:102px;">
+<tbody>
+<tr class="telerik-reTableHeaderRow-4">
+<td class="telerik-reTableHeaderFirstCol-4"><span style="font-size:11px;"><strong>Report Requirement</strong></span></td>
+<td class="telerik-reTableHeaderLastCol-4"><span style="font-size:11px;"><strong>dbo.Requests column</strong></span></td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">predefined observation windows
+</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">req_submitted_dt</span></td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">one of the three managed FIM CM profile templates</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">req_profile_template_uuid</span></td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">a given FIM CM request type</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">req_type</span></td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">state of a given FIM CM request</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">req_status</span></td>
+</tr>
+</tbody>
+</table>
+&nbsp;
+<p>&nbsp;</p>
+<h2 style="margin:0cm 0cm 10pt;"><a name="Develop_the_solution"></a><span style="font-family:cambria;">Develop the solution</span></h2>
+<p>Based on the mapping we can develop a SQL Stored Procedure (SP) that executes a SQL query and delivers the requested data. The Stored Procedure should have four input and two output variables:&nbsp;</p>
+<table class="telerik-reTable-4">
+<tbody>
+<tr class="telerik-reTableHeaderRow-4">
+<td class="telerik-reTableHeaderFirstCol-4"><span style="font-size:11px;"><strong>SP variable</strong></span></td>
+<td class="telerik-reTableHeaderOddCol-4"><span style="font-size:11px;"><strong>Direction</strong></span></td>
+<td class="telerik-reTableHeaderLastCol-4"><span style="font-size:11px;"><strong>Description</strong></span></td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">@HistoryDays </span>
+</td>
+<td class="telerik-reTableOddCol-4"><span style="font-size:11px;">Input</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">Defines the observation windows –execution date of the SP until n days of the past. The variable must be a negative Integer to query past requests.</span></td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">@req_profile_uuid</span></td>
+<td class="telerik-reTableOddCol-4"><span style="font-size:11px;">Input</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">The FIM CM profile template UUID</span></td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">@req_Status</span></td>
+<td class="telerik-reTableOddCol-4"><span style="font-size:11px;">Input</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">The current request status in the FIM CM database</span></td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">@req_Type</span></td>
+<td class="telerik-reTableOddCol-4"><span style="font-size:11px;">Input</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">The current request type in the FIM CM database</span></td>
+</tr>
+<tr class="telerik-reTableOddRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">@AllRequests</span></td>
+<td class="telerik-reTableOddCol-4"><span style="font-size:11px;">Output</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">The resulting row count for all requests, independent from their state</span></td>
+</tr>
+<tr class="telerik-reTableEvenRow-4">
+<td class="telerik-reTableFirstCol-4"><span style="font-size:11px;">@CompletedRequests</span></td>
+<td class="telerik-reTableOddCol-4"><span style="font-size:11px;">Output</span></td>
+<td class="telerik-reTableLastCol-4"><span style="font-size:11px;">The resulting row count for all requests with the request state “Completed&quot;</span></td>
+</tr>
+</tbody>
+</table>
+<br />
+The Stored Procedure exists of two Select statements. Both Select statements search for all requests in the table dbo.Requests with the conditions defined in the report design. Hereby the first Select statement queries the database table independent from the
+ request status and stores the number of found rows in the output variable @AllRequests. The second Select statement queries the database table and stores all found requests with the status “Completed” in the output variable @AllCompletedRequests
+<p>&nbsp;</p>
+<p>The following code shows the proposed SP. If you want to evaluate the solution and you’re not familiar with SQL Stored Procedures the following KB-Article may help you to create the SP (<a href="http://msdn.microsoft.com/en-us/library/ms345415.aspx)">http://msdn.microsoft.com/en-us/library/ms345415.aspx)<br />
+<br />
+</a><strong>Stored Procedure code</strong></p>
+<span style="line-height:115%;font-size:8pt;">
+<div class="reCodeBlock" style="overflow-y:auto;border:1px solid #7f9db9;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">USE [FIMCertificateManagement]
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">-- The default database in FIM 2010
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">-- ILM 2007 uses the default database name [CLM]
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">GO
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">/****** Object:&nbsp; StoredProcedure [dbo].[custom_RequestStatistic]&nbsp;&nbsp;&nbsp; Script
+</code><code style="color:#006699;font-weight:bold;">Date</code><code style="color:#000000;">: 07/27/2011 09:16:55 ******/
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">SET</code>
+<code style="color:#000000;">ANSI_NULLS </code><code style="color:#006699;font-weight:bold;">ON</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">GO
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">SET</code>
+<code style="color:#000000;">QUOTED_IDENTIFIER </code><code style="color:#006699;font-weight:bold;">ON</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">GO
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">-- =============================================
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">-- Author: Heil, Matthias
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">-- Create date: 25/7/2011
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">-- Description: Enumerates certificate requests of the past
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">-- The input parameter HistoryDays must be negative !
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">-- =============================================
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">CREATE</code>
+<code style="color:#006699;font-weight:bold;">PROCEDURE</code> <code style="color:#000000;">
+[dbo].[custom_RequestStatistic]@HistoryDays </code><code style="color:#006699;font-weight:bold;">INT</code>
+<code style="color:#000000;">, @req_profile_uuid NVARCHAR(256), @req_Status </code>
+<code style="color:#006699;font-weight:bold;">Int</code><code style="color:#000000;">, @req_Type
+</code><code style="color:#006699;font-weight:bold;">INT</code><code style="color:#000000;">, @AllRequests
+</code><code style="color:#006699;font-weight:bold;">INT</code> <code style="color:#006699;font-weight:bold;">
+OUTPUT</code><code style="color:#000000;">, @CompletedRequests </code><code style="color:#006699;font-weight:bold;">INT</code>
+<code style="color:#006699;font-weight:bold;">OUTPUT</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">BEGIN</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">-- SET NOCOUNT ON added to prevent extra result sets from
+</code></span></span></rofile_uuid NVARCHAR(256), @req_Status </code>
+<code style="color:#006699;font-weight:bold;">Int</code><code style="color:#000000;">, @req_Type
+</code><code style="color:#006699;font-weight:bold;">INT</code><code style="color:#000000;">, @AllRequests
+</code><code style="color:#006699;font-weight:bold;">INT</code> <code style="color:#006699;font-weight:bold;">
+OUTPUT</code><code style="color:#000000;">, @CompletedRequests </code><code style="color:#006699;font-weight:bold;">INT</code>
+<code style="color:#006699;font-weight:bold;">OUTPUT</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">AS</code></span></div>
+<div style="background-color:#f8f8f8;"><span><cdiv>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#008200;">-- interfering with SELECT statements.
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">SET</code>
+<code style="color:#000000;">NOCOUNT </code><code style="color:#006699;font-weight:bold;">ON</code><code style="color:#000000;">;
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">a.request_uuid&nbsp; </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">From</code>
+<code style="color:#000000;">Requests a </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Where</code>
+<code style="color:#000000;">a.req_profile_template_uuid = @req_profile_uuid </code>
+</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#808080;">And</code>
+<code style="color:#000000;">a.req_submitted_dt &gt;&nbsp; dateadd(</code><code style="color:#ff1493;">day</code><code style="color:#000000;">,@HistoryDays ,GETDATE())
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#808080;">And</code>
+<code style="color:#000000;">a.req_type = @req_Type </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">@AllRequests = @@ROWCOUNT&nbsp; </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">a.request_uuid&nbsp; </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">From</code>
+<code style="color:#000000;">Requests a </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Where</code>
+<code style="color:#000000;">a.req_profile_template_uuid = @req_profile_uuid </code>
+</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#808080;">And</code>
+<code style="color:#000000;">a.req_submitted_dt &gt;&nbsp; dateadd(</code><code style="color:#ff1493;">day</code><code style="color:#000000;">,@HistoryDays ,GETDATE())
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#808080;">and</code>
+<code style="color:#000000;">a.req_status = @req_Status </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#808080;">And</code>
+<code style="color:#000000;">a.req_type = @req_Type </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">@CompletedRequests = @@ROWCOUNT&nbsp; </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Select</code>
+<code style="color:#000000;">@AllRequests </code><code style="color:#006699;font-weight:bold;">as</code>
+<code style="color:blue;">&#39;All Requests&#39;</code><code style="color:#000000;">, @CompletedRequests
+</code><code style="color:#006699;font-weight:bold;">as</code> <code style="color:blue;">
+&#39;Completed Requests&#39;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">END</code></span></div>
+</div>
+</span>
+<p>&nbsp;</p>
+<a name="Automate_the_solution"></a>
+<h2 style="margin:12pt 0cm 3pt;"><a name="Automate_the_solution"></a>Automate the solution</h2>
+<p>Now that we’ve set up the Stored Procedure we can automate the solution. In this example I use a small vbScript, which executes the Stored Procedure and writes the output in a tab separated text file (a very simple approach indeed, smarter targets are feasible
+ if you&#39;re running the script with, for example, Excel in the background). </p>
+<p>The vbScript exists of three arrays, defining…</p>
+<ul>
+<li>
+<p>… the FIM CM Request types</p>
+</li><li>
+<p>… the three FIM CM profile templates</p>
+</li><li>
+<p>… different observation windows</p>
+</li></ul>
+<p>The fourth array, which defines the possible request status types, is not used in the script, because the report should enumerate only completed requests. For simplicity the correlating objADOInputParam3 is hard coded with ‘8’.</p>
+<p>The objADOInputParam2 specifies the UUID of the FIM CM profile template. You can find these UUIDs in your environment by enumerating the objectGUID of the corresponding FIM CM profile template object below the Active Directory container
+<em>CN=Profile Templates,CN=Public Key Services,CN=Services,CNConfiguration, CN=myDomain,DC=com</em></p>
+<p>To completely automate the solution the vbScript can be triggered by a scheduled task on a daily basis for example. Running the script as a scheduled task requires three settings:</p>
+<ul style="list-style-type:disc;margin-top:0cm;">
+<li style="margin:0cm 0cm 10pt;">Run the scheduled task under a dedicated user account
+</li><li style="margin:0cm 0cm 10pt;">Create a SQL Login for this use account </li><li style="margin:0cm 0cm 10pt;">Grant the SQL Login Execute permissions on the Stored Procedure
+</li></ul>
+<p>As a result you should get a report similar to this one:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6562.fimcm_5F00_reporting2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6562.fimcm_5F00_reporting2.png" style="border:0px solid;" /></a><br />
+<br />
+</p>
+<p>&nbsp;</p>
+<p><strong>vbScript-Code<br />
+</strong></p>
+<strong>
+<div class="reCodeBlock" style="overflow-y:auto;border:1px solid #7f9db9;">
+<div style="backgrounrequires three settings:</p>
+<ul style="list-style-type:disc;margin-top:0cm;">
+<li style="margin:0cm 0cm 10pt;">Run the scheduled task under a dedicated user account
+</li><li style="margin:0cm 0cm 10pt;">Create a SQL Login for this use account </li><li style="margin:0cm 0cm 10pt;">Grant the SQL Login Execute permissions on the Stored Procedure
+</li></ul>
+<p>As a result you should get a report similar to this one:<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6562.fimcm_5F00_reporting2.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-0d-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Const</code>
+<code style="color:#000000;">adExecuteNoRecords = &amp;H00000080 </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Const</code>
+<code style="color:#000000;">adCmdStoredProc = 4 </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Const</code>
+<code style="color:#000000;">ForAppending = 8 </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Const</code>
+<code style="color:#000000;">ForWriting = 2 </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Const</code>
+<code style="color:#000000;">strFIMCM_Host = </code><code style="color:blue;">&quot;FIMCM_Host.myDomain.com&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">RequestTypeArray(10,1) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(0,0) = 1
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(0,1) =
+</code><code style="color:blue;">&quot;Enroll&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(1,0) = 2
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(1,1) =
+</code><code style="color:blue;">&quot;Recover&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(2,0) = 3
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(2,1) =
+</code><code style="color:blue;">&quot;Renew&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(3,0) = 4
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(3,1) =
+</code><code style="color:blue;">&quot;Disable&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(4,0) = 5
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(4,1) =
+</code><code style="color:blue;">&quot;Unblock&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(5,0) = 6
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(5,1) =
+</code><code style="color:blue;">&quot;Duplicate&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(6,0) = 7
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(6,1) =
+</code><code style="color:blue;">&quot;Retire&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(7,0) = 8
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(7,1) =
+</code><code style="color:blue;">&quot;Recover on behalf&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(8,0) = 9
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(8,1) =
+</code><code style="color:blue;">&quot;Suspend or Reinstate&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(9,0) = 10
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(9,1) =
+</code><code style="color:blue;">&quot;Online Update&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">RequestTypeArray(10,0) = 11
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">RequestTypeArray(10,1) =
+</code><code style="color:blue;">&quot;Enroll Temporary&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">HistoryArray(4) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">HistoryArray(0) = 1
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">HistoryArray(1) = 3
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">HistoryArray(2) = 7
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">HistoryArray(3) = 30
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">HistoryArray(4) = 9000
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">ProfileArray(2,1) </code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">ProfileArray(0,0) =
+</code><code style="color:blue;">&quot;83f9d844-c214a-7792-3e71-bbfc6cdf5b52&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">ProfileArray(0,1) =
+</code><code style="color:blue;">&quot;Remote Access Certificates&quot;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">ProfileArray(1,0) =
+</code><code style="color:blue;">&quot;5941414c-c267-2a63-94f9-d9567d969881&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">ProfileArray(1,1) =
+</code><code style="color:blue;">&quot;Web Server Certificates &quot;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">ProfileArray(2,0) =
+</code><code style="color:blue;">&quot;99d94f2b-64a9-421c-bde8-gaab15884451&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">ProfileArray(2,1) =
+</code><code style="color:blue;">&quot;Software Signing Certificates &quot;</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;Dim RequestStatusArray(3,1)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;RequestStatusArray(0,0) = 4
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;RequestStatusArray(0,1) = “Denied”
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;RequestStatusArray(1,0) = 8
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;RequestStatusArray(1,1) = “Completed”
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;RequestStatusArray(2,0) = 9
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;RequestStatusArray(2,1) = “Failed”
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#008200;">&#39;RequestStatusArray(3,0) = 17
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#008200;">&#39;RequestStatusArray(3,1) = “Canceled”
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Dim</code>
+<code style="color:#000000;">WshShell </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">WshShell = WScript.CreateObject(</code><code style="color:blue;">&quot;WScript.Shell&quot;</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">strcurDir = WshShell.CurrentDirectory
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">strADOConnect =
+</code><code style="color:blue;">&quot;Driver={SQL Server};Server=&quot;</code> <code style="color:#000000;">
+&amp; strFIMCM_Host &amp; </code><code style="color:blue;">&quot;;Database=FIMCertificateManagement;Trusted_Connection=yes&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">fso = CreateObject(</code><code style="color:blue;">&quot;Scripting.FileSystemObject&quot;</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">f1 = fso.OpenTextFile(strcurDir &amp; </code><code style="color:blue;">&quot;\FIMCM_Statistics.xls&quot;</code><code style="color:#000000;">, ForWriting,
+</code><code style="color:#006699;font-weight:bold;">True</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">f1.writel>&quot;Driver={SQL Server};Server=&quot;</code> <code style="color:#000000;">
+&amp; strFIMCM_Host &amp; </code><code style="color:blue;">&quot;;Database=FIMCertificateManagement;Trusted_Connection=yes&quot;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">fso = CreateObject(</code><code style="color:blue;">&quot;Scripting.FileSystemObject&quot;</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">f1 = fso.OpenTextFile(strcurDir &amp; </code><code style="color:blue;">&quot;\FIMCM_Statistics.xls&quot;</code><code style="color:#000000;">, ForWriting,
+</code><code style="color:#006699;font-weight:bold;">True</code><code style="color:#000000;">)
+</code></span><ine(</code><code style="color:blue;">&quot;Certificate-Request Statistics from: &quot;</code>
+<code style="color:#000000;">&amp; date &amp; </code><code style="color:blue;">&quot; &quot;</code> <code style="color:#000000;">
+&amp; time) </code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">ADOCon= CreateObject(</code><code style="color:blue;">&quot;ADODB.Connection&quot;</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">ADOCon.Open strADOConnect
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#000000;">z = 0 to ubound(RequestTypeArray) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">RequestType = RequestTypeArray(z,0)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">f1.writeline(</code><code style="color:blue;">&quot;Certificate Type (&quot;</code>
+<code style="color:#000000;">&amp; RequestTypeArray(z,1) &amp; </code><code style="color:blue;">&quot;)&quot;</code>
+<code style="color:#000000;">&amp; vbTab &amp; </code><code style="color:blue;">&quot;Requested&quot;</code>
+<code style="color:#000000;">&amp; vbTab &amp; </code><code style="color:blue;">&quot;Completed&quot;</code>
+<code style="color:#000000;">&amp; _ </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">vbTab &amp;
+</code><code style="color:blue;">&quot;Requested&quot;</code> <code style="color:#000000;">&amp; vbTab &amp;
+</code><code style="color:blue;">&quot;Completed&quot;</code> <code style="color:#000000;">&amp; vbTab &amp;
+</code><code style="color:blue;">&quot;Requested&quot;</code> <code style="color:#000000;">&amp; vbTab &amp;
+</code><code style="color:blue;">&quot;Completed&quot;</code> <code style="color:#000000;">&amp; vbTab &amp; _
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:blue;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;Requested&quot;</code>
+<code style="color:#000000;">&amp; vbTab &amp; </code><code style="color:blue;">&quot;Completed&quot;</code>
+<code style="color:#000000;">&amp; vbTab &amp; </code><code style="color:blue;">&quot;Requested&quot;</code>
+<code style="color:#000000;">&amp; vbTab &amp; </code><code style="color:blue;">&quot;Completed&quot;</code>
+<code style="color:#000000;">&amp; vbTab) </code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">f1.writeline(vbTab &amp;
+</code><code style="color:blue;">&quot;Last day&quot;</code> <code style="color:#000000;">&amp; vbTab &amp; vbTab &amp;
+</code><code style="color:blue;">&quot;Last 3 days&quot;</code> <code style="color:#000000;">
+&amp; vbTab &amp; vbTab &amp; </code><code style="color:blue;">&quot;Last week&quot;</code> <code style="color:#000000;">
+&amp; _ </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vbTab &amp; vbTab &amp;
+</code><code style="color:blue;">&quot;Last month&quot;</code> <code style="color:#000000;">&amp; vbTab &amp; vbTab &amp;
+</code><code style="color:blue;">&quot;Last quarter&quot;</code><code style="color:#000000;">)
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#000000;">y = 0 to ubound(ProfileArray) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ProfileUUID = ProfileArray(y,0)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">f1.write(ProfileArray(y,1) &amp; vbTab)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#000000;">x = 0 to ubound(HistoryArray) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">HistoryDays = HistoryArray(x)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOCommand = CreateObject(</code><code style="color:blue;">&quot;ADODB.Command&quot;</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code sty/code>
+<code style="color:#000000;">x = 0 to ubound(HistoryArray) </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">HistoryDays = HistoryArray(x)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOCommand = CreateObject(</code><code style="color:blue;">&quot;ADODB.Command&quot;</code><code style="color:#000000;">)
+</code></span></span></div>
+<div style="backgrounle="color:#000000;">objADOCommand.ActiveConnection = ADOCon </code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.commandText =
+</code><code style="color:blue;">&quot;custom_RequestStatistic&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.CommandType = adCmdStoredProc
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOInputParam1 = objADOCommand.CreateParameter(</code><code style="color:blue;">&quot;HistoryDays&quot;</code><code style="color:#000000;">, 3, 1, ,
+</code><code style="color:blue;">&quot;-&quot;</code> <code style="color:#000000;">&amp; HistoryDays)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Parameters.Append objADOInputParam1
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOInputParam2 = objADOCommand.CreateParameter(</code><code style="color:blue;">&quot;req_profile_uuid&quot;</code><code style="color:#000000;">, 200, 1, 256, ProfileUUID)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Parameters.Append objADOInputParam2
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOInputParam3 = objADOCommand.CreateParameter(</code><code style="color:blue;">&quot;req_Status&quot;</code><code style="color:#000000;">, 3, 1, ,
+</code><code style="color:blue;">&quot;8&quot;</code><code style="color:#000000;">) </code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Parameters.Append objADOInputParam3
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOInputParam4 = objADOCommand.CreateParameter(</code><code style="color:blue;">&quot;req_Type&quot;</code><code style="color:#000000;">, 3, 1, , RequestType)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Parameters.Append objADOInputParam4
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOOutputParam1 = objADOCommand.CreateParameter(</code><code style="color:blue;">&quot;AllRequests&quot;</code><code style="color:#000000;">, 3, 2)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Parameters.Append objADOOutputParam1
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">objADOOutputParam2 = objADOCommand.CreateParameter(</code><code style="color:blue;">&quot;CompletedRequests&quot;</code><code style="color:#000000;">, 3, 2)
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Parameters.Append objADOOutputParam2
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">objADOCommand.Execute , , adExecuteNoRecords
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">f1.write(objADOOutputParam1.Value &amp; vbTab &amp; objADOOutputParam2.Value &amp; vbTab)
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">next
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">f1.writeline()
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">next
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">f1.writeline()
+</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">next
+</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;</code><span>&nbsp;</span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">f1.close
+</code></span></div>
+&nbsp;</div>
+</strong>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</div>
+    
+    

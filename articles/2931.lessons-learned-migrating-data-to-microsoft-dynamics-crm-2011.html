@@ -1,0 +1,76 @@
+---
+layout: default
+title: Lessons Learned Migrating Data to Microsoft Dynamics CRM 2011 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>(This article originally appeared on the <a href="http://blog.customereffective.com/" target="_blank">Customer Effective Blog</a>)<br />
+<br />
+When companies using Microsoft Dynamics CRM 3.0 or 4.0 move to Microsoft Dynamics CRM 2011, there are some decisions to be made around how to move your current environment and data to CRM 2011. If you have an on premises installation, you can install CRM 2011 on premises and upgrade your MSCRM database to CRM 2011. This will bring in all of your customizations and data from CRM 4.0.</p>
+<p><span style="font-size:18px;">Upgrade or Migrate?</span></p>
+<p>In some cases, a direct upgrade may not be practical, and you may want to selectively migrate data:</p>
+<ol>
+    <li>If your existing data is not clean, you may want to start clean with 2011 and selectively migrate just the good data. As an example, consider if at one time you used contracts in CRM 4.0, but you changed your configuration to manage contracts in a different way&mdash;you may not want to bring in the legacy contract data if it no longer fits your current approach. </li>
+    <li>If your environment is older than CRM 4.0, you may want to do a migration. if you are on CRM 3.0 or CRM 1.2, you cannot directly upgrade to CRM 2011&mdash;you have to do incremental upgrades. Say you have CRM 1.2, to upgrade you would need to upgrade to 3.0 on your 1.2 server, then install crm 3.0 on a Windows 2003 server with SQL 2005 and upgrade to CRM 4.0, then install CRM 2011 on a 64 Bit CRM Windows 2008/SQL 2008 environment and import and upgrade your 4.0 environment to 2011. The further away you are from 4.0, migration of the data becomes more practical then upgrading, given that there is potential risk of the process failing at each point of the upgrade. </li>
+    <li>If you are moving from CRM on premises to CRM Online, you will need to migrate your data. There is currently no automatic upgrade process for Dynamics CRM on premises to CRM Online. You can import customizations from CRM on premises to CRM Online; however, moving data still requires a migration. </li>
+</ol>
+<p><span style="font-size:18px;">Migration Options</span></p>
+<p>If you decide to do a data migration to CRM 2011, there are a couple of options to consider</p>
+<p>1. Data import utility: CRM 2011 includes a data import utility, and it can take data exported from flat files and import them into CRM 2011. This tool is much improved from CRM 4.0, and it now handles larger data files and improved validation for data types, so you can more reliably import data. Using the tool you can easily import your accounts, contacts, opportunities, and other standard or custom entities. </p>
+<blockquote>
+<p>There are some areas that are not accessible via the import utility. Some of these areas include:</p>
+<ul>
+    <li>Activity attachments </li>
+    <li>Certain parts of the product catalog </li>
+    <li>Activity parties for e-mails with more than one recipient </li>
+    <li>Notes with attachments </li>
+    <li>Contracts </li>
+    <li>If your data is mainly core entities like accounts and contacts, you should be able to use the import utility; however, if you have many activity parties or attachments, the import utility may not be able to completely migrate your legacy data. </li>
+    <li>User mapping for ownerid and other user lookups can be problematic, especially if names are different in the new version, or if old users no longer exist. </li>
+    <li>In some cases, you will want to update records after they are imported. For example, Accounts and Contacts can present a classic &ldquo;chicken and egg&rdquo; scenario. Contacts reference accounts, and accounts reference primary contacts. If you insert companies first, you won&rsquo;t be able to populate the primary contact on the company record before the contact is created. You will need to insert the companies, insert the contacts, and then come back and update the company to set the primary contact. The import utility can update records if the GUID is in the first column of your csv file; however, this can require a bit of manual work to update the existing records. </li>
+</ul>
+<p>2. Scribe Insight: <a href="http://www.scribesoft.com/">Scribe</a> is the leading vendor for CRM data migrations and integrations. Scribe provides an adapter to connect to CRM 2011 as well as earlier versions of Microsoft Dynamics CRM, and can easily load data into entities that cannot be loaded with the standard import utility.</p>
+<p>We have migrated several of our clients as well as our internal environment from CRM 4.0 to CRM 2011 online. As part of these migrations, each had data in entities that could not be migrated using the standard import utility. For these migrations, we chose to use Scribe.</p>
+<p>As referenced&nbsp;in an <a href="http://blog.customereffective.com/blog/2011/02/quickly-recreating-entities-in-microsoft-dynamics-crm.html">earlier post,</a> Scribe includes an auto-map feature that can simplify the mapping of the data for your import. Just specify the legacy environment as your source, select the new environment as your target, and auto link by name.</p>
+<p>There are a few things you won&rsquo;t want to auto map:</p>
+<ul>
+    <li>userid&mdash;chances are that your user id&rsquo;s will be different in the target than they are in the source. I did a dblookup formula in Scribe to translate the fullname of the user in the legacy system to the userid of the user in the new system. </li>
+    <li>Transactioncurrency&mdash;unless you have more than one currency, you can leave this field blank. </li>
+    <li>AddressID&mdash;you will see for each address on accounts and contacts a field called addressid (Address1addressid and address2addressid). Do not auto map these. </li>
+    <li>Statecode and statuscode&mdash;when I brought in my accounts, contacts, e-mails, appointments, etc, I did not map the statecode and statuscode fields. The reason is that if you set a record to be inactive, you cannot relate other records to it. There is a good chance that you will have activities, notes, contacts, or other records that are linked to inactive records. By leaving them active you can establish all relationships, then run a simple update dts at the end of the process to close out the inactive records </li>
+</ul>
+<p>By doing this, I was able to quickly import the records from my on premises CRM environment to CRM Online.</p>
+<p><span style="font-size:18px;">Limitations</span></p>
+<p>There are a handful of limitations that I found through this process that Scribe cannot import to as well. These are mainly limitations in some deeper areas of CRM that are not exposed through the API.</p>
+<ul>
+    <li>Quick campaigns are entity bulkoperation, and they cannot be imported by Scribe or the import utility. This also means that activities like email where the regardingobjectid is set to a bulkoperation record will also not be able to be imported </li>
+    <li>Contracts have limitations around how they can be imported&mdash;they can only be imported in draft status, and you cannot associate other records, such as cases with them if they are not Active status and have an expiration date in the future. Manual intervention will be required to import cases and set them to a state that can be updated. </li>
+    <li>When importing opportunities, the actualclosedate will be set to today&rsquo;s date, even if you try to load another date to that field. The recommendation is after you update the status of the closed opportunities to Closed, run an update dts against opportunities updating the actualclosedate to the correct date. </li>
+    <li>If you are reading from your legacy CRM database as a SQL or ODBC connection, be aware that if there are any ntext or long varchar fields, they must come last in your source query. If they don&rsquo;t, the field will appear null and data will not come across for these fields. This is especially applicable for things like activity description fields. If your entity has more than one long varchar field, you may need to run subsequent update dts with the other long field listed last in the source query. An alternative approach is to install the new CRM 2011 adapter and point the old adapter to your legacy CRM system as your source, and point the 2011 adapter to the new CRM environment as your target. The crm adapter does not have the long varchar limitation. </li>
+</ul>
+<p>&nbsp;</p>
+<p><span style="font-size:18px;">Lessons Learned</span></p>
+<p>In an effort to help others learn from my mistakes, here are some of my lessons learned after a couple of migration upgrades:</p>
+<p>1. Determine which entities are being used. The easiest way to do this is to look at your SQL MSCRM database. View tables by number of records&mdash;this will help you determine where data is, and where it is not.</p>
+<p>2. Determine the order&mdash;It is crucial that you import your data in the right order, so that data referenced in lookup fields is present when the record is imported. For example, you need to have your accounts in before you load your opportunities. As a general rule, have any accounts, contacts, opportunities, quotes, orders in before you load cases, and load activities last. </p>
+<p>3. Don&rsquo;t close cases or other records until all activities have been loaded, and don&rsquo;t close activities until all activityparties and attachments have been loaded.</p>
+<p>4. Activityparties are probably the most difficult thing to import. If you don&rsquo;t know, activity parties are the people and companies associated with activities like e-mails in the to: field or the appointment in the requiredattendee field.</p>
+<ul>
+    <li>If you have deleted any activities from your crm system, there is a good chance that some activityparties will be left behind. </li>
+    <li>When you create an e-mail and track it in CRM, if one of the recipients is not in CRM as a contact, account, or user, it will create an activity party not linked to any partyid in CRM. These records cannot be imported. </li>
+    <li>When you create an activity in CRM, activity parties are created for the sender, the recipient, but also the owner and the regarding of the activity. When you import the activities, these activityparties will automatically be created. If you then import the activity parties including these parties, some rows will fail telling you that they already exist. </li>
+    <li>Activityparties cannot be easily deleted. </li>
+</ul>
+<p>To avoid these headaches, set up your activityparty dts source query to inner join activityparty to activitypointer to filter out any activityparties linked to an activity that was deleted from the system. Also, filter out where activitypartyid is null and activitypartytypecodemaskname = &ldquo;Regarding&rdquo; or &ldquo;owner.&rdquo; This will cut the list down to just the legitimate activityparties, and save much time.</p>
+<p>Remembering that activityparties can&rsquo;t be deleted, if you have several hundred thousand activityparties in your database, you will want to break this process up into smaller chunks, maybe by year. That way you minimize the chance of the job failing, and having to re-load any data. You can also run them simultaneously and load the data faster.</p>
+<p>Once the activityparty load was complete, I then ran a cleanup dts that joined the activityparties where partyid is null to contacts on addressused = emailaddress1. This successfully matched most of the unmatched activityparties, and I loaded setting partyid to contactid.</p>
+<p>5. Users: If you have been using CRM for several years, there is a good chance that there are users in your system who have been deactivated, and that those users own records, such as activities. Keep in mind that to assign a record to a user, the user must be active. So if you have a former employee named Bob Smith, if you want to import activities and assign them to Bob, you will need to temporarily have his user record active in the new system. This means creating records for users who are no longer at the company.</p>
+<p>For our migration, we created users for former employees. Given that CRM Online uses Windows Live ID for authentication, you might think this means that you have to set up legitimate Windows Live ID&rsquo;s for each old user; however, this is not the case. You can create users using any made-up address, and save the user without sending an invitation to that address. You can then assign records to the user, and then disable the user record.</p>
+<p>An alternative approach is to create a generic user called &ldquo;former employee&rdquo; and have Scribe assign any records owned by a former employee to this user. While this approach is faster, it may detract from visibility to who created the record.</p>
+<p>6. Do not load directly to the activity entity. You have to load to the individual activity type entities&mdash;email, appointment, phonecall, or task.<br />
+<br />
+7. If you want to maintain the original created date for a record, map your source system&#39;s created date to the CRM records&#39;s &quot;overriddencreatedon&quot; field as you can&#39;t write directly to the &quot;createdon&quot; field. Using this special field will only work during the record&#39;s creation and it cannot be modified after the fact.</p>
+</blockquote>
+<p>Keeping these best practices in mind, you can quickly migrate your data from CRM 4.0 to CRM 2011 Online.</p></div>
+    
+    

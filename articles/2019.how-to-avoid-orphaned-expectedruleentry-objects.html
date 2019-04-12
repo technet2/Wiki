@@ -1,0 +1,45 @@
+---
+layout: default
+title: How to Avoid Orphaned ExpectedRuleEntry Objects - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+After reading this Wiki article&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/a-method-to-remove-orphaned-expectedruleentry-objects-from-your-environment.aspx" target="_blank">A method to remove orphaned ExpectedRuleEntry objects from
+ your environment</a>&nbsp;from Markus, I came with a question: How to avoid orphaned ExpectedRulesEntry (ERE) object at all?<br />
+<br />
+Imagine that you have an declarative provisioning scenario and outbound sync rule for users turned to fire once object is in &#39;All people set&#39;.<br />
+Imagine you delete a user on the FIM portal.<br />
+Depending on your MV object deletion rule setup it might happen that if you delete an object (a user, a group or your custom schema object) it will be provisioned back to the portal and you will get another ERE linked to that object.<br />
+<br />
+You may end soon with thousands of orphaned EREs. The only downside for not cleaning your environment from orphaned EREs is longer full sync cycle runs.<br />
+It was enough for me to try to avoid such EREs from appearing in the MV.<br />
+<br />
+The general idea is to prohibit users to delete objects on the FIM portal while there&#39;re some outbound sync rules linked to them.<br />
+This can be done in two ways:<br />
+1. have an MPR with authorization workflow that checks for linked sync rules and either denies a request or takes care of EREs and deletes them.<br />
+2. do not delete objects on the portal at all but rather disable them so an object will fall out of the set defined by a Transition Out MPR and all linked sync rules will be removed.<br />
+<br />
+Let me explain the second scenario:<br />
+User or Group objects are extended to have new attribute &#39;status&#39; which is set to true by default in RCDC form or during initial provisioning from MV to FIM portal.<br />
+There are two sets: All Active People and All Active Groups created to include only objects with a status=true.<br />
+There&#39;re &#39;Transition In&#39; MPRs that watch for objects to appear in &#39;All Active People&#39; or &#39;All Active Groups&#39; sets.<br />
+Once object is in one of these sets a workflow is started to add an outbound sync rule.<br />
+Pretty regular scenario.<br />
+<br />
+But now instead of deleting a user or group on the portal think of the following: do I really need this object to be deleted right now? So many times you need your object back because of many reasons: wrong person&#39;s surname in the request to delete a user,
+ wrong date, local ACLs assigned to a group, user&#39;s manager forgot to renew an account to contractor and so on...<br />
+Ask yourself: whether its enough to disable or expire an account? It might be better to wait for a week or two and delete an account later.<br />
+<br />
+So you&#39;re teaching your users not to click &#39;Delete&#39; button but rather uncheck &#39;Enabled&#39; checkbox as you configured a Transition Out MPR to remove outbound sync rule for disabled users and groups.<br />
+<br />
+The last step is to create a set with all disabled users or groups and have a time stamp with a date object was disabled. This will allow you to start a workflow when object will enter &#39;To be deleted&#39; set with another Transition In MPR.<br />
+<br />
+And if you stage an object to delete in your connected MA it might be useful to check &#39;Do not recall attributes...&#39; so all information about deleted object will remain in MV for your disabled object until it will be deleted.&nbsp;<br />
+<br />
+More ideas can be found in this thread:&nbsp;<a href="http://social.technet.microsoft.com/Forums/en-US/ilm2/thread/d3eb7f06-d8f0-4678-bc55-f07243d4c849/#4b618c2e-6cc0-47fa-829a-3649d82f428a" target="_blank">Idea to automate the clean-up of orphaned ERE</a>
+
+</div>
+    
+    

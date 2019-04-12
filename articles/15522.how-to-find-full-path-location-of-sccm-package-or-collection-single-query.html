@@ -1,0 +1,160 @@
+---
+layout: default
+title: How to find full path / location of SCCM Package or Collection - Single Query - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h2><a name="How_To_                   History
+                    </a>
+            </li>
+        
+</ul>
+<div class="navigation-list-footer"></div></div>
+<dFind_full_path_location_of_SCCM_Package_or_Collection_in_single_query"></a>How To Find full path / location of SCCM Package or Collection in single query
+</h2>
+<p><em>Very often SCCM Admins wants to find the location of path of a package or collection that they need to work on or to modify etc, but doesn&#39;t find an easy way to find the full path of these. Either they need to know the path and remember it or rely on
+ some sort of SQL queries which helps them to find the full path, but then these queries are two separate one, meant for each collection and package. Post observing couple of requests on similar singe query experience, My tiny efforts to club these queries
+ using</em> <strong>if, goto</strong> <em>etc functions of T-SQL, so to offer single query experience to get full path info</em>
+</p>
+<h2><a name="SQL_Query"></a>SQL Query<br />
+_______________________________________________________________________________________</h2>
+<p>declare</p>
+<p>&nbsp;</p>
+<p><span style="font-size:13px;">@Selection </span><span style="color:#0000ff;font-size:13px;">varchar
+</span><span style="color:#808080;font-size:13px;">(</span><span style="font-size:13px;">30</span><span style="color:#808080;font-size:13px;">),</span><span style="font-size:13px;"> @PKG_R_COL_Name
+</span><span style="color:#0000ff;font-size:13px;">varchar </span><span style="color:#808080;font-size:13px;">(</span><span style="font-size:13px;">30</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @Selection
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;">
+</span><span style="color:#ff0000;font-size:13px;">&#39;Collection&#39;</span><span style="font-size:13px;">
+</span><span style="color:#008000;font-size:13px;">-- Make your selection of package or collection
+<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @PKG_R_COL_Name
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;">
+</span><span style="color:#ff0000;font-size:13px;">&#39;Vasu_TestCollection&#39;</span><span style="font-size:13px;">
+</span><span style="color:#008000;font-size:13px;">-- Type name of collection or package based on above selection
+<br />
+</span><span style="color:#0000ff;font-size:13px;"><br />
+if</span><span style="font-size:13px;"> @Selection</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#ff0000;font-size:13px;">&#39;Package&#39;</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">goto</span><span style="font-size:13px;"> PackageFn
+<br />
+</span><span style="color:#0000ff;font-size:13px;">else</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">goto</span><span style="font-size:13px;"> collectionFn<br />
+</span><span style="color:#0000ff;font-size:13px;"><br />
+PackageFn:</span><span style="font-size:13px;"> <br />
+</span><span style="color:#0000ff;font-size:13px;">WITH</span><span style="font-size:13px;"> folderHierarchy</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">(</span><span style="font-size:13px;">ContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">Name</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">ObjectType</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">ParentContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">[Path]</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">SELECT</span><span style="font-size:13px;"> ContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">
+ Name</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;"> ObjectType</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;"> ParentContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">
+</span><span style="color:#ff00ff;font-size:13px;">CAST</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#ff0000;font-size:13px;">&#39;/&#39;</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="font-size:13px;">[Name]</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="color:#ff0000;font-size:13px;">&#39;/&#39;</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">VARCHAR</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#ff00ff;font-size:13px;">MAX</span><span style="color:#808080;font-size:13px;">))</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> [Path]<br />
+</span><span style="color:#0000ff;font-size:13px;">FROM</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">Folders
+</span><span style="color:#0000ff;font-size:13px;">WHERE</span><span style="font-size:13px;"> ParentContainerNodeID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> 0<br />
+</span><span style="color:#0000ff;font-size:13px;">UNION</span><span style="font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">ALL<br />
+</span><span style="color:#0000ff;font-size:13px;">SELECT</span><span style="font-size:13px;"> child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">Name</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ObjectType</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ParentContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">parent</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">[Path]</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="font-size:13px;">child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">[Name]</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="color:#ff0000;font-size:13px;">&#39;/&#39;</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> [Path]<br />
+</span><span style="color:#0000ff;font-size:13px;">FROM</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><s><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ParentContainerNodeID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">parent</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">[Path]</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="font-size:13px;">child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13ppan style="font-size:13px;">Folders
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> child<br />
+</span><span style="color:#808080;font-size:13px;">INNER</span><span style="font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">JOIN</span><span style="font-size:13px;"> folderHierarchy
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> parent<br />
+</span><span style="color:#0000ff;font-size:13px;">ON</span><span style="font-size:13px;"> parent</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ContainerNodeID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> child</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ParentContainerNodeID
+</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">SELECT</span><span style="font-size:13px;">
+</span><span style="color:#0000ff;font-size:13px;">distinct</span><span style="font-size:13px;"> fldr</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">[Path]</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">mbr</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">InstanceKey
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> PackageID</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;">pkg</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">Name<br />
+</span><span style="color:#0000ff;font-size:13px;">FROM</span><span style="font-size:13px;"> folderHierarchy
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> fldr<br />
+</span><span style="color:#808080;font-size:13px;">INNER</span><span style="font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">JOIN</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">FolderMembers
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> mbr
+</span><span style="color:#0000ff;font-size:13px;">ON</span><span style="font-size:13px;"> fldr</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ContainerNodeID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> mbr</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">ContainerNodeID<br />
+</span><span style="color:#808080;font-size:13px;">INNER</span><span style="font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">JOIN</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">v_package
+</span><span style="color:#0000ff;font-size:13px;">AS</span><span style="font-size:13px;"> pkg
+</span><span style="color:#0000ff;font-size:13px;">ON</span><span style="font-size:13px;"> pkg</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">PackageID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> mbr</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">InstanceKey<br />
+</span><span style="color:#0000ff;font-size:13px;">WHERE</span><span style="font-size:13px;"> pkg</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">Name</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;">@PKG_R_COL_Name
+</span><span style="color:#008000;font-size:13px;">-- and fldr.ObjectType = 2 <br />
+</span><span style="color:#0000ff;font-size:13px;">goto</span><span style="font-size:13px;"> quit<br />
+</span><span style="color:#0000ff;font-size:13px;"><br />
+CollectionFn:<br />
+declare</span><span style="font-size:13px;"> @parent </span><span style="color:#0000ff;font-size:13px;">varchar</span><span style="color:#808080;font-size:13px;">(</span><span style="font-size:13px;">8</span><span style="color:#808080;font-size:13px;">),</span><span style="font-size:13px;">
+ @sub </span><span style="color:#0000ff;font-size:13px;">varchar</span><span style="color:#808080;font-size:13px;">(</span><span style="font-size:13px;">8</span><span style="color:#808080;font-size:13px;">),</span><span style="font-size:13px;"> @ord
+</span><span style="color:#0000ff;font-size:13px;">int</span><span style="color:#808080;font-size:13px;">,</span><span style="font-size:13px;"> @name
+</span><span style="color:#0000ff;font-size:13px;">varchar</span><span style="color:#808080;font-size:13px;">(</span><span style="font-size:13px;">255</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @sub
+</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">Select</span><span style="font-size:13px;"> CollectionID
+</span><span style="color:#0000ff;font-size:13px;">from</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">v_Collection
+<br />
+</span><span style="color:#0000ff;font-size:13px;">where</span><span style="font-size:13px;"> Name
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @PKG_R_COL_Name</span><span style="color:#808080;font-size:13px;">)</span><span style="font-size:13px;">
+<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @parent
+</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">Select</span><span style="font-size:13px;"> parentCollectionID
+</span><span style="color:#0000ff;font-size:13px;">from</span><span style="font-size:13px;"> v_CollectToSubCollect
+<br />
+</span><span style="color:#0000ff;font-size:13px;">Where</span><span style="font-size:13px;"> subCollectionID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @sub</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @name
+</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">Select</span><span style="font-size:13px;"> Name
+</span><span style="color:#0000ff;font-size:13px;">from</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">v_Collection
+<br />
+</span><span style="color:#0000ff;font-size:13px;">where</span><span style="font-size:13px;"> CollectionID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @sub</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @ord
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> 0<br />
+</span><span style="color:#0000ff;font-size:13px;">while</span><span style="font-size:13px;"> @parent
+</span><span style="color:#808080;font-size:13px;">&lt;&gt;</span><span style="font-size:13px;">
+</span><span style="color:#ff0000;font-size:13px;">&#39;COLLROOT&#39;<br />
+</span><span style="color:#0000ff;font-size:13px;">begin<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @parent
+</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">Select</span><span style="font-size:13px;"> parentCollectionID
+</span><span style="color:#0000ff;font-size:13px;">from</span><span style="font-size:13px;"> v_CollectToSubCollect
+<br />
+</span><span style="color:#0000ff;font-size:13px;">Where</span><span style="font-size:13px;"> subCollectionID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @parent</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @sub
+</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="cgin<br />
+</span><span style="color:#0000ff;olor:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">Select</span><span style="font-size:13px;"> parentCollectionID
+</span><span style="color:#0000ff;font-size:13px;">from</span><span style="font-size:13px;"> v_CollectToSubCollect
+<br />
+</span><span style="color:#0000ff;font-size:13px;">Where</span><span style="font-size:13px;"> subCollectionID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @sub</span><span style="color:#808080;font-size:13px;">)<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @name
+</span><span style="color:#808080;font-size:13px;">=</span><span style="color:#0000ff;font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">(</span><span style="color:#0000ff;font-size:13px;">Select</span><span style="font-size:13px;"> Name
+</span><span style="color:#0000ff;font-size:13px;">from</span><span style="font-size:13px;"> dbo</span><span style="color:#808080;font-size:13px;">.</span><span style="font-size:13px;">v_Collection
+<br />
+</span><span style="color:#0000ff;font-size:13px;">where</span><span style="font-size:13px;"> CollectionID
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @sub</span><span style="color:#808080;font-size:13px;">)</span><span style="font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="font-size:13px;">
+</span><span style="color:#ff0000;font-size:13px;">&#39; --&gt; &#39;</span><span style="font-size:13px;">
+</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="font-size:13px;"> @name<br />
+</span><span style="color:#0000ff;font-size:13px;">set</span><span style="font-size:13px;"> @ord
+</span><span style="color:#808080;font-size:13px;">=</span><span style="font-size:13px;"> @ord
+</span><span style="color:#808080;font-size:13px;">&#43;</span><span style="font-size:13px;"> 1<br />
+</span><span style="color:#0000ff;font-size:13px;">end Select</span><span style="font-size:13px;"> @name<br />
+</span>Quit: <br />
+_________________________________________________________________________________________________________________________________________________________</p>
+<p>&nbsp;You may then further modify this to your needs&nbsp;</p>
+<h2><a name="References"></a>References</h2>
+<p>Thought not sure on names or urls, but sincere credits to those who written the individual queries and shared with Microsoft admins around.<br />
+<br />
+--- Thanks, Vasu Miriyala</p>
+
+</div>
+    
+    

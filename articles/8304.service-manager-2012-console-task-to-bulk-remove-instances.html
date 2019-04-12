@@ -1,0 +1,90 @@
+---
+layout: default
+title: Service Manager 2012 Console Task to Bulk Remove Instances - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong><em>If you have a demo/preprod environment for Service Manager 2012, probably you created lots of instances (Incidents, Change Requests, Release Records etc. ) for testing purposes. This helps you to get demo just right. But when it comes to production,
+ you don’t want to have all those created “things” on iv class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></div></div>
+<div class="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div your console. In this blog post we’ll create a console task (a simple button) for each work item and assign it to a PowerShell script. You’ll simply click button and everything will blow!
+<img class="wlEmoticon wlEmoticon-smile" alt="Smile" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/0243.wlEmoticon_2D00_smile_5F00_12E56D37.png" /> It helps you to reset your demo environment.</em></strong></p>
+<p><strong><em>Don’t give up thought of that this is one time action and use only for demo environments or with –Whatif switch.</em></strong></p>
+<p>There are already workarounds for such demands. One of them from Travis;</p>
+<p><a href="http://blogs.technet.com/b/servicemanager/archive/2009/12/17/deleting-objects-in-bulk-in-the-cmdb-using-powershell.aspx" title="http://blogs.technet.com/b/servicemanager/archive/2009/12/17/deleting-objects-in-bulk-in-the-cmdb-using-powershell.aspx">http://blogs.technet.com/b/servicemanager/archive/2009/12/17/deleting-objects-in-bulk-in-the-cmdb-using-powershell.aspx</a></p>
+<p>We’ll combine two different solutions into one and make bulk delete task easier. We&#39;ll create a custom PowerShell script for each work item category (This post will cover only for Release Records, but you can simply apply same script for all instances) and
+ pin it as a task on Service Manager Console. So you’ll see different tasks within each work item category and be able to delete all previously created ones with one click.</p>
+<p>To achieve this goal, we’ll use the following script;</p>
+<blockquote>
+<pre class="scroll"><code class="cplusplus">Import-Module C:\Windows\System32\WindowsPowerShell\v1.0\Modules\SMLets <br /> $SQLServer = &quot;SQLSERVERNAME\InstanceName&quot; <br /> $SQLDBName = &quot;SCSMDBNAME&quot; <br /> $SqlQuery = &quot;SELECT BaseManagedEntityId FROM `MT_System`$WorkItem`$ReleaseRecord&quot;<br /> <br /> $SqlConnection = New-Object System.Data.SqlClient.SqlConnection <br /> $SqlConnection.ConnectionString = &quot;Server = $SQLServer; Database = $SQLDBName; Integrated Security = True&quot;<br /> <br /> $SqlCmd = New-Object System.Data.SqlClient.SqlCommand <br /> $SqlCmd.CommandText = $SqlQuery <br /> $SqlCmd.Connection = $SqlConnection<br /> <br /> $SqlAdapter = New-Object System.Data.SqlClient.SqlDataAdapter <br /> $SqlAdapter.SelectCommand = $SqlCmd<br /> <br /> $DataSet = New-Object System.Data.DataSet <br /> $SqlAdapter.Fill($DataSet) <br /> <br /> $SqlConnection.Close()<br /> <br /> $dataset.tables[0] | foreach { $_.BaseManagedEntityId } | foreach { $_.Guid } | Out-File C:\Temp\ReleaseRecordIDs.txt<br /> <br /> Get-Content c:\Temp\ReleaseRecordIDs.txt | ForEach-Object{$RR= Get-SCSMObject -Class (Get-SCSMClass -Name System.WorkItem.releaserecord$) -Filter &quot;ID -eq &#39;$_&#39;&quot;;$RR | Remove-SCSMObject -force }<br /> <br /> Remove-Item c:\Temp\ReleaseRecordIDs.txt </code></pre>
+</blockquote>
+<p>Now lets dive in each step;</p>
+<p><strong>Import-Module C:\Windows\System32\WindowsPowerShell\v1.0\Modules\SMLets</strong></p>
+<p>SMLets is a codeplex project that can be found on <a href="http://smlets.codeplex.com/" title="http://smlets.codeplex.com/">
+http://smlets.codeplex.com/</a> and provides additional cmdlets besides native Service Manager cmdlets.</p>
+<p>To get SCSM objects from wide variety of classes, SMLets will help you a lot. So first thing you must achieve is importing SMLets module.</p>
+<p>Also you can simply make a query to get if SMlets module imported or not with following command and trigger to import module with an if else condition. One example from
+<a href="http://blogs.technet.com/b/servicemanager/archive/2011/03/15/updating-a-change-request-when-activities-are-updated-using-powershell-in-a-workflow.aspx" target="_blank">
+Andreas Rynes</a> ;</p>
+<p><strong>$Getmodule = (get-module|%{$_.name}) -join &quot; &quot; <br />
+if(!$GetModule.Contains(&quot;SMLets&quot;)) <br />
+{Import-Module SMLets -Force}</strong></p>
+<p>Next part;</p>
+<p><strong>SQLServer = &quot;SQLSERVERNAME\InstanceName&quot; <br />
+$SQLDBName = &quot;SCSMDBNAME&quot; <br />
+$SqlQuery = &quot;SELECT BaseManagedEntityId FROM `MT_System`$WorkItem`$ReleaseRecord&quot;</strong></p>
+<p>To get related objects from Service Manager DB, you need to know BaseManagedEntityID for each item. So that we’ll open a connection to SQL Server within PowerShell script and execute a query.</p>
+<p>This query gets all Release Record EntityID’s and assigns them to the SQLQuery variable. If you execute same query on SQL box, you’ll see below output;</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/2703.image_5F00_51D6EDD2.png"><img width="387" height="306" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/6813.image_5F00_thumb_5F00_3D712847.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Above three lines assign SQL Server name, SQL DB Name and SQL Query values to the variables.</p>
+<p><strong>$SqlConnection = New-Object System.Data.SqlClient.SqlConnection <br />
+$SqlConnection.ConnectionString = &quot;Server = $SQLServer; Database = $SQLDBName; Integrated Security = True&quot;</strong></p>
+<p><strong>$SqlCmd = New-Object System.Data.SqlClient.SqlCommand <br />
+$SqlCmd.CommandText = $SqlQuery <br />
+$SqlCmd.Connection = $SqlConnection</strong></p>
+<p><strong>$SqlAdapter = New-Object System.Data.SqlClient.SqlDataAdapter <br />
+$SqlAdapter.SelectCommand = $SqlCmd</strong></p>
+<p><strong>$DataSet = New-Object System.Data.DataSet <br />
+$SqlAdapter.Fill($DataSet) <br />
+<br />
+$SqlConnection.Close()</strong> </p>
+<p>Above part opens a connection to the SQL Server.</p>
+<p><strong>$dataset.tables[0] | foreach { $_.BaseManagedEntityId } | foreach { $_.Guid } | Out-File C:\Temp\ReleaseRecordIDs.txt</strong></p>
+<p>I added out-file line to figure out what we have in $dataset.tables[0] variable and also will use that content to remove bulk objects with;
+<br />
+<br />
+<strong>Get-Content c:\Temp\ReleaseRecordIDs.txt | ForEach-Object{$RR= Get-SCSMObject -Class (Get-SCSMClass -Name System.WorkItem.releaserecord$) -Filter &quot;ID -eq &#39;$_&#39;&quot;;$RR | Remove-SCSMObject -force -confirm:$false }</strong></p>
+<p>That is the actual command that removes work items from Service Manager DB. Firstly we load text file into the memory and then get release record for each line. And the last pipeline removes all Release Records.</p>
+<p>This bunch of code can be run within PowerShell console that has a connection to the SQL box and works like a charm. But what we want is to add a simple button (Console Task) on Service Manager Console and trigger bulk deletions within it.</p>
+<p>Don’t forget that Console Tasks run on Management Server, if you wish things happen on background, you should create workflows using Authoring Tool.</p>
+<p>Now lets create a console task and let it to execute our PS1 script.</p>
+<ul>
+<li>Under Library/Tasks Click “Create Task” </li></ul>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/6087.image_5F00_73266DA1.png"><img width="420" height="297" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/0537.image_5F00_thumb_5F00_0E2F16E3.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0pof code can be run within PowerShell console that has a connection to the SQL box and works like a charm. But what we want is to add a simple button (Console Task) on Service Manager Console and trigger bulk deletions within it.</p>
+<p>Don’t forget that Console Tasks run onx;display:inline;" /></a></p>
+<ul>
+<li>Provide Task Name, Description, Target Class and MP. </li><li>Click Next </li></ul>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/7140.image_5F00_4B0398B5.png"><img width="428" height="299" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/5556.image_5F00_thumb_5F00_5DA86C9F.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>You can choose categories to enable the task to be displayed in certain place.</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/1731.image_5F00_52BB658A.png"><img width="424" height="296" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/7178.image_5F00_thumb_5F00_34AD31C9.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Choose PowerShell.exe for Full path and –command parameter to trigger our previously saved DeleteRRs.ps1 file.</p>
+<p>For the working directory enter DeleteRRs.ps1 location.</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/6177.image_5F00_2F2E9B58.png"><img width="427" height="300" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/8132.image_5F00_thumb_5F00_43F06E0B.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Click Create.</p>
+<p>From now on, you can view newly created task on the right pane;</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/4174.image_5F00_47AE12DB.png"><img width="429" height="351" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/1016.image_5F00_thumb_5F00_3197817C.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>Now just click it and wait for the rest.</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/3073.image_5F00_38F34129.png"><img width="244" height="236" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/5125.image_5F00_thumb_5F00_3591A981.png" style="border-width:0px;border-style:solid;margin:0px;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/6366.image_5F00_113C9F32.png"><img width="244" height="229" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/2022.image_5F00_thumb_5F00_241122DC.png" style="border-width:0px;border-style:solid;margin:0px;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>You can customize PowerShell script and provide more meaningful outputs to the SCSM Console.</p>
+<p><a href="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/7888.image_5F00_1CE1C097.png"><img width="396" height="207" title="image" alt="image" src="http://blogs.technet.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-00-79-57-metablogapi/6886.image_5F00_thumb_5F00_27526EEA.png" style="border-width:0px;border-style:solid;padding-top:0px;padding-right:0px;padding-left:0px;display:inline;" /></a></p>
+<p>All them are gone.</p>
+<p>Well please note that again, this is a one time action, and you’ll lose all your related instances.</p>
+
+</div>
+    
+    

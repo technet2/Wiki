@@ -1,0 +1,795 @@
+---
+layout: windowsazurestorage
+title: Using Windows Azure Page Blobs and How to Efficiently Upload and Download Page Blobs
+weight: 3
+---
+
+<div id="site-content" class="site-content row">
+
+	<div id="primary" class="content-area col-sm-9">
+		<div id="single-content" class="div-content">
+
+			
+				
+<article id="post-14" class="post-14 post type-post status-publish format-standard hentry category-uncategorized tag-windows-azure-blobs tag-windows-azure-blobs-page tag-windows-azure-drives">
+
+	<header class="entry-header single">
+		<h1 class="entry-title">Using Windows Azure Page Blobs and How to Efficiently Upload and Download Page Blobs</h1>		<div class="rating-wrap">
+		<div id="star-rating-14" class="wds-ratings" data-rating="4" data-userrating="0" data-postid="14" data-container="body" data-toggle="tooltip" title="2 user(s) rated">
+			<div class="wds-ratings-inner-wrap">
+				<div>
+					<div aria-label="Select 5 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="5"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span><span aria-hidden="true" class="star-5"><span>&#x2605;</span></span></div><div aria-label="Select 4 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="4"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span></div><div aria-label="Select 3 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="3"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span></div><div aria-label="Select 2 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="2"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span></div><div aria-label="Select 1 star, this article is 4 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="1"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span></div>
+				</div>
+			</div>
+		</div>
+		</div>		<div class="clear-both"></div>
+		<div class="entry-meta">
+			<img alt="avatar of windows-azure-storage" src="https://i1.social.s-msft.com/profile/u/avatar.jpg?displayname=Windows+Azure+Storage&amp;size=extralarge&amp;version=00000000-0000-0000-0000-000000000000" class="avatar avatar-22 photo" height="22" width="22"/><span class="byline"><span class="author vcard"><a class="url fn n profile-usercard-hover" data-profile-userid="59e1aedafa2d4428b7004b2c2fac4adc" href="https://social.msdn.microsoft.com/profile/Windows+Azure+Storage">Windows Azure Storage</a></span></span><span class="posted-on posted-on-margin"><span class="screen-reader-text"></span><time class="entry-date published updated" datetime="2010-04-10T22:04:00+00:00">April 10, 2010</time></span><span class="comments-link"><span class="glyphicon glyphicon-comment" aria-hidden="true"></span><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/#comments">3</a></span>				<span class="social-icons-wrap">
+		<ul class="social-icons">
+			<li><div class="fb-share-button" data-href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/" data-layout="button_count" data-size="large" data-mobile-iframe="true"><a class="fb-xfbml-parse-ignore" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/&amp;src=sdkpreparse">Share</a></div></li>
+			<div id="fb-root" style="display:none"></div>
+
+			<li class="social-icon twitter"><a data-social="{&quot;type&quot;:&quot;twitter&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/&quot;, &quot;text&quot;: &quot;Using Windows Azure Page Blobs and How to Efficiently Upload and Download Page Blobs&quot;}" href="#" id="post_tweet_count">0</a></li>
+			<li class="social-icon linkedin"><a data-social="{&quot;type&quot;:&quot;linkedin&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/&quot;, &quot;text&quot;: &quot;Using Windows Azure Page Blobs and How to Efficiently Upload and Download Page Blobs&quot;}" href="#" id="get_post_linkedin_count">0</a></li>
+		</ul>
+	</span><!-- .social-icons-wrap -->
+	<script type="text/javascript">
+		// Get social counts
+		jQuery( window ).load(function () {
+			jQuery.getScript('https://blogs.msdn.microsoft.com/windowsazurestorage/wp-content/themes/microsoft/js/social-counts.js?ver=02092017')
+				.done(function(script,textStatus) {
+					window.msdnsocial.ajax('https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/');
+				});
+		});
+	</script>
+		</div>
+		<hr>
+	</header><!-- .entry-header -->
+
+	<div class="entry-content single">
+		<p class="MsoNormal" style="margin: 0in 0in 0pt;"><span style="font-family: 'Calibri','sans-serif'; font-size: 14pt; mso-ascii-theme-font: minor-latin; mso-hansi-theme-font: minor-latin; mso-bidi-theme-font: minor-latin;"><strong><em>This post refers to the Storage Client Library shipped in SDK 1.2. Windows Azure SDK&nbsp; 1.3 provides additional Page Blob functionality via the CloudPageBlob class. The current release can be downloaded </em></strong><a href="http://msdn.microsoft.com/en-us/windowsazure/cc974146.aspx"><strong><em>here</em></strong></a><strong><em>.<o:p></o:p></em></strong></span></p>
+<p>We introduced <a href="http://microsoftpdc.com/Sessions/SVC14">Page Blobs at PDC 2009</a> as a type of blob for Windows Azure Storage.&nbsp;&nbsp; With the introduction of Page Blobs, Windows Azure Storage now supports the following two blob types:</p>
+<ol>
+<li><a href="http://microsoftpdc.com/Sessions/SVC14">Block Blobs (introduced PDC 2008)</a> &ndash;&nbsp; targeted at streaming workloads.&nbsp;
+<ul>
+<li>Each blob consists of a sequence/list of blocks. The following are properties of Block Blobs:
+<ul>
+<li>Each Block has a unique ID, scoped by the Blob Name </li>
+<li>Blocks can be up to 4MBs in size, and the blocks in a Blob do not have to be the same size </li>
+<li>A Block blob can consist of up to 50,000 blocks </li>
+<li>Max block blob size is 200GB </li>
+</ul>
+</li>
+<li>Commit-based Update Semantics &ndash; Modifying a block blob is a two-phase update process.&nbsp;&nbsp; It first consists of uploading the blocks to add or modify as uncommitted blocks for a blob.&nbsp; Then after they are all uploaded, the blocks to add/change/remove are committed via a <a href="http://msdn.microsoft.com/en-us/library/dd179467.aspx">PutBlockList</a> to create a new readable version of a blob.&nbsp;&nbsp; Therefore, updating a block blob is a two-phase update process where you upload all changes, and then commit them atomically. </li>
+<li>Range reads can be from any byte offset in the blob. </li>
+</ul>
+</li>
+<li><a href="http://microsoftpdc.com/Sessions/SVC14">Page Blobs (introduced PDC 2009)</a> &ndash; targeted at random write workloads.&nbsp;
+<ul>
+<li>Each blob consists of an array/index of pages. The following are properties of Page Blobs:
+<ul>
+<li>Each page is of size 512 bytes, so all writes must be 512 byte aligned, and the blob size must be a multiple of 512 bytes.&nbsp; </li>
+<li>Writes have a starting offset and can write up to 4MBs worth of pages at a time.&nbsp; These are range-based writes that consist of a sequential range of pages. </li>
+<li>Max page blob size is 1TB </li>
+</ul>
+</li>
+<li>Immediate Update Semantics &ndash; As soon as a write request for a sequential set of pages succeeds in the blob service, the write has committed, and success is returned back to the client.&nbsp; The update is immediate, so there is no commit step as there is for block blobs. </li>
+<li>Range reads can be done from any byte offset in the blob. </li>
+</ul>
+</li>
+</ol>
+<p><b>Unique Characteristics of Page Blobs</b></p>
+<p>We created Page Blobs out of a need to have a cloud storage data abstraction for files that supports:</p>
+<ol>
+<li>&nbsp;
+<ol>
+<li><strong>Fast range-based reads and writes</strong> &ndash; need a data abstraction with single update writes, to provide a fast update alternative to the two-phase update of Block Blobs. </li>
+<li><strong>Index-based data structure</strong> &ndash; need a data abstraction that supports index-based access, in comparison to the list-based approach of block blobs. </li>
+<li><strong>Efficient sparse data structure</strong> &ndash; since the data object can represent a large sparse index, we wanted to create an efficient way to manage and avoid charging for empty pages.&nbsp; Don&rsquo;t charge for parts of the index that do not have any data pages stored in them. </li>
+</ol>
+</li>
+</ol>
+<p><b>Uses for Page Blobs</b></p>
+<p>The following are some of the scenarios Page Blobs are being used for:</p>
+<ul>
+<li><strong>Windows Azure Drives</strong> - One of the key scenarios for Page Blobs was to support Windows Azure Drives. Windows Azure Drives allows Windows Azure cloud applications to mount a network attached durable drive, which is actually a Page Blob (<a href="http://blogs.msdn.com/windowsazurestorage/archive/2010/03/29/windows-azure-drive-demo-at-mix-2010.aspx">see prior post</a>). </li>
+<li><strong>Files with Range-Based Updates </strong>&ndash; An application can treat a Page Blob as a file, updating just the parts of the file/blob that have changed using ranged writes.&nbsp;&nbsp; In addition, to deal with concurrency, the application can obtain and renew a <a href="http://msdn.microsoft.com/en-us/library/ee691972.aspx">Blob Lease</a> to maintain an exclusive write lease on the Page Blob for updating. </li>
+<li><strong>Logging</strong> - Another use of Page Blobs is to use them for custom logging for their applications.&nbsp; For example, for a given role instance, when the role starts up a Page Blob can be created for some MaxSize, which is the max amount of log space the role wants to use for a day.&nbsp;&nbsp; The given role instance can then write its logs using up to 4MB range-based writes, where a header provides metadata for the size of the log entry, timestamp, etc.&nbsp;&nbsp; When the Page Blob is filled up, then treat the Page Blob as a circular buffer and start writing from the beginning of the Page Blob, or create a new page blob, depending upon how the application wants to manage the log files (blobs).&nbsp;&nbsp; With this type of approach you can have a different Page Blob for each role instance so that there is just a single writer to each page blob for logging.&nbsp; Then to know where to start writing the logs on role failover the application can just create a new Page Blob if a role restarts, and GC the older Page Blobs after a given number of hours or days.&nbsp; Since you are not charged for pages that are empty, it doesn&rsquo;t matter if you don&rsquo;t fill the page blob up. </li>
+</ul>
+<p><b>Using Storage Client Library to Access Page Blobs</b></p>
+<p>We&rsquo;ll now walk through how to use the Windows Azure Storage Client library to create, update and read Page Blobs.</p>
+<ul>
+<li><strong>Creating a Page Blob and Page Blob Size</strong> </li>
+</ul>
+<p>To create a Page Blob, we first create a <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudpageblob.aspx">CloudBlobClient</a> object, with the base Uri for accessing the blob storage for your storage account along with the <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storagecredentialsaccountandkey.aspx">StorageCredentialsAccountAndKey</a> object as shown below.&nbsp;&nbsp; This gives a CloudBlobClient object you can then use to derive all of your requests to the blob service for that storage account.&nbsp;&nbsp;&nbsp; The example then shows creating a reference to a <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudblobcontainer.aspx">CloudBlobContainer</a> object, and then creating the container if it doesn&rsquo;t already exist.&nbsp; Then from the CloudBlobContainer object we can create a reference to a <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudpageblob.aspx">CloudPageBlob</a> object by specifying the page blob name we want to access.</p>
+<pre class="code"><span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient;
+<span style="COLOR: #2b91af">StorageCredentialsAccountAndKey </span>creds = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">StorageCredentialsAccountAndKey</span>(accountName, key);
+<span style="COLOR: blue">string </span>baseUri = <span style="COLOR: blue">string</span>.Format(<span style="COLOR: #a31515">"http://{0}.blob.core.windows.net"</span>, accountName);
+<span style="COLOR: #2b91af">CloudBlobClient </span>blobStorage = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">CloudBlobClient</span>(baseUri, creds);
+<span style="COLOR: #2b91af">CloudBlobContainer </span>container = blobStorage.GetContainerReference(containerName);
+container.CreateIfNotExist();
+<span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(blobName);
+pageBlob.Create(blobSize); <br/> </pre>
+<p><a href="http://11011.net/software/vspaste"></a><a href="http://11011.net/software/vspaste"></a></p>
+<p>Then to create the page blob we call <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudpageblob.create.aspx">CloudPageBlob.Create</a> passing in the max size for the blob we want to create.&nbsp; Note that the blobSize has to be modulo 512 bytes.</p>
+<p>Right after the page blob is created, no pages are actually stored, but you can read from any page range within the blob, and will get back zeros.&nbsp; This is because &ldquo;empty pages&rdquo; are treated by the page blob as if they were filled with zeros when trying to read those pages.&nbsp; This also means that after creating a blob, you are not charged for any pages even if you specify a 1TB page blob.&nbsp;&nbsp; You are only charged for pages that have data stored in them.</p>
+<p>Make sure when uploading a blob that you don&rsquo;t upload pages that are full of zeros, and instead skip over those pages leaving them empty.&nbsp;&nbsp; This will ensure that you aren&rsquo;t charged for those empty pages.&nbsp; See the example below for uploading VHDs to page blobs, where we only upload pages that are non-zero.&nbsp; Similarly, when reading a page blob, if you have a lot of empty pages, you may want to first get the valid page ranges with <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudpageblob.getpageranges.aspx">GetPageRanges</a>, and then download just those pages.&nbsp; This is used in the downloading VHD example below.</p>
+<ul>
+<li><strong>Writing Pages</strong> </li>
+</ul>
+<p>To write pages you use the <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudpageblob.writepages.aspx">CloudPageBlob.WritePages</a> method.&nbsp; This allows you to write a sequential set of pages up to 4MBs, and the offset being written to must start on a 512 byte boundary (startingOffset % 512 == 0), and end on a 512 boundary - 1.&nbsp; The below shows an example of calling WritePages for a blob object we are accessing:</p>
+<pre class="code"><span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(blobName);
+pageBlob.WritePages(dataStream, startingOffset); <br/> </pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<p>In the above example, if the dataStream is larger than 4MBs or it does not end aligned to 512 bytes then an exception is thrown.</p>
+<p>A word of caution here is that if you get a &ldquo;500&rdquo; or &ldquo;504&rdquo; error (e.g., timeout, connection closed, etc) back for a WritePages request, then this means the write may or may not have succeeded on the server.&nbsp; In this case, it is best to retry the WritePages to make sure the contents are updated.</p>
+<ul>
+<li><strong>Reading Pages</strong> </li>
+</ul>
+<p>To read pages you use the <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudblob.openread.aspx">CloudPageBlob.OpenRead</a> method with <a href="http://msdn.microsoft.com/en-us/library/microsoft.health.blobstream.read.aspx">BlobStream.Read</a> reader object to read the pages.&nbsp; This allows you to stream the full blob or range of pages from any offset in the blob. Ranged reads can start end and at any byte offset (they do not have to be 512 byte aligned like in writing).</p>
+<pre class="code"><span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(blobName);
+<span style="COLOR: #2b91af">BlobStream </span>blobStream = pageBlob.OpenRead();
+<span style="COLOR: blue">byte</span>[] buffer = <span style="COLOR: blue">new byte</span>[rangeSize];
+<span style="COLOR: green"></span>blobStream.Seek(blobOffset, <span style="COLOR: #2b91af">SeekOrigin</span>.Begin); <br/><span style="COLOR: blue">int </span>numBytesRead = blobStream.Read(buffer, bufferOffset, rangeSize); <br/> </pre>
+<p>In the above, we use <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudblob.openread.aspx">CloudPageBlob.OpenRead (inherited from CloudBlob)</a> to get a <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.blobstream.aspx">BlobStream</a> for reading the contents of the blob.&nbsp;&nbsp; When creating a blob stream, the stream is set to be read at the start of the blob. To start reading a different byte offset, call blobStream.Seek with that offset. The read will then download the page blob bytes for the given rangeSize passed in storing it into the buffer at the bufferOffset.&nbsp;&nbsp; Remember, that if you do a read over pages without any data stored in them, the blob service will return 0s for those pages.</p>
+<p>One of the key concepts we talked about earlier is that if you have a sparsely populated blob you may want to just download the valid page regions.&nbsp; To do this you can use the <a href="http://msdn.microsoft.com/en-us/library/ee758423.aspx">CloudPageBlob.GetPageRanges</a> to get an enumerable of <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.pagerange.aspx">PageRange</a> objects.&nbsp;&nbsp; Calling GetPageRanges returns the list of valid page range regions for the page blob.&nbsp; You can then enumerate these, and download just the pages with data in them.&nbsp; The below is an example of doing this:</p>
+<pre class="code"><span style="COLOR: #2b91af">CloudBlobClient </span>blobStorage = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">CloudBlobClient</span>(accountName, creds);
+blobStorage.ReadAheadInBytes = 0;
+<span style="COLOR: #2b91af">CloudBlobContainer </span>container = blobStorage.GetContainerReference(containerName);
+<span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(blobName);
+<span style="COLOR: #2b91af">IEnumerable</span>&lt;<span style="COLOR: #2b91af">PageRange</span>&gt; pageRanges = pageBlob.GetPageRanges();
+<span style="COLOR: #2b91af">BlobStream </span>blobStream = pageBlob.OpenRead();
+ 
+<span style="COLOR: blue">foreach </span>(<span style="COLOR: #2b91af">PageRange </span>range <span style="COLOR: blue">in </span>pageRanges)
+{
+    <span style="COLOR: green">// EndOffset is inclusive... so need to add 1
+    </span><span style="COLOR: blue">int </span>rangeSize = (<span style="COLOR: blue">int</span>)(range.EndOffset + 1 - range.StartOffset);
+
+    <span style="COLOR: green">// Seek to the correct starting offset in the page blob stream
+    </span>blobStream.Seek(range.StartOffset, <span style="COLOR: #2b91af">SeekOrigin</span>.Begin);
+
+    <span style="COLOR: green">// Read the next page range into the buffer
+    </span><span style="COLOR: blue">byte</span>[] buffer = <span style="COLOR: blue">new byte</span>[rangeSize];
+    blobStream.Read(buffer, 0, rangeSize);
+
+    <span style="COLOR: green">// Then use the buffer for the page range just read
+</span>} <br/> </pre>
+<p>The above example gets the list of valid page ranges, then reads each valid page range into a local buffer to be used by the application how it sees fit.&nbsp; An important step here is the &ldquo;blobStream.Seek&rdquo;, which moves the blob stream to the correct starting position (offset) for the next valid page range.&nbsp;&nbsp; </p>
+<p>One thing to realize when using GetPageRanges is that you get back a list of continuous ranges for what are the current valid regions in the page blob.&nbsp;&nbsp;&nbsp; You do not get back the regions in the granularity or order that you wrote them.&nbsp;&nbsp; For example, assume you did the following write pages in the following order: [512-2048), then [4096-5120], then [2048-2560), and then [0-1024).&nbsp; In calling GetPageRanges, you would get back the two ranges [0-2560) and [4096-5120).</p>
+<p>Note, in the above code we sent the <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.cloudblobclient.readaheadinbytes.aspx">CloudBlobClient.ReadAheadInBytes</a> to 0.&nbsp; If we did not do this, then the code would read ahead from the blob service over the the page ranges without any data in them when doing the blobStream.Read.&nbsp;&nbsp; Therefore, setting the read ahead to zero, means that we can make sure that we only download the exact page ranges we want to (the pages with data in them).</p>
+<p><strong>Advanced Functionality &ndash; Clearing Pages and Changing Page Blob Size</strong></p>
+<p>There are a few advanced Page Blob features that are not exposed at the StorageClient level, but are accessible at the REST or StorageClient.Protocol level.&nbsp; We&rsquo;ll briefly touch on two of them here -- clearing pages and changing the size of the page blob.</p>
+<p>If you need to delete or zero out a set of pages in a Page Blob, writing zeros to those pages, will result in data pages (full of zeros) being stored into those pages, and there would be a charge for them.&nbsp;&nbsp; Therefore, if you have the need to delete or zero out a set of pages in a page blob, it is beneficial to call the <a href="http://msdn.microsoft.com/en-us/library/ee691975.aspx">Put Page with the header x-ms-page-write: clear</a> in the REST APIs.&nbsp; This will clear the set of pages from the page blob, resulting in those being removed from the set of pages being charged.&nbsp; The following is an example ClearPages routine from Jai Haridas to use until we add support for clear pages at the Storage Client level:</p>
+<pre class="code"><span style="COLOR: gray">/// </span><span style="COLOR: green">Jai Haridas, Microsoft 2010
+</span><span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient.Protocol;
+<span style="COLOR: blue">using </span>System.Net;
+<span style="COLOR: blue">public static void </span>ClearPages(<span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob, <span style="COLOR: blue">int </span>timeoutInSeconds, <br/>                   <span style="COLOR: blue">long </span>start, <span style="COLOR: blue">long </span>end, <span style="COLOR: blue">string </span>leaseId)
+{
+    <span style="COLOR: blue">if </span>(start % 512 != 0 || start &gt;= end)
+    {
+        <span style="COLOR: blue">throw new </span><span style="COLOR: #2b91af">ArgumentOutOfRangeException</span>(<span style="COLOR: #a31515">"start"</span>);
+    }
+    <span style="COLOR: blue">if </span>((end + 1) % 512 != 0)
+    {
+        <span style="COLOR: blue">throw new </span><span style="COLOR: #2b91af">ArgumentOutOfRangeException</span>(<span style="COLOR: #a31515">"end"</span>);
+    }
+    <span style="COLOR: blue">if </span>(pageBlob == <span style="COLOR: blue">null</span>)
+    {
+        <span style="COLOR: blue">throw new </span><span style="COLOR: #2b91af">ArgumentNullException</span>(<span style="COLOR: #a31515">"pageBlob"</span>);
+    }
+    <span style="COLOR: blue">if </span>(timeoutInSeconds &lt;= 0)
+    {
+        <span style="COLOR: blue">throw new </span><span style="COLOR: #2b91af">ArgumentOutOfRangeException</span>(<span style="COLOR: #a31515">"timeoutInSeconds"</span>);
+    }
+    <span style="COLOR: #2b91af">UriBuilder </span>uriBuilder = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">UriBuilder</span>(pageBlob.Uri);
+    uriBuilder.Query = <span style="COLOR: blue">string</span>.Format(<span style="COLOR: #a31515">"comp=page&amp;timeout={0}"</span>, timeoutInSeconds);
+    <span style="COLOR: #2b91af">Uri </span>requestUri = uriBuilder.Uri;
+
+    <span style="COLOR: green">// Take care of SAS query parameters if required
+    </span><span style="COLOR: blue">if </span>(pageBlob.ServiceClient.Credentials.NeedsTransformUri)
+    {
+        requestUri = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">Uri</span>(pageBlob.ServiceClient.Credentials.TransformUri(requestUri.ToString()));
+    }
+
+    <span style="COLOR: green">// Create the request and set all the required headers
+    </span><span style="COLOR: #2b91af">HttpWebRequest </span>request = (<span style="COLOR: #2b91af">HttpWebRequest</span>)<span style="COLOR: #2b91af">WebRequest</span>.Create(requestUri);
+    request.Method = <span style="COLOR: #a31515">"PUT"</span>;
+    <span style="COLOR: green">// let the http web request timeout after 30s of the total timeout we provide to Azure Storage
+    </span>request.Timeout = (<span style="COLOR: blue">int</span>)<span style="COLOR: #2b91af">Math</span>.Ceiling(<span style="COLOR: #2b91af">TimeSpan</span>.FromSeconds(timeoutInSeconds + 30).TotalMilliseconds);
+
+    request.ContentLength = 0;
+    request.Headers.Add(<span style="COLOR: #a31515">"x-ms-version"</span>, <span style="COLOR: #a31515">"2009-09-19"</span>);
+    request.Headers.Add(<span style="COLOR: #a31515">"x-ms-page-write"</span>, <span style="COLOR: #a31515">"Clear"</span>);
+    request.Headers.Add(<span style="COLOR: #a31515">"x-ms-range"</span>, <span style="COLOR: blue">string</span>.Format(<span style="COLOR: #a31515">"bytes={0}-{1}"</span>, start, end));
+    
+    <span style="COLOR: blue">if </span>(!<span style="COLOR: blue">string</span>.IsNullOrEmpty(leaseId))
+    {
+        request.Headers.Add(<span style="COLOR: #a31515">"x-ms-lease-id"</span>, leaseId);
+    }
+    <span style="COLOR: green">// We have all the headers in place- let us add auth and date header
+    </span>pageBlob.ServiceClient.Credentials.SignRequest(request);
+    <span style="COLOR: blue">using </span>(<span style="COLOR: #2b91af">HttpWebResponse </span>clearResponse = (<span style="COLOR: #2b91af">HttpWebResponse</span>)request.GetResponse())
+    {
+        <span style="COLOR: green">// Add your own logging here as the call is successful if <br/>        // </span><span style="COLOR: green">clearResponse.StatusCode == HttpStatusCode.Created
+    </span>}
+}
+
+<span style="COLOR: blue">public static void </span>ClearPageWithRetries(<span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob, <span style="COLOR: blue">int </span>timeoutInSeconds, <br/>                   <span style="COLOR: blue">long </span>start, <span style="COLOR: blue">long </span>end, <span style="COLOR: blue">string </span>leaseId)
+{
+    <span style="COLOR: blue">int </span>retry = 0;
+<span style="COLOR: blue">    int </span>maxRetries = 4; <br/>    <span style="COLOR: blue">for </span>(; ; )
+    {
+        retry++;
+
+        <span style="COLOR: blue">try
+        </span>{
+            ClearPage(pageBlob, timeoutInSeconds, start, end, leaseId);
+            <span style="COLOR: blue">break</span>;
+        }
+        <span style="COLOR: blue">catch </span>(<span style="COLOR: #2b91af">WebException </span>e)
+        {
+<span style="COLOR: green">            // Log the webexception status, since that tells what the error may be<br/>            // Let us re-throw the error on 3xx,4xx, 501 and 505 errors OR<br/></span><span style="COLOR: green">            // if we exceed the retry count</span><span style="COLOR: green">
+            </span><span style="COLOR: #2b91af">HttpWebResponse </span>response = e.Response <span style="COLOR: blue">as </span><span style="COLOR: #2b91af">HttpWebResponse</span>;
+            <span style="COLOR: blue">if </span>(retry == maxRetries || 
+                (response != <span style="COLOR: blue">null </span>&amp;&amp; <br/>                (((<span style="COLOR: blue">int</span>)response.StatusCode &gt;= 300 &amp;&amp; <br/>                  (<span style="COLOR: blue">int</span>)response.StatusCode &lt; 500) || <br/>                  (response.StatusCode == <span style="color: #2b91af;">HttpStatusCode</span>.NotImplemented)||<br/>                  (response.StatusCode == <span style="color: #2b91af;">HttpStatusCode</span>.HttpVersionNotSupported))))
+            {
+                <span style="COLOR: blue">throw</span>;
+            }
+        }
+
+        <span style="COLOR: green">// Backoff: 3s, 9s, 27s ... 
+        </span><span style="COLOR: blue">int </span>retryInterval = (<span style="COLOR: blue">int</span>)<span style="COLOR: #2b91af">Math</span>.Pow(3, retry);
+        System.Threading.<span style="COLOR: #2b91af">Thread</span>.Sleep(retryInterval*1000);
+    }
+} <br/> </pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<p>When creating the page blob, the max size specified is primarily used for bounds checking the updates to the blob.&nbsp; You can actually change the size of the Page Blob at anytime using the REST API (via <a href="http://msdn.microsoft.com/en-us/library/ee691966.aspx">Set Blob Properties and x-ms-blob-content-length</a>)&nbsp; or Protocol interfaces (via <a href="http://msdn.microsoft.com/en-us/library/microsoft.windowsazure.storageclient.protocol.blobrequest.setproperties.aspx">BlobRequest.SetProperties and newBlobSize</a>).&nbsp;&nbsp; If you shrink the blob size, then the pages past the new max size at the end of the blob will be deleted.&nbsp; If you increase the size of the page blob, then empty pages will be effectively added at the end of the Page Blob.</p>
+<pre class="code"><span style="COLOR: blue">using </span>Microsoft.WindowsAzure;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient.Protocol;
+<span style="COLOR: blue">using </span>System.Net;
+
+<span style="COLOR: green">// leaving out account/container creation</span></pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<pre class="code"><span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(config.Blob);
+<span style="COLOR: #2b91af">Uri </span>requestUri = pageBlob.Uri;
+<span style="COLOR: blue">if </span>(blobStorage.Credentials.NeedsTransformUri)
+{
+    requestUri = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">Uri</span>(blobStorage.Credentials.TransformUri(requestUri.ToString()));
+}
+
+<span style="COLOR: #2b91af">HttpWebRequest </span>request = <span style="COLOR: #2b91af">BlobRequest</span>.SetProperties(requestUri, timeout,
+               pageBlob.Properties, <span style="COLOR: blue">null</span>, newBlobSize);
+request.Timeout = timeout;
+blobStorage.Credentials.SignRequest(request);
+<span style="COLOR: blue">using </span>(<span style="COLOR: #2b91af">WebResponse </span>response = request.GetResponse())
+{
+    <span style="COLOR: green">// call succeeded
+</span>}; <br/> </pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<p><b>Putting it All Together to Efficiently Upload VHDs to Page Blobs</b></p>
+<p>Now we want to tie everything together by providing an example command line application written using the Storage Client Library that allows you to efficiently upload VHDs to Page Blobs.&nbsp;&nbsp; It actually works for any file (nothing specific in the program to VHDs), as long as you are OK with the end of the file to be 512 byte aligned when stored into the Page Blob.</p>
+<p>The application was written by Andy Edwards for the <a href="http://blogs.msdn.com/windowsazurestorage/archive/2010/03/29/windows-azure-drive-demo-at-mix-2010.aspx">Windows Azure Drive MIX 2010 demo (please see prior post)</a>.&nbsp;&nbsp; The program takes 3 parameters:</p>
+<ol>
+<li>The local file you want to upload </li>
+<li>The full uri for the page blob you want to store in the blob service </li>
+<li>The name of a local file that has the storage account key stored in it </li>
+</ol>
+<p>An example command line for running the program looks like:</p>
+<p>c:\&gt; vhdupload.exe input-file <a href="http://accountname.blob.core.windows.net/container/blobname">http://accountname.blob.core.windows.net/container/blobname</a> key.txt</p>
+<p>The program reads over the local file, finding the regions of non-zero pages, and then uses WritePages to write them to the page blob.&nbsp; As describe above, it skips over pages that are empty (filled with zeros), so they are not uploaded.&nbsp; Also, for the last buffer to be uploaded, if it is not 512 byte aligned, we resize it so that it is aligned to 512 bytes.</p>
+<p>Here is the code:</p>
+<pre class="code"><span style="COLOR: green">// Andy Edwards, Microsoft 2010
+</span><span style="COLOR: blue">using </span>System;
+<span style="COLOR: blue">using </span>System.Collections.Generic;
+<span style="COLOR: blue">using </span>System.Text;
+<span style="COLOR: blue">using </span>System.IO;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure;
+
+<span style="COLOR: blue">public class </span><span style="COLOR: #2b91af">VhdUpload
+</span>{
+    <span style="COLOR: blue">public static void </span>Main(<span style="COLOR: blue">string </span>[] args)
+    {
+        <span style="COLOR: #2b91af">Config </span>config = <span style="COLOR: #2b91af">Config</span>.Parse(args);
+        <span style="COLOR: blue">try
+        </span>{
+            <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Uploading: " </span>+ config.Vhd.FullName + <span style="COLOR: #a31515">"\n" </span>+
+                              <span style="COLOR: #a31515">"To:        " </span>+ config.Url.AbsoluteUri);
+            UploadVHDToCloud(config);
+        }
+        <span style="COLOR: blue">catch </span>(<span style="COLOR: #2b91af">Exception </span>e)
+        {
+            <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Error uploading vhd:\n" </span>+ e.ToString());
+        }
+    }
+    <span style="COLOR: blue">private static bool </span>IsAllZero(<span style="COLOR: blue">byte</span>[] range, <span style="COLOR: blue">long </span>rangeOffset, <span style="COLOR: blue">long </span>size)
+    {
+        <span style="COLOR: blue">for </span>(<span style="COLOR: blue">long </span>offset = 0; offset &lt; size; offset++)
+        {
+            <span style="COLOR: blue">if </span>(range[rangeOffset + offset] != 0)
+            {
+                <span style="COLOR: blue">return false</span>;
+            }
+        }
+        <span style="COLOR: blue">return true</span>;
+    }
+    <span style="COLOR: blue">private static void </span>UploadVHDToCloud(<span style="COLOR: #2b91af">Config </span>config)
+    {
+        <span style="COLOR: #2b91af">StorageCredentialsAccountAndKey </span>creds = <span style="COLOR: blue">new <br/>               </span><span style="COLOR: #2b91af">StorageCredentialsAccountAndKey</span>(config.Account, config.Key);
+
+        <span style="COLOR: #2b91af">CloudBlobClient </span>blobStorage = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">CloudBlobClient</span>(config.AccountUrl, creds);
+        <span style="COLOR: #2b91af">CloudBlobContainer </span>container = blobStorage.GetContainerReference(config.Container);
+        container.CreateIfNotExist();
+
+        <span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(config.Blob);
+        <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Vhd size:  " </span>+ Megabytes(config.Vhd.Length));
+
+        <span style="COLOR: blue">long </span>blobSize = RoundUpToPageBlobSize(config.Vhd.Length);
+        pageBlob.Create(blobSize);
+
+        <span style="COLOR: #2b91af">FileStream </span>stream = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">FileStream</span>(config.Vhd.FullName, <span style="COLOR: #2b91af">FileMode</span>.Open, <span style="COLOR: #2b91af">FileAccess</span>.Read);
+        <span style="COLOR: #2b91af">BinaryReader </span>reader = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">BinaryReader</span>(stream);
+
+        <span style="COLOR: blue">long </span>totalUploaded = 0;
+        <span style="COLOR: blue">long </span>vhdOffset = 0;
+        <span style="COLOR: blue">int </span>offsetToTransfer = -1;
+
+        <span style="COLOR: blue">while </span>(vhdOffset &lt; config.Vhd.Length)
+        {
+            <span style="COLOR: blue">byte</span>[] range = reader.ReadBytes(FourMegabytesAsBytes);
+
+            <span style="COLOR: blue">int </span>offsetInRange = 0;
+
+            <span style="COLOR: green">// Make sure end is page size aligned
+            </span><span style="COLOR: blue">if </span>((range.Length % PageBlobPageSize) &gt; 0)
+            {
+                <span style="COLOR: blue">int </span>grow = (<span style="COLOR: blue">int</span>)(PageBlobPageSize - (range.Length % PageBlobPageSize));
+                <span style="COLOR: #2b91af">Array</span>.Resize(<span style="COLOR: blue">ref </span>range, range.Length + grow);
+            }
+
+            <span style="COLOR: green">// Upload groups of contiguous non-zero page blob pages.  
+            </span><span style="COLOR: blue">while </span>(offsetInRange &lt;= range.Length)
+            {
+                <span style="COLOR: blue">if </span>((offsetInRange == range.Length) ||
+                    IsAllZero(range, offsetInRange, PageBlobPageSize))
+                {
+                    <span style="COLOR: blue">if </span>(offsetToTransfer != -1)
+                    {
+                        <span style="COLOR: green">// Transfer up to this point
+                        </span><span style="COLOR: blue">int </span>sizeToTransfer = offsetInRange - offsetToTransfer;
+                        <span style="COLOR: #2b91af">MemoryStream </span>memoryStream = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">MemoryStream</span>(range, <br/>                                     offsetToTransfer, sizeToTransfer, <span style="COLOR: blue">false</span>, <span style="COLOR: blue">false</span>);
+                        pageBlob.WritePages(memoryStream, vhdOffset + offsetToTransfer);
+                        <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Range ~" </span>+ Megabytes(offsetToTransfer + vhdOffset) <br/>                                + <span style="COLOR: #a31515">" + " </span>+ PrintSize(sizeToTransfer));
+                        totalUploaded += sizeToTransfer;
+                        offsetToTransfer = -1;
+                    }
+                }
+                <span style="COLOR: blue">else
+                </span>{
+                    <span style="COLOR: blue">if </span>(offsetToTransfer == -1)
+                    {
+                        offsetToTransfer = offsetInRange;
+                    }
+                }
+                offsetInRange += PageBlobPageSize;
+            }
+            vhdOffset += range.Length;
+        }
+        <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Uploaded " </span>+ Megabytes(totalUploaded) + <span style="COLOR: #a31515">" of " </span>+ Megabytes(blobSize));
+    }
+
+    <span style="COLOR: blue">private static int </span>PageBlobPageSize = 512;
+    <span style="COLOR: blue">private static int </span>OneMegabyteAsBytes = 1024 * 1024;
+    <span style="COLOR: blue">private static int </span>FourMegabytesAsBytes = 4 * OneMegabyteAsBytes;
+    <span style="COLOR: blue">private static string </span>PrintSize(<span style="COLOR: blue">long </span>bytes)
+    {
+        <span style="COLOR: blue">if </span>(bytes &gt;= 1024*1024) <span style="COLOR: blue">return </span>(bytes / 1024 / 1024).ToString() + <span style="COLOR: #a31515">" MB"</span>;
+        <span style="COLOR: blue">if </span>(bytes &gt;= 1024) <span style="COLOR: blue">return </span>(bytes / 1024).ToString() + <span style="COLOR: #a31515">" kb"</span>;
+        <span style="COLOR: blue">return </span>(bytes).ToString() + <span style="COLOR: #a31515">" bytes"</span>;
+    }
+    <span style="COLOR: blue">private static string </span>Megabytes(<span style="COLOR: blue">long </span>bytes)
+    {
+        <span style="COLOR: blue">return </span>(bytes / OneMegabyteAsBytes).ToString() + <span style="COLOR: #a31515">" MB"</span>;
+    }
+    <span style="COLOR: blue">private static long </span>RoundUpToPageBlobSize(<span style="COLOR: blue">long </span>size)
+    {
+        <span style="COLOR: blue">return </span>(size + PageBlobPageSize - 1) &amp; ~(PageBlobPageSize - 1);
+    }
+}
+<span style="COLOR: blue">public class </span><span style="COLOR: #2b91af">Config
+</span>{
+    <span style="COLOR: blue">public </span><span style="COLOR: #2b91af">Uri </span>Url;
+    <span style="COLOR: blue">public string </span>Key;
+    <span style="COLOR: blue">public </span><span style="COLOR: #2b91af">FileInfo </span>Vhd;
+    <span style="COLOR: blue">public string </span>AccountUrl
+    {
+        <span style="COLOR: blue">get 
+        </span>{
+            <span style="COLOR: blue">return </span>Url.GetLeftPart(<span style="COLOR: #2b91af">UriPartial</span>.Authority);
+        }
+    }
+    <span style="COLOR: blue">public string </span>Account
+    {
+        <span style="COLOR: blue">get
+        </span>{
+            <span style="COLOR: blue">string </span>accountUrl = AccountUrl;
+
+            accountUrl = accountUrl.Substring(Url.GetLeftPart(<span style="COLOR: #2b91af">UriPartial</span>.Scheme).Length);
+            accountUrl = accountUrl.Substring(0, accountUrl.IndexOf(<span style="COLOR: #a31515">'.'</span>));
+
+            <span style="COLOR: blue">return </span>accountUrl;
+        }
+    }
+    <span style="COLOR: blue">public string </span>Container
+    {
+        <span style="COLOR: blue">get
+        </span>{
+            <span style="COLOR: blue">string </span>container = Url.PathAndQuery;
+            container = container.Substring(1);
+            container = container.Substring(0, container.IndexOf(<span style="COLOR: #a31515">'/'</span>));
+            <span style="COLOR: blue">return </span>container;
+        }
+    }
+    <span style="COLOR: blue">public string </span>Blob
+    {
+        <span style="COLOR: blue">get
+        </span>{
+            <span style="COLOR: blue">string </span>blob = Url.PathAndQuery;
+            blob = blob.Substring(1);
+            blob = blob.Substring(blob.IndexOf(<span style="COLOR: #a31515">'/'</span>) + 1);
+
+            <span style="COLOR: blue">int </span>queryOffset = blob.IndexOf(<span style="COLOR: #a31515">'?'</span>);
+            <span style="COLOR: blue">if </span>(queryOffset != -1)
+            {
+                blob = blob.Substring(0, queryOffset);
+            }
+            <span style="COLOR: blue">return </span>blob;
+        }
+    }
+    <span style="COLOR: blue">public static </span><span style="COLOR: #2b91af">Config </span>Parse(<span style="COLOR: blue">string </span>[] args)
+    {
+        <span style="COLOR: blue">if </span>(args.Length != 3)
+        {
+            WriteConsoleAndExit(<span style="COLOR: #a31515">"Usage: vhdupload &lt;file&gt; &lt;url&gt; &lt;keyfile&gt;"</span>);
+        }
+
+        <span style="COLOR: #2b91af">Config </span>config = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">Config</span>();
+        config.Url = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">Uri</span>(args[1]);
+        config.Vhd = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">FileInfo</span>(args[0]);
+
+        <span style="COLOR: blue">if </span>(!config.Vhd.Exists)
+        {
+            WriteConsoleAndExit(args[0] + <span style="COLOR: #a31515">" does not exist"</span>);
+        }
+
+        config.ReadKey(args[2]);
+
+        <span style="COLOR: blue">return </span>config;
+    }
+    <span style="COLOR: blue">public void </span>ReadKey(<span style="COLOR: blue">string </span>filename)
+    {
+        <span style="COLOR: blue">try
+        </span>{
+            Key = <span style="COLOR: #2b91af">File</span>.ReadAllText(filename);
+            Key = Key.TrimEnd(<span style="COLOR: blue">null</span>);
+            Key = Key.TrimStart(<span style="COLOR: blue">null</span>);
+        }
+        <span style="COLOR: blue">catch </span>(<span style="COLOR: #2b91af">Exception </span>e)
+        {
+            WriteConsoleAndExit(<span style="COLOR: #a31515">"Error reading key file:\n" </span>+ e.ToString());
+        }
+    }
+    <span style="COLOR: blue">private static void </span>WriteConsoleAndExit(<span style="COLOR: blue">string </span>s)
+    {
+        <span style="COLOR: #2b91af">Console</span>.WriteLine(s);
+        System.<span style="COLOR: #2b91af">Environment</span>.Exit(1);
+    }
+} <br/> </pre>
+<p><a href="http://11011.net/software/vspaste"></a><a href="http://11011.net/software/vspaste"></a></p>
+<p><strong>Putting it All Together to Efficiently Download Page Blobs to VHDs</strong></p>
+<p>Now we want to finish tying everything together by providing a command line program to also efficiently download page blobs using the Storage Client Library.&nbsp;&nbsp; The application was also written by Andy Edwards.&nbsp; The program takes 3 parameters:</p>
+<ol>
+<li>The full uri for the page blob you want to download from the blob service </li>
+<li>The local file you want to store the blob to </li>
+<li>The name of a local file that has the storage account key stored in it </li>
+</ol>
+<p>An example command line for running the program looks like:</p>
+<p>c:\&gt; vhdupload.exe <a href="http://accountname.blob.core.windows.net/container/blobname">http://accountname.blob.core.windows.net/container/blobname</a> output-file key.txt</p>
+<p>The program gets the valid page ranges with GetPageRanges, and then it reads just those ranges, and writes those ranges at the correct offset (by seeking to it) in the local file.&nbsp; </p>
+<p>Note, that the reads are broken up into 4MB reads, because (a) there is a bug in the storage client library where ReadPages uses a default timeout of 90 seconds, which may not be large enough if you are downloading page ranges in the size of 100s of MBs or larger, and (b) breaking up reads into smaller chunks allows more efficient continuation and retries of the download if there are connectivity issues for the client.</p>
+<p>Here is the code: </p>
+<pre class="code"><span style="COLOR: green">// Andy Edwards, Microsoft 2010
+</span><span style="COLOR: blue">using </span>System;
+<span style="COLOR: blue">using </span>System.Collections.Generic;
+<span style="COLOR: blue">using </span>System.Text;
+<span style="COLOR: blue">using </span>System.IO;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure.StorageClient;
+<span style="COLOR: blue">using </span>Microsoft.WindowsAzure;
+
+<span style="COLOR: blue">public class </span><span style="COLOR: #2b91af">VhdDownload
+</span>{
+    <span style="COLOR: blue">public static void </span>Main(<span style="COLOR: blue">string </span>[] args)
+    {
+        <span style="COLOR: #2b91af">Config </span>config = <span style="COLOR: #2b91af">Config</span>.Parse(args);
+        <span style="COLOR: blue">try
+        </span>{
+            <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Downloading: " </span>+ config.Url.AbsoluteUri + <span style="COLOR: #a31515">"\n" </span>+
+                              <span style="COLOR: #a31515">"To:          " </span>+ config.Vhd.FullName);
+            DownloadVHDFromCloud(config);
+        }
+        <span style="COLOR: blue">catch </span>(<span style="COLOR: #2b91af">Exception </span>e)
+        {
+            <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Error downloading vhd:\n" </span>+ e.ToString());
+        }
+    }
+    <span style="COLOR: blue">private static void </span>DownloadVHDFromCloud(<span style="COLOR: #2b91af">Config </span>config)
+    {
+        <span style="COLOR: #2b91af">StorageCredentialsAccountAndKey </span>creds = <br/>               <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">StorageCredentialsAccountAndKey</span>(config.Account, config.Key);
+
+        <span style="COLOR: #2b91af">CloudBlobClient </span>blobStorage = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">CloudBlobClient</span>(config.AccountUrl, creds);
+        blobStorage.ReadAheadInBytes = 0;
+
+        <span style="COLOR: #2b91af">CloudBlobContainer </span>container = blobStorage.GetContainerReference(config.Container);
+        <span style="COLOR: #2b91af">CloudPageBlob </span>pageBlob = container.GetPageBlobReference(config.Blob);
+
+        <span style="COLOR: green">// Get the length of the blob
+        </span>pageBlob.FetchAttributes();
+        <span style="COLOR: blue">long </span>vhdLength = pageBlob.Properties.Length;
+        <span style="COLOR: blue">long </span>totalDownloaded = 0;
+        <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Vhd size:  " </span>+ Megabytes(vhdLength));
+        
+        <span style="COLOR: green">// Create a new local file to write into
+        </span><span style="COLOR: #2b91af">FileStream </span>fileStream = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">FileStream</span>(config.Vhd.FullName, <span style="COLOR: #2b91af">FileMode</span>.Create, <span style="COLOR: #2b91af">FileAccess</span>.Write);
+        fileStream.SetLength(vhdLength);
+
+        <span style="COLOR: green">// Download the valid ranges of the blob, and write them to the file
+        </span><span style="COLOR: #2b91af">IEnumerable</span>&lt;<span style="COLOR: #2b91af">PageRange</span>&gt; pageRanges = pageBlob.GetPageRanges();
+        <span style="COLOR: #2b91af">BlobStream </span>blobStream = pageBlob.OpenRead();
+
+        <span style="COLOR: blue">foreach </span>(<span style="COLOR: #2b91af">PageRange </span>range <span style="COLOR: blue">in </span>pageRanges)
+        {
+            <span style="COLOR: green">// EndOffset is inclusive... so need to add 1
+            </span><span style="COLOR: blue">int </span>rangeSize = (<span style="COLOR: blue">int</span>)(range.EndOffset + 1 - range.StartOffset);
+
+            <span style="COLOR: green">// Chop range into 4MB chucks, if needed
+            </span><span style="COLOR: blue">for </span>(<span style="COLOR: blue">int </span>subOffset = 0; subOffset &lt; rangeSize; subOffset += FourMegabyteAsBytes)
+            {
+                <span style="COLOR: blue">int </span>subRangeSize = <span style="COLOR: #2b91af">Math</span>.Min(rangeSize - subOffset, FourMegabyteAsBytes);
+                blobStream.Seek(range.StartOffset + subOffset, <span style="COLOR: #2b91af">SeekOrigin</span>.Begin);
+                fileStream.Seek(range.StartOffset + subOffset, <span style="COLOR: #2b91af">SeekOrigin</span>.Begin);
+
+                <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Range: ~" </span>+ Megabytes(range.StartOffset + subOffset) <br/>                                  + <span style="COLOR: #a31515">" + " </span>+ PrintSize(subRangeSize));
+                <span style="COLOR: blue">byte</span>[] buffer = <span style="COLOR: blue">new byte</span>[subRangeSize];
+
+                blobStream.Read(buffer, 0, subRangeSize);
+                fileStream.Write(buffer, 0, subRangeSize);
+                totalDownloaded += subRangeSize;
+            }
+        }
+        <span style="COLOR: #2b91af">Console</span>.WriteLine(<span style="COLOR: #a31515">"Downloaded " </span>+ Megabytes(totalDownloaded) + <span style="COLOR: #a31515">" of " </span>+ Megabytes(vhdLength));
+    }
+    <span style="COLOR: blue">private static int </span>OneMegabyteAsBytes = 1024 * 1024;
+    <span style="COLOR: blue">private static int </span>FourMegabyteAsBytes = 4 * OneMegabyteAsBytes;
+    <span style="COLOR: blue">private static string </span>Megabytes(<span style="COLOR: blue">long </span>bytes)
+    {
+        <span style="COLOR: blue">return </span>(bytes / OneMegabyteAsBytes).ToString() + <span style="COLOR: #a31515">" MB"</span>;
+    }
+
+    <span style="COLOR: blue">private static string </span>PrintSize(<span style="COLOR: blue">long </span>bytes)
+    {
+        <span style="COLOR: blue">if </span>(bytes &gt;= 1024*1024) <span style="COLOR: blue">return </span>(bytes / 1024 / 1024).ToString() + <span style="COLOR: #a31515">" MB"</span>;
+        <span style="COLOR: blue">if </span>(bytes &gt;= 1024) <span style="COLOR: blue">return </span>(bytes / 1024).ToString() + <span style="COLOR: #a31515">" kb"</span>;
+        <span style="COLOR: blue">return </span>(bytes).ToString() + <span style="COLOR: #a31515">" bytes"</span>;
+    }
+}
+<span style="COLOR: blue">public class </span><span style="COLOR: #2b91af">Config
+</span>{
+    <span style="COLOR: blue">public </span><span style="COLOR: #2b91af">Uri </span>Url;
+    <span style="COLOR: blue">public string </span>Key;
+    <span style="COLOR: blue">public </span><span style="COLOR: #2b91af">FileInfo </span>Vhd;
+    <span style="COLOR: blue">public string </span>AccountUrl
+    {
+        <span style="COLOR: blue">get 
+        </span>{
+            <span style="COLOR: blue">return </span>Url.GetLeftPart(<span style="COLOR: #2b91af">UriPartial</span>.Authority);
+        }
+    }
+    <span style="COLOR: blue">public string </span>Account
+    {
+        <span style="COLOR: blue">get
+        </span>{
+            <span style="COLOR: blue">string </span>accountUrl = AccountUrl;
+
+            accountUrl = accountUrl.Substring(Url.GetLeftPart(<span style="COLOR: #2b91af">UriPartial</span>.Scheme).Length);
+            accountUrl = accountUrl.Substring(0, accountUrl.IndexOf(<span style="COLOR: #a31515">'.'</span>));
+
+            <span style="COLOR: blue">return </span>accountUrl;
+        }
+    }
+    <span style="COLOR: blue">public string </span>Container
+    {
+        <span style="COLOR: blue">get
+        </span>{
+            <span style="COLOR: blue">string </span>container = Url.PathAndQuery;
+            container = container.Substring(1);
+            container = container.Substring(0, container.IndexOf(<span style="COLOR: #a31515">'/'</span>));
+            <span style="COLOR: blue">return </span>container;
+        }
+    }
+    <span style="COLOR: blue">public string </span>Blob
+    {
+        <span style="COLOR: blue">get
+        </span>{
+            <span style="COLOR: blue">string </span>blob = Url.PathAndQuery;
+            blob = blob.Substring(1);
+            blob = blob.Substring(blob.IndexOf(<span style="COLOR: #a31515">'/'</span>) + 1);
+            <span style="COLOR: blue">int </span>queryOffset = blob.IndexOf(<span style="COLOR: #a31515">'?'</span>);
+            <span style="COLOR: blue">if </span>(queryOffset != -1)
+            {
+                blob = blob.Substring(0, queryOffset);
+            }
+            <span style="COLOR: blue">return </span>blob;
+        }
+    }
+    <span style="COLOR: blue">public static </span><span style="COLOR: #2b91af">Config </span>Parse(<span style="COLOR: blue">string </span>[] args)
+    {
+        <span style="COLOR: blue">if </span>(args.Length != 3)
+        {
+            WriteConsoleAndExit(<span style="COLOR: #a31515">"Usage: vhddownload &lt;url&gt; &lt;file&gt; &lt;keyfile&gt;"</span>);
+        }
+        <span style="COLOR: #2b91af">Config </span>config = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">Config</span>();
+        config.Url = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">Uri</span>(args[0]);
+        config.Vhd = <span style="COLOR: blue">new </span><span style="COLOR: #2b91af">FileInfo</span>(args[1]);
+        <span style="COLOR: blue">if </span>(config.Vhd.Exists)
+        {
+            <span style="COLOR: blue">try
+            </span>{
+                config.Vhd.Delete();
+            }
+            <span style="COLOR: blue">catch </span>(<span style="COLOR: #2b91af">Exception </span>e)
+            {
+                WriteConsoleAndExit(<span style="COLOR: #a31515">"Failed to delete vhd file:\n" </span>+ e.ToString());
+            }
+        }
+        config.ReadKey(args[2]);
+        <span style="COLOR: blue">return </span>config;
+    }
+    <span style="COLOR: blue">public void </span>ReadKey(<span style="COLOR: blue">string </span>filename)
+    {
+        <span style="COLOR: blue">try
+        </span>{
+            Key = <span style="COLOR: #2b91af">File</span>.ReadAllText(filename);
+            Key = Key.TrimEnd(<span style="COLOR: blue">null</span>);
+            Key = Key.TrimStart(<span style="COLOR: blue">null</span>);
+        }
+        <span style="COLOR: blue">catch </span>(<span style="COLOR: #2b91af">Exception </span>e)
+        {
+            WriteConsoleAndExit(<span style="COLOR: #a31515">"Error reading key file:\n" </span>+ e.ToString());
+        }
+    }
+    <span style="COLOR: blue">private static void </span>WriteConsoleAndExit(<span style="COLOR: blue">string </span>s)
+    {
+        <span style="COLOR: #2b91af">Console</span>.WriteLine(s);
+        System.<span style="COLOR: #2b91af">Environment</span>.Exit(1);
+    }
+
+} <br/> </pre>
+<p><a href="http://11011.net/software/vspaste"></a></p>
+<p><b>Summary</b></p>
+<p>The following are a few areas worth summarizing about Page Blobs:</p>
+<ul>
+<li>When creating a Page Blob you specify the max size, but are only charged for pages with data stored in them. </li>
+<li>When uploading a Page Blob, do not store empty pages. </li>
+<li>When updating pages with zeros, clear them with ClearPages </li>
+<li>Reading from empty pages will return zeros </li>
+<li>When downloading a Page Blob, first use GetPageRanges, and only download the page ranges with data in them </li>
+</ul>
+<p>Brad Calder</p>
+<p>&nbsp;</p>
+	</div><!-- .entry-content -->
+
+
+	<footer class="entry-footer single">
+					<div class="tags">
+				<span>Tags </span>
+				<span>
+					<a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-blobs/" rel="tag">Windows Azure Blobs</a> <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-blobs-page/" rel="tag">Windows Azure Blobs - Page</a> <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-drives/" rel="tag">Windows Azure Drives</a>				</span>
+			</div>
+				<hr>
+	</footer><!-- .entry-footer -->
+
+</article><!-- #post-## -->
+
+			
+		</div><!-- #single-content -->
+
+		
+<div id="comments" class="comments-area">
+	<div class="comments-title">
+		Comments (3)	</div>
+
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title"> <small><a rel="nofollow" id="cancel-comment-reply-link" href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/#respond" style="display:none;">Cancel reply</a></small></h3><p class="must-log-in">You must be <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F04%2F10%2Fusing-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs%2F">logged in</a> to post a comment.</p>	</div><!-- #respond -->
+	
+			<div class="navigation pagination clear-both">
+					</div>
+
+		<ol class="comment-list">
+					<li class="comment even thread-even depth-1" id="comment-34">
+				<div id="div-comment-34" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Dan Tenenbaum</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/#comment-34">
+			June 3, 2010 at 3:30 pm</a>		</div>
+
+		<p>I&#39;m using the VhdUpload class to upload a 200MB VHD file. It consistently fails at some (varying) point during the download. After console output pauses for a while, the following stack trace appears:</p>
+<p>Range ~50 MB + 6 kb</p>
+<p>Error uploading vhd:</p>
+<p>Microsoft.WindowsAzure.StorageClient.StorageServerException: Server encountered</p>
+<p>an internal error. Please try again after some time. &#8212;&gt; System.Net.WebExceptio</p>
+<p>n: The remote server returned an error: (500) Internal Server Error.</p>
+<p> &nbsp; at System.Net.HttpWebRequest.EndGetResponse(IAsyncResult asyncResult)</p>
+<p> &nbsp; at Microsoft.WindowsAzure.StorageClient.EventHelper.ProcessWebResponse(WebReq</p>
+<p>uest req, IAsyncResult asyncResult, EventHandler`1 handler, Object sender)</p>
+<p> &nbsp; &#8212; End of inner exception stack trace &#8212;</p>
+<p> &nbsp; at Microsoft.WindowsAzure.StorageClient.Tasks.Task`1.get_Result()</p>
+<p> &nbsp; at Microsoft.WindowsAzure.StorageClient.Tasks.Task`1.ExecuteAndWait()</p>
+<p> &nbsp; at Microsoft.WindowsAzure.StorageClient.TaskImplHelper.ExecuteImplWithRetry(F</p>
+<p>unc`1 impl, RetryPolicy policy)</p>
+<p> &nbsp; at Microsoft.WindowsAzure.StorageClient.CloudPageBlob.WritePages(Stream pageD</p>
+<p>ata, Int64 startOffset, BlobRequestOptions options)</p>
+<p> &nbsp; at Microsoft.WindowsAzure.StorageClient.CloudPageBlob.WritePages(Stream pageD</p>
+<p>ata, Int64 startOffset)</p>
+<p> &nbsp; at VhdUpload.UploadVHDToCloud(Config config) in C:azure_samples_1.1FullTrus</p>
+<p>tvhduploaderProgram.cs:line 83</p>
+<p> &nbsp; at VhdUpload.Main(String[] args) in C:azure_samples_1.1FullTrustvhduploade</p>
+<p>rProgram.cs:line 18</p>
+<p>Any ideas? Thanks.</p>
+<p>Dan</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F04%2F10%2Fusing-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment odd alt thread-odd thread-alt depth-1" id="comment-35">
+				<div id="div-comment-35" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/7baef01f55b96f7ef6e7d2270e0b7ec6?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/7baef01f55b96f7ef6e7d2270e0b7ec6?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">jaidevh1@hotmail.com</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/#comment-35">
+			June 15, 2010 at 9:24 am</a>		</div>
+
+		<p>Hi Dan,</p>
+<p> Thanks for reporting this. We have posted a workaround for this at <a rel="nofollow" target="_new" href="http://blogs.msdn.com/b/windowsazurestorage/archive/2010/06/15/stream-position-not-reset-on-retries-in-pageblob-writepages-api.aspx">blogs.msdn.com/&#8230;/stream-position-not-reset-on-retries-in-pageblob-writepages-api.aspx</a>.</p>
+<p>Jai Haridas (MSFT)</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F04%2F10%2Fusing-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		<li class="comment even thread-even depth-1" id="comment-280">
+				<div id="div-comment-280" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/90652f78c377e311ec3c38e43be60aca?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/90652f78c377e311ec3c38e43be60aca?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">Greg T</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2010/04/10/using-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs/#comment-280">
+			May 30, 2013 at 3:53 pm</a>		</div>
+
+		<p>Hi</p>
+<p>Thanks for this code sample !! I wrapped it up in a simple windows UI, and put it on codeplex at : </p>
+<p><a rel="nofollow" target="_new" href="http://azuredrivebuddy.codeplex.com/">azuredrivebuddy.codeplex.com</a></p>
+<p>Hope that helps !</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2010%2F04%2F10%2Fusing-windows-azure-page-blobs-and-how-to-efficiently-upload-and-download-page-blobs%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		</ol><!-- .comment-list -->
+
+		<div class="navigation pagination">
+					</div>
+
+	
+	
+</div><!-- .comments-area -->
+	</div><!-- #primary -->

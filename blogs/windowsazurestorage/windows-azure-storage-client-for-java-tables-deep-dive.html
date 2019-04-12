@@ -1,0 +1,637 @@
+---
+layout: windowsazurestorage
+title: Windows Azure Storage Client for Java Tables Deep Dive
+weight: 3
+---
+
+<div id="site-content" class="site-content row">
+
+	<div id="primary" class="content-area col-sm-9">
+		<div id="single-content" class="div-content">
+
+			
+				
+<article id="post-70" class="post-70 post type-post status-publish format-standard hentry category-uncategorized tag-windows-azure-storage-client-library tag-windows-azure-tables">
+
+	<header class="entry-header single">
+		<h1 class="entry-title">Windows Azure Storage Client for Java Tables Deep Dive</h1>		<div class="rating-wrap">
+		<div id="star-rating-70" class="wds-ratings" data-rating="5" data-userrating="0" data-postid="70" data-container="body" data-toggle="tooltip" title="2 user(s) rated">
+			<div class="wds-ratings-inner-wrap">
+				<div>
+					<div aria-label="Select 5 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="5"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span><span aria-hidden="true" class="star-5"><span>&#x2605;</span></span></div><div aria-label="Select 4 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="4"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span><span aria-hidden="true" class="star-4"><span>&#x2605;</span></span></div><div aria-label="Select 3 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="3"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span><span aria-hidden="true" class="star-3"><span>&#x2605;</span></span></div><div aria-label="Select 2 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="2"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span><span aria-hidden="true" class="star-2"><span>&#x2605;</span></span></div><div aria-label="Select 1 star, this article is 5 star rated" tabindex="0" class="wds-ratings-stars wds-ratings-stars-enable-editing" data-stars="1"><span aria-hidden="true" class="star-1"><span>&#x2605;</span></span></div>
+				</div>
+			</div>
+		</div>
+		</div>		<div class="clear-both"></div>
+		<div class="entry-meta">
+			<img alt="avatar of windows-azure-storage" src="https://i1.social.s-msft.com/profile/u/avatar.jpg?displayname=Windows+Azure+Storage&amp;size=extralarge&amp;version=00000000-0000-0000-0000-000000000000" class="avatar avatar-22 photo" height="22" width="22"/><span class="byline"><span class="author vcard"><a class="url fn n profile-usercard-hover" data-profile-userid="59e1aedafa2d4428b7004b2c2fac4adc" href="https://social.msdn.microsoft.com/profile/Windows+Azure+Storage">Windows Azure Storage</a></span></span><span class="posted-on posted-on-margin"><span class="screen-reader-text"></span><time class="entry-date published updated" datetime="2012-03-05T09:44:55+00:00">March 5, 2012</time></span><span class="comments-link"><span class="glyphicon glyphicon-comment" aria-hidden="true"></span><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/#comments">1</a></span>				<span class="social-icons-wrap">
+		<ul class="social-icons">
+			<li><div class="fb-share-button" data-href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/" data-layout="button_count" data-size="large" data-mobile-iframe="true"><a class="fb-xfbml-parse-ignore" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/&amp;src=sdkpreparse">Share</a></div></li>
+			<div id="fb-root" style="display:none"></div>
+
+			<li class="social-icon twitter"><a data-social="{&quot;type&quot;:&quot;twitter&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/&quot;, &quot;text&quot;: &quot;Windows Azure Storage Client for Java Tables Deep Dive&quot;}" href="#" id="post_tweet_count">0</a></li>
+			<li class="social-icon linkedin"><a data-social="{&quot;type&quot;:&quot;linkedin&quot;, &quot;url&quot;:&quot;https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/&quot;, &quot;text&quot;: &quot;Windows Azure Storage Client for Java Tables Deep Dive&quot;}" href="#" id="get_post_linkedin_count">0</a></li>
+		</ul>
+	</span><!-- .social-icons-wrap -->
+	<script type="text/javascript">
+		// Get social counts
+		jQuery( window ).load(function () {
+			jQuery.getScript('https://blogs.msdn.microsoft.com/windowsazurestorage/wp-content/themes/microsoft/js/social-counts.js?ver=02092017')
+				.done(function(script,textStatus) {
+					window.msdnsocial.ajax('https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/');
+				});
+		});
+	</script>
+		</div>
+		<hr>
+	</header><!-- .entry-header -->
+
+	<div class="entry-content single">
+		<p>This blog post serves as an overview to the recently released <a href="https://github.com/WindowsAzure/azure-sdk-for-java">Windows Azure Storage Client for Java</a> which includes support for the <a href="http://msdn.microsoft.com/en-us/library/windowsazure/dd179423.aspx">Azure Table Service</a>. Azure Tables is a NoSQL datastore. For detailed information on the Azure Tables data model, see the resources section below. </p>
+<h4>Design</h4>
+<p>There are three key areas we emphasized in the design of the Table client: usability, extensibility, and performance. The basic scenarios are simple and “just work”; in addition, we have also provided three distinct extension points to allow developers to customize the client behaviors to their specific scenario. We have also maintained a degree of consistency with the other storage clients (Blob and Queue) so that moving between them feels seamless. There are also some features and requirements that make the table service unique. </p>
+<p>For more on the overall design philosophy and guidelines of the Windows Azure Storage Client for Java see the related blog post in the Links section below.</p>
+<h4>Packages</h4>
+<p>The Storage Client for Java is distributed in the Windows Azure SDK for Java jar (see below for locations). The Windows Azure SDK for Java jar also includes a “service layer” implementation for several Azure services, including storage, which is intended to provide a low level interface for users to access various services in a common way. In contrast, the client layer provides a much higher level API surface that is more approachable and has many conveniences that are frequently required when developing scalable Windows Azure Storage applications. For the optimal development experience avoid importing the base package directly and instead import the client sub package (com.microsoft.windowsazure.services.table.<b>client</b>). This blog post refers to this client layer.</p>
+<p><b>Common</b></p>
+<p><b>com.microsoft.windowsazure.services.core.storage</b> – This package contains all storage primitives such as <i>CloudStorageAccount</i>, <i>StorageCredentials</i>, Retry Policies, etc.</p>
+<p><b>Tables</b><b></b></p>
+<p><b>com.microsoft.windowsazure.services.table.client</b> – This package contains all the functionality for working with the Windows Azure Table service, including <i>CloudTableClient</i>, <i>TableServiceEntity</i>, etc.</p>
+<h4>Object Model</h4>
+<p>A diagram of the table object model is provided below. The core flow of the client is that a user defines an action (<i>TableOperation</i>, <i>TableBatchOperation</i>, or <i>TableQuery</i>) over entities in the Table service and executes these actions via the <i>CloudTableClient</i>. For usability, these classes provide static factory methods to assist in the definition of actions. </p>
+<p>For example, the code below inserts a single entity:</p>
+<p>tableClient.execute([Table Name], TableOperation.insert(entity));</p>
+<p><a href="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/5861.javaTables_46502EF4.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/5861.javaTables_5F00_46502EF4.jpg"><img style="border: 0px currentcolor; display: inline;" title="javaTables" border="0" alt="javaTables" src="https://msdnshared.blob.core.windows.net/media/MSDNBlogsFS/prod.evol.blogs.msdn.com/CommunityServer.Blogs.Components.WeblogFiles/00/00/01/36/55/metablogapi/7411.javaTables_thumb_01A394B3.jpg" original-url="http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-blogs-components-weblogfiles/00-00-01-36-55-metablogapi/7411.javaTables_5F00_thumb_5F00_01A394B3.jpg" width="644" height="439"/></a> </p>
+<p> Figure 1: Table client object model<i></i></p>
+<h5>Execution</h5>
+<p><b>CloudTableClient</b></p>
+<p>Similar to the other Azure storage clients, the table client provides a logical service client, <i>CloudTableClient,</i> which is responsible for service wide operations and enables execution of other operations. The <i>CloudTableClient </i>class can update the Storage Analytics settings for the Table service, list all the tables in the account, and execute operations against a given table, among other operations. </p>
+<p><b>TableRequestOptions</b></p>
+<p>The <i>TableRequestOptions</i> class defines additional parameters which govern how a given operation is executed, specifically the timeout and RetryPolicy that are applied to each request. The <i>CloudTableClient</i> provides default timeout and RetryPolicy settings; <i>TableRequestOptions</i> can override them for a particular operation.</p>
+<p><b>TableResult</b></p>
+<p>The <i>TableResult </i>class encapsulates the result of a single TableOperation. This object includes the <a href="http://en.wikipedia.org/wiki/HTTP_status_code">HTTP status code</a>, the <a href="http://en.wikipedia.org/wiki/HTTP_ETag">ETag</a> and a weak typed reference to the associated entity.</p>
+<h5>Actions</h5>
+<p><b>TableOperation</b></p>
+<p>The <i>TableOperation</i> class encapsulates a single operation to be performed against a table. Static factory methods are provided to create a <i>TableOperation</i> that will perform an insert, delete, merge, replace, retrieve, insertOrReplace, and insertOrMerge operation on the given entity. <i>TableOperation</i>s can be reused so long as the associated entity is updated. As an example, a client wishing to use table storage as a heartbeat mechanism could define a merge operation on an entity and execute it to update the entity state to the server periodically. </p>
+<p><b>Sample – Inserting an Entity into a Table</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
+import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.TableOperation;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: green;">// Create the table client.
+</span>CloudTableClient tableClient = storageAccount.createCloudTableClient();
+    
+tableClient.createTableIfNotExists(<span style="color: rgb(163, 21, 21);">&quot;people&quot;</span>);
+
+<span style="color: green;">// Create a new customer entity.
+</span>CustomerEntity customer1 = <span style="color: blue;">new </span>CustomerEntity(<span style="color: rgb(163, 21, 21);">&quot;Harp&quot;</span>, <span style="color: rgb(163, 21, 21);">&quot;Walter&quot;</span>);
+customer1.setEmail(<span style="color: rgb(163, 21, 21);">&quot;Walter@contoso.com&quot;</span>);
+customer1.setPhoneNumber(<span style="color: rgb(163, 21, 21);">&quot;425-555-0101&quot;</span>);
+
+<span style="color: green;">// Create an operation to add the new customer to the people table.
+</span>TableOperation insertCustomer1 = TableOperation.insert(customer1);
+
+<span style="color: green;">// Submit the operation to the table service.
+</span>tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;people&quot;</span>, insertCustomer1);</pre>
+<p><b>TableBatchOperation</b></p>
+<p>The <i>TableBatchOperation</i> class represents multiple <i>TableOperation</i> objects which are executed as a single atomic action within the table service. There are a few <a href="http://msdn.microsoft.com/en-us/library/windowsazure/dd894038.aspx">restrictions on batch operations</a> that should be noted:</p>
+<ul>
+<li>You can perform batch updates, deletes, inserts, merge and replace operations. </li>
+<li>A batch operation can have a retrieve operation, if it is the only operation in the batch. </li>
+<li>A single batch operation can include up to 100 table operations. </li>
+<li>All entities in a single batch operation must have the same partition key. </li>
+<li>A batch operation is limited to a 4MB data payload. </li>
+</ul>
+<p>The <i>CloudTableClient.execute</i> overload which takes as input a <i>TableBatchOperation </i>will return an ArrayList of <i>TableResults </i>which will correspond in order to the entries in the batch itself. For example, the result of a merge operation that is the first in the batch will be the first entry in the returned ArrayList of <i>TableResults</i>. In the case of an error the server may return a numerical id as part of the error message that corresponds to the sequence number of the failed operation in the batch unless the failure is associated with no specific command such as ServerBusy, in which case -1 is returned. <i>TableBatchOperations</i>, or Entity Group Transactions, are executed atomically meaning that either all operations will succeed or if there is an error caused by one of the individual operations the entire batch will fail.</p>
+<p><b>Sample – Insert two entities in a single atomic Batch Operation</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.core.storage.CloudStorageAccount;
+import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.TableBatchOperation;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: green;">// Create the table client.
+</span>CloudTableClient tableClient = storageAccount.createCloudTableClient();
+    
+tableClient.createTableIfNotExists(<span style="color: rgb(163, 21, 21);">&quot;people&quot;</span>);
+
+<span style="color: green;">// Define a batch operation.
+</span>TableBatchOperation batchOperation = <span style="color: blue;">new </span>TableBatchOperation();
+
+<span style="color: green;">// Create a customer entity and add to the table
+</span>CustomerEntity customer = <span style="color: blue;">new </span>CustomerEntity(<span style="color: rgb(163, 21, 21);">&quot;Smith&quot;</span>, <span style="color: rgb(163, 21, 21);">&quot;Jeff&quot;</span>);
+customer.setEmail(<span style="color: rgb(163, 21, 21);">&quot;Jeff@contoso.com&quot;</span>);
+customer.setPhoneNumber(<span style="color: rgb(163, 21, 21);">&quot;425-555-0104&quot;</span>);
+batchOperation.insert(customer);
+
+<span style="color: green;">// Create another customer entity and add to the table
+</span>CustomerEntity customer2 = <span style="color: blue;">new </span>CustomerEntity(<span style="color: rgb(163, 21, 21);">&quot;Smith&quot;</span>, <span style="color: rgb(163, 21, 21);">&quot;Ben&quot;</span>);
+customer2.setEmail(<span style="color: rgb(163, 21, 21);">&quot;Ben@contoso.com&quot;</span>);
+customer2.setPhoneNumber(<span style="color: rgb(163, 21, 21);">&quot;425-555-0102&quot;</span>);
+batchOperation.insert(customer2);        
+
+<span style="color: green;">// Submit the operation to the table service.
+</span>tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;people&quot;</span>, batchOperation);</pre>
+<p><b>TableQuery</b></p>
+<p>The<i> TableQuery</i> class is a lightweight query mechanism used to define queries to be executed against the table service. See “Querying” below.</p>
+<h5>Entities</h5>
+<p><b>TableEntity interface</b></p>
+<p>The <i>TableEntity</i> interface is used to define an object that can be serialized and deserialized with the table client. It contains getters and setters for the PartitionKey, RowKey, Timestamp, Etag, as well as methods to read and write the entity. This interface is implemented by the <i>TableServiceEntity</i> and subsequently the <i>DynamicTableEntity</i> that are included in the library; a client may implement this interface directly to persist different types of objects or objects from 3<sup>rd</sup>-party libraries. By overriding the <i>readEntity</i> or <i>writeEntity</i> methods a client may customize the serialization logic for a given entity type.</p>
+<p><b>TableServiceEntity</b></p>
+<p>The <i>TableServiceEntity</i> class is an implementation of the <i>TableEntity</i> interface and contains the RowKey, PartitionKey, and Timestamp properties. The default serialization logic <i>TableServiceEntity</i> uses is based off of reflection where an entity “property” is defined by a class which contains corresponding get and set methods where the return type of the getter is the same as that of the input parameter of the setter. This will be discussed in greater detail in the extension points section below. This class is not final and may be extended to add additional properties to an entity type.</p>
+<p><b>Sample – Define a POJO that extends <i>TableServiceEntity</i></b></p>
+<pre class="code"><span style="color: green;">// This class defines one additional property of integer type, since it extends
+// TableServiceEntity it will be automatically serialized and deserialized.
+</span><span style="color: blue;">public class </span><span style="color: rgb(43, 145, 175);">SampleEntity </span>extends TableServiceEntity {
+    <span style="color: blue;">private </span>String SampleProperty;
+
+    <span style="color: blue;">public </span>String getSampleProperty() {
+      <span style="color: blue;">return this</span>.SampleProperty;
+    }
+
+    <span style="color: blue;">public void</span> setSampleProperty (String sampleProperty) {
+      <span style="color: blue;">this</span>.SampleProperty= sampleProperty;
+    }
+}</pre>
+<p><b>DynamicTableEntity</b></p>
+<p>The <i>DynamicTableEntity</i> class allows clients to update heterogeneous entity types without the need to define base classes or special types. The<i> DynamicTableEntity</i> class defines the required properties for RowKey, PartitionKey, Timestamp, and Etag; all other properties are stored in a HashMap form. Aside from the convenience of not having to define concrete POJO types, this can also provide increased performance by not having to perform serialization or deserialization tasks. We have also provided <a href="http://code.msdn.microsoft.com/windowsazure/Windows-Azure-SDK-for-Java-bb556c0a">sample code</a> that demonstrates this.</p>
+<p><b>Sample – Retrieve a single property on a collection of heterogeneous entities</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.DynamicTableEntity;
+import com.microsoft.windowsazure.services.table.client.EntityProperty;
+import com.microsoft.windowsazure.services.table.client.TableQuery;
+
+<span style="color: green;">// Define the query to retrieve the entities, notice in this case we
+// only need to retrieve the Count property.
+</span>TableQuery&lt;DynamicTableEntity&gt; query = TableQuery.from(tableName, DynamicTableEntity.<span style="color: blue;">class</span>).select(<span style="color: blue;">new </span>String[] { <span style="color: rgb(163, 21, 21);">&quot;Count&quot; </span>});
+
+<span style="color: green;">// Note the TableQuery is actually executed when we iterate over the
+// results. Also, this sample uses the DynamicTableEntity to avoid
+// having to worry about various types, as well as avoiding any
+// serialization processing.
+</span><span style="color: blue;">for </span>(DynamicTableEntity ent : tableClient.execute(query)) {
+    EntityProperty countProp = ent.getProperties().get(<span style="color: rgb(163, 21, 21);">&quot;Count&quot;</span>);
+
+    <span style="color: green;">// Users should always assume property is not there in case another
+    // client removed it.
+    </span><span style="color: blue;">if </span>(countProp == <span style="color: blue;">null</span>) {
+     <span style="color: blue;">throw new </span>IllegalArgumentException(<span style="color: rgb(163, 21, 21);">&quot;Invalid entity, Count property not found!&quot;</span>);
+
+    <span style="color: green;">// Display Count property, however you could modify it here and persist it back to the service.
+    </span>System.<span style="color: blue;">out</span>.println(countProp.getValueAsInteger());
+    }
+}</pre>
+<p><b>EntityProperty</b></p>
+<p>The <i>EntityProperty </i>class encapsulates a single property of an entity for the purposes of serialization and deserialization. The only time the client has to work directly with <i>EntityProperties</i> is when using <i>DynamicTableEntity</i> or implementing the <i>TableEntity.readEntity</i> and <i>TableEntity.writeEntity</i> methods. The <i>EntityProperty </i>stores the given value in its serialized string form and deserializes it on each subsequent get. </p>
+<p>Please note, when using a non-String type property in a tight loop or performance critical scenario, it is best practice to not update an <i>EntityProperty</i> directly, as there will be a performance implication in doing so. Instead, a client should deserialize the entity into an object, update that object directly, and then persist that object back to the table service (See POJO Sample below).</p>
+<p>The samples below show two approaches that can be a players score property. The first approach uses <i>DynamicTableEntity</i> to avoid having to declare a client side object and updates the property directly, whereas the second will deserialize the entity into a POJO and update that object directly.<i> </i></p>
+<p><b>Sample –Update of entity property using EntityProperty</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.core.storage.StorageException;
+import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.DynamicTableEntity;
+import com.microsoft.windowsazure.services.table.client.EntityProperty;
+import com.microsoft.windowsazure.services.table.client.TableOperation;
+import com.microsoft.windowsazure.services.table.client.TableResult;
+
+<span style="color: green;">// Retrieve entity
+</span>TableResult res = tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;gamers&quot;</span>, TableOperation.retrieve(<span style="color: rgb(163, 21, 21);">&quot;Smith&quot;</span>, <span style="color: rgb(163, 21, 21);">&quot;Jeff&quot;</span>, DynamicTableEntity.<span style="color: blue;">class</span>));
+DynamicTableEntity player = res.getResultAsType();
+
+<span style="color: green;">// Retrieve Score property
+</span>EntityProperty scoreProp = player.getProperties().get(<span style="color: rgb(163, 21, 21);">&quot;Score&quot;</span>);
+    
+<span style="color: blue;">if </span>(scoreProp == <span style="color: blue;">null</span>) {
+    <span style="color: blue;">throw new </span>IllegalArgumentException(<span style="color: rgb(163, 21, 21);">&quot;Invalid entity, Score property not found!&quot;</span>);
+}
+    
+scoreProp.setValue(scoreProp.getValueAsInteger() + 1;
+
+<span style="color: green;">// Store the updated score
+</span>tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;gamers&quot;</span>, TableOperation.merge(player));</pre>
+<p>&#160;</p>
+<p><b>Sample – Update of entity property using POJO</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.core.storage.StorageException;
+import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.DynamicTableEntity;
+import com.microsoft.windowsazure.services.table.client.EntityProperty;
+import com.microsoft.windowsazure.services.table.client.TableOperation;
+import com.microsoft.windowsazure.services.table.client.TableResult;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: green;">// Entity type with a score property
+</span><span style="color: blue;">public class </span><span style="color: rgb(43, 145, 175);">GamerEntity </span>extends TableServiceEntity {
+    <span style="color: blue;">private int </span>score;
+
+    <span style="color: blue;">public int </span>getScore() {
+        <span style="color: blue;">return this</span>.score;
+    }
+
+    <span style="color: blue;">public void </span>setScore(<span style="color: blue;">int </span>Score) {
+        <span style="color: blue;">this</span>.score = Score;
+    }
+}
+
+<span style="color: green;">// Retrieve entity
+</span>TableResult res = tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;gamers&quot;</span>, TableOperation.retrieve(<span style="color: rgb(163, 21, 21);">&quot;Smith&quot;</span>, <span style="color: rgb(163, 21, 21);">&quot;Jeff&quot;</span>, GamerEntity.<span style="color: blue;">class</span>));
+GamerEntity player = res.getResultAsType();
+
+<span style="color: green;">// Update Score
+</span>player.setScore(player.getScore() + 1);
+
+
+<span style="color: green;">// Store the updated score
+</span>tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;gamers&quot;</span>, TableOperation.merge(player));</pre>
+<h5>Serialization </h5>
+<p>There are three main extension points in the table client that allow a user to customize serialization and deserialization of entities. Although completely optional, these extension points enable a number of use-specific or NoSQL scenarios. </p>
+<p><b>EntityResolver</b></p>
+<p>The <i>EntityResolver</i> interface defines a single method (<i>resolve</i>) and allows client-side projection and processing for each entity during serialization and deserialization. This interface is designed to be implemented by an anonymous inner class to provide custom client side projections, query-specific filtering, and so forth. This enables key scenarios such as deserializing a collection of heterogeneous entities from a single query.</p>
+<p><b>Sample – Use <i>EntityResolver</i> to perform client side projection</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.EntityProperty;
+import com.microsoft.windowsazure.services.table.client.EntityResolver;
+import com.microsoft.windowsazure.services.table.client.TableQuery;
+
+<span style="color: green;">// Define the query to retrieve the entities, notice in this case we
+// only need to retrieve the Email property.
+</span>TableQuery&lt;Customer&gt; query = TableQuery.from(tableName, Customer.<span style="color: blue;">class</span>).select(<span style="color: blue;">new </span>String[] { <span style="color: rgb(163, 21, 21);">&quot;Email&quot; </span>});
+
+<span style="color: green;">// Define a Entity resolver to mutate the entity payload upon retrieval.
+// In this case we will simply return a String representing the customers Email 
+// address.
+</span>EntityResolver&lt;String&gt; emailResolver = <span style="color: blue;">new </span>EntityResolver&lt;String&gt;() {
+@Override
+<span style="color: blue;">public </span>String resolve(String PartitionKey, String RowKey, Date timeStamp, HashMap&lt;String, EntityProperty&gt; props, String etag) {
+    <span style="color: blue;">return </span>props.get(<span style="color: rgb(163, 21, 21);">&quot;Email&quot;</span>).getValueAsString();
+    }
+};
+
+<span style="color: green;">// Display the results of the query, note that the query now returns
+// Strings instead of entity types since this is the type of
+// EntityResolver we created.
+</span><span style="color: blue;">for </span>(String projectedString : tableClient.execute(query, emailResolver)) {
+    System.<span style="color: blue;">out</span>.println(projectedString);
+}</pre>
+<p><b>Annotations</b></p>
+<p><b>@StoreAs </b></p>
+<p>The <i>@StoreAs </i>annotation is used by a client to customize the serialized property name for a given property. If @StoreAs is not used, then the property name will be used in table storage. The <i>@StoreAs</i> annotation cannot be used to store PartitionKey, RowKey, or Timestamp, if a property is annoted as such it will be ignored by the serializer. Two common scenarios are to reduce the length of the property name for performance reasons, or to override the default name the property may have. </p>
+<p><b>Sample – Alter a property name via the <i>@StoreAs</i> Annotation</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.StoreAs;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: green;">// This entity will store the CustomerPlaceOfResidenceProperty as “cpor” on the service.
+</span><span style="color: blue;">public class </span><span style="color: rgb(43, 145, 175);">StoreAsEntity </span>extends TableServiceEntity {
+    <span style="color: blue;">private </span>String cpor;
+
+    @StoreAs(name = <span style="color: rgb(163, 21, 21);">&quot;cpor&quot;</span>)
+    <span style="color: blue;">public </span>String getCustomerPlaceOfResidence() {
+            <span style="color: blue;">return this</span>.cpor;
+    }
+
+    @StoreAs(name = <span style="color: rgb(163, 21, 21);">&quot;cpor&quot;</span>)
+    <span style="color: blue;">public void </span>setCustomerPlaceOfResidence (String customerPlaceOfResidence) {
+        <span style="color: blue;">this</span>.cpor = customerPlaceOfResidence;
+    }
+}</pre>
+<p><b>@Ignore</b></p>
+<p>The <i>@Ignore</i> annotation is used on the getter or setter to indicates to the default reflection-based serializer that it should ignore the property during serialization and deserialization.</p>
+<p><b>Sample – Use <i>@Ignore</i> annotation to expose friendly client side property that is backed by PartitionKey</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.Ignore;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: green;">// In this sample, the Customer ID is used as the PartitionKey.  A property 
+// CustomerID is exposed on the client side to allow friendly access, but
+// is annotated with @Ignore to prevent it from being duplicated in the
+// table entity.
+</span><span style="color: blue;">public class </span><span style="color: rgb(43, 145, 175);">OnlineStoreBaseEntity </span>extends TableServiceEntity {
+    @Ignore
+    <span style="color: blue;">public </span>String getCustomerID() {
+        <span style="color: blue;">return this</span>.getPartitionKey();
+    }
+
+    @Ignore
+    <span style="color: blue;">public void </span>setCustomerID(String customerID) {
+        <span style="color: blue;">this</span>.setPartitionKey(customerID);
+    }
+}</pre>
+<p><b></b></p>
+<p><b>TableEntity.readEntity and TableEntity.writeEntity methods</b></p>
+<p>While they are part of the <i>TableEntity</i> interface, the <i>TableEntity</i> .<i>readEntity</i> and <i>TableEntity</i> <i>writeEntity</i> methods provide the third major extension points to serialization. By implementing or overriding these methods in an object a client can customize how entities are stored, and potentially improve performance compared to the default reflection-based serializer. See the javadoc for the respective method for more information.</p>
+<p>For more on the overall design object model of the Windows Azure Storage Client for Java see the related blog post in the Links section below.</p>
+<h4>Querying</h4>
+<p>There are two query constructs in the table client: a retrieve<i> TableOperation</i> which addresses a single unique entity, and a <i>TableQuery</i> which is a standard query mechanism used against multiple entities in a table. Both querying constructs need to be used in conjunction with either a class type that implements the <i>TableEntity</i> interface or with an <i>EntityResolver</i> which will provide custom deserialization logic.</p>
+<p><b>Retrieve</b></p>
+<p>A retrieve operation is a query which addresses a single entity in the table by specifying both its PartitionKey and RowKey. This is exposed via <i>TableOperation.retrieve </i>and <i>TableBatchOperation.retrieve</i> and executed like a typical operation via the <i>CloudTableClient</i>.</p>
+<p><b>Sample – Retrieve a single entity</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.TableOperation;
+
+<span style="color: green;">// Create the table client.
+</span>CloudTableClient tableClient = storageAccount.createCloudTableClient();
+
+<span style="color: green;">// Retrieve the entity with partition key of &quot;Smith&quot; and row key of &quot;Jeff&quot;
+</span>TableOperation retrieveSmithJeff = TableOperation.retrieve(<span style="color: rgb(163, 21, 21);">&quot;Smith&quot;</span>, <span style="color: rgb(163, 21, 21);">&quot;Jeff&quot;</span>, CustomerEntity.<span style="color: blue;">class</span>);
+
+<span style="color: green;">// Submit the operation to the table service and get the specific entity.
+</span>CustomerEntity specificEntity = tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;people&quot;</span>, retrieveSmithJeff).getResultAsType();</pre>
+<p><b></b></p>
+<p><b>TableQuery</b></p>
+<p>Unlike <i>TableOperation</i> and <i>BatchTableOperation </i>the<i> TableQuery</i> requires a source table name as part of its definition. <i>TableQuery</i> contains a static factory method <i>from </i>used to create a new query and provides methods for fluent query construction. The code below produces a query to take the top 5 results from the customers table which have a RowKey greater than 5.</p>
+<p><b>Sample – Query top 5 entities with RowKey greater than or equal to 5</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.TableQuery;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+TableQuery&lt;TableServiceEntity&gt; query = 
+TableQuery.from(“customers”, TableServiceEntity.<span style="color: blue;">class</span>).
+where(TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;RowKey&quot;</span>, QueryComparisons.GREATER_THAN_OR_EQUAL, <span style="color: rgb(163, 21, 21);">&quot;5&quot;</span>)).take(5);</pre>
+<p>The <i>TableQuery </i>is strong typed<i> </i>and must be instantiated with a class type that is accessible and contains a nullary constructor; otherwise an exception will be thrown. The class type must also implement the <i>TableEntity</i> interface. If the client wishes to use a resolver to deserialize entities they may specify one via <i>execute </i>on <i>CloudTableClient </i>and specify the <i>TableServiceEntity </i>class type as demonstrated above. </p>
+<p>The <i>TableQuery</i> object provides methods for take, select, where, and source table name. There are static methods provided such as <i>generateFilterCondition</i> and <i>joinFilter </i>which construct other filter strings. Also note, <i>generateFilterCondition </i>provides several overloads that can handle all supported types, some examples are listed below:</p>
+<pre class="code"><span style="color: green;">// 1. Filter on String
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.GREATER_THAN, <span style="color: rgb(163, 21, 21);">&quot;foo&quot;</span>);
+
+<span style="color: green;">// 2. Filter on UUID
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.EQUAL, uuid));
+
+<span style="color: green;">// 3. Filter on Long
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.GREATER_THAN, 50L);
+
+<span style="color: green;">// 4. Filter on Double
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.GREATER_THAN, 50.50);
+
+<span style="color: green;">// 5. Filter on Integer
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.GREATER_THAN, 50);
+
+<span style="color: green;">// 6. Filter on Date
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.LESS_THAN, <span style="color: blue;">new </span>Date());
+
+<span style="color: green;">// 7. Filter on Boolean
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.EQUAL, <span style="color: blue;">true</span>);
+
+<span style="color: green;">// 8. Filter on Binary
+</span>TableQuery.generateFilterCondition(<span style="color: rgb(163, 21, 21);">&quot;Prop&quot;</span>, QueryComparisons.EQUAL, <span style="color: blue;">new byte</span>[] { 0x01, 0x02, 0x03 });</pre>
+<p><b>Sample – Query all entities with a PartitionKey=”SamplePK” and RowKey greater than or equal to “5”</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.TableConstants;
+import com.microsoft.windowsazure.services.table.client.TableQuery;
+import com.microsoft.windowsazure.services.table.client.TableQuery.Operators;
+import com.microsoft.windowsazure.services.table.client.TableQuery.QueryComparisons;
+
+String pkFilter = TableQuery.generateFilterCondition(TableConstants.PARTITION_KEY, QueryComparisons.EQUAL,<span style="color: rgb(163, 21, 21);">&quot;samplePK&quot;</span>);
+
+String rkFilter = TableQuery.generateFilterCondition(TableConstants.ROW_KEY, QueryComparisons.GREATER_THAN_OR_EQUAL, <span style="color: rgb(163, 21, 21);">&quot;5&quot;</span>);
+
+String combinedFilter = TableQuery.combineFilters(pkFilter, Operators.AND, rkFilter);
+
+TableQuery&lt;SampleEntity&gt; query = TableQuery.from(tableName, SampleEntity.<span style="color: blue;">class</span>).where(combinedFilter);</pre>
+<p>Note: There is no logical expression tree provided in the current release, and as a result repeated calls to the fluent methods on <i>TableQuery</i> overwrite the relevant aspect of the query. </p>
+<h5>Scenarios</h5>
+<p><strong>NoSQL</strong></p>
+<p>A common pattern in a NoSQL datastore is to work with storing related entities with different schema in the same table. A frequent example relates to customers and orders which are stored in the same table. In our case, the PartitionKey for both Customer and Order will be a unique CustomerID which will allow us to retrieve and alter a customer and their respective orders together. The challenge becomes how to work with these heterogeneous entities on the client side in an efficient and usable manner. We discuss this here, and you can also <a href="http://code.msdn.microsoft.com/windowsazure/Windows-Azure-SDK-for-Java-bb556c0a">download sample code</a>.</p>
+<p>The table client provides an <i>EntityResolver</i> interface which allows client side logic to execute during deserialization. In the scenario detailed above, let’s use a base entity class named <i>OnlineStoreEntity</i> which extends <i>TableServiceEntity</i>. </p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.Ignore;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: blue;">public abstract class </span><span style="color: rgb(43, 145, 175);">OnlineStoreEntity </span>extends TableServiceEntity {
+    @Ignore
+    <span style="color: blue;">public </span>String getCustomerID() {
+       <span style="color: blue;">return this</span>.getPartitionKey();
+    }
+
+    @Ignore
+    <span style="color: blue;">public void </span>setCustomerID(String customerID) {
+        <span style="color: blue;">this</span>.setPartitionKey(customerID);
+    }
+}</pre>
+<p>Let’s also define two additional entity types, <i>Customer</i> and <i>Order</i> which derive from <i>OnlineStoreEntity</i> and prepend their RowKey with an entity type enumeration, “0001” for customers and “0002” for Orders. This will allow us to query for just a customer, their orders, or both—while also providing a persisted definition as to what client side type is used to interact with the object. Given this, let’s define a class that implements the <i>EntityResolver</i> interface to assist in deserializing the heterogeneous types.</p>
+<p><b>Sample – Using <i>EntityResolver</i> to deserialize heterogeneous entities</b></p>
+<p><b></b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.core.storage.StorageException;
+import com.microsoft.windowsazure.services.table.client.EntityProperty;
+import com.microsoft.windowsazure.services.table.client.EntityResolver;
+
+EntityResolver&lt;OnlineStoreEntity&gt; webStoreResolver = <span style="color: blue;">new </span>EntityResolver&lt;OnlineStoreEntity&gt;() {
+@Override
+<span style="color: blue;">public </span>OnlineStoreEntity resolve(String partitionKey, String rowKey, Date timeStamp, HashMap&lt;String, EntityProperty&gt; properties, String etag) throws StorageException {
+     OnlineStoreEntity <span style="color: blue;">ref </span>= <span style="color: blue;">null</span>;
+     
+     <span style="color: blue;">if </span>(rowKey.startsWith(<span style="color: rgb(163, 21, 21);">&quot;0001&quot;</span>)) {
+          <span style="color: green;">// Customer
+          </span><span style="color: blue;">ref </span>= <span style="color: blue;">new </span>Customer();
+     }
+     <span style="color: blue;">else if </span>(rowKey.startsWith(<span style="color: rgb(163, 21, 21);">&quot;0002&quot;</span>)) {
+         <span style="color: green;">// Order
+         </span><span style="color: blue;">ref </span>= <span style="color: blue;">new </span>Order();
+     }
+     <span style="color: blue;">else </span>{
+         <span style="color: blue;">throw new </span>IllegalArgumentException(String.format(<span style="color: rgb(163, 21, 21);">&quot;Unknown entity type detected! RowKey: %s&quot;</span>, rowKey));
+     }
+
+     <span style="color: blue;">ref</span>.setPartitionKey(partitionKey);
+     <span style="color: blue;">ref</span>.setRowKey(rowKey);
+     <span style="color: blue;">ref</span>.setTimestamp(timeStamp);
+     <span style="color: blue;">ref</span>.setEtag(etag);
+     <span style="color: blue;">ref</span>.readEntity(properties, <span style="color: blue;">null</span>);
+     <span style="color: blue;">return ref</span>;
+     }
+};</pre>
+<p>Now, on iterating through the results with the following code:</p>
+<pre class="code"><span style="color: blue;">for </span>(OnlineStoreEntity entity : tableClient.execute(customerAndOrderQuery, webStoreResolver)) {
+     System.<span style="color: blue;">out</span>.println(entity.getClass());
+}</pre>
+<p>It will output:</p>
+<pre class="code"><span style="color: blue;">class </span><span style="color: rgb(43, 145, 175);">tablesamples</span>.NoSQL$Customer
+<span style="color: blue;">class </span><span style="color: rgb(43, 145, 175);">tablesamples</span>.NoSQL$Order
+<span style="color: blue;">class </span><span style="color: rgb(43, 145, 175);">tablesamples</span>.NoSQL$Order
+<span style="color: blue;">class </span><span style="color: rgb(43, 145, 175);">tablesamples</span>.NoSQL$Order
+<span style="color: blue;">class </span><span style="color: rgb(43, 145, 175);">tablesamples</span>.NoSQL$Order
+….</pre>
+<p>For the complete <b>OnlineStoreSample </b>sample please see the Samples section below.</p>
+<p><strong>Heterogeneous update</strong></p>
+<p>In some cases it may be required to update entities regardless of their type or other properties. Let’s say we have a table named “employees”. This table contains entity types for developers, secretaries, contractors, and so forth. The example below shows how to query all entities in a given partition (in our example the state the employee works in is used as the PartitionKey) and update their salaries regardless of job position. Since we are using merge, the only property that is going to be updated is the Salary property, and all other information regarding the employee will remain unchanged. </p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.core.storage.StorageException;
+import com.microsoft.windowsazure.services.table.client.CloudTableClient;
+import com.microsoft.windowsazure.services.table.client.DynamicTableEntity;
+import com.microsoft.windowsazure.services.table.client.EntityProperty;
+import com.microsoft.windowsazure.services.table.client.TableBatchOperation;
+import com.microsoft.windowsazure.services.table.client.TableQuery;
+
+TableQuery&lt;DynamicTableEntity&gt; query = TableQuery.from(<span style="color: rgb(163, 21, 21);">&quot;employees&quot;</span>, DynamicTableEntity.<span style="color: blue;">class</span>).where(<span style="color: rgb(163, 21, 21);">&quot;PartitionKey eq 'Washington'&quot;</span>).select(<span style="color: blue;">new </span>String[] { <span style="color: rgb(163, 21, 21);">&quot;Salary&quot; </span>});
+
+<span style="color: green;">// Note for brevity sake this sample assumes there are 100 or less employees, however the client should ensure batches are kept to 100 operations or less.  
+
+</span>TableBatchOperation mergeBatch = <span style="color: blue;">new </span>TableBatchOperation();
+<span style="color: blue;">for </span>(DynamicTableEntity ent : tableClient.execute(query)) {
+    EntityProperty salaryProp = ent.getProperties().get(<span style="color: rgb(163, 21, 21);">&quot;Salary&quot;</span>);
+
+    <span style="color: green;">// Check to see if salary property is present
+    </span><span style="color: blue;">if </span>(salaryProp != <span style="color: blue;">null</span>) {
+        <span style="color: blue;">double </span>currentSalary = salaryProp.getValueAsDouble();
+
+      <span style="color: blue;">if </span>(currentSalary &lt; 50000) {
+          <span style="color: green;">// Give a 10% raise
+          </span>salaryProp.setValue(currentSalary * 1.1);
+      } <span style="color: blue;">else if </span>(currentSalary &lt; 100000) {
+          <span style="color: green;">// Give a 5% raise
+          </span>salaryProp.setValue(currentSalary * 1.05);
+      }
+
+        mergeBatch.merge(ent);
+    }
+    <span style="color: blue;">else </span>{
+         <span style="color: blue;">throw new </span>IllegalArgumentException(<span style="color: rgb(163, 21, 21);">&quot;Entity does not contain salary!&quot;</span>);
+    }
+}
+
+<span style="color: green;">// Execute batch to save changes back to the table service
+</span>tableClient.execute(<span style="color: rgb(163, 21, 21);">&quot;employees&quot;</span>, mergeBatch);</pre>
+<p><strong>Complex Properties</strong></p>
+<p>The Windows Azure Table service provides two indexed columns that together provide the key for a given entity (PartitionKey and RowKey). A common best practice is to include multiple aspects of an entity in these keys since they can be queried efficiently. Using the @Ignore annotation, it is possible to define friendly client-side properties that are part of this complex key without persisting them individually. </p>
+<p>Let’s say that we are creating a directory of all the people in America. By creating a complex key such as [STATE];[CITY] I can enable efficient queries for all people in a given state or city using a lexical comparison while utilizing only one indexed column. This optimization is exposed in a convenient way by providing friendly client properties on an object that mutate the key appropriately but are not actually persisted to the service.</p>
+<p>Note: Take care when choosing to provide setters on columns backed by keys which could cause failures for some operations (delete, merge, replace) since you are effectively changing the identity of the entity. </p>
+<p>The sample below illustrates how to provide friendly accessors to complex keys. When only providing getters the <i>@Ignore</i> annotation is optional, since the serializer will not use properties that do not expose a corresponding setter. </p>
+<p><b>Sample – Complex Properties on a POJO using the <i>@Ignore</i> Annotation</b></p>
+<pre class="code"><span style="color: green;">// You will need the following imports
+</span>import com.microsoft.windowsazure.services.table.client.Ignore;
+import com.microsoft.windowsazure.services.table.client.TableServiceEntity;
+
+<span style="color: blue;">public class </span><span style="color: rgb(43, 145, 175);">Person </span>extends TableServiceEntity {
+    @Ignore
+    <span style="color: blue;">public </span>String getState() {
+        <span style="color: blue;">return this</span>.getPartitionKey().substring(0, <span style="color: blue;">this</span>.getPartitionKey().indexOf(<span style="color: rgb(163, 21, 21);">&quot;;&quot;</span>));
+    }
+
+    @Ignore
+    <span style="color: blue;">public </span>String getCity() {
+        <span style="color: blue;">return this</span>.getPartitionKey().substring(<span style="color: blue;">this</span>.getPartitionKey().indexOf(<span style="color: rgb(163, 21, 21);">&quot;;&quot;</span>) + 1);
+    }
+}</pre>
+<p>&#160;</p>
+<h5>Persisting 3<sup>rd</sup> party objects</h5>
+<p>In some cases we may need to persist objects exposed by 3<sup>rd</sup> party libraries, or those which do not fit the requirements of a TableEntity and cannot be modified to do so. In such cases, the recommended best practice is to encapsulate the 3<sup>rd</sup> party object in a new client object that implements the <i>TableEntity</i> interface, and provide the custom serialization logic needed to persist the object to the table service via <i>TableEntity.readEntity </i>and<i> TableEntity.writeEntity.</i></p>
+<p>Note: when implementing <i>readEntity</i>/<i>writeEntity</i>, <i>TableServiceEntity</i> provides two static helper methods (<i>readEntityWithReflection</i> and <i>writeEntityWithReflection</i>) that expose the default reflection based serialization which will use the same rules as previously discussed.</p>
+<h4>Best Practices</h4>
+<ul>
+<li>When persisting inner classes they must be marked static and provide a nullary constructor to enable deserialization. </li>
+<li>Consider batch restrictions when developing your application. While a single entity may be up to 1 MB and a batch can contain 100 operations, the 4 MB payload limit on a batch operation may decrease the total number of operations allowed in a single batch. All operations in a given batch must address entities that have identical PartitionKey values. </li>
+<li>Class types should initialize property values to null / default. The Table service will not send null / removed properties to the client which will fail to overwrite these properties on the client side. As such, it is possible to perceive a data loss in this scenario as the non-default properties will have values that do not exist in the received entity. </li>
+<li>Take Count on TableQuery is applied to each request and not rewritten between requests. If used in conjunction with the non-segmented execute method this will effectively alter the page size and not the maximum results.<b> For example</b> if we define a TableQuery with take(5) and executes it via <i>executeSegmented</i> we will receive 5 results (potentially less if there is a continuation token involved). However if we enumerate results via the Iterator returned by the <i>execute</i> method then we will eventually receive all results in the table 5 at a time. Please be aware of this distinction. </li>
+<li>When implementing <i>readEntity </i>or working with DynamicTableEntity the user should always assume a given property does not exist in the HashMap as it may have been removed by another client or not selected via a projected query. Therefore, it is considered best practice to check for the existence of a property in the HashMap prior to retrieving it. </li>
+<li>The<i> EntityProperty </i>class is utilized during serialization to encapsulate a given property for an entity and stores data in its serialized String form. Subsequently, each call to a get method will deserialize the data and each call to a setter / constructor will serialize it. Avoid repeated updates directly on an <i>EntityProperty </i>wherever possible. If your application needs to make repeated updates / reads to a property on a persisted type, use a POJO object directly.<i></i> </li>
+<li>The<i> @StoreAs </i>annotation is provided to customize serialization which can be utilized to provide friendly client side property names and potentially increase performance by decreasing payload size. For example, if there is an entity with many long named properties such as customerEmailAddress we could utilize the <i>@StoreAs </i>annotation to persist this property under the name “cea” which would decrease every payload by 17 bytes for this single property alone. For large entities with numerous properties the latency and bandwidth savings can become significant. Note: the <i>@StoreAs </i>annotation<i> </i>cannot be used to write the PartitionKey, RowKey, or Timestamp as these properties are written separately: attempting to do so will cause the annotated property to be skipped during serialization. To accomplish this scenario provide a friendly client side property annotated with the <i>@Ignore </i>annotation and set the PartitionKey, RowKey, or Timestamp property internally.<i></i> </li>
+</ul>
+<h4>Table Samples</h4>
+<p>As part of the release of the Windows Azure Storage Client for Java we have provided a series of samples that address some common scenarios that users may encounter when developing cloud applications.</p>
+<h5>Setup</h5>
+<ol>
+<li><a href="http://code.msdn.microsoft.com/windowsazure/Windows-Azure-SDK-for-Java-bb556c0a">Download the samples jar</a></li>
+<li>Configure the classpath to include the Windows Azure Storage Client for Java, which can be downloaded <a href="http://msdn.microsoft.com/en-us/library/windowsazure/hh690953(v=VS.103).aspx">here</a>.</li>
+<li>Edit the Utility.java file to specify your connection string in <i>storageConnectionString. </i>Alternatively if you want to use local storage emulator that ships as part of the Windows Azure SDK you can uncomment the specified key in Utility.java.</li>
+<li> Execute each sample via eclipse or command line. For some blob samples some command line arguments are required. </li>
+</ol>
+<h5>Samples</h5>
+<ul>
+<li><b>TableBasics - </b>This sample illustrates basic use of the Table primitives provided. Scenarios covered are:<b> </b></li>
+<ul>
+<li>How to create a table client<b></b></li>
+<li>Insert an entity and retrieve it<b></b></li>
+<li>Insert a batch of entities and query against them<b></b></li>
+<li>Projection (server and client side)<b></b></li>
+<li>DynamicUpdate – update entities regardless of types using DynamicTableEntity and projection to optimize performance.<b></b></li>
+</ul>
+<li><b>OnlineStoreSample – </b>This sample illustrates a common scenario when using a schema-less datastore. In this example we define both customers and orders which are stored in the same table. By utilizing the EntityResolver we can query against the table and retrieve the heterogeneous entity collection in a type safe way.<b> </b><i></i></li>
+</ul>
+<h4>Summary</h4>
+<p>This blog post has provided an in-depth overview of the table client in the recently released Windows Azure Storage Client for Java. We continue to maintain and evolve the libraries we provide based on upcoming features and customer feedback. Feel free to leave comments below,</p>
+<p>Joe Giardino<br/>
+  <br/>Developer </p>
+<p>Windows Azure Storage</p>
+<h4>Resources</h4>
+<p><b>Get the Windows Azure SDK for Java</b> </p>
+<ul>
+<li><a href="http://go.microsoft.com/fwlink/?LinkID=234491&amp;clcid=0x409">Download the Windows Azure SDK for Java</a></li>
+<li><a href="https://github.com/WindowsAzure/azure-sdk-for-java">Windows Azure SDK for Java source code on GitHub</a></li>
+</ul>
+<p><b>Learn more about the Windows Azure Storage Client for Java</b></p>
+<ul>
+<li><a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2012/03/05/windows-azure-storage-client-for-java-overview.aspx">Windows Azure Storage Client for Java Object Model Overview</a></li>
+<li><a href="http://code.msdn.microsoft.com/windowsazure/Windows-Azure-SDK-for-Java-bb556c0a">Windows Azure Storage Client for Java Storage Samples</a></li>
+<li><a href="http://www.windowsazure.com/en-us/develop/java/how-to-guides/table-service/">How to Use the Table Storage Service from Java</a></li>
+<li><a href="http://www.windowsazure.com/en-us/develop/java/">Windows Azure SDK for Java Developer Center</a></li>
+</ul>
+<p><b>Learn more about Windows Azure Storage</b> </p>
+<ul>
+<li><a href="http://msdn.microsoft.com/en-us/library/windowsazure/dd179338.aspx">Understanding the Table Service Data Model</a></li>
+<li><a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2010/11/06/how-to-get-most-out-of-windows-azure-tables.aspx">How to get most out of Windows Azure Tables</a><b></b></li>
+<li><a href="http://blogs.msdn.com/b/windowsazurestorage/archive/2010/05/10/windows-azure-storage-abstractions-and-their-scalability-targets.aspx">Windows Azure Storage Abstractions and their Scalability Targets</a></li>
+<li><a href="http://social.msdn.microsoft.com/Forums/en-US/windowsazuredata/threads">Windows Azure Storage, CDN, and Caching Forum</a></li>
+</ul>
+	</div><!-- .entry-content -->
+
+
+	<footer class="entry-footer single">
+					<div class="tags">
+				<span>Tags </span>
+				<span>
+					<a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-storage-client-library/" rel="tag">Windows Azure Storage Client Library</a> <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/tag/windows-azure-tables/" rel="tag">Windows Azure Tables</a>				</span>
+			</div>
+				<hr>
+	</footer><!-- .entry-footer -->
+
+</article><!-- #post-## -->
+
+			
+		</div><!-- #single-content -->
+
+		
+<div id="comments" class="comments-area">
+	<div class="comments-title">
+		Comments (1)	</div>
+
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title"> <small><a rel="nofollow" id="cancel-comment-reply-link" href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/#respond" style="display:none;">Cancel reply</a></small></h3><p class="must-log-in">You must be <a href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F03%2F05%2Fwindows-azure-storage-client-for-java-tables-deep-dive%2F">logged in</a> to post a comment.</p>	</div><!-- #respond -->
+	
+			<div class="navigation pagination clear-both">
+					</div>
+
+		<ol class="comment-list">
+					<li class="comment even thread-even depth-1" id="comment-157">
+				<div id="div-comment-157" class="comment-body">
+				<div class="comment-author vcard">
+			<img alt="" src="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=56&amp;d=mm&amp;r=g" srcset="https://secure.gravatar.com/avatar/3651e719491c63d4424134d66fe53db9?s=112&amp;d=mm&amp;r=g 2x" class="avatar avatar-56 photo" height="56" width="56"/>			<cite class="fn">pico_ohms</cite> <span class="says">says:</span>		</div>
+		
+		<div class="comment-meta commentmetadata"><a href="https://blogs.msdn.microsoft.com/windowsazurestorage/2012/03/05/windows-azure-storage-client-for-java-tables-deep-dive/#comment-157">
+			August 3, 2012 at 2:28 am</a>		</div>
+
+		<p>Thanks for a great article, super informative, got me up and running with the Java API for Azure Tables in lightning quick time.</p>
+<p>Minor bug in text:</p>
+<p> &nbsp;public String setSampleProperty (String sampleProperty) {</p>
+<p> &nbsp; &nbsp; &nbsp;this.SampleProperty= sampleProperty;</p>
+<p> &nbsp; &nbsp;}</p>
+<p>Should be:</p>
+<p> &nbsp;public void setSampleProperty (String sampleProperty) {</p>
+<p> &nbsp; &nbsp; &nbsp;this.SampleProperty= sampleProperty;</p>
+<p> &nbsp; &nbsp;}</p>
+
+		<div class="reply"><a rel="nofollow" class="comment-reply-login" href="https://blogs.msdn.microsoft.com/windowsazurestorage/wp-login.php?redirect_to=https%3A%2F%2Fblogs.msdn.microsoft.com%2Fwindowsazurestorage%2F2012%2F03%2F05%2Fwindows-azure-storage-client-for-java-tables-deep-dive%2F">Log in to Reply</a></div>
+				</div>
+		</li><!-- #comment-## -->
+		</ol><!-- .comment-list -->
+
+		<div class="navigation pagination">
+					</div>
+
+	
+	
+</div><!-- .comments-area -->
+	</div><!-- #primary -->

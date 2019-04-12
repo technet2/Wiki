@@ -1,0 +1,83 @@
+---
+layout: default
+title: C#&#58; Ensure User only Runs One Copy of a Program - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+Using a <a href="http://msdn.microsoft.com/en-us/library/system.threading.mutex(v=vs.110).aspx">
+mutex</a>, you can ensure that multiple users can run a program, but each one can run only one copy of the program.<br />
+<br />
+This can come in handy when users are logging into a Citrix server or other shared server, and you don&#39;t want to limit the application to running only once.<br />
+<br />
+The following code illustrates this="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div concept:<br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">01.</code><span><code style="font-weight:bold;color:#006699;">using</code>
+<code style="color:#000000;">System;</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">02.</code><span><code style="font-weight:bold;color:#006699;">using</code>
+<code style="color:#000000;">System.Security.Principal;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">03.</code><span><code style="font-weight:bold;color:#006699;">using</code>
+<code style="color:#000000;">System.Threading;</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">04.</code><span><code style="font-weight:bold;color:#006699;">using</code>
+<code style="color:#000000;">System.Windows.Forms;</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">05.</code><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">06.</code><span><code style="font-weight:bold;color:#006699;">namespace</code>
+<code style="color:#000000;">WindowsFormsApplication2</code></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">07.</code><span><code style="color:#000000;">{</code></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">08.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">static</code>
+<code style="font-weight:bold;color:#006699;">class</code> <code style="color:#000000;">
+Program</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">09.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">10.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">[STAThread]</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">11.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">static</code>
+<code style="font-weight:bold;color:#006699;">void</code> <code style="color:#000000;">
+Main()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">12.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">13.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">bool</code>
+<code style="color:#000000;">ok;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">14.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">string</code>
+<code style="color:#000000;">strMyAppName = </code><code style="color:blue;">&quot;ObscureAppName&quot;</code><code style="color:#000000;">;</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">15.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">string</code>
+<code style="color:#000000;">strMutex = WindowsIdentity.GetCurrent().Name.ToString();</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">16.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">strMutex
+ = strMutex.Split(</code><code style="color:blue;">&#39;\\&#39;</code><code style="color:#000000;">)[1];
+</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">17.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">strMutex
+ &#43;= strMyAppName;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Mutex
+ m = </code><code style="font-weight:bold;color:#006699;">new</code> <code style="color:#000000;">
+Mutex(</code><code style="font-weight:bold;color:#006699;">true</code><code style="color:#000000;">, strMutex,
+</code><code style="font-weight:bold;color:#006699;">out</code>&nbsp; <code style="color:#000000;">
+ok);</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">19.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">if</code>
+<code style="color:#000000;">(!ok)</code></span></span></div>
+<div style="backbackground-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">18.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Mutex
+ m = </code><code style="font-weight:bold;color:#006699;">new</code> <code style="color:#000000;">
+Mutex(</code><code style="font-weight:bold;color:#006699;">true</code><code style="color:#000000;ground-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">20.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">21.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">MessageBox.Show(</code><code style="color:blue;">&quot;Already
+ running&quot;</code><code style="color:#000000;">);</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">22.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Application.Exit();</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">23.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">24.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="font-weight:bold;color:#006699;">if</code>
+<code style="color:#000000;">(ok)</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">25.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">{</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">26.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Application.Run(</code><code style="font-weight:bold;color:#006699;">new</code>
+<code style="color:#000000;">Form1());</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">27.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">GC.KeepAlive(m);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</code><code style="color:#008200;">// important!</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">28.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">29.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#f8f8f8;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">30.</code><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">}</code></span></span></div>
+<div style="background-color:#ffffff;"><code style="width:3em;float:left;color:#5c5c5c;text-align:right;display:block;padding-right:0.3em;">31.</code><span><code style="color:#000000;">}</code></span></div>
+</div>
+<br />
+This is an extension of the work previously done by Michael A. Covington here: <a href="http://www.ai.uga.edu/mc/SingleInstance.html">
+http://www.ai.uga.edu/mc/SingleInstance.html</a>
+
+</div>
+    
+    

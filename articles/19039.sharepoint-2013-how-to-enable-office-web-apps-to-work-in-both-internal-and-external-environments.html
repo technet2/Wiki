@@ -1,0 +1,143 @@
+---
+layout: default
+title: SharePoint 2013&#58; How to Enable Office Web Apps to Work in both Internal and External Environments - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+SharePoint folks did complain about the poor performance of their SharePoint machines in the past at the time when Office Web Apps were tightly integrated in SharePoint Server 2010. Office Web Apps services must be started in every SharePoint machine for end-user
+ to be able to view and edit supported Microsoft Office products (Word, Excel, PowerPoint, OneNote) directly on their browser. &nbsp;<span id="more-3278" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;"></span>Thankfully
+ with the new release of Microsoft Office system, Office Web Apps is no longer integrated in SharePoint 2010. It’s now a separate commercial product and can’t be installed in any server where SharePoint Server 2013 instance is installed. This significant change
+ allows you to only have a server that is able to function to any SharePoint farm that connects to the OWA server. This improves performance a lot. The burden to your organization is that you have to prepare either a dedicated machine for OWA or install it
+ on a non-SharePoint machine and purchase its license. This surely costs lots of money for both hardware and licensing. I’m not going to go around the pros and cons of OWA Server 2013 in this article. To see more about the enhancement and new changes, read&nbsp;<a href="http://technet.microsoft.com/en-us/library/jj219437.aspx" target="_blank" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">here</a>.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+One of the very common questions I’ve seen in the MSDN forum is the setup of OWA working in both internal and external environments. This&nbsp;<a href="http://social.technet.microsoft.com/Forums/sharepoint/en-US/2451c92a-5ce6-494d-a4d2-944ce38d31e6/sharepoint-2013-office-web-apps-internal-and-external-use" target="_blank" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">thread</a>&nbsp;has
+ inspired me to write my note in this article to answer to the question. Below is the word-for-word question:</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+“<em style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">I have successfully installed SharePoint 2013 and Office Web Apps on Azure VMs inside an Azure Virtual Network (IaaS model). Everything is working
+ well. However, my testing has shown that external users and internal users can’t use Office Web Apps at the same time.</em></p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<em style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Office Web Apps, installed on its own vm, accommodates an external and internal URL quite well. However, SharePoint 2013 appears to only allow
+ one setting for WOPI Zone, either internal or external but not both. I’ve set the WOPI zone to Internal-HTTPs (Set-SPWOPIZone –Zone “internal-https”). OWA works just fine if accessed from inside the Azure Virtual Network. However, if I try to access from outside
+ the Virtual Network, from the Internet, Office Web Apps fails. The exact opposite is also true. I can set WOPI Zone to External-HTTPS and accessing from the Internet works fine, but accessing inside the Virtual Network fails</em>.”</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+In this case, let’s say you have completely deployed and configured OWA in your internal environment. End-users from local network have access to SharePoint through the internal URL e.g.&nbsp;<a href="http://sharepoint/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://sharepoint/</a>&nbsp;and
+ are able to view and edit shared documents directly in Internet Explorer.&nbsp; However if end-users access SharePoint from Internet using the Internet-published domain e.g.&nbsp;<a href="http://sharepoint.abc.com/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://sharepoint.abc.com</a>,
+ OWA doesn’t work because it from Internet routes to the internal URL you have set (e.g.&nbsp;<a href="http://owa/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://owa</a>).
+ This happens many times when you don’t setup WOPI zone correctly.&nbsp;In my environment, there are two machines:&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">app03</strong>&nbsp;and&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">app04.</strong>&nbsp;The
+ app03 machine has SharePoint Server 2013 installed and the app04 machine is running Office Web Apps Server 2013 instance. These have already been joined to the domain controller with the name&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">availys.lab</strong>.
+ Note that all of these machines are hosted in my development/testing environment. Your environment may be different from mine. The SharePoint farm is virtualized inside Hyper-V and each machines has been assigned an internet-public IP.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+On the SharePoint machine, if you haven’t configured Alternate Access Mapping setting yet, open it in your Central Administration site. (<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Application
+ Management</strong>&nbsp;&gt;&nbsp;<strong style="margin:0px;perver 2013 instance. These have already been joined to the domain controller with the name&nbsp;<strong style="margin:adding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Configure alternate access mappings</strong>).&nbsp; In my case, the name of the web application I’ve created is&nbsp;<a href="http://app03/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://app03</a>.
+ Now I need to edit its public URL to make it accessible from the Internet using my public URL<a href="http://ecodemo.availys.com/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://ecodemo.availys.com</a>.
+ To tell you my guidance is actually correct, I have to be using the real domain name and the current configuration of the SharePoint farm in this article.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+On the&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Alternate Access Mappings</strong>&nbsp;page, click&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Edit
+ Public URLs</strong>&nbsp;then select web application at<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Alternate Access Mapping Collection</strong>&nbsp;setting. Under the&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Internet</strong>&nbsp;setting,
+ enter your public URL. You then don’t necessarily have to edit binding setting in IIS if you aren’t using multiple addresses running in the same port.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<img class="aligncenter" alt=" " src="http://i1235.photobucket.com/albums/ff428/thuansoldier/aam-sp2013_zps5fda5b27.png" width="809" height="196" style="margin:0px auto;padding:0px;border:currentColor;height:auto;text-align:center;vertical-align:baseline;display:block;background-color:transparent;" /></p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+After that, check the internal URL from local network while opening the public URL from the Internet.&nbsp;Make sure you have done configuring your Internet domain name to point to the public IP of the SharePoint machine. This can be done via domain control panel
+ and depends on what hosting provider you are using, such as GoDaddy. In my case, I’m able to access<a href="http://app03/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://app03</a>&nbsp;in
+ local network while obviously being able to access&nbsp;<a href="http://ecodemo.availys.com/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://ecodemo.availys.com</a>from
+ the Internet as below.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<img class="aligncenter" alt=" " src="http://i1235.photobucket.com/albums/ff428/thuansoldier/OWA_testing_zps7fa2bdc4.png" width="643" height="374" style="margin:0px auto;padding:0px;border:currentColor;height:auto;text-align:center;vertical-align:baseline;display:block;background-color:transparent;" /></p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+Now open OWA machine to create a new WAC farm.</p>
+<div style="margin:0px;padding:0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<div id="highlighter_112344" class="syntaxhighlighter  powershell" style="padding:0px;border:0px currentColor;width:600px;vertical-align:baseline;">
+<table border="0" cellspacing="0" cellpadding="0" style="width:884px;border-collapse:collapse;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2" style="text-align:right;">
+1</div>
+</td>
+<td class="code" style="width:852px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="powershell plain">New</code><code class="powershell keyword">-OfficeWebAppsFarm</code>
+<code class="powershell plain">
+–InternalUrl </code><code class="powershell string">&quot;<a href="http://app04/">http://app04</a>&quot;</code>
+<code class="powershell keyword">
+-ExternalUrl</code> <code class="powershell string">
+&quot;<a href="http://198.xxx.xxx.xxx/">http://198.xxx.xxx.xxx</a>&quot;</code>
+<code class="powershell keyword">
+-EditingEnabled</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+Because I’ve not configured my OWA machine to be published to the Internet so I have to use its Internet-public IP. It’s not a recommended best practice. In your case, the external URL would be&nbsp;<a href="http://owa.abc.com/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://owa.abc.com</a>.
+ Above I’m not using SSL certificate to encrypt data over the Internet. Just add&nbsp;<strong style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">CertificateName</strong>&nbsp;parameter if you want to use whether
+ CA-issued certificate or self-signed certificate.&nbsp;Finally, check both internal URL (<a href="http://app03/hosting/discovery" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://app03/hosting/discovery</a>)
+ and external URL (<a href="http://198.xxx.xxx.xxx/hosting/discovery" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://198.xxx.xxx.xxx/hosting/discovery</a>) to confirm
+ everything is working well. Your screen should display XML structure.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+Now you need to re-bind all SharePoint machines to WAC farm using New-SPWOPIBinding (<a href="http://technet.microsoft.com/en-us/library/jj219441.aspx" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">http://technet.microsoft.com/en-us/library/jj219441.aspx</a>).
+ Next, you just need to set the WOPI zone for external use even there is an internal use in your SharePoint environment.</p>
+<div style="margin:0px;padding:0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<div id="highlighter_205235" class="syntaxhighlighter  powershell" style="padding:0px;border:0px currentColor;width:600px;vertical-align:baseline;">
+<table border="0" cellspacing="0" cellpadding="0" style="width:600px;border-collapse:collapse;">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2" style="text-align:right;">
+1</div>
+</td>
+<td class="code" style="width:568px;">
+<div class="container">
+<div class="line number1 index0 alt2">
+<code class="powershell keyword">Set</code><code class="powershell keyword">-SPWOPIZone</code>
+<code class="powershell plain">
+–zone “external</code><code class="powershell keyword">-http</code><code class="powershell plain">”</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+Finally, configure Excel service and then upload an Excel workbook into a document library and check it. Below are the screenshots of OWA working on both internal and external environment.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<img class="aligncenter" alt=" " src="http://i1235.photobucket.com/albums/ff428/thuansoldier/owa_testing1_zps9ba8b643.png" width="600" height="277" style="margin:0px auto;padding:0px;border:currentColor;height:auto;text-align:center;vertical-align:baseline;display:block;background-color:transparent;" /></p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+As you see, there is no cheat that we used to use when playing game in chilize:14px;vertical-align:baseline;">
+Finally, configure Excel service and then upload an Excel workbook into a document library and check it. Below are the screenshots of OWA working on both internal and external environment.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+<img class="aligncenter" alt=" " src="http://i1235.photobucket.com/albums/ff428/thuansoldier/owa_testing1_zps9ba8b643.png" widtdhood. The key thing here to note is that the FQDN of my SharePoint server isn’t published to the Internet because the domain controller and DNS is configured and run locally. Only Internet
+ domain points to the public IP of the SharePoint machine. This would be the flickering light you would need to consider for SharePoint publishing portal. The lesson learnt here is not to use the real name of domain controller if you plan to use it over the
+ Internet. For example, the FQDN domain controller shouldn’t be named abc.com, abc.net…etc. Ideally it should be something like abc.local. Microsoft wrote an article&nbsp;<a href="http://support.microsoft.com/kb/909264/en-us" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">about
+ naming conventions in Active Directory</a>.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+If you are using&nbsp;<a href="http://www.windowsazure.com/en-us/solutions/infrastructure/" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Windows Azure IaaS service</a>&nbsp;to build
+ and host SharePoint virtual machines, there are many required steps before deploying Office Web Apps. First, you need to create a virtual network to make your virtual machines possible to communicate with each other in the local network. Second, create endpoint
+ with TCP protocol in conjunction with port 80 to allow your SharePoint machine to be able to communicate with others over the Internet. Below are some references that could help:</p>
+<ol>
+<li style="margin:0px 0px 0px 15px;padding:5px 5px 5px 15px;border:0px currentColor;vertical-align:baseline;">
+<a href="http://blogs.technet.com/b/matthewms/archive/2013/05/15/20-key-scenarios-with-windows-azure-infrastructure-services-iaas-deploy-an-web-server-solutions-iis-or-apache-in-the-cloud.aspx" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">20
+ Key Scenarios with Windows Azure Infrastructure Services (IaaS): Deploy Web Server Solutions (IIS or Apache) in the Cloud</a>
+</li><li style="margin:0px 0px 0px 15px;padding:5px 5px 5px 15px;border:0px currentColor;vertical-align:baseline;">
+<a href="http://www.windowsazure.com/en-us/manage/windows/how-to-guides/setup-endpoints/" target="_blank" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">How to Set Up Communication
+ with a Virtual Machine</a> </li><li style="margin:0px 0px 0px 15px;padding:5px 5px 5px 15px;border:0px currentColor;vertical-align:baseline;">
+<a href="http://blogs.technet.com/b/keithmayer/archive/2013/07/15/step-by-step-build-a-free-sharepoint-2013-lab-in-the-cloud-with-windows-azure-31-days-of-servers-in-the-cloud-part-7-of-31.aspx#.Uf1Z_xbYlUQ" target="_blank" style="margin:0px;padding:0px;border:0px currentColor;vertical-align:baseline;background-color:transparent;">Step-by-Step:
+ Build a FREE SharePoint 2013 Dev/Test Lab in the Cloud with Windows Azure Infrastructure Services</a>
+</li></ol>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+Working with network stuffs in Windows Azure looks like a night mare no ITPros &nbsp;want to see in their dream.</p>
+<p style="margin:7px 0px;padding:7px 0px;border:0px currentColor;line-height:20px;font-family:&#39;Droid Sans&#39;,&#39;Trebuchet MS&#39;,sans-serif;font-size:14px;vertical-align:baseline;">
+In real-world scenarios, your environment may have firewall or reverse proxy (Forefront TMG, UAG, F5, Astaro..etc) put at the front-gate. OWA server should be published through firewall for better secure. This is always a good recommendation.</p>
+
+</div>
+    
+    

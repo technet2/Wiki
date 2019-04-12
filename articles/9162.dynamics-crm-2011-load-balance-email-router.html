@@ -1,0 +1,261 @@
+---
+layout: default
+title: Dynamics CRM 2011 Load Balance Email Router - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<h3 class="post-title entry-title"><a name="Dynamics_CRM_Load_Balance_Email_Router"></a>Dynamics CRM Load Balance Email Router
+</h3>
+<div class="post-header">
+<div class="post-header-line-1"></div>
+</div>
+We can load balance emails in dynamics CRM with a few customization steps using multiple email routers. The concept is simple, I use a workflow to generate emails and assigned those emails to specific users (service accounts). I link those users to a custom
+ entity which will round robin (load balance) between them. On the same custom entient-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Dynamics CRM 2011 Load Balance Email Router</h1>
+    
+
+    <div class="post-content user-definety I create a counter field which defines the next user in sequence. Our load balance solution will require the following items:<br />
+<ol>
+<li><span style="color:darkred;">Custom Entity &quot;Email pool&quot;.</span> </li><li><span style="color:darkred;">Entity Relationships 1:N (1 to many).</span> </li><li><span style="color:darkred;">Small piece of Javascript code to set the default email pool which controls the loop.
+</span></li><li><span style="color:darkred;">Workflow to trigger the emails.</span> </li><li><span style="color:darkred;">&nbsp;Database trigger to update the Email Pool counter.</span>
+</li></ol>
+<br />
+The following diagram illustrates how we will load balance emails:<br />
+<br />
+<div class="separator" style="text-align:center;clear:both;"><a href="http://4.bp.blogspot.com/-NfPDte760CQ/T2M_6oJCFgI/AAAAAAAAAFA/D3D-gvHupTM/s1600/LoadBalanceEmailRouter2.png" style="margin-right:1em;margin-left:1em;"><img alt=" " src="http://4.bp.blogspot.com/-NfPDte760CQ/T2M_6oJCFgI/AAAAAAAAAFA/D3D-gvHupTM/s1600/LoadBalanceEmailRouter2.png" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<ul>
+<li>User creates a record </li><li>An email is triggered by the workflow </li><li>Workflow assigns the email to one of the 3 users </li><li>Email router processing email for that user will then deliver the email </li></ul>
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Step 1 - Create and customize the new entity (Email Pool)</span><br />
+First we need to create our custom entity pool which will hold the users responsible for processing emails.<br />
+<br />
+Go to: Settings &gt; Customization &gt; Customize the system &gt; highlight entities &gt; On the right click New<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/72155.1.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/72155.1.png" style="border-width:0px;border-style:solid;" /></a><span style="color:black;font-size:small;">&nbsp;</span><span style="color:teal;font-size:large;text-decoration:underline;">
+</span><br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;"><br />
+</span><br />
+<strong>Now we create a field for each user:</strong><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1856.userlookup.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1856.userlookup.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Create Pool 1, Pool 2 and Pool 3<br />
+<br />
+<strong>&nbsp;Create a new field for the counter: </strong><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2350.3.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2350.3.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<strong>Now add the new fields to the main form:</strong><br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6813.4.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6813.4.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Step 2 - Create the Relationship</span><br />
+Create a relationship 1:N (1 to many) with any entity which you would like to balance emails. On this article we are creating the relationship with the accounts entity.<br />
+<span style="color:black;font-size:small;">The relationship should look like this:</span><br />
+&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5482.5.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5482.5.png" style="border-width:0px;border-style:solid;" /></a><span style="color:black;font-size:small;"></span><br />
+<br />
+<span style="color:black;font-size:small;">&nbsp;</span><span style="color:teal;font-size:large;text-decoration:underline;">Step 3 - Create the email pool record and link the CRM users</span><br />
+<span style="color:black;font-size:small;">Create 3 Users called Router1, Router2 and Router3.</span><br />
+<br />
+<span style="color:black;font-size:small;">Create an Email Pool record and assign the users, it should look like this:</span><br />
+<div class="separator" style="text-align:left;clear:both;"><a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/5430.6.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/5430.6.png" style="border-width:0px;border-style:solid;" /></a><br />
+</div>
+<br />
+<br />
+<span style="color:black;font-size:small;">&nbsp;</span><span style="color:teal;font-size:large;text-decoration:underline;">Step 4 - Customize the Accounts entity</span><br />
+The next step is to customize the Accounts entity to allow the Email Pool Entity to be referenced from within the account records.<br />
+<span style="color:black;font-size:small;">We are adding the Email Pool field on the Accounts form:</span><br />
+&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1832.6a.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1832.6a.png" style="border-width:0px;border-style:solid;" /></a><span style="color:black;font-size:small;"></span><br />
+<br />
+You can customize the Email Pool field to be hidden by default or do that from the OnLoad event script.<br />
+<br />
+Click on Form Properties and configure the following script:<br />
+<span style="color:black;font-size:small;"><br />
+</span><br />
+<span style="color:black;font-size:small;">
+<div>
+<div id="highlighter_518710" class="syntaxhighlighter  javascript">
+<div class="toolbar"><span><a class="toolbar_item command_help help" href="http://quantusdyna style="color:black;font-size:small;">We are adding the Email Pool field on the Accounts form:</span><br />
+&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1832.6a.png"><img alt=" " src="http://smics.blogspot.co.uk/2012/03/dynamics-crm-load-balance-email-router.html#">?</a></span></div>
+<table border="0" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">1</div>
+<div class="line number2 index1 alt1">2</div>
+<div class="line number3 index2 alt2">3</div>
+<div class="line number4 index3 alt1">4</div>
+<div class="line number5 index4 alt2">5</div>
+<div class="line number6 index5 alt1">6</div>
+<div class="line number7 index6 alt2">7</div>
+<div class="line number8 index7 alt1">8</div>
+<div class="line number9 index8 alt2">9</div>
+<div class="line number10 index9 alt1">10</div>
+<div class="line number11 index10 alt2">11</div>
+<div class="line number12 index11 alt1">12</div>
+<div class="line number13 index12 alt2">13</div>
+<div class="line number14 index13 alt1">14</div>
+<div class="line number15 index14 alt2">15</div>
+<div class="line number16 index15 alt1">16</div>
+<div class="line number17 index16 alt2">17</div>
+<div class="line number18 index17 alt1">18</div>
+<div class="line number19 index18 alt2">19</div>
+</td>
+<td class="code">
+<div class="container">
+<div class="line number1 index0 alt2"><code class="javascript keyword">function</code>
+<code class="javascript plain">SetPool() {</code></div>
+<div class="line number2 index1 alt1">&nbsp;</div>
+<div class="line number3 index2 alt2"><code class="javascript keyword">var</code>
+<code class="javascript plain">isCreateForm = Xrm.Page.ui.getFormType() == 1;</code></div>
+<div class="line number4 index3 alt1">&nbsp;</div>
+<div class="line number5 index4 alt2"><code class="javascript keyword">var</code>
+<code class="javascript plain">y = Xrm.Page.getAttribute(</code><code class="javascript string">&quot;new_emailpoolid&quot;</code><code class="javascript plain">);</code></div>
+<div class="line number6 index5 alt1"><code class="javascript keyword">var</code>
+<code class="javascript plain">guid = [];</code></div>
+<div class="line number7 index6 alt2"><code class="javascript plain">guid[0] = {};</code></div>
+<div class="line number8 index7 alt1"><code class="javascript plain">guid[0].id =
+</code><code class="javascript string">&quot;{4CE54A4B-946B-E111-8244-000C29D8F73A}&quot;</code><code class="javascript plain">;</code></div>
+<div class="line number9 index8 alt2"><code class="javascript plain">guid[0].entityType =
+</code><code class="javascript string">&quot;new_emailpool&quot;</code><code class="javascript plain">;</code></div>
+<div class="line number10 index9 alt1"><code class="javascript plain">guid[0].name =
+</code><code class="javascript string">&quot;Email Pool&quot;</code><code class="javascript plain">;</code></div>
+<div class="line number11 index10 alt2">&nbsp;</div>
+<div class="line number12 index11 alt1"><code class="javascript keyword">if</code>
+<code class="javascript plain">(isCreateForm) {</code></div>
+<div class="line number13 index12 alt2">&nbsp;</div>
+<div class="line number14 index13 alt1"><code class="javascript plain">y.setValue(guid);
+</code></div>
+<div class="line number15 index14 alt2"><code class="javascript plain">}</code></div>
+<div class="line number16 index15 alt1">&nbsp;</div>
+<div class="line number17 index16 alt2"><code class="javascript plain">Xrm.Page.getControl(</code><code class="javascript string">&quot;new_emailpoolid&quot;</code><code class="javascript plain">).setVisible(</code><code class="javascript keyword">false</code><code class="javascript plain">);</code></div>
+<div class="line number18 index17 alt1">&nbsp;</div>
+<div class="line number19 index18 alt2"><code class="javascript plain">}</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</span><br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8640.7.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8640.7.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Step 5 - Create the workflow</span><br />
+The workflow will send an email when the record is created. It reads the email pool counter and based on this value will route the email to the appropriate user in the sequence. A trigger on the database side will update automatically the email pool counter.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7220.8.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7220.8.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Step 6 - Update the Email Pool Counter</span><br />
+To update the counter we could create a workflow that would update the Email Pool counter field, however multiple workflows updating the same field is not a good approach and may result in locks. Instead of using a workflow we can update the counter field using
+ a database trigger.<br />
+<br />
+The trigger would look like this.<br />
+<br />
+<span style="color:black;font-size:small;">
+<div>
+<div id="highlighter_509937" class="syntaxhighlighter  sql">
+<div class="toolbar"><span><a class="toolbar_item command_help help" href="http://quantusdynamics.blogspot.co.uk/2012/03/dynamics-crm-load-balance-email-router.html#">?</a></span></div>
+<table border="0" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td class="gutter">
+<div class="line number1 index0 alt2">1</div>
+<div class="line number2 index1 alt1">2</div>
+<div class="line number3 index2 alt2">3</div>
+<div class="line number4 index3 alt1">4</div>
+<div class="line number5 index4 alt2">5</div>
+<div class="line number6 index5 alt1">6</div>
+<div class="line number7 index6 alt2">7</div>
+<div class="line number8 index7 alt1">8</div>
+<div class="line number9 index8 alt2">9</div>
+<div class="line number10 index9 alt1">10</div>
+<div class="line number11 index10 alt2">11</div>
+<div class="line number12 index11 alt1">12</div>
+<div class="line number13 index12 alt2">13</div>
+<div class="line number14 index13 alt1">14</div>
+<div class="line number15 index14 alt2">15</div>
+<div class="line number16 index15 alt1">16</div>
+<div class="line number17 index16 alt2">17</div>
+<div class="line number18 index17 alt1">18</div>
+<div class="line number19 index18 alt2">19</div>
+</td>
+<td class="code">
+<div class="container">
+<div class="line number1 index0 alt2"><code class="sql keyword">BEGIN</code></div>
+<div class="line number2 index1 alt1"><code class="sql keyword">declare</code> <code class="sql plain">
+@counter </code><code class="sql keyword">int</code></div>
+<div class="line number3 index2 alt2">&nbsp;</div>
+<div class="line number4 index3 alt1"><code class="sql keyword">set</code> <code class="sql plain">
+@counter = (</code></div>
+<div class="line number5 index4 alt2"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql keyword">SELECT</code>
+<code class="sql keyword">top</code> <code class="sql plain">1 new_emailpool.new_poolcounter
+</code><code class="sql keyword">from</code> <code class="sql plain">new_emailpool</code></div>
+<div class="line number6 index5 alt1"><code class="sql plain">)</code></div>
+<div class="line number7 index6 alt2">&nbsp;</div>
+<div class="line number8 index7 alt1"><code class="sql plain">IF @counter = 1</code></div>
+<div class="line number9 index8 alt2"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql comments">--set @counter = 2</code></div>
+<div class="line number10 index9 alt1"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql keyword">UPDATE</code>
+<code class="sql plain">new_emailpool </code><code class="sql keyword">set</code>
+<code class="sql plain">new_poolcounter = 2</code></div>
+<div class="line number11 index10 alt2"><code class="sql keyword">ELSE</code></div>
+<div class="line number12 index11 alt1"><code class="sql plain">IF @counter = 2</code></div>
+<div class="line number13 index12 alt2"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql comments">--set @counter = 3</code></div>
+<div class="line number14 index13 alt1"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql keyword">UPDATE</code>
+<code class="sql plain">new_emailpool </code><code class="sql keyword">set</code>
+<code class="sql plain">new_poolcounter = 3</code></div>
+<div class="line number15 index14 alt2"><code class="sql keyword">ELSE</code></div>
+<div class="line number16 index15 alt1"><code class="sql plain">IF @counter = 3</code></div>
+<div class="line number17 index16 alt2"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql comments">--set @counter = 1</code></div>
+<div class="line number18 index17 alt1"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="sql keyword">UPDATE</code>
+<code class="sql plain">new_emailpool </code><code class="sql keyword">set</code>
+<code class="sql plain">new_poolcounter = 2</code></div>
+<div class="line number19 index18 alt2"><code class="sql keyword">END</code></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</span><br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Step 7 - Set up the Email Router</span><span style="color:teal;font-size:large;text-decoration:uncode class="sql plain">new_poolcounter = 3</code></div>
+<div class="line number15 index14 alt2"><code class="sql keyword">ELSE</code></div>
+<div class="line number16 index15 alt1"><code class="sql plain">IF @counter = 3</code></div>
+<div class="line number17 index16 alt2"><code class="sql spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code derline;"></span><br />
+The last step is to configure each Email Router to process email for the specific user. In order to do this the email router configuration file needs to be manually customized, adding the user ID and the update period set to
+<strong>0</strong>. For more information on how to do this and understand the concept read of my articles on how to install email router on multiple servers:<br />
+<span style="color:black;font-size:small;"><a href="http://quantusdynamics.blogspot.com/2012/02/dynamics-crm-installing-email-router-on.html">http://quantusdynamics.blogspot.com/2012/02/dynamics-crm-installing-email-router-on.html</a>&nbsp;
+</span><br />
+<br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Using Queues</span><br />
+<span style="color:black;font-size:small;">It&#39;s possible to use the same concept but instead of users we can use queues. The process is the same, however we will need extra steps.</span><br />
+<span style="color:black;font-size:small;">&nbsp;The following diagram illustrates the same concept:</span><br />
+<br />
+<div class="separator" style="text-align:center;clear:both;"><a href="http://3.bp.blogspot.com/-_ZUiudSc5BM/T1zBG-2_DjI/AAAAAAAAAE4/LW0QvSneYpA/s1600/LoadBalanceEmailRouter.png" style="margin-right:1em;margin-left:1em;"><img alt=" " src="http://3.bp.blogspot.com/-_ZUiudSc5BM/T1zBG-2_DjI/AAAAAAAAAE4/LW0QvSneYpA/s400/LoadBalanceEmailRouter.png" width="400" height="352" style="border-width:0px;border-style:solid;" /></a></div>
+<br />
+<br />
+<br />
+<span style="color:teal;font-size:large;text-decoration:underline;">Conclusion</span><br />
+<span style="color:black;font-size:small;">The concept works perfectly and is very reliable. You can extend the solution to provide some resilience implementing SQL scripts to move emails to different users in case the email router has crashed.&nbsp;</span><br />
+<br />
+<span style="color:black;font-size:small;">I hope you enjoyed it.<br />
+<br />
+<span style="font-size:12px;">Regards<br />
+Nuno&nbsp; Rodrigues Costa<br />
+<a href="http://quantusdynamics.blogspot.com/" target="_blank"><img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</a><a href="http://quantusdynamics.blogspot.com/" target="_blank">C:\My\Blog\Dynamics\CRM
+<img title="This link is external to TechNet Wiki. It will open in a new window." alt=" " src="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-components-sitefiles/10_5F00_external.png" style="border-width:0px;border-style:solid;" />
+</a></span><br />
+</span>
+
+</div>
+    
+    

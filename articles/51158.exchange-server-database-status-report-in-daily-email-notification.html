@@ -1,0 +1,106 @@
+---
+layout: default
+title: Exchange Server Database Status Report in Daily Email Notification - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<hr />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Summary">Summary</a></li><li class="hierarchy-item"><a href="#Steps">Steps</a></li><li class="hierarchy-item"><a href="#Creating_bat_File">Creating .bat File</a></li><li class="hierarchy-item"><a href="#Creating_PS1_Script">Creating .PS1 Script</a></li><li class="hierarchy-item"><a href="#Scheduling_a_Task_in_Exchange">Scheduling a Task in Exchange</a></li><li class="hierarchy-item"><a href="#Results_in_Email">Results in Email</a></li><li class="hierarchy-item"><a href="#Conclusions">Conclusions</a></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<h1 style="text-align:justify;"><a name="Summary"></a>Summary</h1>
+<div style="text-align:justify;">Email Services are very important for every Exchange Server administrator in any IT infrastructure, and Exchange Server Databases are one of the most crucial subject for every admin to be well aware about Exchange Server databases
+ Health, Mount Status, CopyQueueLength ReplayQueueLength and LastInspectedLogTime etc. In this topic we will walk through the steps to schedule a task which can bring some great information for Exchange administrator in his/her mailbox as daily email notification
+ so that he can have a look into it even he/she is busy in his routine jobs and don&#39;t have time to get inside the Exchange Server or doing a remote PowerShell to know Exchange Databases Health and mounting status.<br />
+</div>
+<h1 style="text-align:justify;"><a name="Steps"></a>Steps</h1>
+We need to create two files and keep them somewhere in your Exchange drives my docs, download or C:\ drive etc where you have full permission to run these file in-case if you have used delegated account for Exchange installation. File names with extension are
+ as below:- <br />
+<div style="text-align:justify;"><br />
+<ul>
+<li>ExchangeDatabaseCopyStatus.bat </li><li>ExchangeDatabaseCopyStatus.PS1 </li></ul>
+</div>
+<h1 style="text-align:justify;"><a name="Creating_bat_File"></a>Creating .bat File</h1>
+Open the&nbsp;ExchangeDatabaseCopyStatus.bat file and paste the following path which can vary to your environment, or as per your Exchange application installation. Most of the people install Exchange Server in default OS drive C:\<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">PowerShell.exe -PSConsoleFile &quot;D:\Program Files\Microsoft\Exchange Server\V15\Bin\ExShell.psc1&quot; -Command &quot;. &#39;C:\Program Files\Update Services\Exchange
+ Bats\Exchange Bats\ExchangeDatabaseCopyStatus.PS1&#39;&quot;</code></span></div>
+</div>
+<br />
+<div style="text-align:justify;">You can point to this PowerShell.exe where your Exchange is installed. In this case its installed in D:\ so its using that path, the 2nd part of the command is the path of your .PS1 script where you place it.
+<br />
+</div>
+<h1 style="text-align:justify;"><a name="Creating_PS1_Script"></a>Creating .PS1 Script</h1>
+<div style="text-align:justify;">We will open the&nbsp;ExchangeDatabaseCopyStatus.PS1 script in any editor and fill the following information.<br />
+<br />
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">$messageParameters = @{</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Subject = &quot;Exchange 2013 Mailbox Copy Status Report - $((Get-Date).ToShortDateString())&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Body =&nbsp; Get-MailboxServer |</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ForEach-Object { Get-MailboxDatabaseCopyStatus -Server $_ |</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Select-Object Name, Status, CopyQueueLength, ReplayQueueLength, LastInspectedLogTime} |</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Sort-Object Name |</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">ConvertTo-Html |</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">Out-String</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">From = &quot;Exchange-DB-Status@mstechguru.ae&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">To = &quot;Exchange-admins@mstechguru.ae&quot;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">SmtpServer = &quot;smtp.mstechguru.ae&quot;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">}</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">Send-MailMessage @messageParameters -BodyAsHtml</code></span></div>
+</div>
+<br />
+In Script you can change Subject value, From Value, To Value and SmtpServer value as per your environment. In From value we can put any dummy email ID which will later appear in Email from option. So no need to put any valid email address in From. In To option
+ we have to put some valid email address for Exchange Administrator or the Exchange admins teams who are responsible for Exchange Servers in organization, so They will receive email notification on daily basis and be well aware about Exchange Server&#39;s Databases
+ Health and Status. <br />
+<br />
+<strong>Note:- </strong>In SMTP setting you can put your CAS Server FQDN if you are running Exchange 2013, and for Exchange Server 2016 you can put FQDN of your any Mail-box Server.<br />
+<br />
+At this point we have created both files and keep them in C:\ drive somewhere. Now we will create a Schedule Task to run this .bat file on daily basis at particular time like when administrator takes coffee or tea at morning he/she can schedule this at that
+ time to have a view to his inbox for Exchange Databases Heath &amp; status. <br />
+</div>
+<h1 style="text-align:justify;"><a name="Scheduling_a_Task_in_Exchange"></a>Scheduling a Task in Exchange</h1>
+<div style="text-align:justify;">Open the Task Scheduler and click Create Basic Task<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/4505.2018_2D00_02_2D00_05_5F00_12_2D00_21_2D00_09.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4505.2018_2D00_02_2D00_05_5F00_12_2D00_21_2D00_09.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Click Next, select Daily and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3733.2018_2D00_02_2D00_02_5F00_23_2D00_07_2D00_56.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3733.2018_2D00_02_2D00_02_5F00_23_2D00_07_2D00_56.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Click Next, select the Date and time as per your time zone and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/2476.2018_2D00_02_2D00_05_5F00_12_2D00_22_2D00_21.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/2476.2018_2D00_02_2D00_05_5F00_12_2D00_22_2D00_21.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Select Start a Program and click Next<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3365.2018_2D00_02_2D00_02_5F00_23_2D00_09_2D00_01.png"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3365.2018_2D00_02_2D00_02_5F00_23_2D00_09_2D00_01.png" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Click Next<br />
+<br />
+You can select the path of your Bat file where you place it <br />
+<br />
+&quot;C:\Program Files\Update Services\Exchange Bats\Exchange Bats\ExchangeDatabaseCopyStatus.bat&quot;<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/8358.2018_2D00_02_2D00_05_5F00_12_2D00_24_2D00_49.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8358.2018_2D00_02_2D00_05_5F00_12_2D00_24_2D00_49.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Click Next Click <br />
+<br />
+Open the Properties dialog checkbox and click Finish<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1882.2018_2D00_02_2D00_05_5F00_12_2D00_31_2D00_21.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1882.2018_2D00_02_2D00_05_5F00_12_2D00_31_2D00_21.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+<br />
+Go to Trigger and click Edit to edit the condition, you can review the schedule and finish the task.<br />
+</div>
+<h1 style="text-align:justify;"><a name="Results_in_Email"></a>Results in Email</h1>
+<div style="text-align:justify;">When task will trigger you will receive an email having Exchange Servers all Databases with status.<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3324.results.jpg"><img alt=" " src="https://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3324.results.jpg" style="border-width:0px;border-style:solid;" /></a><br />
+</div>
+<h1 style="text-align:justify;"><a name="Conclusions"></a>Conclusions</h1>
+<div style="text-align:justify;">This will help Exchange administrators to automate tasks and get results in his/her inbox on daily basis. Admin can also have a history of the Heath status of Exchange Databases in his/her inbox
+</div>
+
+</div>
+    
+    

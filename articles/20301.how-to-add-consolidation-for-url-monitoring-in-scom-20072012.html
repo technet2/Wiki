@@ -1,0 +1,153 @@
+---
+layout: default
+title: How to Add Consolidation for URL Monitoring in SCOM 2007/2012 - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><strong><span style="font-size:10pt;line-height:115%;font-family:Helv,sans-serif;color:black;">URL Monitoring:</span></strong></p>
+<p>As you know SCOM 2007/2012 support URL monitoring but URL monitoring template do not allow to add consolidation to the monitoring. i.e. an alert will &nbsp;be generated every failure of &nbsp;Web Transaction.</p>
+<p>Consolidation helps you in&nbsp;reducing number of alerts due to intermediate issues for WEB transaction, by adding this module &nbsp;monitor will generating alert for multiple WEB transactions failure in given time window.</p>
+<p>Consolidation needs minimum two parameters to function </p>
+<p><strong>Number of samples</strong>: number of samples &nbsp;</p>
+<p><strong>Time window</strong>: time window to wait for <strong>Number of samples</strong> to occur.<br />
+<br />
+When the first data item comes to the consolidator, the timing window is started. For subsequent data items, if the count threshold is reached at any point during the window, the consolidator outputs data. If the end of the window is reached, and the threshold
+ has not been reached, the consolidator drops the first data item that came into the window, looks at the time stamp on the second data item, and resets the window to use this as the start time. This process continues until either the count threshold is reached
+ or all data items have occurred more than one window interval in the past.</p>
+<p>Refer below link for different types of consolidation<span style="font-size:9pt;line-height:115%;font-family:&#39;Segoe UI&#39;,sans-serif;">
+<br />
+</span><a href="http://msdn.microsoft.com/en-us/library/ee809324.aspx"><span style="font-size:9pt;line-height:115%;font-family:&#39;Segoe UI&#39;,sans-serif;">http://msdn.microsoft.com/en-us/library/ee809324.aspx</span></a></p>
+<p>Refer below link for basic information how to use consolidation module in monitor/rule.</p>
+<p><a href="http://blogs.technet.com/b/authormps/archive/2011/02/24/consolidation-composition-tutorial.aspx">http://blogs.technet.com/b/authormps/archive/2011/02/24/consolidation-composition-tutorial.aspx</a></p>
+<p>You can add consolidation to the monitor by opening mp in notepad as below. </p>
+<p>To add consolidation to monitor need to add consolidation module (i.e. ConditionDetection module) &nbsp;in UnitmonitorType configuration after ProbeAction&nbsp; tab and add an &nbsp;&lt;Node ID=&quot;RepeatCount&quot;&gt; After &lt;RegularDetection MonitorTypeStateID=&quot;XXXXXXXFailure\FALSE\ERROR\Warning&quot;&gt;
+ then add closing tab &lt;/Node&gt; After &nbsp;&lt;/Node&gt;</p>
+<p>Here with i enclosed an example for the same.</p>
+<p><strong>Before adding consolidation module to monitor type</strong></p>
+<p><span style="font-size:8pt;line-height:115%;">&lt;UnitMonitorType ID=&quot;WebApplication_bb654de2f38f475d87f10885e6358ed8.Total.AggregateDNSResolutionTime&quot; Accessibility=&quot;Public&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeStates&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeState ID=&quot;WarningCriteriaTrue&quot; NoDetection=&quot;false&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeState ID=&quot;ErrorCriteriaTrue&quot; NoDetection=&quot;false&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeState ID=&quot;OK&quot; NoDetection=&quot;false&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/MonitorTypeStates&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Configuration&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;element name=&quot;RequestID&quot; type=&quot;xsd:unsignedInt&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns=&quot;http://www.w3.org/2001/XMLSchema&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Configuration&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorImplementation&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MemberModules&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataSource ID=&quot;DS1&quot; TypeID=&quot;WebApplication_bb654de2f38f475d87f10885e6358ed8.UrlDataSource&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ProbeAction ID=&quot;OnDemandReset&quot; TypeID=&quot;System!System.PassThroughProbe&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConditionDetection ID=&quot;CDWarningCriteriaTrue&quot; TypeID=&quot;MicrosoftSystemCenterWebApplicationLibrary!Microsoft.SystemCenter.WebApplication.WarningCriteriaMatch&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataItemEvaluationQuery&gt;RequestResults/RequestResult[@Id=&quot;$Config/RequestID$&quot;]/WebPageTotalData/AggregateDNSResolutionTimeEvalResult&lt;/DataItemEvaluationQuery&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConditionDetection ID=&quot;CDErrorCriteriaTrue&quot; TypeID=&quot;MicrosoftSystemCenterWebApplicationLibrary!Microsoft.SystemCenter.WebApplication.ErrorCriteriaMatch&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataItemEvaluationQuery&gt;RequestResults/RequestResult[@Id=&quot;$Config/RequestID$&quot;]/WebPageTotalData/AggregateDNSResolutionTimeEvalResult&lt;/DataItemEvaluationQuery&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConditionDetection ID=&quot;CDOK&quot; TypeID=&quot;MicrosoftSystemCenterWebApplicationLibrary!Microsoft.SystemCenter.WebApplication.OKCriteriaMatch&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataItemEvaluationQuery&gt;RequestResults/RequestResult[@Id=&quot;$Config/RequestID$&quot;]/WebPageTotalData/AggregateDNSResolutionTimeEvalResult&lt;/DataItemEvaluationQuery&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/MemberModules&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetection MonitorTypeStateID=&quot;WarningCriteriaTrue&quot;&gt;</span></p>
+<p><span satch&quot;&gt;</span></p>
+<p><span style="font-style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;CDWarningCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;DS1&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Node&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetection MonitorTypeStateID=&quot;ErrorCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;CDErrorCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;DS1&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Node&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetection MonitorTypeStateID=&quot;OK&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;CDOK&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;DS1&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Node&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;OnDemandDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;OnDemandDetection MonitorTypeStateID=&quot;OK&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;OnDemandReset&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/OnDemandDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/OnDemandDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/MonitorImplementation&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/UnitMonitorType&gt;</span></p>
+<p><strong>After adding consolidation module</strong> </p>
+<p><span style="font-size:8pt;line-height:115%;">&lt;UnitMonitorType ID=&quot;WebApplication_bb654de2f38f475d87f10885e6358ed8.Total.AggregateDNSResolutionTime&quot; Accessibility=&quot;Public&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeStates&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeState ID=&quot;WarningCriteriaTrue&quot; NoDetection=&quot;false&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeState ID=&quot;ErrorCriteriaTrue&quot; NoDetection=&quot;false&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorTypeState ID=&quot;OK&quot; NoDetection=&quot;false&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/MonitorTypeStates&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Configuration&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;element name=&quot;RequestID&quot; type=&quot;xsd:unsignedInt&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns=&quot;http://www.w3.org/2001/XMLSchema&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Configuration&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MonitorImplementation&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;MemberModules&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataSource ID=&quot;DS1&quot; TypeID=&quot;WebApplication_bb654de2f38f475d87f10885e6358ed8.UrlDataSource&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ProbeAction ID=&quot;OnDemandReset&quot; TypeID=&quot;System!System.PassThroughProbe&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&lt;ConditionDetection TypeID=&quot;System!System.ConsolidatorCondition&quot; ID=&quot;RepeatCount&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Consolidator&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConsolidationProperties /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;StoreState&gt;false&lt;/StoreState&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;TimeControl&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;WithinTimeSchedule&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Interval&gt;250&lt;/Interval&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/WithinTimeSchedule&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/TimeControl&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;CountingCondition&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Count&gt;3&lt;/Count&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;CountMode&gt;OnNewItemTestOutputRestart_OnTimerSlideByOne&lt;/CountMode&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/CountingCondition&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Consolidator&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span>
+</p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConditionDetection ID=&quot;CDWarningCriteriaTrue&quot; TypeID=&quot;MicrosoftSystemCenterWebApplicationLibrary!Microsoft.SystemCenter.WebApplication.WarningCriteriaMatch&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataItemEvaluationQuery&gt;RequestResults/RequestResult[@Id=&quot;$Config/RequestID$&quot;]/WebPageTotalData/AggregateDNSResolutionTimeEvalResult&lt;/DataItemEvaluationQuery&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConditionDetection ID=&quot;CDErrorCriteriaTrue&quot; TypeID=&quot;MicrosoftSystemCenterWebApplicationLibrary!Microsoft.SystemCenter.WebApplication.ErrorCriteriaMatch&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataItemEvaluationQuery&gt;RequestResults/RequestResult[@Id=&quot;$Config/RequestID$&quot;]/WebPageTotalData/AggregateDNSResolutionTimeEvalResult&lt;/DataItemEvaluationQuery&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;ConditionDetection ID=&quot;CDOK&quot; TypeID=&quot;MicrosoftSystemCenterWebApplicationLibrary!Microsoft.SystemCenter.WebApplication.OKCriteriaMatch&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;DataItemEvaluationQuery&gt;RequestResults/RequestResult[@Id=&quot;$Config/RequestID$&quot;]/WebPageTotalData/AggregateDNSResolutionTimeEvalResult&lt;/DataItemEvaluationQuery&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/ConditionDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/MemberModules&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetection MonitorTypeStateID=&quot;WarningCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;RepeatCount&quot;&gt;</span>
+</p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Node ID=&quot;CDWarningCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Node ID=&quot;DS1&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Node&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Node&gt;</span>
+</p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetection MonitorTypeStateID=&quot;ErrorCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;RepeatCount&quot;&gt;</span>
+</p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Node ID=&quot;CDErrorCriteriaTrue&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;Node ID=&quot;DS1&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/Node&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;background-color:yellow;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Node&gt;</span>
+</p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;RegularDetection MonitorTypeStateID=&quot;OK&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;CDOK&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;DS1&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/Node&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/RegularDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;OnDemandDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;OnDemandDetection MonitorTypeStateID=&quot;OK&quot;&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;Node ID=&quot;OnDemandReset&quot; /&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/OnDemandDetection&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/OnDemandDetections&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/MonitorImplementation&gt;</span></p>
+<p><span style="font-size:8pt;line-height:115%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;/UnitMonitorType&gt;&nbsp;</span></p>
+<br />
+
+</div>
+    
+    

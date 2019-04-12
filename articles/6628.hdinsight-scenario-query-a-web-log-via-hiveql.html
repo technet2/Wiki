@@ -1,0 +1,166 @@
+---
+layout: default
+title: HDInsight Scenario&#58; Query a Web Log via HiveQL - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>The purpose of this wiki post is to provide an example scenario on how to work with Hadoop on Azure, upload a web log sample file via secure FTP, and run some simple HiveQL queries.</p>
+<table align="center" style="border:1px solid #000000;width:90%;font-family:&#39;segoe ui&#39;;background-color:#fff200;">
+<tbody>
+<tr>
+<td valign="top"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/0x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4747.sads_5F00_iconimportant.png" /></td>
+<td>Important! <br />
+This wiki topilass="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">HDInsight Scenario: Query a Web Log via HiveQL</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<p>The purpose of this wiki post is to provide an example scenario on how to woc may be obsolete. <br />
+The wiki topics on <em>Windows Azure HDInsight Service</em> are no longer updated by Microsoft. We moved the content to
+<a href="http://www.windowsazure.com/en-us/manage/services/hdinsight/">windowsazure.com</a> where we keep it current. This topic can be found at
+<a href="http://www.windowsazure.com/en-us/manage/services/hdinsight/using-hive-with-hdinsight/">
+Using Hive with HDInsight</a>. </td>
+</tr>
+</tbody>
+</table>
+<h3><a name="Preparation"></a><a name="Preparation_Please_download_the_sample_weblog_file_ex20111214_log_gz_and_the_weblog_sample_hql_file_to_a_local_location_on_your_computer"></a>Preparation</h3>
+<p>Please download the sample weblog file <a href="http://db.tt/nNNmED2i">ex20111214.log.gz</a> and the
+<a href="http://db.tt/kLP1vA2H">weblog_sample.hql</a> file to a local location on your computer.</p>
+<h3><a name="Upload_the_Weblog_file"></a>Upload the Weblog file</h3>
+To upload the weblog, let&#39;s make use of the FTP option using curl. &nbsp;To do this, you will need to do the following:<br />
+<br />
+1) From the <strong>Interactive Javascript Console</strong>, create the folder weblog using the command #mkdir<br />
+#mkdir weblog<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6305.mkdir.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6305.mkdir.png" /></a><br />
+<br />
+<br />
+<br />
+2) Follow the instructions at&nbsp;<a href="http://social.technet.microsoft.com/wiki/contents/articles/how-to-ftp-data-to-hadoop-on-windows-azure.aspx" target="_blank">How to FTP Data to Hadoop on Windows Azure</a>&nbsp;to get the data up to the weblog folder you had
+ created (i.e. instructions on how to open up the FTP ports and how to push data up to HDFS using curl). &nbsp;In this case, you can use the curl command used to ftp the data is noted below.<br />
+curl -k -T ex20111214.log.gz ftps://Campschurmann:[MD5 Hash Password]@<strong>tardis.cloudapp.net:2226</strong>/user/Campschurmann/weblog/<br />
+<div><br />
+<br />
+Some quick notes based on the color coding:<br />
+<ul>
+<li>Campschurmann - this is the username that I had specified when I had created my cluster. &nbsp;Notice that it is case sensitive.
+</li><li>[MD5 Hash Password] - this is a MD5 hash of the password you had created when you had created your cluster. &nbsp;
+</li><li><strong>tardis.cloudapp.net</strong> - this is the name of my cluster where i had specified tardis as the name of my cluster.
+</li><li><strong>2226 </strong>- this is the FTP port to allow the transfer of data, this is the port you had previously opened in the Open Ports Live tile.
+</li><li>weblog - this is the folder that you had just created using the #mkdir command.
+</li></ul>
+<br />
+<br />
+3) To verify the file, go back to the Interactive Javascript console and type #ls weblog and you should see the file listed.<br />
+<br />
+<br />
+<br />
+</div>
+<h3><a name="Create_HiveQL_table_pointing_to_this_sample_weblog_file"></a>Create HiveQL table pointing to this sample weblog file</h3>
+<div>Now that you have uploaded the sample weblog file, now you can create a Hive table that points to the weblog folder you just created which contains the sample file. &nbsp;To do this:<br />
+<br />
+1) Go to the <strong>Interactive Hive Console</strong>, and type the command below.<br />
+<br />
+CREATE EXTERNAL TABLE weblog_sample (<br />
+&nbsp; &nbsp;evtdate STRING,<br />
+&nbsp; &nbsp;evttime STRING,<br />
+&nbsp; &nbsp;svrsitename STRING,<br />
+&nbsp; &nbsp;svrip STRING,&nbsp;<br />
+&nbsp; &nbsp;csmethod STRING,&nbsp;<br />
+&nbsp; &nbsp;csuristem STRING,&nbsp;<br />
+&nbsp; &nbsp;csuriquery STRING,&nbsp;<br />
+&nbsp; &nbsp;svrport INT,<br />
+&nbsp; &nbsp;csusername STRING,&nbsp;<br />
+&nbsp; &nbsp;cip STRING,&nbsp;<br />
+&nbsp; &nbsp;UserAgent STRING,&nbsp;<br />
+&nbsp; &nbsp;Referer STRING,&nbsp;<br />
+&nbsp; &nbsp;scstatus STRING,&nbsp;<br />
+&nbsp; &nbsp;scsubstatus STRING,&nbsp;<br />
+&nbsp; &nbsp;scwin32status STRING,&nbsp;<br />
+&nbsp; &nbsp;scbytes STRING,&nbsp;<br />
+&nbsp; &nbsp;csbytes STRING,&nbsp;<br />
+&nbsp; &nbsp;timetaken STRING<br />
+)<br />
+COMMENT &#39;This is a web log sample&#39;<br />
+ROW FORMAT DELIMITED FIELDS TERMINATED by &#39;32&#39;<br />
+STORED AS TEXTFILE<br />
+LOCATION &#39;/user/campschurmann/weblog/&#39;;<br />
+<br />
+You should be able to copy/paste it directly from this wiki post but just in case you cannot, the weblog_sample.hql file you had previously downloaded contains the same command. &nbsp;<br />
+<br />
+<br />
+Note<br />
+You will notice that this is a CREATE EXTERNAL TABLE command - this allows you to create a Hive table that points to the files located in a folder instead of going through the task of uploading the data into separate hive table / partitions.<br />
+<br />
+<br />
+More Information<br />
+For more information about CREATING TABLES in HIVE, please reference the <a href="https://cwiki.apache.org/Hive/tutorial.html#Tutorial-CreatingTables" target="_blank">
+Apache Hive Tutorial &gt; Creating Tables</a>.<br />
+<br />
+<br />
+2) To verify that the table exists, type the command:<br />
+show tables<br />
+<br />
+and you should see the weblog_sample table that you had created listed.<br />
+<br />
+<br />
+<br />
+3) To validate the data can be read, you can type the command:<br />
+select * from weblog_sample limit 10;<br />
+<br />
+and you should view the first ten rows from the weblog_sample Hive table, which is pointing to the ex20111214.log.gz web log file.<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3404.weblog_5F00_query.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/3404.weblog_5F00_query.png" /></a><br />
+<br />
+<br />
+Note<br />
+You may notice that the weblog_sample Hive table is pointing to the weblog folder which contains a
+<em>compressed gzip file</em>. &nbsp;There advantage is that if your weblog files are already gzipped, you do not need to decompress them to read them with Hive. &nbsp;<br />
+<br />
+<br />
+</div>
+<h3><a name="Querying_your_Hive_Table"></a>Querying your Hive Table</h3>
+<div>As noted above, you can run your HiveQL queries against this sample web log. &nbsp;But one of the key important things is to utilize hive parsing functions to extract valuable data from the key-value pairs. &nbsp;For example, the query below extracts out the first
+ page hierarchy inform.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/3404.weblog_5F00_query.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__keyation from the csuristem column and groups by that value, and does a count.<br />
+<br />
+select regexp_replace(split(csuristem, &quot;/&quot;)[1], &quot;MainFeed.aspx&quot;, &quot;Home&quot;), count(*)&nbsp;<br />
+from weblog_sample&nbsp;<br />
+group by regexp_replace(split(csuristem, &quot;/&quot;)[1], &quot;MainFeed.aspx&quot;, &quot;Home&quot;)<br />
+<div><br />
+</div>
+<br />
+The page hierarchy in the csuristem column looks like:<br />
+/Olympics/archive/2007/09/13/Lena-Lake.aspx<br />
+<br />
+By using the <strong>split</strong> function, in the form of:<br />
+split(csuristem, &quot;/&quot;)[1]<br />
+<br />
+I&#39;m able to extract out the first value of the string array defined by &quot;/&quot; - in the above case, this would be the value &quot;Olympics&quot;. &nbsp;I&#39;m also using the
+<strong>regexp_replace</strong> function to change the MainFeed.aspx page to indicate that it&#39;s actually the Home Page.<br />
+<br />
+Finally, I use the group by and count(*) functions to perform my aggregate query.<br />
+<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6175.hiveql.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6175.hiveql.png" /></a><br />
+<br />
+<br />
+<br />
+More Information<br />
+To review all of the available Hive functions, please reference the Apache Hive Language Manual UDF at
+<a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual&#43;UDF" target="_blank">
+Apache Hive &gt; LanguageManual UDF</a>.<br />
+<br />
+<br />
+</div>
+
+</div>
+    
+    

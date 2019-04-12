@@ -1,0 +1,82 @@
+---
+layout: default
+title: 在 SQL Server 数据库项目中包含数据 (zh-CN) - TechNet文章 - 中国（简体中文） - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p style="margin:0in 0in 10pt;">在许多情况下，在部署数据库时需要在某些表中具有预先填充的数据。一个常见的情形就是将静态数据填充到引用自其他表的表中 – 客户类型、地址类型、处理状态等。在一些情形下，这些数据&amp;#20540;仅限允许的&amp;#20540;；在其他情况下，它们可以是可由应用程序添加的初始&amp;#20540;。此数据种类在不同的情形下有不同的称呼，包括“引用数据”、“种子数据”或“域数据”。无论您怎么称呼它们，这些数据都需要首先存在，然后才能使用数据库。思考这个要求的一个途径是根据在您的数据库项目和它部署的数据库之间存在的隐式约定
+ – 我们想要的是扩展该约定以便包含数据部署和架构。</p>
+<p style="margin:0in 0in 10pt;">SSDT 使用声明性方法来定义架构。这种方法的一大好处是，您在发布或部署您的设计时无需关心目标数据库的状态。SSDT 会对架构执行反向工程并且计算将您的设计应用于数据库所需的正确更改和任何数据移动。这在您部署对现有数据库的更新时十分重要。应该将同样的方法应用于预先填充的数据，这些数据可视作架构的一部分 – 而不是在应用程序代码内定义的枚举&amp;#20540;。理想状态下，SSDT 将会允许您为任何表提供数据&amp;#20540;来作为表定义的一部分。这些数据&amp;#20540;将是架构模型的一部分，以便根据表定义进行验证、包含在重构和架构比较中并且导致生成适当的部署脚本。SSDT
+ 尚不支持在架构中定义数据，但这肯定在我们的关注范围内。</p>
+<p style="margin:0in 0in 10pt;">因此，在此期间要做什么呢？如果您使用 SQL Server 数据库项目，则可以使用部署前和部署后脚本扩展架构部署。尽管这些脚本是必需的而非声明性的并且不参与生成，但它们可以包含在重构范围内。并且尽管这些脚本是必需的，但有一些方法可用于撰写数据填充脚本，以便它们表现为声明性的。这在您需要这些脚本是等幂（部署数据而与执行数据时表的数据内容无关）时十分重要，并且理想上在这样做之时对周围数据完整性的影响应该最小。</p>
+<p style="margin:0in 0in 10pt;">尽管您可以撰写复合的 INSERT、UPDATE 和 DELETE 脚本，但 SQL Server 2008 添加了 MERGE 支持，可以使用这一支持以更紧凑的方式将数据合并到一个目标表中。通过在您的部署后脚本中为每个引用数据表包含适当的 MERGE 脚本，您可以通过声明性的方式将引用数据部署到任何数目的引用数据表中。并且对于其每个表不到一千行（这是大多数引用数据的最佳结合点）的较小数据集，您可以使用 MERGE 在脚本中定义源数据内联，而无需将数据加载到临时表中。现在来看一个示例…</p>
+<p style="margin:0in 0in 10pt;">我们将填充一个 AddressType 表，引用该表来描述在一些引用表中持有的地址的目的（未定义）。</p>
+<p style="margin:0in 0in 10pt;">首先在 SSDT 中创建一个新的 SQL 数据库项目，并且在项目下添加引用数据表定义。（您可以添加一个新表或创建生成脚本来执行此操作。）</p>
+<p>CREATE TABLE [AddressType] (</p>
+<p>&nbsp;&nbsp;&nbsp; [AddressTypeID] INT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOT NULL PRIMARY KEY,</p>
+<p>&nbsp;&nbsp;&nbsp; [Name]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NVARCHAR (50)&nbsp;&nbsp;&nbsp; NOT NULL,</p>
+<p>);</p>
+<p>&nbsp;</p>
+<p style="margin:0in 0in 10pt;">接下来添加一个部署后脚本并且将下面的数据填充脚本复制到该脚本中。请注意定义脚本和部署后脚本上不同的生成操作属性&amp;#20540;。对于每个项目，仅允许一个活动的部署后脚本。</p>
+<p>-- AddressType 的参考数据</p>
+<p>&nbsp;</p>
+<p>MERGE INTO AddressType AS Target</p>
+<p>USING (VALUES </p>
+<p>&nbsp;&nbsp;&nbsp; (0, N&#39;Undefined&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (1, N&#39;Billing&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (2, N&#39;Home&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (3, N&#39;Main Office&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (4, N&#39;Primary&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (5, N&#39;Shipping&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (6, N&#39;Archive&#39;)</p>
+<p>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AS Source (AddressTypeID, Name)</p>
+<p>ON Target.AddressTypeID = Source.AddressTypeID</p>
+<p>-- 更新匹配的行</p>
+<p>WHEN MATCHED THEN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UPDATE SET Name = Source.Name</p>
+<p>-- 插入新行</p>
+<p>WHEN NOT MATCHED BY TARGET THEN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; INSERT (AddressTypeID, Name) </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VALUES (AddressTypeID, Name)</p>
+<p>-- 删除处于目标中、但不处于源中的行</p>
+<p>WHEN NOT MATCHED BY SOURCE THEN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DELETE; </p>
+<p>GO</p>
+<p style="margin:0in 0in 10pt;">&nbsp;</p>
+<p style="margin:0in 0in 10pt;">正如您所看到的，这是一个紧凑的语法，数据很好地封装于语句的一个部分中。</p>
+<p style="margin:0in 0in 10pt;">上面的示例假定一个封闭的&amp;#20540;集，因此，它包含一个 delete 子句，用于删;&nbsp;&nbsp; (3, N&#39;Main Office&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (4, N&#39;Primary&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (5, N&#39;Shipping&#39;),</p>
+<p>&nbsp;&nbsp;&nbsp; (6, N&#39;Archive&#39;)</p>
+<p>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; AS Source (AddressTypeID, Name)</p>
+<p>ON Target.AddressTypeID = Source.AddressTypeID</p>
+<p>-- 更新匹配的行</p>
+<p>WHEN MATCHED THEN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; UPDATE SET Name = Source.Name</p>
+<p>-- 插入新行</p>
+<p>WHEN NOT MATCHED BY TARGET THEN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; INSERT (AddressTypeID, Name) </p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; VALUES (AddressTypeID, Name)</p>
+<p>-- 删除处于目标中、但不处于源中的行</p>
+<p>WHEN NOT MATCHED BY SOURCE THEN</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; DELETE; </p>
+<p>GO</p>
+<p style="margin:0in 0in 10pt;">&nbsp;</p>
+<p style="margin:0in 0in 10pt;">正如您所看到的，这是一个紧凑的语法，数据很好地封装于语句的一个部分中。</p>
+<p style="margin:0in 0in 10pt;">上面的示例假定一个封闭的&amp;#20540;集，因此，它包含一个 delete除可能已添加到该表的所有额外的行。如果该表受到适当保护，您可能会感觉这样做没有必要，但它会确保约定。或者，如果删除存在问题或您怀疑可能已引用这些附加行，则可以修改该行为。</p>
+<p style="margin:0in 0in 10pt;">下面是它在 SSDT 中的大致情形。下面是在将该项目发布到数据库后拍下的屏幕快照。选择了该部署后脚本并且该脚本在上部选项卡和属性窗口中可见，而部署后的数据在下部选项卡的数据编辑器（通过在 SQL Server 对象资源管理器的 AddressType 表上选择“查看数据”打开）中可见。</p>
+<p style="margin:0in 0in 10pt;">此方法的某些变化形式包括：</p>
+<ul>
+<li>将初始&amp;#20540;插入应用程序可将附加条目添加到的表中。 在此情况下将排除 delete 子句，MERGE 将确保定义的&amp;#20540;存在，但将忽略已添加的其他&amp;#20540;。 </li><li>用于某个表，该表需要使用 IDENTITY 子句为应用程序添加的数据分配键&amp;#20540;。 在此情况下，您将需要为您的初始&amp;#20540;保留某个范围的&amp;#20540;，并且为超出该范围的 IDENTITY 子句定义一个起始&amp;#20540;。下面的示例为 AddressTypeID 赋&amp;#20540;，以 100 起始。 [AddressTypeID] INT IDENTITY (100, 1) NOT NULL PRIMARY KEY, 然后，您将需要按如下所示启用标识插入： &nbsp;&nbsp;&nbsp; SET IDENTITY_INSERT AddressType ON &nbsp;&nbsp;&nbsp; GO
+ &nbsp;&nbsp;&nbsp; -- 合并此处的代码 &nbsp;&nbsp;&nbsp; SET IDENTITY_INSERT AddressType OFF &nbsp;&nbsp;&nbsp; GO 您需要知道 IDENTITY INSERT 具有全局作用域，因此，数据库应或者处于脱机状态，或者在某个操作时间段内受到保护。
+</li><li>用于彼此交叉引用的引用表。 在此情况下，将来自被引用表的显式键&amp;#20540;作为引用表中的外键&amp;#20540;分配 – 只是确保对脚本排序，以便首先填充被引用表。 </li><li>将脚本包装到一个或多个过程中。 另一个变化形式是将脚本置于某个存储过程的正文中，然后只需从部署后脚本执行它。这样做的优点是，将会为脚本提供某种额外的生成验证 – 例如，如果从表中删除该脚本填充的列，则会报告错误。然后，您可以选择在数据库中保留过程，并且允许定期运行该过程以便“刷新”数据，或者在部署后执行该过程后立即删除该过程。删除该过程将恢复所用的空间（如果已认为这是个问题）。
+</li></ul>
+<p style="margin:0in 0in 10pt;">尽管 SSDT 尚未有内置的引用数据解决方案，但此方法（适用于自 SQL Server 2008 以后的所有 SQL Server 和 SQL Azure 数据库）可以很好且轻松地完成这项工作。</p>
+
+</div>
+    
+    

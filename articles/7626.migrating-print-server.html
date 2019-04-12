@@ -1,0 +1,141 @@
+---
+layout: default
+title: Migrating Print Server - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span lang="en" style="font-size:13px;">In his article about <a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/7625.powershell-batch-creation-of-printers-en-us.aspx">
+the batch creation of printers</a> I described how you can without much time and moral cost, quickly create a similar set of printers on the new server.</span>
+<p><span style="font-size:13px;"><span lang="en" style="font-size:13px;">According to the problem we have in the old and the new print server.
+</span><span lang="en" style="font-size:13px;">In my case this is an old Windows 2003 and the new Windows 2008 R2.</span></span><span style="font-size:13px;"><br />
+</span><span lang="en" style="font-size:13px;"><br />
+The &quot;new&quot; print server, we installed a set of similar &quot;old&quot; printer server.</span><span style="font-size:13px;"><b class="full-post">
+    <h1 class="post-name">Migrating Print Server</h1>
+    
+
+    <div class="post-content user-defined-markup">
+
+<span lang="en" style="font-size:13px;">In his article about <a target="_blank" href="http://social.technet.microsoft.com/wiki/contents/articles/7625.powershell-batch-creation-of-printers-en-us.aspx">
+the batch creation of printers</a> I described how you can without much time and moral cost, quickly create a similar set of printers on the new server.</span>
+<p><span style="font-size:13px;"><span lang="en" style="font-size:13px;">According to the problem we have in the old and the new print server.
+</span><span lang="en" style="font-size:13px;">r />
+</span><span lang="en" style="font-size:13px;"><br />
+Today I want to talk about what needs to be done on the client in order to connect these printers.</span></p>
+<p lang="en"><span style="font-size:13px;">Traditionally, few options can be:</span></p>
+<ol>
+<li lang="en"><span style="font-size:13px;">Rename the server.</span> </li><li lang="en"><span style="font-size:13px;">reconnect all printers for clients on a new printer.</span>
+</li></ol>
+<p lang="en"><span style="font-size:13px;">The first option, the default is &quot;</span><span style="font-size:13px;">unsportsmanlike</span><span style="font-size:13px;">&quot; and it will be the second option.<br />
+</span><span><span style="font-size:13px;"><br />
+</span><span style="line-height:22px;font-family:&#39;Segoe UI Semibold&#39;,&#39;Segoe UI&#39;,&#39;Lucida Grande&#39;,Arial,Verdana,Helvetica,sans-serif;font-size:16px;color:#3a3e43;"><strong>Step 1</strong></span></span></p>
+<p lang="en"><span style="font-size:13px;">Create a file called <strong>PRINTERS.txt
+</strong>, reading:</span></p>
+<em style="font-size:small;">\\prnsrv\HP-C6200</em><span style="font-size:13px;"><br />
+<em>\\prnsrv\KS-Prn1<br />
+\\prnsrv\PD-Prn2-Color</em></span> <span style="font-size:13px;"><br />
+<br />
+</span>
+<p><span style="font-size:13px;">Each line of the file contains the full path to the &quot;old&quot; printers.</span>
+</p>
+<h3 lang="en"><span style="font-size:16px;"><strong><span style="font-size:16px;"><a name="Step_2"></a>Step 2</span></strong></span></h3>
+<p lang="en"><span style="font-size:13px;">Create a .vbs file with the contents below.</span></p>
+<div class="codesnip-container">
+<div class="vb codesnip" style="font-family:monospace;"><span class="kw1" style="font-size:13px;"></span>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;">on error resume next</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;">&nbsp;</span></p>
+<p><strong><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#5f9ea0;">Set</span></strong>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">objNetwork</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">=</span> <span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">
+WScript.CreateObject</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;">(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&quot;WScript.Network&quot;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;">)</span></p>
+<p><strong><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#5f9ea0;">Set</span></strong>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">colPrinters</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">=</span> <span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">
+objNetwork.EnumPrinterConnections</span> </p>
+<p><strong><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#5f9ea0;">Set</span></strong>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">objFSO</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">=</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;"> CreateObject(</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&quot;Scripting.FileSystemObject&quot;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;">)</span></p>
+<p><strong><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:#5f9ea0;">Set</span></strong>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">wshShell</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">=</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;"> CreateObject(
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&quot;WScript.Shell&quot;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;"> )</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:black;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ specify the path to the file you created earlier</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">sFile = &quot;printers.txt&quot;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">oldServer = &quot;OLD_SERVER&quot;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">newServer = &quot;NEW_SERVER&quot;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">If objFSO.FileExists(sFile) Then</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ read default printer settings</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">strKey = &quot;HKEY_CURRENT_USER\Software\Microsoft\Windows NT\CurrentVersion\Windows\Device&quot;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">strCurPrinter = Trim( Split( wshShell.RegRead( strKey ), &quot;,&quot; )(0) )</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘WScript.Echo &quot;Current Default printer – &quot; &amp;amp; strCurPrinter</spat;NEW_SERVER&quot;</span></pn></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘We form the name of the new default printer</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">strNewPrinter = Replace (strCurPrinter, oldServer , newServer)</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ We make replacing your printer on new</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">If strCurPrinter &amp;lt;&amp;gt; strNewPrinter Then</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">objNetwork.AddWindowsPrinterConnection strNewPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘WScript.Echo &quot;New Default printer – &quot; &amp;amp; strNewPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">objNetwork.SetDefaultPrinter strNewPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">objNetwork.RemovePrinterConnection strCurPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">End if</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ Read from a file printer list</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">Set oFile = objFSO.OpenTextFile(sFile, 1)</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ in a loop we read a line from a file</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">Do While Not oFile.AtEndOfStream</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">sText = oFile.ReadLine</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">If Trim(sText) &amp;lt;&amp;gt; &quot;&quot; Then</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘WScript.Echo &quot;value from file – &quot; &amp;amp; sText</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ We are comparing each line found in printers</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">For i = 0 to colPrinters.Count -1 Step 2</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘WScript.Echo &quot;Value from Windows – &quot; &amp;amp; colPrinters.Item (i&#43;1)</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ If the comparison is successful the form variable and call the subroutine newPrinter replacement printer</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">If Ucase(colPrinters.Item (i&#43;1)) = Ucase(sText) Then</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">oldPrinter = sText</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">newPrinter = Replace (oldPrinter, oldServer, newServer)</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">SwapPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">End If</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">next</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">End If</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">Loop</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">oFile.Close</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">else</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">WScript.Echo &quot;File – &quot; &amp;amp; sFile &amp;amp; &quot; not found.&quot;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">End If</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">WScript.Quit</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">&nbsp;</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">‘ </span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">подпрогра&#1084;&#1084;а</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">за&#1084;ены</span>
+<span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">принтера</span>
+</p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">Sub SwapPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">Set WshNetwork = CreateObject(&quot;WScript.Network&quot;)</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">WScript.Echo &quot;Create new printer – &quot; &amp;amp; newPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">WshNetwork.AddWindowsPrinterConnection newPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">WScript.Echo &quot;Delete old printer – &quot; &amp;amp; oldPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">WshNetwork.RemovePrinterConnection oldPrinter</span></p>
+<p><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:maroon;">End Sub</span></p>
+<p><br />
+</p>
+</div>
+</div>
+<h3><span style="font-size:16px;"><strong><span style="font-size:16px;"><a name="Step_3"></a></span><span style="font-size:16px;">Step 3</span></strong></span>
+</h3>
+<p><span style="font-size:13px;">The resulting script is run under the user once by any method, for example, he can put it in startup and after some time off.</span>
+</p>
+<p><span style="font-size:13px;">The result of mining will be replacing all the printers on the old server to new one.</span>
+</p>
+<span style="font-size:13px;"><br />
+<span style="font-size:16px;"><a target="_blank" href="http://blog.wadmin.ru/2011/04/printer-migration-step-2/">Source Link</a></span></span>
+
+</div>
+    
+    

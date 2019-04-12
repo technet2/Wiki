@@ -1,0 +1,105 @@
+---
+layout: default
+title: Sync Framework&#58; SQL Server to Windows Azure SQL Database Synchronization - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup"><p>In this&nbsp;article I will show how to use the 2.1 version of the Sync Framework to write a console application to synchronize Windows Azure SQL Database with on-premises SQL Servers. The Sync Framework takes care of all the messy details for you, leaving you just tying the pieces together in very few lines of code. This article&nbsp; is building on top of Liam&rsquo;s <a href="http://blogs.msdn.com/b/sync/archive/2010/08/31/sql-server-to-sql-azure-synchronization-using-sync-framework-2-1.aspx">blog post and video</a>.<br />
+<br />
+<div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#The_Databases">The Databases</a></li><li class="hierarchy-item"><a href="#Download">Download</a></li><li class="hierarchy-item"><a href="#Creating_the_Console_Application">Creating the Console Application</a></li><li class="hierarchy-item"><a href="#The_Code">The Code</a></li><li class="hierarchy-item"><a href="#Synchronization">Synchronization</a></li><li class="hierarchy-item"><a href="#Credit_Where_Credit_Is_Due">Credit Where Credit Is Due</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<h2><a name="The_Databases"></a>The Databases</h2>
+<p>This example will show how to synchronize SQL Database with an on-premises SQL Server database. This means that the on-premise SQL Server will be the source database for setting up the synchronization, and the SQL Database will be the destination. When the databases are setup and sync&rsquo;d for the first time, both databases will have the same data and the synchronization will be bi-directional. Writes can be done on either database, and synchronization will move the changes to make sure both databases are identical.</p>
+<p>For this example, I am going to use the Adventure Works database (which can be downloaded <a href="http://msftdbprodsamples.codeplex.com/">here</a>) and synchronize just a subset of the tables: the Customer and Product tables.</p>
+<p>I also need a SQL Database account and an allocated server to synchronize too. On the SQL Database server I am going to start with an empty database, the console application will do the initial synchronization to setup the table schema on SQL Database. Once you have created the database on the SQL Database server you will have to create the SalesLT schema that the Product and Customer tables are in. You can do this by attaching to SQL Database with SQL Server Management Studio and executing this Transact-SQL statement:</p>
+<p>CREATE SCHEMA SalesLT</p>
+<h2><a name="Download"></a>Download</h2>
+<p>First thing to do is download and install the <a href="http://www.microsoft.com/downloads/details.aspx?FamilyID=ee6af141-79d0-4351-a4a0-ea89bb29dcf5&amp;displaylang=en">Microsoft Sync Framework 2.1 Software Development Kit (SDK)</a>. This will install the assemblies on your local machine that you need to reference in order to make your console application run. This SDK doesn&rsquo;t install any software on your computer, i.e. a running service or a windows application with a user interface. Which means, as long as you ship the required assemblies with the console application in the example, you can transport the console application to another computer.</p>
+<h2><a name="Creating_the_Console_Application"></a>Creating the Console Application</h2>
+<p>Next step is to create the console application and references the Sync Framework assemblies. Using Visual Studio I create a simple new console application. Next I need to add the correct Sync Framework references. Which are:</p>
+<ul>
+    <li>Microsoft.Synchronization.dll </li>
+</ul>
+<p>Found in: <b>C:\Program Files\Microsoft Sync Framework\2.1\Runtime\x86</b> and the Synchronization Framework providers:</p>
+<ul>
+    <li>Microsoft.Synchronization.Data.dll </li>
+    <li>Microsoft.Synchronization.Data.Server.dll </li>
+    <li>Microsoft.Synchronization.Data.SqlServer.dll </li>
+</ul>
+<p>Found in: <b>C:\Program Files\Microsoft Sync Framework\2.1\Runtime\ADO.NET\V3.1\x86</b></p>
+<h2><a name="The_Code"></a>The Code</h2>
+<p>Inside the console application I am going to call the classes exposed by adding the Sync Framework references to perform two actions: Setup and Synchronization. Setup will only be run once to create the table schema on SQL Database, and Synchronization will be run anytime you want to the two databases to be in sync.</p>
+<p>The first part of the code to setup the databases creates two very ordinary ADO.NET <b>SqlConnection</b> objects. It then uses classes from the Sync Framework to name the tables and add them to the Sync scope:</p>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#0000ff;font-family:&#39;courier new&#39;;font-size:10pt;">using</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> (<span style="color:#2b91af;">SqlConnection</span> sqlServerConn =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlConnection</span>(LocalSQLServerConnectionString))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">{</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">using</span> (<span style="color:#2b91af;">SqlConnection</span> sqlAzureConn =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlConnection</;font-size:10pt;"> (<span style="color:#2b91af;">SqlConnection</span> sqlServerConn =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlConnection</span>(LocalSQLServerConnectionString))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">{</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">using</span> (<span style="color:#2b91af;">SqlConnection</span> sqlAzureConn =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbspan>(RemoteSQLAzureConnectionString))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; {</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">DbSyncScopeDescription</span> myScope =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">DbSyncScopeDescription</span>(scopeName);</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">DbSyncTableDescription</span> Customer =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">SqlSyncDescriptionBuilder</span>.GetDescriptionForTable(<span style="color:#a31515;">&quot;SalesLT.Customer&quot;</span>, sqlServerConn);</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">DbSyncTableDescription</span> Product =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">SqlSyncDescriptionBuilder</span>.GetDescriptionForTable(<span style="color:#a31515;">&quot;SalesLT.Product&quot;</span>, sqlServerConn);</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#008000;font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Add the tables from above to the scope</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myScope.Tables.Add(Customer);</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; myScope.Tables.Add(Product);</span></div>
+<p>The next section of code sets up the local on-premise SQL Server for provisioning. If the SQL Server already contains the table schemas and data then what does it have to do? The Synchronization Framework uses both databases as data storage to store configuration information, and state information about the current status of the synchronization. So the provisioning creates tables on your local SQL Server to store this information.</p>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#008000;font-family:&#39;courier new&#39;;font-size:10pt;">// Setup SQL Server for sync</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#2b91af;font-family:&#39;courier new&#39;;font-size:10pt;">SqlSyncScopeProvisioning</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> sqlServerProv =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlSyncScopeProvisioning</span>(sqlServerConn, myScope);</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#0000ff;font-family:&#39;courier new&#39;;font-size:10pt;">if</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> (!sqlServerProv.ScopeExists(scopeName))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#008000;font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; // Apply the scope provisioning.</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; sqlServerProv.Apply();</span></div>
+<p>The next section of code does the same thing for the remote SQL Database server. However, it also creates the schemas data tables that it is going to synchronize too, based on the local SQL Server scope. Here is what the code looks like:</p>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#008000;font-family:&#39;courier new&#39;;font-size:10pt;">// Setup SQL Database for sync</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#2b91af;font-family:&#39;courier new&#39;;font-size:10pt;">SqlSyncScopeProvisioning</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> sqlAzureProv =</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlSyncScopeProvisioning</span>(sqlAzureConn, myScope);</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#0000ff;font-family:&#39;courier new&#39;;font-size:10pt;">if</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> (!sqlAzureProv.ScopeExists(scopeName))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#008000;font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; // Apply the scope provisioning.</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; sqlAzureProv.Apply();</span></div>
+<p>After the <b>Apply()</b> method has run on SQL Database the database looks like this:</p>
+<p><img alt=" " style="border:0px solid currentcolor;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/3731.20.png" /></p>
+<p>To synchronize the databases just run the console application like this:</p>
+<p><b><i>SyncConsole.exe &ndash;setup</i></b></p>
+<p>Database setup just needs to happen once, however you will might want to synchronize the database multiple, because of this the code is split into two different sections one for setup and one for synchronization.</p>
+<h2><a name="Synchronization"></a>Synchronization</h2>
+<p>The code synchronizing the data is just as simple. Here is what it looks like:</p>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="color:#0000ff;font-family:&#39;courier new&#39;;font-size:10pt;">using</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> (<span style="color:#2b91af;">SqlConnection</span> sqlServerConn = <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlConnection</span>(LocalSQLServerConnectionString))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">{</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; <span style="color:#0000ff;">using</span> (<span style="color:#2b91af;">SqlConnection</span> sqlAzureConn = <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlConnection</span>(RemoteSQLAzureConnectionString))</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; {</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#2b91af;">SyncOrchestrator</span> syncOrchestrator = <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SyncOrchestrator</span></span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LocalProvider = <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlSyncProvider</span>(scopeName, sqlAzureConn),</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; RemoteProvider = <span style="color:#0000ff;">new</span> <span style="color:#2b91af;">SqlSyncProvider</span>(scopeName, sqlServerConn),</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Direction = <span style="color:#2b91af;">SyncDirectionOrder</span>.UploadAndDownload</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; };</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; syncOrchestrator.Synchronize();</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp; }</span></div>
+<div><span style="line-height:115%;font-family:&#39;courier new&#39;;font-size:10pt;">}</span></div>
+<p>In the synchronization code we create two connection and instantiate a sync orchestrator, telling it that wal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Direction = <span style="color:#2b91af;">SyncDirectionOrder</span>.UploadAndDownload</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; };</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier new&#39;;font-size:10pt;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; syncOrchestrator.Synchronize();</span></div>
+<div style="line-height:normal;margin-bottom:0pt;"><span style="font-family:&#39;courier ne want to upload and download the data. This is considered bi-directional synchronization, writes in either SQL Database or SQL Server to be moved to the other.</p>
+<p>To synchronize the databases just run the console application like this:</p>
+<p><b><i>SyncConsole.exe &ndash;sync</i></b></p>
+<p>Once the synchronization has completed, we can query the SQL Database and see that the data in is there.</p>
+<p><img alt=" " style="border:0px solid currentcolor;" src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/CommunityServer-Wikis-Components-Files/00-00-00-00-05/1300.21.png" /></p>
+<h2><a name="Credit_Where_Credit_Is_Due"></a>Credit Where Credit Is Due</h2>
+<p>I borrowed heavily from Liam&rsquo;s <a href="http://blogs.msdn.com/b/sync/archive/2010/08/31/sql-server-to-sql-azure-synchronization-using-sync-framework-2-1.aspx">blog post and video</a>, and in posting the code, simplified it by removing the output to the console. For the complete code sample, see Liam&rsquo;s blog and use the code posted there.</p>
+<p>&nbsp;</p>
+<hr />
+<h2><a name="See_Also"></a>See Also</h2>
+<ul>
+    <li><a class="internal-link new-page" href="/wiki/contents/articles/add.aspx?WikiParentPageID=1591&WikiPageKey=Windows-Azure-SQL-Database-Overview" title="Click to create new page titled: Windows Azure SQL Database Overview">Windows Azure SQL Database Overview</a> </li>
+    <li><a class="ExistingPageLink" href="/wiki/contents/articles/1821.sql-data-sync-overview.aspx" title="Click to view the page titled: SQL Data Sync Overview">SQL Data Sync Overview</a> </li>
+</ul></div>
+    
+    

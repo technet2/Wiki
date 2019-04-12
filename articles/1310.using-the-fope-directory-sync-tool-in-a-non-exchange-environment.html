@@ -1,0 +1,51 @@
+---
+layout: default
+title: Using the FOPE Directory Sync Tool in a Non-Exchange Environment - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><span ragment-bottom"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div></dstyle="font-size:10pt;font-family:Tahoma,sans-serif;color:black;"></span></p>
+<div style="margin:0in 0in 0pt;"><span style="color:black;font-size:small;font-family:Calibri;">If you do not have Exchange Servers in&nbsp;your environment, you might want to&nbsp;use Directory Edge Blocking but not want to use some data sync means like&nbsp;CSV
+ or SFTP due to the overhead. If so, y</span><span style="color:black;font-size:small;font-family:Calibri;">ou can use an&nbsp;Active Directory Forest that is populated from a non Exchange Directory Service by using the
+<a href="http://www.microsoft.com/downloads/details.aspx?displaylang=en&amp;FamilyID=3cda6dcc-1124-4e0b-b991-de9d85ed12e1" title="Microsoft Directory Syncronization Tool">
+Directory Syncronization Tool</a>.&nbsp; If so, there are certain&nbsp;necessary attributes in the AD Forest you must have&nbsp;to successfully use the Directory Sync Tool. Following are the&nbsp;attributes the tool uses in the AD query.</span></div>
+<ul>
+<li>&nbsp;<span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">givenName</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">sn (Surname)</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">proxyAddresses (The address must be in the form of &quot;smtp:email@address.com&quot; without the quotes in this attribute, also if you wish to control the Primary Email address within FOPE
+ i.e. one used for Spam Quarantine access etc you should use a &quot;SMTP:email@address.com&quot; without the quotes for the primary and the uppercase SMTP will denote the primary to the DST tool)</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">msExchSafeSendersHash&nbsp;(not needed but we do sync it if available)</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">IsDeleted</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">objectClass</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">objectGuid</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;"></span><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">whenCreated</span>
+</li></ul>
+<p><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">The DST queries for those attributes for the following types of AD objects:</span></p>
+<ul>
+<li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">contact</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">group</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">inetorgperson</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">person</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">publicfolder</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">user</span>
+</li></ul>
+<p><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">To query to see what should be synced by DST run the following in your domain:</span></p>
+<p><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">dsquery * domainroot -filter &quot;(proxyAddresses=*)&quot; -attr proxyaddresses</span></p>
+<p><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">If you have more than 1 domain in your forest you may need to set the proxyAddresses attribute so that it replicates to the Global Catalog Partial Attribute Set as the DST only queries
+ it&#39;s local DC/GC for accounts.&nbsp; In order to do this you will need to do the following:</span></p>
+<ul>
+<li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">Open adsiedit.msc, in the Connection Settings modify the drop down for &quot;Select a well known Naming Context&quot; and select Schema.</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">Once this opens expand the top level and then click on the folder that starts with CN=Schema,CN=Configuration ... etc</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">Locate CN=Proxy-Addresses in the right hand window and right click and open properties for this item.</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">Scroll down and locate the isMemberOfPartialAttributeSet attribute and set this value to TRUE</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">Click OK through the rest and close out.&nbsp; This may take a while to replicate through your forest depending on replication convergence times.</span>
+</li><li><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">You should be able to run the following &quot;<span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;">dsquery * forestroot -filter &quot;(proxyAddresses=*)&quot; -attr proxyaddresses&quot;
+ to get a list of addresses that will be replicated by the DST from the entire forest following this change</span></span>
+</li></ul>
+<p><span style="font-size:10pt;font-family:Tahoma,sans-serif;color:black;"></span></p>
+
+</div>
+    
+    

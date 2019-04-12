@@ -1,0 +1,250 @@
+---
+layout: default
+title: VB.NET&#58; How To Convert a 32 Bit Integer into a Color - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><a name="How_To_Convert_a_32_Bit_integer_into_a_color"></a><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#How_To_Convert_a_32_Bit_integer_into_a_color">How To Convert a 32 Bit integer into a color</a></li><li class="hierarchy-item"><a href="#Creating_a_method_to_convert_integers_in/div></div></div>
+<div class="content-fragment page no-wrapper" id="fragmto_colors">Creating a method to convert integers into colors</a></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<p><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/4503.argb.png" style="border-width:0px;border-style:solid;" />
+</p>
+<h1><a name="How_To_Convert_a_32_Bit_integer_into_a_color"></a>How To Convert a 32 Bit integer into a color</h1>
+<p>Since a 32 bit integer consumes exactly 4 bytes and an ARGB color is also exactly 4 bytes, every 32 bit integer represents a color. This article will outline how to convert those integers into colors.</p>
+<p>*As a statement of clarification, this article is aware of the&nbsp;<a href="http://msdn.microsoft.com/en-us/library/2zys7833(v=vs.100).aspx" target="_blank">Color.FromArgb(value as Integer)&nbsp;</a>method, this article, however is intended to explain on a lower
+ level how to convert a 32 bit integer into a color.</p>
+<p></p>
+<h1><a name="Creating_a_method_to_convert_integers_into_colors"></a>Creating a method to convert integers into colors</h1>
+<p>Using a .Net language of your choice, you can follow these steps to create a Function that will convert 32 bit integers into colors. This example will be given in Visual Basic.Net</p>
+<p>Declare a Function named &quot;IntegerToColor&quot; </p>
+<p>This function should have the following: </p>
+<ul>
+<li>A single 32 bit integer parameter named &quot;RGB&quot; </li><li>A return type of System.Drawing.Color </li></ul>
+<p>So far you should have something that looks like this:</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">1.</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><code style="color:teal;font-weight:bold;">As</code> <code>System.Drawing.Color</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">2.</code><code>&nbsp;</code><span>&nbsp;</span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">3.</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+</div>
+<p>&nbsp;</p>
+<p>The first line of code we will add to this will utilize the BitConverter class to convert the Int32 into an array of Byte
+</p>
+<p>To do this, pass the RGB Int32 argument to BitConverter.GetBytes method, and assign the output of that method to an array of byte
+</p>
+<p>You should now have something that looks like this: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">1.</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><code style="color:teal;font-weight:bold;">As</code> <code>System.Drawing.Color</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">2.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Bytes </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code><code>() = BitConverter.GetBytes(RGB)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">3.</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+</div>
+<p>An interesting point to make is that regardless of the character length of the Int32, the byte count will always be the same. This is why the 32 bit number 1 can still represent a color that contains 4 values. This can be&nbsp;deceptive&nbsp;to people at first glance,
+ but I assure you that even the 32 bit number 0 represents a color(Black). </p>
+<p>Now that we have retrieved the bytes of that Int32, we want to seperate them into something a bit more understandable to our eyes. Lets create 4 byte variables named the following: Alpha, Red, Green, Blue
+</p>
+<p>Because of the endianness of an Int32, the bytes that correspond to the Alpha, Red, Green, and Blue bytes will be stored in the array, in reversed order. How do I know its in reversed order? Because you say RGB... Red, Blue, Green is the order, and alpha
+ comes first, so its ARGB. But the Alpha byte is not stored at the first index in the array, it&#39;s stored at the 4th index! Red at the third, green at the second, and blue is stored at the first. So now that we know which index the byte is stored at, we can
+ assign that byte to each one of our variables. We also do not need to check the length of the array, because we know that if 1 byte is 8 bits long, then a 32 bit integer has 4 bytes, always.
+</p>
+<p>Your code should look something like this now: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">1.</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><code style="color:teal;font-weight:bold;">As</code> <code>System.Drawing.Color</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">2.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Bytes </code><code style=e also do not need to check the length of the array, because we know that if 1 byte is 8 bits long, then a 32 bit integer has 4 bytes, always.
+</p>
+<p>Your code should look something like this now: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">1.</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><"color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code><code>() = BitConverter.GetBytes(RGB)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">3.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Alpha </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(3)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">4.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Red </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(2)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">5.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Green </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(1)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">6.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Blue </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(0)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">7.</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+</div>
+<p>So we have now isolated the 4 bytes from the Int32 into 4 byte variables called Alpha,Red,Green,Blue. Our function can now return the result of the System.Drawing.Color.FromArgb Function. This is the final line we should add to our function:
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">1.</code><span><code style="color:teal;font-weight:bold;">Return</code>
+<code>Color.FromArgb(Alpha, Red, Green, Blue)</code></span></div>
+</div>
+<p>Our final function should look like this: </p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">1.</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><code style="color:teal;font-weight:bold;">As</code> <code>System.Drawing.Color</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">2.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Bytes </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code><code>() = BitConverter.GetBytes(RGB)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">3.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Alpha </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(3)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">4.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Red </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(2)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">5.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Green </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(1)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">6.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Blue </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(0)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">7.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Return</code>
+<code>Color.FromArgb(Alpha, Red, Green, Blue)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">8.</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+</div>
+<p>Please note: Not all controls support transparency(the alpha component). Observe the following example that throws a &quot;&nbsp;Control does not support transparent background colors.&quot; error.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">01.</code><span><code style="color:teal;font-weight:bold;">Option</code>
+<code>Strict </code><code style="color:teal;font-weight:bold;">On</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">02.</code><span><code style="color:teal;font-weight:bold;">Public</code>
+<code style="color:teal;font-weight:bold;">Class</code> <code>Form1</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">03.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><code style="color:teal;font-weight:bold;">As</code> <code>System.Drawing.Color</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">04.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Bytes </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code><code>() = BitConverter.GetBytes(RGB)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">05.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Alpha </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(3)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">06.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Red </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(2)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">07.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Green </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(1)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">08.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Blue </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(0)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">09.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Return</code>
+<code>Color.FromArgb(Alpha, Red, Green, Blue)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">10.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">11.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Private</code>
+<code style="color:teal;font-weight:bold;">Sub</code> <code>Button1_Click(sender </code>
+<code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Object</code><code>, e </code><code style="color:teal;font-weight:bold;">As</code>
+<code>EventArgs) </code><code style="color:teal;font-weight:bold;">Handles</code>
+<code>Button1.Click</code></span></div>
+<div style="background-colorcode>
+<code>Color.FromArgb(Alpha, Red, Green, Blue)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">10.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">11.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Private</code>
+<code style="color:teal;font-weight:bold;">Sub</code> <code>Button1_Click(sender </code>
+<code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Object</code><code>, e </code><code style="color:teal;font-weight:bold;">As</code>
+<code>EventArgs) </code><code style="color:teal;font-weight:bold;">Handles</code>
+<code>Button1.Click</code></span></div>
+<div :whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">12.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Integer</code> <code>= -2130771968 </code><code style="color:#008200;">&#39;Alpha is 128</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">13.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>MyColor </code><code style="color:teal;font-weight:bold;">As</code> <code>Color = IntegerToColor(RGB)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">14.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Me</code><code>.BackColor
+ = MyColor</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">15.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Sub</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">16.</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Class</code></span></div>
+</div>
+<p>You can get around this problem by setting the color&#39;s Alpha property to 255(0% transparency), see the same example now, with alpha set to 255, does not cause an error.
+</p>
+<div class="reCodeBlock" style="border:1px solid #7f9db9;overflow-y:auto;">
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">01.</code><span><code style="color:teal;font-weight:bold;">Option</code>
+<code>Strict </code><code style="color:teal;font-weight:bold;">On</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">02.</code><span><code style="color:teal;font-weight:bold;">Public</code>
+<code style="color:teal;font-weight:bold;">Class</code> <code>Form1</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">03.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Function</code>
+<code>IntegerToColor(</code><code style="color:teal;font-weight:bold;">ByRef</code>
+<code>RGB </code><code style="color:teal;font-weight:bold;">As</code> <code>Int32)
+</code><code style="color:teal;font-weight:bold;">As</code> <code>System.Drawing.Color</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">04.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Bytes </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code><code>() = BitConverter.GetBytes(RGB)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">05.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Alpha </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(3)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">06.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Red </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(2)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">07.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Green </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(1)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">08.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>Blue </code><code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Byte</code> <code>= Bytes(0)</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">09.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Return</code>
+<code>Color.FromArgb(Alpha, Red, Green, Blue)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">10.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">11.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Private</code>
+<code style="color:teal;font-weight:bold;">Sub</code> <code>Button1_Click(sender </code>
+<code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Object</code><code>, e </code><code style="color:teal;font-weight:bold;">As</code>
+<code>EventArgs) </code><code style="color:teal;font-weight:bold;">Handles</code>
+<code>Button1.Click</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">12.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>RGB </code><code style="color:teal;font-weight:style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Function</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">11.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Private</code>
+<code style="color:teal;font-weight:bold;">Sub</code> <code>Button1_Click(sender </code>
+<code style="color:teal;font-weight:bold;">As</code> <code style="color:teal;font-weight:bold;">
+Object</code><code>, e </code><code style="color:teal;font-weight:bold;">As</code>
+<code>EventArgs) </code><code style="color:teal;font-weight:bold;">Handles</code>
+<code>Button1.Click</code></span></div>
+<div style="backgrobold;">As</code> <code style="color:teal;font-weight:bold;">
+Integer</code> <code>= -2130771968 </code><code style="color:#008200;">&#39;Alpha is 128</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">13.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Dim</code>
+<code>MyColor </code><code style="color:teal;font-weight:bold;">As</code> <code>Color = IntegerToColor(RGB)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">14.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">If</code>
+<code style="color:teal;font-weight:bold;">Not</code> <code style="color:teal;font-weight:bold;">
+Me</code><code>.GetStyle(ControlStyles.SupportsTransparentBackColor) </code><code style="color:teal;font-weight:bold;">Then</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">15.</code><code>&nbsp;</code><span><code>MyColor = Color.FromArgb(255, MyColor)</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">16.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">If</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">17.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">Me</code><code>.BackColor = MyColor</code></span></div>
+<div style="background-color:whitesmoke;"><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">18.</code><code>&nbsp;</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Sub</code></span></div>
+<div><code style="width:3em;text-align:right;color:black;padding-right:0.3em;display:block;float:left;">19.</code><span><code style="color:teal;font-weight:bold;">End</code>
+<code style="color:teal;font-weight:bold;">Class</code></span></div>
+</div>
+<p>This time, we checked to see if the control supported transparent backcolors, and since it&nbsp;didn&#39;t, we changed the alpha component,&nbsp;effectively&nbsp;removing transparency.
+</p>
+<h1><a name="See_Also"></a>See Also</h1>
+<p>An important place to find a huge amount of Visual Basic related articles is the TechNet Wiki itself.
+</p>
+<p>The best entry point is<a href="http://social.technet.microsoft.com/wiki/contents/articles/22751.visual-basic-resources-on-the-technet-wiki.aspx"> Visual Basic Resources on the TechNet Wiki</a></p>
+
+</div>
+    
+    

@@ -1,0 +1,37 @@
+---
+layout: default
+title: Solución a problema de Autenticación / Autorización a Aplicaciones a través de Azure AD (es-MX) - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<span style="font-size:12.1px;">Por favor revise la última actualización de este hilo en:&nbsp;https://social.msdn.microsoft.com/Forums/en-US/dfd9443e-47ea-4327-9d03-cc4d40617774/known-issue-and-workaround-app-service-authentication-authorization-management-actions-failing?forum=windowsazurewebsitespreview<br />
+<br />
+Existe un problema conocido con la última implementación que afecta a las acciones de administración (portal u otras) en comparación con la función Autenticación / Autorización del servicio de aplicaciones. El problema se debe a una comprobación de validación
+ que rechaza erróneamente la cadena vacía &quot;&quot; como una URL del emisor de AAD. Vería esto incluso si no usa AAD, ya que el portal predetermina este valor a la cadena vacía para cualquier actualización de configuración de autenticación.</span><br />
+<span style="font-size:12.1px;"><br />
+</span><br />
+<span style="font-size:12.1px;">La solución alternativa recomendada es modificar las configuraciones de autenticación manualmente para incluir una URL del emisor de AAD que se considerará válida. Para hacer esto, puede:<br />
+</span><br />
+<span style="font-size:12.1px;">1. En la sección Autenticación / Autorización del servicio de aplicaciones del portal, agregue la configuración de AAD ya sea mediante la configuración avanzada o configurando manualmente el campo &quot;URL del emisor&quot;.</span><br />
+<span style="font-size:12.1px;">2. Usar el explorador de recursos para agregar la URL del emisor. Para ello, en el portal de su aplicación, seleccione la opción &quot;Explorador de recursos&quot;, que debe estar en &quot;Herramientas de desarrollo&quot;. Presiona &quot;Ir&quot; y espera
+ a que la página se cargue por completo. Luego, en la barra de navegación de la izquierda, debajo de su sitio, expanda &quot;config&quot; y seleccione &quot;authsettings&quot;. Debería ver que el campo &quot;emisor&quot; está configurado actualmente en la cadena vacía &quot;&quot; o nulo si está
+ viendo el problema informado. si ve la cadena vacía, esta puede ser una parte intencional de su configuración (esto se usa para multiarrendamiento AAD), pero si está seguro de que no es el caso, o si tiene la opción nula, entonces puede elimine el error editando
+ el valor manualmente. Para hacer esto, seleccione &quot;Leer / Escribir&quot; en la parte superior de la página. Luego, encima de la carga útil de JSON, haga clic en &quot;Editar&quot;. Establezca el valor, y luego haga clic en &quot;PUT&quot; (al lado de editar).</span><br />
+<span style="font-size:12.1px;"><br />
+Para cualquiera de las opciones anteriores, el valor para el emisor debe ser una URL válida utilizando el esquema https. Nuestra recomendación es usar la URL de su sitio, ya que esto puede identificarse fácilmente más adelante. Sin embargo, tenga en cuenta
+ que si desea utilizar AAD más adelante, tendrá que cambiar este valor. Asegúrese de recordar usar el esquema https.</span><br />
+<span style="font-size:12.1px;"><br />
+</span><br />
+<span style="font-size:12.1px;">He visto algunas sugerencias de la comunidad sobre el cambio de regiones como mitigación. Sin embargo, mudarse a una región diferente no garantizará una solución, y el sitio podría romperse nuevamente, por lo que las instrucciones
+ anteriores son la apuesta más segura.</span><br />
+<br />
+Como mitigación, también existe un parámetro de cadena de consulta que se puede configurar en solicitudes ARM que deshabilitará la validación adicional. Simplemente agregue &quot;?ValidateIssuer=false&quot; a su solicitud.
+<br />
+<br />
+El portal se actualizó para incluir esto, por lo que si solo está utilizando el portal de Azure, está completamente mitigado. El problema persiste para los usuarios de API, PowerShell / CLI y SDK, que requieren esta mitigación o esperan la implementación.
+
+</div>
+    
+    

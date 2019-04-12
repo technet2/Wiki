@@ -1,0 +1,144 @@
+---
+layout: default
+title: Step by Step for Using Certificates to Communicate Between Agents and the Operations Manager 2007 Server - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p><a href="http://blogs.technet.com/blogfiles/operationsmgr/WindowsLiveWriter/StepbyStepforusingCertificatestocommunic_C64C/Tip_2.gif"></a><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Introduction">Introduction</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Importing_Trusted_Root_certificate">1. Importing Trusted Root certificate.</a></li><li class="hierarchy-item"><a href="#Creating_and_installing_Server_Client_Server_Certificates">2. Creating and installing Server (Client, Server) Certificates</a></li><li class="hierarchy-item"><a href="#Creating_an_installing_Server_Client_Server_Certificates">3. Creating an installing Server (Client, Server) Certificates</a></li><li class="hierarchy-item"><a href="#Export_the_Server_Client_Server_Certificate">4. Export the Server (Client, Server) Certificate</a></li><li class="hierarchy-item"><a href="#Allow_manual_agent_installation">5. Allow manual agent installation.</a></li><li class="hierarchy-item"><a href="#Running_MOMcertimport_exe_on_the_servers">7. Running MOMcertimport.exe on the servers .</a></li><li class="hierarchy-item"><a href="#Approve_agent">8. Approve agent</a></li><li class="hierarchy-item"><a href="#Create_Run_As_Account">9. Create Run As Account</a></li><li class="hierarchy-item"><a href="#Change_default_Action_Account_Run_As_profile">10. Change default Action Account Run As profile</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></div><br />
+<br />
+</p>
+<h2><a name="Introduction"></a><span style="font-size:14px;">Introduction</span></h2>
+<p>System Center Operations Manager 2007 uses mutual authentication to communication with the agents. First the agent will try to communicate with Kerberos and when this is not possible certificates will be used for the secure communication.&nbsp; If you happen
+ to have agents that lie outside of your domain, such as in a DMZ, you’ll want to use certificates for agent to server communication</p>
+<p><a href="http://blogs.technet.com/blogfiles/operationsmgr/WindowsLiveWriter/StepbyStepforusingCertificatestocommunic_C64C/3_2.gif"><img src="http://blogs.technet.com/blogfiles/operationsmgr/WindowsLiveWriter/StepbyStepforusingCertificatestocommunic_C64C/3_thumb.gif" alt="3" title="3" height="302" width="525" style="display:block;float:none;margin-left:auto;margin-right:auto;border-width:0px;border-style:solid;" /></a></p>
+<p>In order to configure certificates for this communication you will need to complete the steps below:
+</p>
+<ol>
+<li>Importing Trusted Root certificate - all servers </li><li>Creating and installing Server (Client, Server) Certificates - OpsMgr servers
+</li><li>Creating and installing Server (Client, Server) Certificates – Workgroup and/or DMZ servers
+</li><li>Export the Server (Client, Server) Certificate </li><li>Allow manual agent installation. </li><li>Manual OpsMgr 2007 agent installation </li><li>Running MOMcertimport on the servers - all servers </li><li>Approve agent </li><li>Create Run As Account </li><li>Change default Action Account Run As profile </li></ol>
+<p>Additional steps: </p>
+<ol>
+<li>Issue new certificates from the Standalone Root CA </li></ol>
+<strong>
+<h3><a name="Importing_Trusted_Root_certificate"></a><span style="font-size:12px;"><strong>1. Importing Trusted Root certificate.
+</strong></span></h3>
+</strong>
+<p>On all servers (RMS, Management server and all Workgroup servers):</p>
+<ol>
+<li>Logon to the Root Management Server with administrative privileges and navigate to the certificate server web site with
+<a href="http://standalonecaroot/cersrv">http://standaloneCAroot/cersrv</a> </li><li>Click on “Download a CA certificate, certificate chain or CRL” </li><li>Click on “Download Ca certificate chain” </li><li>Save the “certnew.p7b” to the “c:\” (or some place you want) </li><li>Click start run “MMC” and from the file menu “Add/remove Snap-in..” select
+<ol>
+<li>Click “Add” </li><li>Select “Certificates” </li><li>Click “Add” </li><li>Select “Computer account” </li><li>Click “Next” </li><li>Select “local computer” </li><li>Click “Finish” </li></ol>
+</li><li>Click “Close” and “Ok” to access the Certificates console. </li><li>Navigate to the folder “Trusted Root Certification Authorities” </li><li>Right kill the “Certificates” folder and select “All Tasks” and “Import”
+<ol>
+<li>In the wizard kill “Next” </li><li>Click “Browse” and browse to the “certnew.p7b” on the “c:\” (or some place you put it)
+</li><li>Click “Next” </li><li>Select “Place all certificates in the following store” and make sure the Certificate store is “Root Certification Authorities” and kill “Next”
+</li><li>Click “Finish” to complete the import. </li></ol>
+</li><li>Delete the “certnew.p7b” </li><li>The import of the trusted root certificate is finished </li></ol>
+<strong>
+<h3><a name="Creating_and_installing_Server_Client_Server_Certificates"></a><strong><span style="font-size:12px;">2. Creating and installing Server (Client, Server) Certificates
+</span></strong></h3>
+</strong>
+<p>For the root management server(RMS) and management server(MS):</p>
+<ol>
+<li>Logon to the Root Management Server with administrative privileges and navigate to the certificate CA server web site with
+<a href="http://standalonecaroot/cersrv">http://standaloneCAroot/cersrv</a> </li><li>Click “Request a certificate” </li><li>Click “advanced certificate request” </li><li>Click “Create and submit a request to this CA” </li><li>Use the following for the certification request:
+<ol>
+<li>Name: Managementserver.domain.com </li><li>Type: Other </li><li>OID: 1.3.6.1.5.5.7.3.1, 1.3.6.1.5.5.7.3.2 </li><li>Select: Mark key as exportable </li><li>Select: Store certificate in the local computer certificate store </li><li>Friendly name: Managementserver.domain.com </li><li>Click “Submit” </li><li>Close Internet explorer </li></ol>
+</li><li>Let the certificate be issued on the Standalone Root CA (see how to: 1. Issue new certificates from the Standalone Root CA).
+</li><li>Navigate to <a href="http://standalonecaroot/cersrv">http://standaloneCAroot/cersrv</a>
+</li><li>Click “View status of a pending certificate request” </li><li>Click the Issued certificate </li><li>Install the issued certificate </li></ol>
+<h3><a name="Creating_an_installing_Server_Client_Server_Certificates"></a><span style="font-size:12px;">3. Creating an installing Server (Client, Server) Certificates
+</span></h3>
+<p>For workgroup and/or DMZ server:</p>
+<ol>
+<li>Logon to the workgroup server with administrative privileges and navigate to the certificate CA server web site with
+<a href="http://servername/certsrv">http://servername/certsrv</a> </li><li>Click “Request a certificate” </li><li>Click “advanced certificate request” </li><li>Click “Create and submit a request to this CA” </li><li>Use the following for the certification request:
+<ol>
+<li>Name: Server name </li><li>Type: Other </li><li>OID: 1.3.6.1.5.5.7.3.1, 1.3.6.1.5.5.7.3.2 </li><li>Select: Mark key as exportable </li><li>Select: Store certificate in the local computer certificate store </li><li>Friendly name: Server name </li></ol>
+</li><li>Let the certificate be issued on the Standalone Root CA (see how to issue a certificate from a standalone Root CA).
+</li><li>Navigate to <a href="http://standalonecaroot/cersrv">http://standaloneCAroot/cersrv</a>
+</li><li>Click “View status of a pending certificate request” </li><li>Click the Issued certificate </li><li>Install the issued certificate </li></ol>
+<strong>
+<h3><a name="Export_the_Server_Client_Server_Certificate"></a><span style="font-size:12px;"><strong>4. Export the Server (Client, Server) Certificate
+</strong></span></h3>
+</strong>
+<p>This must be done on all Workgroup/DMZ servers, root management server(RMS) and management servers (MS):</p>
+<ol>
+<li>Logon to the Server with administrative privileges </li><li>Click “Start =&gt; Run” “MMC” and from the file menu “Add/remove Snap-in..” select
+<ol>
+<li>Click “Add” </li><li>Select “Certificates” </li><li>Click “Add” </li><li>Select “Computer account” </li><li>Click “Next” </li><li>Select “local computer” </li><li>Click “Finish” </li></ol>
+</li><li>Click “Close” and “Ok” to access the Certificates console. </li><li>Navigate to the folder “Certificates (Local Computer)\personal\Certificates” </li><li>Select the new installed Client, Server certificate and right kill “All tasks =&gt; Export”
+<ol>
+<li>In the new wizard kill “Next” </li><li>Select “Yes , Export the private key” </li><li>Click “Next” </li><li>Select “Personal Information Exchange – PKCS #12 Certificates (PFX)” </li><li>Select “Enable Strong protection (requires IE5.0, NT4 SP4 or above)” </li><li>Click “Next” </li><li>Type a password for the certificate twice and kill “Next” </li><li>Select “Browse” c:\serverFQDN.pfx” </li><li>Click “Next” </li><li>Check the export information and if correct kill “Finish” </li><li>Click “OK” to finish the export </li></ol>
+</li><li>Close the MMC </li></ol>
+<strong>
+<h3><a name="Allow_manual_agent_installation"></a><span style="font-size:12px;"><strong>5. Allow manual agent installation.
+</strong></span></h3>
+</strong>
+<p>Before the first manual agent installation, the global setting must be changed from reject to “Review new manual agent installation in pending management view” in the operations console of OpsMgr 2007:
+</p>
+<ol>
+<li>Open a Operations Console with OpsMgr administrative privileges </li><li>Navigate to “Administration =&gt; Settings =&gt; Server” </li><li>In the right pane click “Security” </li><li>On the “General” tab select “Review new manual agent installation in pending management view”
+</li><li>Click “OK” to finish </li></ol>
+<h3><a name="Manual_OpsMgr_2007_agent_installation"></a><a name="Manual_OpsMgr_2007_agent_installation"></a><a name="Manual_OpsMgr_2007_agent_installation"></a><span style="font-size:12px;">6. Manual OpsMgr 2007 agent installation
+</span></h3>
+<p>On the workgroup and/or DMZ servers:</p>
+<ol>
+<li>Logon to the Server with administrative privileges </li><li>On the Operations Manager 2007 installation media, double-click the SetupOM.exe file.
+</li><li>On the Start page, select Install Operations Manager 2007 Agent. </li><li>On the Welcome page, click “Next”. </li><li>On the Destination Folder page leave the installation folder set to the default click “Next”.
+</li><li>On the Management Group Configuration page leave the Specify Management Group information check box selected, and then click “Next”.
+</li><li>On the Management Group Configuration page, do the following:
+<ol>
+<li>Type the Management Group Name </li><li>Type the Management Server name. </li><li>Leave the default 5273. </li><li>Click Next. </li></ol>
+</li><li>When the Agent Action Account page displays leave it set to the default of Local System and then click Next.
+</li><li>On the Ready to Install page, review the settings and then click Install to display the Installing Systems Center Operations Manager Agent page.
+</li><li>When the Completing the Systems Center Operations Manager Agent Setup Wizard page displays, click Finish.
+</li></ol>
+<h3><a name="Running_MOMcertimport_exe_on_the_servers"></a><span style="font-size:12px;"><strong><span style="text-decoration:underline;">7. Running MOMcertimport.exe on the servers</span><span style="text-decoration:underline;">.
+</span></strong></span></h3>
+<p>This must be done on all servers.&nbsp; Also make sure the exe which you use is of the same version (for 32-bit and 64 bit we have separate exe’s) and also make sure the files from the same version dump of the SCOM server \ agent you are running on the system):</p>
+<ol>
+<li>On the start menu kill “Start” and “Run” </li><li>Type “cmd” </li><li>Navigate to &gt; cd “program files\System Center Operations Manager 2007\Supportools\i386”
+</li><li>Type &gt;MOMcertimport.exe “c\:servername.domain.com.pfx” or “c:\servername.pfx”
+</li><li>Type the asked password for the certificate import and press “Enter”. </li><li>The certificate is now imported in OpsMgr 2007. </li><li>Restart the “OpsMgr Health Service” on the server. </li></ol>
+<p><strong></strong></p>
+<strong>
+<h3><a name="Approve_agent"></a><span style="font-size:12px;"><strong>8. Approve agent
+</strong></span></h3>
+</strong>
+<p>In the System Center Operations Manager Console, after every manual agent installation the new agent must be approved in the operations Console of OpsMgr 2007:</p>
+<ol>
+<li>Open the Operations console as an OpsMgr Admin member. </li><li>Navigate to “Administration =&gt; Pending Management” </li><li>Right-click “Approve” </li><li>Click “Approve” </li></ol>
+<p>To check if the agent is successfully approved look in the “Agent Managed” folder for the approved agent to see if the agent is there.
+</p>
+<p><strong></strong></p>
+<strong>
+<h3><a name="Create_Run_As_Account"></a><span style="font-size:12px;">9. Create Run As Account
+</span></h3>
+</strong>
+<p>In the System Center Operations Manager Console:</p>
+<ol>
+<li>Open a Operations Console with OpsMgr administrative privileges </li><li>Navigate to “Administration =&gt; Security =&gt; Run As Account” </li><li>Right-click “Run As Account” and select create run as account </li><li>In the Create Run As Account Wizard click “Next”. </li><li>Select “Action account” in the Run As Account type list </li><li>Type a display name in the Display Name text box </li><li>Click Next </li><li>On the Account page, type:
+<ol>
+<li>Server name\username </li><li>Password </li><li>The domain should be grayed out (Local machine account). </li></ol>
+</li><li>Click Create to finish </li><li>Change default Action Account Run As profile </li></ol>
+<strong>
+<h3><a name="Change_default_Action_Account_Run_As_profile"></a><span style="font-size:12px;">10. Change default Action Account Run As profile
+</span></h3>
+</strong>
+<p>In the System Center Operations Manager Console:</p>
+<ol>
+<li>Open a Operations Console with OpsMgr administrative privileges </li><li>Navigate to “Administration =&gt; Security =&gt; Run As Profiles” </li><li>In the right pane double click the “Default Action Account” </li><li>Click on the “Run As Account” tab </li><li>Select “Run As Account: “dropdown menu and select the workgroup server local account
+</li><li>Click “OK” and click “OK </li></ol>
+<p>That should be it, but in case you need more information please see <a target="_blank" href="http://technet.microsoft.com/en-us/library/bb735408.aspx">
+Authentication and Data Encryption for Windows Computers in Operations Manager 2007</a>.</p>
+<p><em>Note: This information was originally contributed by <strong>Sudheesh Narayanaswamy,&nbsp;Operations Manager Support Engineer</strong>, on the Operations Manager Support Team blog:</em></p>
+<p><a href="http://blogs.technet.com/operationsmgr/archive/2009/09/10/step-by-step-for-using-certificates-to-communicate-between-agents-and-the-opsmgr-2007-server.aspx"><em>http://blogs.technet.com/operationsmgr/archive/2009/09/10/step-by-step-for-using-certificates-to-communicate-between-agents-and-the-opsmgr-2007-server.aspx</em></a></p>
+
+</div>
+    
+    

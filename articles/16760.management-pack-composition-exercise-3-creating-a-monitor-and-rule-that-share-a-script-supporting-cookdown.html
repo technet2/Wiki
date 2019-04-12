@@ -1,0 +1,973 @@
+---
+layout: default
+title: Management Pack Composition Exercise #3 - Creating a monitor and rule that share a script supporting cookdown - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p>This document is part of the <a href="http://go.microsoft.com/fwlink/?LinkID=275817" target="_blank">
+<span style="color:#00749e;">Operations Manager Management Pack Authoring Guide </span>
+</a>.&nbsp; </p>
+<hr />
+<p><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Overview">Overview</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Versions">Product Versions</a></li><li class="hierarchy-item"><a href="#Prerequisites">Prerequisites</a></li><li class="hierarchy-item"><a href="#Revisions">Revisions</a></li><li class="hierarchy-item"><a href="#Sample_Code">Sample Code</a></li><li class="hierarchy-item"><a href="#Details">Details</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Procedures"></a></li><li class="hierarchy-item"><a href="#Using_the_Authoring_Console">Authoring Console Procedure</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_Probe_Action_Module_to_Run_a_Script">Create data source module to run script on schedule</a></li><li class="hierarchy-item"><a href="#Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule">Create Data Source Module to Filter on Instance</a></li><li class="hierarchy-item"><a href="#Create_Rule_to_Collect_Performance_Data">Create Rule to Collect Performance Data</a></li><li class="hierarchy-item"><a href="#Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule">Create Custom Monitor Type Using Custom Data Source</a></li><li class="hierarchy-item"><a href="#Create_Monitor_Based_on_Custom_Monitor_Type">Create Monitor Based on Custom Monitor Type</a></li><li class="hierarchy-item"><a href="#Using_Visual_Studio_Authoring_Extensions"></a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#Using_Visual_Studio_Authoring_Extensions">Visual Studio Authoring Extensions Procedure</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#Create_Probe_Action_Module_to_Run_a_Script">Create data source module to run script on schedule</a></li><li class="hierarchy-item"><a href="#Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule">Create Data Source Module to Filter on Instance</a></li><li class="hierarchy-item"><a href="#Create_Rule_to_Collect_Performance_Data">Create Rule to Collect Performance Data</a></li><li class="hierarchy-item"><a href="#Create_Custom_Monitor_Type_Using_Custom_Data_Source">Create Custom Monitor Type Using Custom Data Source</a></li><li class="hierarchy-item"><a href="#Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule">Create Monitor Based on Custom Monitor Type</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#See_Also">See Also</a></li></ul><div class="hierarchy-list-footer"> </div></div> <br />
+<br />
+</p>
+<hr />
+<h1><a name="Overview"></a>Overview</h1>
+<p>The following procedure shows how to create a monitor and rule based on a common data source module using the Operations Manager 2007 Authoring console and Visual Studio Authoring Extensions.&nbsp;
+</p>
+<h2>Product <a name="Versions"></a>Versions</h2>
+<p>This exercise applies to the following products:</p>
+<ul>
+<li>System Center Operations Manager 2007 R2 </li><li>System Center 2012 Operations Manager </li><li>System Center 2012 Operations Manager SP1 </li></ul>
+<h2><a name="Prerequisites"></a>Prerequisites</h2>
+<p>Before you perform this procedure, you must first complete the following prerequisite procedures:</p>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/14273.how-to-create-a-new-management-pack-in-operations-manager.aspx"><span style="color:#0066dd;">Creating a New Management Pack
+</span></a>- Create the management pack. </li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/14274.management-pack-service-model-exercise-1-creating-a-class-in-operations-manager-en-us.aspx"><span style="color:#0066dd;">Creating a Class</span></a> - Create the class that is the
+ target for the monitor. </li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/16751.management-pack-composition-exercise-1-creating-a-monitor-based-on-a-custom-module.aspx"><span style="color:#0066dd;">Creating a Monitor Based on a Custom Module</span></a>&nbsp;– Create
+ the Composition folder and monitor template group. </li></ul>
+<h2><a name="Revisions"></a>Revisions</h2>
+<p>The Microsoft System Center team has validated this procedure as of <strong>the original revision</strong>.&nbsp; We will continue to review any changes and periodically provide validations on later revisions as they are made.&nbsp; Please feel free to make any corrections
+ or additions to this procedure that you think would assist other users</p>
+<h2><a name="Sample_Code"></a>Sample Code</h2>
+<p>A sample of the completed code for each exercise is available in the <a href="http://gallery.technet.microsoft.com/Operations-Manager-ed6dc4d5">
+TechNet Gallery</a>.&nbsp; There is a separate sample for each exercise that includes the management pack completed at the end of that exercise and each preceding exercise.&nbsp; This strategy allows you to work through each exercise in order and then compare your results.&nbsp;
+ For VSAE, this also includes the Visual Studio solution.&nbsp; </p>
+<h2><a name="Details"></a>Details</h2>
+<p class="heading">The workflows created in this procedure have the following characteristics:
+</p>
+<ul>
+<li>Rule and monitor targeted at a class that has multiple instances on an agent. Because there are multiple instances, cookdown support is required.
+</li><li>The rule collects a performance value from the script while the monitor sets its state based on the comparison of the script value to specified threshold values.
+</li><li>The monitor does not support On Demand Discovery so that it does not require that you use a probe action module to run the script.
+</li><li>The script accepts arguments for the computer name of the target object’s agent and the version of the application.
+</li><li>The script itself is only a test that generates a constant value. </li></ul>
+<p class="unordered">&nbsp;</p>
+<hr />
+<h1 class="heading"><a name="Procedures"></a></h1>
+<h1 class="heading"><a name="Using_the_Authoring_Console"></a>Authoring Console Procedure</h1>
+<h2 class="heading"><a >
+<p class="heading">The workflows created in this procedure have the following characname="Create_Probe_Action_Module_to_Run_a_Script"></a>Create data source module to run script on schedule</h2>
+<ol class="ordered">
+<li>In the Authoring Console, select <strong>Type Library</strong> and then<strong> Data Sources</strong>.
+</li><li>Right-click in the <strong>Data Sources </strong>pane and select <strong>New</strong> and then
+<strong>Composite Data Source</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>MyMP.DataSourceModule.MyPerformanceScriptTimed</strong>. Click
+<strong>OK</strong>.&nbsp; </li><li>On the <strong>General</strong> tab, do the following:
+<ol class="ordered">
+<li>In the <strong>Name</strong> box, type <strong>Timed Performance Script Data Source</strong>.
+</li></ol>
+</li><li>On the <strong>Member Modules </strong>tab, do the following:
+<ol>
+<li>Click <strong>Add</strong> to add a module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>Microsoft.Windows.TimedScript.PropertyBagProbe.</strong>
+</li><li>In the <strong>Module ID</strong> box, type <strong>Script</strong>. Click <strong>
+OK.</strong> </li><li>Click the button to the right side of the <strong>IntervalSeconds</strong> box and select
+<strong>Promote</strong>. This will enter the text <strong>$Config/IntervalSeconds$</strong>&nbsp;
+</li><li>Click the button to the right side of the <strong>SyncTime</strong> box and select
+<strong>Promote</strong>. This will enter the text <strong>$Config/SyncTime$</strong>.
+</li><li>In the <strong>ScriptName</strong> box, type <strong>MyCookdownScript.vbs.</strong>
+</li><li>In the <strong>Arguments</strong> box, type <strong>$Config/ComputerName$ $Config/Version$</strong>.
+</li><li>In the <strong>TimeoutSeconds</strong> box, type <strong>300.</strong> </li><li>Click the <strong>Edit…</strong> button. This starts the custom editor.<strong></strong><strong></strong><strong></strong><strong></strong>
+</li><li>Paste the complete contents of the following script between the ScriptBody tags in the XML. Replace any text that might already exist:
+<br />
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;![CDATA[</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">sComputerName = WScript.Arguments(0)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">sVersion = WScript.Arguments(1)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">oAPI = CreateObject(</code><code style="color:blue;">&quot;MOM.ScriptAPI&quot;</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">oAPI.LogScriptEvent
+</code><code style="color:blue;">&quot;MyCookdownScript.vbs&quot;</code><code style="color:#000000;">,10,4,
+</code><code style="color:blue;">&quot;Running script on &quot;</code> <code style="color:#000000;">
+&amp; sComputerName &amp; </code><code style="color:blue;">&quot;. Version is &quot;</code> <code style="color:#000000;">
+&amp; sVersion</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#000000;">i = 1 to 3</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">oBag = oAPI.CreatePropertyBag()</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Call</code>
+<code style="color:#000000;">oBag.AddValue(</code><code style="color:blue;">&quot;ComputerName&quot;</code><code style="color:#000000;">,sComputerName)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Call</code>
+<code style="color:#000000;">oBag.AddValue(</code><code style="color:blue;">&quot;ComponentName&quot;</code><code style="color:#000000;">,</code><code style="color:blue;">&quot;Component&quot;</code>
+<code style="color:#000000;">&amp; i)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Call</code>
+<code style="color:#000000;">oBag.AddValue(</code><code style="color:blue;">&quot;Value&quot;</code><code style="color:#000000;">,30)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">oAPI.AddItem(oBag)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Next</code></span></div>
+<div style="background-color:#f8f8f8;"><span>&nbsp;</span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">oAPI.ReturnItems</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">]]&gt;</code></span></div>
+</div>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;"></code></span>&nbsp;</div>
+</div>
+</code></span>
+<div style="background-color:#ffffff;"></div>
+</div>
+</div>
+<div class="reCodeBlock">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </div>
+</li><li>Close the editor to save the script back to the module. </li><li>If you receive an error that says that the IntervalSeconds parameter is invalid according to its data type, click
+<strong>Ignore</strong>. This error message occurs because the IntervalSeconds parameter is configured as an integer, and the Authoring Console is reading $Config/IntervalSeconds$ as a string. This variable will be replaced with an integer value when the workflow
+ is run so the error can be ignored. </li><li>Click <strong>OK</strong> to save the module configuration. </li><li>Click <strong>Add</strong> to add a new module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>System.Performance.DataGenericMapper</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>MapToPerf</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>ObjectName</strong> box, type <strong>MyApp</strong>. </li><li>In the <strong>CounterName</strong> box, type <strong>TestCounter</strong>. </li><li>In the <strong>InstanceName</strong> box, type <strong>$Data/Property[@Name=&#39;ComponentName&#39;]$</strong>
+</li><li>In the <strong>Value</strong> box, type <strong>$Data/Property[@Name=&#39;Value&#39;]$</strong>.
+</li><li>Click <strong>OK</strong>. </li><li>In the <strong>NextModule</strong> column for the <strong>Script</strong> module, select
+<strong>MapToPerf</strong>. </li><li>In the <strong>NextModule</strong> column for the <strong>MapToPerf</strong> module, select
+<strong>Module Output</strong>.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </li></ol>
+</li><li>On the <strong>Configuration Schema </strong>tab, do the following:
+<ol>
+<li>Change the <strong>Type</strong> for the <strong>IntervalSeconds</strong> parameter to
+<strong>Integer</strong>. </li><li>Clear the <strong>Required</strong> box next to the <strong>SyncTime</strong> parameter. The SyncTime parameter is optional for this module.
+</li><li>In the <strong>Simple Configuration Schema</strong> section, click <strong>Add</strong> to add a parameter.
+</li><li>In the <strong>Please enter the requested value</strong> box, type <strong>ComputerName</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Simple Configuration Schema</strong> section, click <strong>Add</strong> to add a parameter.
+</li><li>In the <strong>Please enter the requested value</strong> box, type <strong>Version</strong>. Click
+<strong>OK</strong>. </li></ol>
+</li><li>On the <strong>Overrideable Parameters</strong> tab, do the following:
+<ol>
+<li>Click <strong>Add</strong>, then <strong>IntervalSeconds</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <em>IntervalSeconds</em>. Click
+<strong>OK</strong> </li><li>Change <strong>Configuration Element</strong> to <strong>Integer</strong> </li><li>Click <strong>Add</strong>, then <strong>SyncTime</strong> </li><li>In the <strong>Choose a unique identifier</strong> box, type <em>SyncTime</em>. Click
+<strong>OK</strong>. </li></ol>
+</li><li>On the <strong>Data Types</strong> tab, do the following:
+<ol>
+<li>In the <strong>Output Data</strong> section, in the <strong>Data Type:</strong> box select
+<strong>System.Performance.Data.</strong> </li></ol>
+</li><li>Click <strong>OK</strong> to save the module. </li><li>Select <strong>File</strong>, and then click <strong>Save.</strong><strong></strong><strong></strong>
+</li></ol>
+<p>&nbsp;</p>
+<h2 class="heading"><a name="Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule"></a>Create Data Source Module to Filter on Instance</h2>
+<ol class="ordered">
+<li>Select <strong>Type Library</strong> and then <strong>Data Sources</strong>. </li><li>Right-click/em>. Click
+<strong>OK</strong> </li><li>Change <strong>Configuration Element</strong> to <strong>Integer</strong> </li><li>Click <strong>Add</strong>, then <strong>SyncTime</strong> </li><li>In the <strong>Choose a unique identifier</strong> box, type <em>SyncTime</em>. Click
+<strong>OK</strong>. </li></ol>
+</li><li>On the <strong>Data Types</strong> tab, do the following:
+<ol>
+<li>In the <strong>Output Data</strong> section, in the <strong>Data Type:</strong> box select
+<strong>System.Performance.Data.</strong> </li></ol> the <strong>Data Sources</strong> pane, select <strong>New</strong>, and then
+<strong>Composite Data Source</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>MyMP.DataSourceModule.MyPerformanceScriptFiltered</strong>. Click
+<strong>OK</strong>.&nbsp; </li><li>On the <strong>General</strong> tab, do the following:
+<ol class="ordered">
+<li>In the <strong>Name</strong> box, type <strong>Filtered Performance Script Data Source.</strong>
+</li></ol>
+</li><li>On the <strong>Member Modules </strong>tab, do the following:
+<ol>
+<li>Click <strong>Add</strong> to add a module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>MyMP.DataSourceModule.MyPerformanceScriptTimed</strong>.
+</li><li>In the<strong> Module ID</strong> box, type<strong> Script.</strong> Click <strong>
+OK.</strong> </li><li>Click the button to the right side of the <strong>IntervalSeconds</strong> box and select
+<strong>Promote</strong>. This enters the text <strong>$Config/IntervalSeconds$.</strong>
+</li><li>Click the button to the right side of the <strong>Computer </strong>box and select
+<strong>Promote</strong>. This enters the text <strong>$Config/ComputerName$</strong>.
+</li><li>Click the button to the right side of the <strong>Version </strong>box and select
+<strong>Promote</strong>. This enters the text <strong>$Config/Version$</strong>.
+</li><li>Click <strong>Edit</strong>. This starts the custom editor. The SyncTime parameter must be added manually with an XML editor. This is because the Authoring console only populates the Configuration dialog box with required parameters for the selected module.
+ The SyncTime parameter was configured to not be required. </li><li>After the line: <br />
+<blockquote dir="ltr" style="margin-right:0px;">
+<p style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;$Config/IntervalSeconds$&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></p>
+</blockquote>
+<blockquote></blockquote>
+<p class="reCodeBlock">add the following line:</p>
+<blockquote></blockquote>
+<blockquote dir="ltr" style="margin-right:0px;">
+<div class="reCodeBlock" dir="ltr" style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;$Config/SyncTime$&lt;/</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br />
+</code></span></div>
+</blockquote>
+</li><li>Close the editor to add the XML back the Authoring console.&nbsp; If you receive an error saying that the IntervalSeconds parameter is invalid according to its data type, click
+<strong>Ignore</strong>. This error message occurs because the IntervalSeconds parameter is configured as an integer, and the Authoring Console is reading $Config/IntervalSeconds$ as a string. This variable will be replaced with an integer value when the workflow
+ is run so the error can be ignored. </li><li>Click <strong>OK</strong> to save the module configuration. </li><li>Click <strong>Add</strong> to add a new module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>System.ExpressionFilter</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>FilterComponent</strong>. Click
+<strong>OK</strong>. </li><li>Click <strong>Configure</strong> to open the <strong>Expression</strong> dialog box.
+</li><li>Click <strong>Insert</strong>. </li><li>In the <strong>Parameter Name</strong> box type <strong>InstanceName</strong>.
+</li><li>In the <strong>Operator</strong> box select <strong>Equals</strong>. </li><li>In the <strong>Value</strong> box type <strong>$Config/ComponentName$</strong>.
+</li><li>Click <strong>OK</strong> to save the expression. </li><li>Click <strong>OK</strong> to save the module configuration. </li><li>In the <strong>NextModule</strong> column for the <strong>Script</strong> module, select
+<strong>FilterComponent</strong>. </li><li>In the <strong>NextModule</strong> column for the <strong>FilterComponent</strong> module, select
+<strong>Module Output</strong>. </li></ol>
+</li><li>On the <strong>Configuration Schema </strong>tab, do the following:
+<ol>
+<li>Change the <strong>Type</strong> for the <strong>IntervalSeconds</strong> parameter to
+<strong>Integer</strong>. </li><li>In the <strong>Simple Configuration Schema</strong> section, click <strong>Add</strong> to add a parameter.
+</li><li>In the <strong>Please enter the requested value</strong> box, type <strong>SyncTime</strong>. Click
+<strong>OK</strong>. </li><li>Clear the <strong>Required</strong> box next to the <strong>SyncTime</strong> parameter. The SyncTime parameter is optional for this module.
+</li><li>Click the Up arrow to the right of the <strong>Simple Configuration Schema</strong> section until the
+<strong>SyncTime</strong> parameter is directly under the <strong>IntervalSeconds</strong> parameter.
+</li><li>In the <strong>Simple Configuration Schema</strong> section, click <strong>Add</strong> to add a parameter.
+</li><li>In the <strong>Please enter the requested value</strong> box, type <strong>ComponentName</strong>. Click
+<strong>OK</strong>. </li></ol>
+</li><li>On the <strong>Overrideable Parameters</strong> tab, do the following:
+<ol>
+<li>Click <strong>Add</strong> and then <strong>IntervalSeconds</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <em>IntervalSeconds</em>. Click
+<strong>OK</strong>. </li><li>Change <strong>Configuration Element</strong> to <strong>Integer.</strong> </li><li>Click <strong>Add</strong> and then <strong>SyncTime.</strong> </li><li>In the <strong>Choose a unique identifier box,</strong> type <em>SyncTime</em><strong>.</strong> Click
+<strong>OK.</strong> </li></ol>
+</li><li>On the <strong>Data Types</strong> tab, do the following:
+<ol>
+<li>Ensure the value in the <strong>Data Types</strong> box is <strong>System.Performance.Data</strong><strong>.</strong>
+</li></ol>
+</li><li>Click <strong>OK</strong> to save the module. </li><li>Select <strong>File</strong>, and then click <strong>Save.</strong><strong></strong><strong></strong>
+</li></ol>
+<h2 class="heading"><a name="Create_Rule_to_Collect_Performance_Data"></a>Create Rule to Collect Performance Data</h2>
+<ol>
+<li>
+<div class="heading">Select <strong>Health Model</strong>, then <strong>Rules</strong>.</div>
+</li><li>
+<div class="heading">Right-click the <strong>Rules</strong> pane and select <strongange <strong>Configuration Element</strong> to <strong>Integer.</strong> </li><li>Click <strong>Add</strong> and then <strong>SyncTime.</strong> </li><li>In the <strong>Choose a u>
+New</strong>, then <strong>Custom Rule</strong>.</div>
+</li><li>
+<div class="heading">In the <strong>Choose a unique identifier</strong> box, type
+<strong>MyMP.MyAppComponent.PerformanceCollectionRule</strong>. Click <strong>OK</strong>.</div>
+</li><li>
+<div class="heading">On the <strong>General</strong> tab, do the following:</div>
+<ol>
+<li>In the <strong>Name</strong> box type <strong>Collect MyApp Component performance data</strong>.
+</li><li>In the <strong>Target</strong> box, select <strong>MyMP.MyApplicationComponent</strong>.
+</li></ol>
+</li><li>On the <strong>Modules</strong> tab, do the following:&nbsp;&nbsp;&nbsp;&nbsp;
+<ol>
+<li>In the <strong>Data Sources</strong> section click <strong>Create</strong>. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>MyMP.DataSourceModule.MyPerformanceScriptFiltered</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>DS</strong>. Click <strong>
+OK</strong>. </li><li>Click <strong>Edit</strong> to modify the module parameters.&nbsp; </li><li>In the <strong>IntervalSeconds</strong> box, type <strong>900</strong>. </li><li>Clear the text in the <strong>ComputerName</strong> box. Click the button to the right of the box, select
+<strong>(Host=My Computer Role 1)</strong>. Now select <strong>(Host=Windows Computer)</strong> and then
+<strong>Principal Name (Windows Computer)</strong>. This enters the text <strong>
+$Target/Host/Host/Property[Type=&quot;Windows!Microsoft.Windows.Computer&quot;]/PrincipalName$</strong>.
+</li><li>Clear the text in the <strong>Version</strong> box. Click the button to the right side of the box and select
+<strong>(Host=My Computer Role 1)</strong> and then <strong>Version (My Computer Role Base)</strong>. This will enter the text
+<strong>$Target/Host/Property[Type=&quot;MyMP.MyComputerRoleBase&quot;]/Version$</strong>. </li><li>Clear the text in the <strong>ComponentName</strong> box. Click the button to the right of the box and select
+<strong>ComponentName</strong>. </li><li>Click <strong>OK</strong> to save the module configuration. </li><li>In the <strong>Actions</strong> section click <strong>Create</strong>. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>Microsoft.SystemCenter.CollectPerformanceData</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>WriteToDB</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Actions</strong> section click <strong>Create</strong>. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>WriteToDW</strong>. Click
+<strong>OK</strong>. </li></ol>
+</li><li>Click <strong>OK</strong>. </li><li>Select <strong>File</strong>, then click <strong>Save</strong>. </li></ol>
+<h2 class="heading"><a name="Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule"></a>Create Custom Monitor Type Using Custom Data Source</h2>
+<ol class="ordered">
+<li>Select <strong>Type Library</strong> and then <strong>Monitor Types</strong>.
+</li><li>Right-click in the <strong>Monitor Types</strong> pane and select <strong>New</strong> and then
+<strong>Composite Monitor Type</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>MyMP.MyApplicationComponentMonitorType</strong>. Click
+<strong>OK</strong>.&nbsp; </li><li>On the <strong>General</strong> tab, do the following:
+<ol class="ordered">
+<li>In the <strong>Name</strong> box, type <strong>My Application Component Monitor Type.</strong>
+</li></ol>
+</li><li>On the <strong>States </strong>tab, do the following:
+<ol>
+<li>Select <strong>3 State Monitor Type</strong>. </li><li>In the <strong>ID of state 1</strong> box type <strong>UnderThreshold</strong>.
+</li><li>In the <strong>ID of state 2</strong> box, type <strong>OverWarningThreshold.</strong>&nbsp;&nbsp;
+</li><li>In the <strong>ID of state 3</strong> box, type <strong>OverErrorThreshold.</strong>&nbsp;&nbsp;
+</li></ol>
+</li><li>On the <strong>Member Modules </strong>tab, do the following:
+<ol>
+<li>Click <strong>Add</strong> to add a module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>MyMP.DataSourceModule.MyPerformanceScriptFiltered</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>DataSource.</strong> Click
+<strong>OK.</strong> </li><li>Click the button to the right side of the <strong>IntervalSeconds</strong> box and select
+<strong>Promote </strong>. This enters the text <strong>$Config/IntervalSeconds$</strong>.
+</li><li>Click the button to the right side of the <strong>ComputerName</strong> box and select
+<strong>Promote</strong>. This enters the text <strong>$Config/ComputerName$</strong>.
+</li><li>Click the button to the right side of the <strong>Version </strong>box and select
+<strong>Promote</strong>. This enters the text <strong>$Config/Version$</strong>.
+</li><li>Click the button to the right side of the <strong>ComponentName </strong>box and select
+<strong>Promote</strong>. This enters the text <strong>$Config/ComponentName$</strong>.
+</li><li>Click <strong>Edit</strong>. This starts the custom editor. The SyncTime parameter must be added manually with an XML editor. This is because the Authoring console only populates the Configuration dialog box with required parameters for the selected module.
+ The SyncTime parameter was configured to not be required. </li><li>After the line: <br />
+<blockquote dir="ltr" style="margin-right:0px;">
+<p style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;$Config/IntervalSeconds$&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></p>
+</blockquote>
+<blockquote></blockquote>
+<p class="reCodeBlock">add the following line:</p>
+<blockquote></blockquote>
+<blockquote dir="ltr" style="margin-right:0px;">
+<div class="reCodeBlock" dir="ltr" style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;$Config/SyncTime$&lt;/</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;
+<br />
+</code></span></div>
+</blockquote>
+</li><li>Close the editor to add the XML back the Authoring console.&nbsp; If you receive an error saying that the IntervalSeconds parameter is invalid according to its data type, click
+<strong>Ignore</strong>. This error message occurs because the IntervalSeconds parameter is configured as an integer, and the Authoring Console is reading $Config/IntervalSeconds$ as a string. This variable will be replaced with an integer value when the workflow
+ is run so the error can be ignored. </li><li>Click <strong>OK</strong> to save the module configuration. </li><li>Click <strong>Add</strong> to add a new module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>System.ExpressionFilter</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>FilterUnderThreshold</strong>. Click
+<strong>OK</strong>. </li><li>Click <strong>Configure</strong> to open the <strong>Expression</strong> dialog box.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</li><li>Click <strong>Insert</strong>. </li><li>In the <strong>Parameter Name</strong> box type <strong>Value</strong>. </li><li>In the <strong>Operator</strong> box select <strong>Less than</strong>. </li><li>In the <strong>Value</strong> box type <strong>$Config/WarningThreshold$</strong>. Click
+<strong>OK</strong>. </li><li>In each <strong>&gt;&gt;&gt;@Type</strong> box, change the value <strong>String</strong> to
+<strong>Integer.</strong> </li><li>Click <strong>OK</strong> to save the expression. </li><li>Click <strong>Add</strong> to add a new module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>System.ExpressionFilter</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>FilterOverWarningThreshold</strong>. Click
+<strong>OK</strong>. </li><li>Click <strong>Configure</strong> to open the <strong>Expression</strong> dialog box.
+</li><li>Click <strong>Insert</strong>. </li><li>In the <strong>Parameter Name</strong> box type <strong>Value</strong>. </li><li>In the <strong>Operator</strong> box select <strong>Greater than or equal to</strong>.
+</li><li>In the <strong>Value</strong> box type <strong>$Config/WarningThreshold$</strong>. Click
+<strong>OK</strong>. </li><li>In each <strong>&gt;&gt;&gt;@Type</strong> box, change the value <strong>String</strong> to
+<strong>Integer.</strong> </li><li>Click <strong>OK</strong> to save the expression. </li><li>Click <strong>Add</strong> to add a new module. </li><li>In the <strong>Choose Module Type box</strong>, select <strong>System.ExpressionFilter</strong>.
+</li><li>In the <strong>Module ID</strong> box, type <strong>FilterOverErrorThreshold</strong>. Click
+<strong>OK</strong>. </li><li>Click <strong>Configure</strong> to open the <strong>Expression</strong> dialog box.
+</li><li>Click <strong>Insert</strong>. </li><li>In the <strong>Parameter Name</strong> box type <strong>Value</strong>. </li><li>In the <strong>Operator</strong> box select <strong>Greater than or equal to</strong>.
+</li><li>In the <strong>Value</strong> box type <strong>$Config/ErrorThreshold$</strong>. Click
+<strong>OK</strong>. </li><li>In each <strong>&gt;&gt;&gt;@Type</strong> box, change the value <strong>String</strong> to
+<strong>Integer.</strong> </li><li>Click <strong>OK</strong> to save the expression. </li></ol>
+</li><li>On the <strong>Regular</strong> tab, do the following:
+<ol>
+<li>Select <strong>UnderThreshold</strong><strong>.</strong> </li><li>Check the <strong>Include</strong> box next to <strong>DataSource</strong>. </li><li>Check the <strong>Include</strong> box next to <strong>FilterUnderThreshold.</strong>
+</li><li>In the <strong>Next Module</strong> box next to <strong>DataSource </strong>select
+<strong>FilterUnderThreshold.</strong> </li><li>In the <strong>Next Module</strong> box next to <strong>FilterUnderThreshold</strong> select
+<strong>Monitor State Output</strong>. </li><li>Select <strong>OverWarningThreshold</strong><strong>.</strong> </li><li>Check the <strong>Include</strong> box next to <strong>DataSource</strong>. </li><li>Check the <strong>Include</strong> box next to <strong>FilterOverWarningThreshold.</strong>
+</li><li>In the <strong>Next Module</strong> box next to <strong>DataSource </strong>select
+<strong>FilterOverWarningThreshold.</strong> </li><li>In the <strong>Next Module</strong> box next to <strong>FilterOverWarningThreshold</strong> select
+<strong>Monitor State Output</strong>. </li><li>Select <strong>OverErrorThreshold</strong>. </li><li>Check the <strong>Include</strong> box next to <strong>DataSource</strong>. </li><li>Check the <strong>Include</strong> box next to <strong>FilterOverErrorThreshold</strong>.
+</li><li>In the <strong>Next Module</strong> box next to <strong>DataSource</strong> select
+<strong>FilterOverErrorThreshold</strong>. </li><li>In the <strong>Next Module</strong> box next to <strong>FilterOverErrorThreshold</strong> select
+<strong>Monitor State Output</strong>. </li></ol>
+</li><li>On the <strong>Configuration Schema</strong> tab, do the following:&nbsp;&nbsp;&nbsp;&nbsp;
+<ol>
+<li>In the <strong>Type</strong> box next to <strong>IntervalSeconds</strong> select
+<strong>Integer</strong>. </li><li>Click <strong>Add</strong> to add a parameter. </li><li>In the <strong>Please enter the requested value</strong> box type <strong>SyncTime</strong>. Click
+<strong>OK</strong>. </li><li>Clear the <strong>Required</strong> box next to <strong>SyncTime</strong>. </li><li>Click <strong>Add</strong> to add a parameter. </li><li>In the <strong>Please enter the requested value</strong> box type <strong>WarningThreshold</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Type</strong> box next to <strong>WarningThreshold</strong> select
+<strong>Integer</strong>. </li><li>Click <strong>Add</strong> to add a parameter. </li><li>In the <strong>Please enter the requested value</strong> box type <strong>ErrorThreshold</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Type</strong> box next to <strong>ErrorThreshold</strong> select
+<strong>Integer</strong>. </li></ol>
+</li><li>On the <strong>Overrideable Parameters</strong> tab, do the following:
+<ol>
+<li>Click <strong>Add</strong>, then <strong>IntervalSeconds</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box type <strong>IntervalSeconds</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Configuration Element</strong> box for <strong>IntervalSeconds</strong>, select
+<strong>Integer</strong>. </li><li>Click <strong>Add</strong>, then <strong>SyncTime</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>SyncTime</strong>. Click
+<strong>OK</strong>. </li><li>Click <strong>Add</strong>, then <strong>WarningThreshold</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>WarningThreshold</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Configuration Element</strong> box for <strong>WarningThreshold</strong> select
+<strong>Integer</strong>. </li><li>Click <strong>Add</strong>, then <strong>ErrorThreshold</strong>. </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>ErrorThreshold</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>Configuration Element</strong> box for <strong>ErrorThreshold</strong> select
+<strong>Integer</strong>. </li></ol>
+</li><li>Click <strong>OK</strong> to save the module type. </li><li>Select <strong>File</strong>, and then click <strong>Save.</strong><strong></strong><strong></strong>&nbsp;&nbsp;
+</li></ol>
+<p class="heading">&nbsp;</p>
+<h2 class="heading"><a name="Create_Monitor_Based_on_Custom_Monitor_Type"></a>Create Monitor Based on Custom Monitor Type</h2>
+<ol class="ordered">
+<li>Select <strong>Health Model</strong>, then <strong>Monitors</strong>. </li><li>In the <strong>Monitors</strong> pane, expand <strong>MyMP.MyApplicationComponent
+</strong>and <strong>System.Health.EntityState</strong>. </li><li>Right-click <strong>System.Health.PerformanceState</strong>, select <strong>New</strong>, and then
+<strong>Custom Unit Monitor</strong>.&nbsp; </li><li>In the <strong>Choose a unique identifier</strong> box, type <strong>MyMP.MyAppComponent.PerformanceMonitor</strong>. Click
+<strong>OK</strong>.&nbsp; </li><li>On the <strong>General</strong> tab, do the following:
+<ol class="ordered">
+<li>In the <strong>Name</strong> box, type <strong>My Application Component Performance.</strong>
+</li></ol>
+</li><li>On the <strong>Configuration </strong>tab, do the following:
+<ol>
+<li>Click <strong>Browse for a type</strong>. </li><li>In the <strong>Choose unit monitor type box</strong>, select <strong>MyMP.MyApplicationComponentMonitorType</strong>. Click
+<strong>OK</strong>. </li><li>In the <strong>IntervalSeconds</strong> box type <strong>900.</strong> </li><li>Clear the text in the <strong>ComputerName</strong> box. Click the button to the right side of the box, select
+<strong>(Host=My Computer Role 1)</strong>, and then <strong>(Host=Windows Computer)</strong> and then
+<strong>Principal Name (Windows Computer)</strong>. </li><li>Clear the text in the <strong>Version </strong>box. Click the button to the right side of the box, select
+<strong>(Host=My Computer Role 1)</strong>, and then <strong>Version (My Computer Role Base)</strong>.
+</li><li>Clear the text in the <strong>ComponentName</strong> box. Click the button to the right side of the box and select
+<strong>ComponentName</strong>. </li><li>In the <strong>WarningThreshold</strong> box type <strong>10</strong>. </li><li>In the <strong>ErrorThreshold</strong> box type <strong>20</strong>. </li></ol>
+</li><li>On the <strong>Health </strong>tab, do the following:
+<ol>
+<li>In the <strong>Health State</strong> box for <strong>UnderThreshold </strong>
+select <strong>Healthy</strong>. </li><li>In the <strong>Health State</strong> box for <strong>OverWarningThreshold </strong>
+select <strong>Warning</strong>. </li><li>In the <strong>Health State</strong> box for <strong>OverErrorThreshold</strong> select
+<strong>Critical</strong>. </li></ol>
+</li><li>On the <strong>Alerting</strong> tab, do the following:
+<ol>
+<li>Check the box next to <strong>Generate alerts for this monitor</strong>. </li><li>In the <strong>Generate an alert when</strong>, select <strong>The monitor is in a critical or warning health state</strong>.
+</li><li>In the <strong>Alert name:</strong> box, type <strong>Performance problem detected</strong>.
+</li></ol>
+</li><li>Click <strong>OK</strong> to save the monitor. </li><li>Select <strong>File</strong>, then click <strong>Save</strong>. </li></ol>
+<p>&nbsp;</p>
+<hr />
+<h2 class="heading"><a name="Using_Visual_Studio_Authoring_Extensions"></a></h2>
+<h1 class="heading"><a name="Using_Visual_Studio_Authoring_Extensions"></a>Visual Studio Authoring Extensions Procedure
+</h1>
+<h2 class="heading"><a name="Create_Probe_Action_Module_to_Run_a_Script"></a>Create data source module to run script on schedule</h2>
+<p class="heading">The first data source module will run the script and map its output to performance data.&nbsp; The script is intended to return data for each instance of the target class.&nbsp; In the case of this example, the script just returns three property bags
+ to illustrate the concept.&nbsp; </p>
+<p class="heading">Since the values for the parameters provided to the module will be the same for all instances, the module is able to cookdown.&nbsp; It runs only one instance of the script but returns multiple performance data items.&nbsp; Each data item includes
+ the name of the component so that we know which component each data item belongs to.</p>
+<ol>
+<li>Create the script:
+<ol>
+<li>In Solution Explorer, expand the <strong>Composition </strong>folder. </li><li>Right click the <strong>Composition </strong>folder, select <strong>Add </strong>
+and then select <strong>New Item</strong>. </li><li>Select <strong>VBScript File</strong>. </li><li>Change the name of the script to <strong>MyCookdownScript.vbs</strong> and click
+<strong>Add.</strong> </li><li>Right-click <strong>MyCookdownScript.vbs</strong> and select <strong>Open</strong>.
+</li><li>Copy the following code into the script window: <br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;">
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">sComputerName = WScript.Arguments(0)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">sVersion = WScript.Arguments(1)</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">oAPI = CreateObject(</code><code style="color:blue;">&quot;MOM.ScriptAPI&quot;</code><code style="color:#000000;">)</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">oAPI.LogScriptEvent
+</code><code style="color:blue;">&quot;MyCookdownScript.vbs&quot;</code><code style="color:#000000;">,10,4,
+</code><code style="color:blue;">&quot;Running script on &quot;</code> <code style="color:#000000;">
+&amp; sComputerName &amp; </code><code style="color:blue;">&quot;. Version is &quot;</code> <code style="color:#000000;">
+&amp; sVersion</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">For</code>
+<code style="color:#000000;">i = 1 to 3</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Set</code>
+<code style="color:#000000;">oBag = oAPI.CreatePropertyBag()</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Call</code>
+<code style="color:#000000;">oBag.AddValue(</code><code style="color:blue;">&quot;ComputerName&quot;</code><code style="color:#000000;">,sComputerName)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Call</code>
+<code style="color:#000000;">oBag.AddValue(</code><code style="color:blue;">&quot;ComponentName&quot;</code><code style="color:#000000;">,</code><code style="color:blue;">&quot;Component&quot;</code>
+<code style="color:#000000;">&amp; i)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#006699;font-weight:bold;">Call</code>
+<code style="color:#000000;">oBag.AddValue(</code><code style="color:blue;">&quot;Value&quot;</code><code style="color:#000000;">,30)</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">oAPI.AddItem(oBag)</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#006699;font-weight:bold;">Next</code></span></div>
+<div style="background-color:#ffffff;"><span>&nbsp;</span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">oAPI.ReturnItems</code></span></div>
+</div>
+</code></span></div>
+<div style="background-color:#ffffff;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </div>
+</div>
+</div>
+</div>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;"></code></span>&nbsp;</div>
+</div>
+</li><li>Select <strong>File</strong>, and then click <strong>Save MyCookdownScript.vbs</strong>.
+</li></ol>
+</li><li>Create the Data Source module.&nbsp;
+<ol>
+<li>Right click <strong>MyTransactionModules.mpx</strong> and select <strong>Open</strong>.
+</li><li>Copy the following XML into the configuration window after the last &lt;DataSourceModuleType&gt;.&nbsp; Note that you can use Intellisense to manually type in each entry.<br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataSourceModuleType</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyMP.DataSourceModule.MyPerformanceScriptTimed&quot;</code>
+<code style="color:#808080;">Accessibility</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Internal&quot;</code>
+<code style="color:#808080;">Batching</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IntervalSeconds&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:integer&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;0&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;SyncTime&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ComputerName&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="ct;xsd:string&quot;</code>
+<code style="color:#000000olor:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Version&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameters</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IntervalSeconds&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/IntervalSeconds$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;int&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;SyncTime&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/SyncTime$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">OverrideableParameters</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ModuleImplementation</code>
+<code style="color:#808080;">Isolation</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Any&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Composite</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MemberModules</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataSource</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Script&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Windows!Microsoft.Windows.TimedScript.PropertyBagProvider&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;$Config/IntervalSeconds$&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;$Config/SyncTime$&lt;/</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ScriptName</code><code style="color:#000000;">&gt;MyCookdownScript.vbs&lt;/</code><code style="color:#006699;font-weight:bold;">ScriptName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Arguments</code><code style="color:#000000;">&gt;$Config/ComputerName$
+ $Config/Version$&lt;/</code><code style="color:#006699;font-weight:bold;">Arguments</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ScriptBody</code><code style="color:#000000;">&gt;$IncludeFileContent/Composition/MyCookdownScript.vbs$&lt;/</code><code style="color:#006699;font-weight:bold;">ScriptBody</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">TimeoutSeconds</code><code style="color:#000000;">&gt;300&lt;/</code><code style="color:#006699;font-weight:bold;">TimeoutSeconds</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;>Arguments</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ScriptBody</code><code style="color:#000000;">&gt;$IncludeFileContent/Composition/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataSource</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MapToPerf&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Perf!System.Performance.DataGenericMapper&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ObjectName</code><code style="color:#000000;">&gt;MyApp&lt;/</code><code style="color:#006699;font-weight:bold;">ObjectName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">CounterName</code><code style="color:#000000;">&gt;TestCounter&lt;/</code><code style="color:#006699;font-weight:bold;">CounterName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">InstanceName</code><code style="color:#000000;">&gt;$Data/Property[@Name=&#39;ComponentName&#39;]$&lt;/</code><code style="color:#006699;font-weight:bold;">InstanceName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;$Data/Property[@Name=&#39;Value&#39;]$&lt;/</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MemberModules</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Composition</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MapToPerf&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Script&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Node</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Composition</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Composite</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ModuleImplementation</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OutputType</code><code style="color:#000000;">&gt;Perf!System.Performance.Data&lt;/</code><code style="color:#006699;font-weight:bold;">OutputType</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataSourceModuleType</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </li></ol>
+</li></ol>
+<h2><a name="Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule"></a>Create Data Source Module to Filter on Instance</h2>
+<p>The second data source module gets the performance data from the first data source module and filters it for a single instance.&nbsp; This module will output a single performance data item for a particular component.&nbsp;
+</p>
+<p>This module will not cookdown because a different value is provided to the ComponentName parameter for each instance of the target class.&nbsp; This is a lightweight module though, so the effect of this is minimal.&nbsp; The significant overhead comes from the script
+ run from the first data source module, and that script will cookdown.</p>
+<ol>
+<li>Copy the following XML into the configuration window after the last &lt;DataSourceModuleType&gt;.&nbsp; Note that you can use Intellisense to manually type in each entry.
+<p>&nbsp;</p>
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataSourceModuleType</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyMP.DataSourceModule.MyPerformanceScriptFiltered&quot;</code>
+<code style="color:#808080;">Accessibility</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Internal&quot;</code>
+<code style="color:#808080;">Batching</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IntervalSeconds&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:integer&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;0&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;SyncTime&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ComputerName&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Version&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ComponentName&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameters</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IntervalSeconds&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/IntervalSeconds$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;int&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;SyncTime&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/SyncTime$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">OverrideableParameters</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ModuleImplementation</code>
+<code style="color:#808080;">Isolation</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Any&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Composite</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MemberModules</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataSource</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Script&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyMP.DataSourceModule.MyPerformanceScriptTimed&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;$Config/IntervalSeconds$&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;$Config/SyncTime$&lt;/</code><code style="color:#006699;font-weight:bold;">SyncTime</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;$Config/ComputerName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;$Config/Version$&lt;/</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataSource</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterComponent&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;System!System.ExpressionFilter&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">XPathQuery</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;String&quot;</code><code style="color:#000000;">&gt;InstanceName&lt;/</code><code style="color:#006699;font-weight:bold;">XPathQuery</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;Equal&lt;/</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Value</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;String&quot;</code><code style="color:#000000;">&gt;$Config/ComponentName$&lt;/</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MemberModules</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Composition</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterComponent&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Script&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Node</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Composition</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Composite</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ModuleImplementation</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OutputType</code><code style="color:#000000;">&gt;Perf!System.Performance.Data&lt;/</code><code style="color:#006699;font-weight:bold;">OutputType</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataSourceModuleType</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>&nbsp;</p>
+</li></ol>
+<h2><a name="Create_Rule_to_Collect_Performance_Data"></a>Create Rule to Collect Performance Data</h2>
+<p>The rule calls the second data source module providing the name of the application component.</p>
+<ol>
+<li>Create the Rule:
+<ol>
+<li>Right click the <strong>Composition</strong> folder and then select <strong>New Item</strong>.
+</li><li>Select <strong>Rule (Custom)</strong>. </li><li>Change the name of the fragment to <strong>Rules.mptg </strong>and click <strong>
+Add.</strong> </li></ol>
+</li><li>Configure the Rule Properties:
+<ol>
+<li>Right click the entry for <strong>NewRule </strong>and select <strong>Properties Window</strong>.
+</li><li>Change the <strong>ID </strong>to <strong>Rule.MyAppComponent.PerformanceCollectionRule</strong>
+</li><li>Change the <strong>Display Name </strong>to <strong>Collect MyApp Component performance data</strong>.
+</li><li>Change the <strong>Category </strong>to <strong>PerformanceCollection</strong>.
+</li></ol>
+</li><li>Select the Rule Target:
+<ol>
+<li>Select Target and click the ellipse (...) button on the right of the field.&nbsp; </li><li>Select <strong>MyMP.MyApplicationComponent</strong> and click <strong>OK</strong>.
+</li></ol>
+</li><li>Select and configure the data source modules:
+<ol>
+<li>Select <strong>Data Sources </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Click <strong>Add</strong>.&nbsp; </li><li>Select <strong>Data Source Type ID </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Select <strong>MyMP.DataSourceModule.MyPerformanceScriptFiltered</strong> and click
+<strong>OK</strong>. </li><li>Select <strong>Data Source Configuration</strong> and MyAppComponent.PerformanceCollectionRule</strong>
+</li><li>Change the <strong>Display Name </strong>to <strong>Collect MyApp Component performance data</strong>.
+</li><li>Change the <strong>Category </strong>to <strong>PerformanceCollection</strong>.
+</li></ol>
+</li><li>Select the Rule Target:
+<ol>
+<li>Select Target and click the ellipse (...) button on the right of the field.&nbsp; </li><li>Select <strong>MyMP.MyApplicationComponent</strong> and click <strong>OK</strong>.
+</li></ol>
+</li><li>Select and configure the data source modules:
+<ol>
+<li>Select <strong>Data Sources </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Click <strong>Add</strong>.&nbsp; </li><li>Select <strong>Data Source Type ID </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Select <strong>MyMP.DataSourceclick the ellipse (...) button on the right of the field.
+</li><li>Copy the following XML into the configuration window between the &lt;Configuration&gt; tags.&nbsp; Note that you can use Intellisense to manually type in each entry.<br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;900&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;$Target/Host/Host/Property[Type=&quot;Windows!Microsoft.Windows.Computer&quot;]/PrincipalName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;$Target/Host/Property[Type=&quot;MyMP.MyComputerRoleBase&quot;]/Version$&lt;/</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComponentName</code><code style="color:#000000;">&gt;$Target/Property[Type=&quot;MyMP.MyApplicationComponent&quot;]/ComponentName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComponentName</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<br />
+&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </li><li>Click <strong>OK </strong>to save the module configuration. </li><li>Click <strong>OK</strong> to save the data source. </li></ol>
+</li><li>Select the write action modules:
+<ol>
+<li>Select <strong>Write Actions </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Click <strong>Add</strong>. </li><li>Change the <strong>Write Action ID </strong>to <strong>WriteToDB</strong>. </li><li>Select <strong>Write Action Type ID </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Select <strong>Microsoft.SystemCenter.CollectPerformanceData</strong> and click
+<strong>OK</strong>. </li><li>Click <strong>Add</strong>. </li><li>Change the <strong>Write Action ID </strong>to <strong>WriteToDW</strong>. </li><li>Select <strong>Write Action Type ID </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Select <strong>Microsoft.SystemCenter.DataWarehouse.PublishPerformanceData</strong> and click
+<strong>OK</strong>. </li></ol>
+</li><li>Save and Compile the Project: </li></ol>
+<ol>
+<ol>
+<li>Select <strong>File</strong>, and then click <strong>Save Rules.mptg</strong>.
+</li><li>Select <strong>Build </strong>and then <strong>Build Solution</strong>. </li><li>Ensure that you don&#39;t receive any errors. </li></ol>
+</ol>
+<br />
+<h2><a name="Create_Custom_Monitor_Type_Using_Custom_Data_Source"></a>Create Custom Monitor Type Using Custom Data Source</h2>
+<p>The monitor type calls the data source module and defines the logic for determining different health states.&nbsp;
+</p>
+<ol>
+<li>Create the Monitor Type.&nbsp; This includes the health states and the configuration parameters for the monitor.&nbsp; Copy the following XML into the configuration window after the last &lt;MonitorType&gt; tag.&nbsp; Note that you can use Intellisense to manually type in each
+ entry: <br />
+&nbsp;&nbsp;&nbsp;&nbsp; <br />
+&nbsp;&nbsp;
+<div style="background-color:#ffffff;">
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">UnitMonitorType</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyMP.MyApplicationComponentMonitorType&quot;</code>
+<code style="color:#808080;">Accessibility</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Internal&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MonitorTypeStates</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MonitorTypeState</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;UnderThreshold&quot;</code>
+<code style="color:#808080;">NoDetection</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MonitorTypeState</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OverWarningThreshold&quot;</code>
+<code style="color:#808080;">NoDetection</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MonitorTypeState</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OverErrorThreshold&quot;</code>
+<code style="color:#808080;">NoDetection</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MonitorTypeStates</code><code style="color:#000000;">&gt;</code></spaWarningThreshold&quot;</code>
+<code style="color:#808080;">NoDetection</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;false&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MonitorTypeState</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OverErrorThreshold&quot;</cn></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IntervalSeconds&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:integer&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;0&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;SyncTime&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ComputerName&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Version&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ComponentName&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;WarningThreshold&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:integer&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">xsd:element</code>
+<code style="color:#808080;">minOccurs</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;1&quot;</code>
+<code style="color:#808080;">name</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ErrorThreshold&quot;</code>
+<code style="color:#808080;">type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;xsd:integer&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Configuration</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameters</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;IntervalSeconds&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/IntervalSeconds$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;int&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;SyncTIme&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/SyncTime$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;string&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;WarningThreshold&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/WarningThreshold$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;int&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">OverrideableParameter</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;ErrorThreshold&quot;</code>
+<code style="color:#808080;">Selector</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;$Config/ErrorThreshold$&quot;</code>
+<code style="color:#808080;">ParameterType</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;int&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">OverrideableParameters</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">UnitMonitorType</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<br />
+&nbsp;&nbsp;</div>
+</li><li>Add the Data Source Module to the Monitor Type.&nbsp; The values of the configuration parameters provided by the monitor are passed to the module.&nbsp; Copy the following XML into the configuration window after the ending &lt;/OverideableParameters&gt; tag.&nbsp; Note that
+ you can use Intellisense to manually type in each entry: <br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MonitorImplementation</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">MemberModules</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">DataSource</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataSource&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;MyMP.DataSourceModule.MyPerformanceScriptFilteredn each entry: <br />
+<br />
+<div class="reCodeBlock&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;$Config/IntervalSeconds$&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;$Config/ComputerName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;$Config/Version$&lt;/</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComponentName</code><code style="color:#000000;">&gt;$Config/ComponentName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComponentName</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">DataSource</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;</code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MemberModules</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">MonitorImplementation</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+&nbsp; </p>
+</li><li>Add Condition Detection modules to the Monitor Type for each of the health states.&nbsp; These include an expression that defines the criteria based on output from the script.&nbsp; Copy the following XML into the configuration window after the &lt;DataSource&gt; module.&nbsp;
+ Note that you can use Intellisense to manually type in each entry: <br />
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterUnderThreshold&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;System!System.ExpressionFilter&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">XPathQuery</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;Value&lt;/</code><code style="color:#006699;font-weight:bold;">XPathQuery</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;Less&lt;/</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Value</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;$Config/WarningThreshold$&lt;/</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&n00000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Value</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;$Config/WarningThreshold$&lt;/</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;</code></spanbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterOverWarningThreshold&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;System!System.ExpressionFilter&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">XPathQuery</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;Value&lt;/</code><code style="color:#006699;font-weight:bold;">XPathQuery</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;GreaterEqual&lt;/</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Value</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;$Config/WarningThreshold$&lt;/</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;
+<br />
+</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;"></code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterOverErrorThreshold&quot;</code>
+<code style="color:#808080;">TypeID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;System!System.ExpressionFilter&quot;</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">XPathQuery</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;Value&lt;/</code><code style="color:#006699;font-weight:bold;">XPathQuery</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;GreaterEqual&lt;/</code><code style="color:#006699;font-weight:bold;">Operator</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Value</code>
+<code style="color:#808080;">Type</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;Integer&quot;</code><code style="color:#000000;">&gt;$Config/ErrorThreshold$&lt;/</code><code style="color:#006699;font-weight:bold;">Value</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ValueExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">SimpleExpression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Expression</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">ConditionDetection</code><code style="color:#000000;">&gt;</code></span></div>
+<p>&nbsp;</p>
+</li><li>Add Regular Detection to the Monitor Type.&nbsp; This defines the modules that are run to determine each health state.&nbsp; The module in the innermost node is run first followed by the others in the detection. Copy the following XML into the configuration window
+ after the closing &lt;/MemberModules&gt; tag.&nbsp; Note that you can use Intellisense to manually type in each entry:
+<br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RegularDetections</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RegularDetection</code>
+<code style="color:#808080;">MonitorTypeStateID</code><code style="color">ConditionDetection</code><code style="color:#000000;">&gt;</code></span></div>
+<p>&nbsp;</p>
+</li><li>Add Regular Detection to the Monitor Type.&nbsp; This defines the modules that are run to determine each health state.&nbsp; The module in the innermost node is run first followed by the others in the detection. Copy the following XML into the configuration window
+ after the closing &lt;/MemberModules&gt; tag.&nbsp; Note that you can use Intellisense to manually type in each entry:
+<br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RegularDetections</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RegularDetection</code>
+<code style="color:#808080;">:#000000;">=</code><code style="color:blue;">&quot;UnderThreshold&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterUnderThreshold&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataSource&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Node</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">RegularDetection</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RegularDetection</code>
+<code style="color:#808080;">MonitorTypeStateID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OverWarningThreshold&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterOverWarningThreshold&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataSource&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Node</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">RegularDetection</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">RegularDetection</code>
+<code style="color:#808080;">MonitorTypeStateID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;OverErrorThreshold&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;FilterOverErrorThreshold&quot;</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Node</code>
+<code style="color:#808080;">ID</code><code style="color:#000000;">=</code><code style="color:blue;">&quot;DataSource&quot;</code>
+<code style="color:#000000;">/&gt;</code></span></span></div>
+<div style="background-color:#ffffff;"><span><code>&nbsp;&nbsp;&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">Node</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code>&nbsp; </code><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">RegularDetection</code><code style="color:#000000;">&gt;</code></span></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;/</code><code style="color:#006699;font-weight:bold;">RegularDetections</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+&nbsp;&nbsp;&nbsp; <br />
+&nbsp;&nbsp;&nbsp; </li><li>Save and Compile the Project:
+<ol>
+<li><span>Select <strong>File</strong>, and then click <strong>Save MyTransactionModules.mptg</strong>.</span>
+</li><li><span>Select <strong>Build </strong>and then <strong>Build Solution</strong>.</span>
+</li><li><span>Ensure that you don&#39;t receive any errors. </span></li></ol>
+</li></ol>
+<h2><a name="Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule"></a>Create Monitor Based on Custom Monitor Type</h2>
+<ol>
+<li>Create the Monitor:
+<ol>
+<li>Expand the <strong>Composition </strong>folder. </li><li>Right click <strong>Monitors.mptg </strong>and then select <strong>Open</strong>.
+</li><li>Right click in the <strong>Monitors.mptg </strong>window and select <strong>Add Template</strong>.
+</li><li>Select <strong>Monitor (Unit)</strong> and click <strong>OK</strong>. </li></ol>
+</li><li>Configure the Monitor Properties:
+<ol>
+<li>Right click the entry for <strong>NewUnitMonitor </strong>and select <strong>
+Properties Window</strong>. </li><li>Change the <strong>ID </strong>to <strong>Monitor.MyAppComponent.PerformanceMonitor</strong>.
+</li><li>Change the <strong>My Application Component Performance</strong>. </li></ol>
+</li><li>Select the Monitor Target:
+<ol>
+<li>Seleli><li><span>Ensure that you don&#39;t receive any errors. </span></li></ol>
+</li></ol>
+<h2><a name="Create_Data_Source_Module_to_Run_Probe_Action_on_Schedule"></a>Create Monitor Based on Custom Monitor Type</h2>
+<ol>
+<li>Create the Monitor:
+<ol>
+<li>Expand the <strong>Composition </strong>folder. </li><li>Right click <strong>Monitors.mptg </strong>and then select <strong>Open</strong>.
+</li><li>Right click in the <strong>Monitors.mptg </strong>window and select <strong>Add Template</strong>.
+</li><li>Select <strong>Monitor (Unit)</strong> and click <strong>OK</strong>. </li></ol>
+</li><li>Configure the Monitor Properties:
+<ol>
+<li>Right click the entry for <strong>NewUnitMonitor </strong>and select <strong>
+Properties Window</strongct Target and click the ellipse (...) button on the right of the field.&nbsp; </li><li>Select <strong>MyMP.MyApplicationComponent</strong> and click <strong>OK</strong>.
+</li></ol>
+</li><li>Select the Monitor Type:
+<ol>
+<li>Select <strong>Monitor Type ID </strong>and click the ellipse (...) button on the right of the field.&nbsp;
+</li><li>Select <strong>MyMP.MyApplicationComponentMonitorType </strong>and click <strong>
+OK</strong>. </li><li>Select <strong>Parent Monitor ID </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Select <strong>System.Health.PerformanceState</strong> and click <strong>OK</strong>.
+</li></ol>
+</li><li>Configure the Monitor:
+<ol>
+<li>Select <strong>Monitor Configuration</strong> and click the ellipse (...) button on the right of the field.
+</li><li>Copy the following XML into the configuration window between the &lt;Configuration&gt; tags.&nbsp; Note that you can use Intellisense to manually type in each entry.
+<br />
+<br />
+<div class="reCodeBlock">
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;900&lt;/</code><code style="color:#006699;font-weight:bold;">IntervalSeconds</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;$Target/Host/Host/Property[Type=&quot;Windows!Microsoft.Windows.Computer&quot;]/PrincipalName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComputerName</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;$Target/Host/Property[Type=&quot;MyMP.MyComputerRoleBase&quot;]/Version$&lt;/</code><code style="color:#006699;font-weight:bold;">Version</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ComponentName</code><code style="color:#000000;">&gt;$Target/Property[Type=&quot;MyMP.MyApplicationComponent&quot;]/ComponentName$&lt;/</code><code style="color:#006699;font-weight:bold;">ComponentName</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#ffffff;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">WarningThreshold</code><code style="color:#000000;">&gt;10&lt;/</code><code style="color:#006699;font-weight:bold;">WarningThreshold</code><code style="color:#000000;">&gt;</code></span></div>
+<div style="background-color:#f8f8f8;"><span><code style="color:#000000;">&lt;</code><code style="color:#006699;font-weight:bold;">ErrorThreshold</code><code style="color:#000000;">&gt;20&lt;/</code><code style="color:#006699;font-weight:bold;">ErrorThreshold</code><code style="color:#000000;">&gt;</code></span></div>
+</div>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </li><li>Select <strong>Monitor Operational States </strong>and click the ellipse (...) button on the right of the field.
+</li><li>Next to <strong>UnderThreshold</strong>, select <strong>Healthy</strong>. </li><li>Next to <strong>OverWarningThreshold</strong>, select <strong>Warning</strong>.
+</li><li>Next to <strong>OverErrorThreshold</strong>, select <strong>Critical</strong>.
+</li><li>Click <strong>OK</strong>, </li></ol>
+</li><li>Save and Compile the Project:
+<ol>
+<li><span>Select <strong>File</strong>, and then click <strong>Save Rules.mptg</strong>.</span>
+</li><li><span>Select <strong>Build </strong>and then <strong>Build Solution</strong>.</span>
+</li><li><span>Ensure that you don&#39;t receive any errors. </span></li></ol>
+</li></ol>
+<p>&nbsp;</p>
+<h1><a name="See_Also"></a>See Also&nbsp; </h1>
+<ul>
+<li><a href="http://social.technet.microsoft.com/wiki/contents/articles/15218.operations-manager-management-pack-authoring-cookdown.aspx">Cookdown</a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/15216.operations-manager-management-pack-authoring-module-and-workflow-basics.aspx"><span style="color:#0066dd;">Module and Workflow Basics</span></a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/15217.operations-manager-management-pack-authoring-module-types.aspx"><span style="color:#0066dd;">Module Types</span></a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/15219.operations-manager-management-pack-authoring-module-implementations.aspx"><span style="color:#0066dd;">Module Implementations</span></a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/15220.operations-manager-management-pack-authoring-workflow-types.aspx"><span style="color:#0066dd;">Workflow Types</span></a>
+</li><li><a href="http://social.technet.microsoft.com/wiki/contents/articles/15205.operations-manager-management-pack-authoring-monitoring-scripts.aspx"><span style="color:#0066dd;">Monitoring Scripts</span></a>
+</li></ul>
+
+</div>
+    
+    

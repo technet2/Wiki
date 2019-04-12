@@ -1,0 +1,389 @@
+---
+layout: default
+title: How to Customize TargetAddress on Export Attribute Flow in GALSync - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<p dir="ltr" style="margin:0in 0in 10pt;"><div class="table-of-contents"><h2 class="title">Table of Contents</h2><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#PURPOSE">Purpose</a></li><li class="hierarchy-item"><a href="#CONFIGURATION_BACKUP">Configuration Backup</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#BACKUP_Management_Agent">BACKUP: Management Agent</a></li><li class="hierarchy-item"><a href="#BACKUP_Source_Code">BACKUP: Source Code</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#GUI_MODIFICATIONS_Updating_the_Management_Agent">GUI Modifications - Updating the Management Agent</a></li><li class="hierarchy-item"><a href="#SOURCE_CODE_MODIFICATIONS">Source Code Modifications</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#UPDATE_BUILD_OUTPUT_PATH_VERY_IMPORT">Update Build Output Path ( Very Important )</a></li><li class="hierarchy-item"><a href="#MODIFY_THE_SOURCE_CODE">Modify the Source Code</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#MyNewTargetAddress_Case_Statement_Code">_MyNewTargetAddress Case Statement Code</a><div class="hierarchy-list-header"> </div><ul class="hierarchy-list"><li class="hierarchy-item"><a href="#By_mailNickName_and_msExchOriginatingForest">By mailNickName and msExchOriginatingForest</a></li><li class="hierarchy-item"><a href="#By_First_Name_Last_Name_and_msExchOriginatingForest">By First Name.Last Name and msExchOriginatingForest</a></li></ul><div class="hierarchy-list-footer"> </div></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#BUILD_SOLUTION_Compiling_source_code_modifications">Build Solution - Compiling source code modifications</a></li><li class="hierarchy-item"><a href="#TESTING_NEW_CODE_Test_the_updates_you_just_made">Testing New Code - Test the updates you just made</a></li></ul><div class="hierarchy-list-footer"> </div></li><li class="hierarchy-item"><a href="#ADDITIONAL_RESOURCES">Additional Resources</a></li></ul><div class="hierarchy-list-footer"> </div></div></p>
+<table>
+<tbody>
+<tr>
+<td>
+<h2><a name="PURPOSE"></a>Purpose</h2>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p style="margin:0in 0in 10pt;"><span style="font-size:14px;">The goal of this wiki page is to provide the necessary steps it takes to go through and set the TargetAddress attribute of a mail-enabled Contact object in a GalSync Solution to something specific
+ using the mailNickName attribute and the msExchOriginatingForest attribute. </span>
+</p>
+<p style="margin:0in 0in 10pt;"><span style="font-size:14px;">By the end of this document, you should be able to implement this into a test environment, and test this scenario and then implement it into production.</span><br />
+<br />
+<span style="font-size:12px;background-color:gainsboro;"><strong>*NOTE: This wiki page is meant as a guide to illustrate how to customize the GalSync solution.&nbsp; You do not have to utilize the same attributes documented here.&nbsp; Your business rules may require
+ that you utilize different attributes, or want the export to look differently.</strong></span></p>
+</blockquote>
+</td>
+</tr>
+<tr>
+<td>
+<h2><a name="CONFIGURATION_BACKUP"></a>Configuration Backup</h2>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>This section will cover items to backup.&nbsp; Backing up your configuration before you make a change like this is a best practice and/or a good habit.&nbsp; It will allow you the ability to roll back a change if you it does not work for you.&nbsp; Here our focus will
+ be to backup:</p>
+<ol>
+<li>The Target Management Agent </li><li>The Source Code </li></ol>
+<p>&nbsp;</p>
+<table class="RadEDomMouseOver">
+<tbody>
+<tr>
+<td>
+<h3><a name="BACKUP_Management_Agent"></a><strong>BACKUP:&nbsp;Management Agent</strong></h3>
+</td>
+</tr>
+<tr>
+<td>
+<ol>
+<li>In the Synchronization Service Manager Console, select Management Agents </li><li>Select the Target Management Agent
+<ol>
+<li>This is the management agent that will be exporting the modified TargetAddress attribute
+</li></ol>
+</li><li>From the Actions menu, select Export Management Agent </li><li>Save to a good location, and provide a good name for the agent
+<ol>
+<li>Create a folder for your management agent backups, and store them there </li><li>Suggested naming convention: &lt;name of management agent&gt;.xml </li></ol>
+</li><li>Click the Save button to save the file </li><li>Navigate to the location to confirm backup of the management agent </li></ol>
+</td>
+</tr>
+<tr>
+<td>
+<h3><a name="BACKUP_Source_Code"></a><strong>BACKUP: Source Code</strong></h3>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>Essentially, you will be making a code change to the GalSync.DLL.&nbsp; This is a DLL that is delivered with the product.&nbsp; It is very possible that in an hotfix update, or service pack install that we could overwrite the default GalSync.DLL file.&nbsp; This is why
+ we recommend to backup the source code, as well as rename the default GalSync Solution.&nbsp; The steps below will guide you through backing up and renaming the default GalSync Solution.</p>
+<ol>
+<li>Navigate to the location the source code location
+<ol>
+<li><span style="font-size:13px;">You will find the default GalSync Solution SourceCode in %programfiles%\Microsoft Identity Integration Server\SourceCode.&nbsp; Depending on if you have renamed the GalSync Solution, you may find your GalSync solution here as well.</span>
+</li></ol>
+</li><li><span style="font-size:13px;">Make a copy of the GalSync Folder</span> </li><li><span style="font-size:13px;">Rename the copy to a unique name ( i.e. company acronym_galsync ) ( e.g. msft_galsync )<br />
+<br />
+<span style="background-color:silver;"><strong>*NOTE: Please note, that for the purpose of this wiki page, we will be using the name msft_galsync</strong><br />
+<br />
+</span></span></li><li><span style="font-size:13px;">Open Microsoft Visual Studio 2008 or Visual Studio 2010</span>
+</li><li><span style="font-size:13px;">Open your GalSync Solution <span style="font-size:13px;">
+(%programfiles%\Microsoft Identity Integration Server\Source Code\MSFT_GalSync) <br />
+<br />
+<span style="background-color:silver;"><strong>*NOTE: You may go through the conversion wizard, as the original project was developed using Visual Studio .NET 2003 with the Microsoft .NET Framework v1.1.&nbsp; If you do get the wizard, then go through the wizard,
+ and load the project normally.<br />
+<br />
+</strong></span></span></span></li><li><span style="font-size:13px;">In Solution Explorer, right click on the Project Name and choose Rename</span>
+</li><li><span style="font-size:13px;">Rename the solution to the name we provide for the copied folder ( e.g. msft_galsync )</span>
+</li><li><span style="font-size:13px;">From the Project menu item, select msft_galsync ( this would be the unique name you have provided for your solution )</span>
+</li><li><span style="font-size:13px;">Select Application ( It may already be selected by default )</span>
+</li><li><span style="font-size:13px;">Modify the Assembly Name so that it matches your new solution ( e.g. msft_galsync )</span>
+</li></ol>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+</td>
+</tr>
+<tr>
+<td>
+<h2><a name="GUI_MODIFICATIONS_Updating_the_Management_Agent"></a><strong>GUI Modifications&nbsp;- Updating the Management Agent</strong></h2>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>Now that we have backed up our management agent, and source code, we are ready to proceed with making the modifications.&nbsp; This part of the wiki document will display the steps to make the modifications in the Target Management Agent to
+<strong>Export Attribute Flow ( EAF )</strong>.&nbsp; The reason we are making the change in
+<strong>Export Attribute Flow ( EAF )</strong> is because we want to leave the original value in the metaverse, and only change the value on export.</p>
+<ol>
+<li>In the Synchronization Service Manager Console, select Management Agents </li><li>Select the Target Management
+<ol>
+<li>This is the management agent that will be exporting the modified TargetAddress attribute
+</li></ol>
+</li><li>From the Actions menu, select Properties ( You can also just double click on the Management Agent to display the Properties )
+</li><li>From the menu on the left, select Configure Attribute Flow </li><li>Expand the section where:&nbsp; <br />
+Data Source Object Type = Contact and Metaverse Object Type = Person </li><li>Locate and Select the targetAddress attribute line<br />
+Data Source Attribute = targetAddress and Metaverse Attribute = targetAddress<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1057.targetaddressbefore.png" style="border:0px solid currentColor;" />
+</li><li>At the bottom, in the Build Attribute Flow section
+<ol>
+<li>Mapping Type = Advanced </li><li>Flow Direction = Export<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.mappingtypeandflowdirection.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/1261.mappingtypeandflowdirection.png" width="274" height="645" style="border:0px solid currentColor;width:129px;height:183px;" /></a>
+</li></ol>
+</li><li>In the listb box to the right for Metaverse Attribute
+<ol>
+<li>Locate and Select mailNickName </li><li>Press and Hold the CTRL Key </li><li>Locate and Select msExchOriginatingForest<br />
+<br />
+<span style="background-color:silver;"><strong>*NOTE: If you do not have the Advanced option selected for Mapping Type, you will not be able to select both attributes<br />
+</strong></span><span style="background-color:silver;"><strong><br />
+<ol>
+</ol>
+</strong></span></li></ol>
+</li></ol>
+<span style="background-color:silver;"><strong></strong></span>
+<ul><li>Click the Edit button </li><li>In the Advanced Export Attribute Flow Options Dialog Window
+<ol>
+<li>Choose Rules Extension ( Selected by Default ) </li><li>Flow rule name: _MyNewTargetAddress<br />
+<br />
+<img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/8371.advancedexportflowoptions.png" width="494" height="264" style="border:0px solid currentColor;width:389px;height:168px;" />
+</li></ol>
+</li><li>Click the Ok button </li><li>In the top section, you should see
+<ol>
+<li>Data Source Attribute = targetAddress </li><li>Metaverse Attribute = mailNickName, msExchOriginatingForest </li><li>Type = Rules Extension<br />
+<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7080.targetaddressafter.png"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7080.targetaddressafter.png" style="border:0px solid currentColor;" /></a>
+</li></ol>
+</li><li>The GUI modifications are complete.
+<ol>
+</ol>
+</li></ul></blockquote>
+</td>
+</tr>
+<tr>
+<td>
+<h2><a name="SOURCE_CODE_MODIFICATIONS"></a>Source Code Modifications<strong></strong></h2>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>The GUI modifications are complete, and now we are ready to modify the source code.&nbsp; This section of the wiki will cover the necessary steps to make the source code modifications.<br />
+<br />
+It will be beneficial if you have some knowledge of working with Microsoft Visual Basic .NET, as the GalSync solution is written using Microsoft Visual Basic .NET.&nbsp;
+<br />
+<br />
+We will be focusing on the GalMA.vb file, which is the Management Agent Extension for GalSync.&nbsp; We will be working in the MapAttributesForExport Sub Routine.<br />
+<br />
+</p>
+<table>
+<tbody>
+<tr>
+<td>
+<h3><a name="UPDATE_BUILD_OUTPUT_PATH_VERY_IMPORT"></a><strong>Update Build Output Path&nbsp;( Very Important )</strong></h3>
+</td>
+</tr>
+<tr>
+<td>
+<p dir="ltr" style="margin-right:0px;">The build update path is where the compiled version of the DLL is written too.&nbsp; By default, it will be referencing the Extensions folder under:</p>
+<ul>
+<li><strong>MIIS / ILM</strong>: %programfiles%\Microsoft Identity Integration Server\
+</li><li><strong>FIM</strong>: %programfiles\Microsoft Forefront Identity Manager\2010\Synchronization Service
+</li></ul>
+<p>We want to ensure that we do not overwrite the DLL without making a backup copy of it first.&nbsp; We also do not want to overwrite the GalSync.XML file.&nbsp; If by chance you do overwrite the GalSync.XML file, follow the information found in the Microsoft Knowledge
+ Base Article <a href="http://support.microsoft.com/kb/948167">948167</a>.&nbsp;&nbsp;<br />
+<br />
+The steps below will guide you through updating the build output path.</p>
+<ol>
+<li>If not already open, open the MSFT_GALSYNC solution ( i.e. company acronym_galsync )
+</li><li>%programfiles%\Microsoft Identity Integration Server\Source Code\GalSync\MSFT_GalSync.sln
+</li><li>Update the Project Properties
+<ol>
+<li>From the Project menu, select GalSync Properties </li><li>Select the Compile Tab </li><li>Click the Browse Button beside the textbox for &quot;Build Output Path&quot; </li><li>Click the New Folder button, just to the left of the word Tools at the top </li><li>Call the folder New GalSync Builds ( Provide a name that is unique, and explains what it is for )
+</li><li>Click the Ok Button </li><li>Click the Open Button </li><li>Build update path should now be New GalSync Builds </li></ol>
+</li></ol>
+</td>
+</tr>
+<tr>
+<td>
+<h3><a name="MODIFY_THE_SOURCE_CODE"></a>Modify the Source Code</h3>
+</td>
+</tr>
+<tr>
+<td>
+<ol>
+<li>In Solution Explorer, double click on GalMA </li><li>Press CTRL&#43;F to bring up the Find Window </li><li>Type: (without the quotes) &quot;MapAttributesForExport&quot; and then press the ENTER key
+<ol>
+<li>This should tak you to the <strong>Public Sub MapAttributesForExport</strong> around line 276 in a default GalSync Solution.<br />
+<strong><span style="background-color:silver;">*NOTE: You can identify the line number by looking on the status bar in the lower right. (Example: Ln276)</span></strong>
+</li><li>Look within this Sub Procedure for &quot;Select Case FlowRuleName&quot; </li><li>Insert a few blank lines under the &quot;Select Case FlowRuleName&quot; and then copy and paste the following Case Statement<br />
+<br />
+<table>
+<tbody>
+<tr>
+<td style="background-color:gainsboro;">
+<p><strong>*NOTE: A few things to note here:</strong></p>
+<ol>
+<li><strong>&nbsp;If the _MyNewTargetAddress does not match exactly, including case sensitive, to what is in the Advanced&nbsp;Export Attribute Flow Options Dialog, then this code will never be hit.</strong>
+</li><li><strong>If you are using your own Flow Rule Name, ensure that you update the copy and paste, and that it matches your &nbsp;Flow Rule Name in the Advanced Export Attribute Flow Options Dialog.</strong>
+</li></ol>
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<br />
+<table>
+<tbody>
+<tr>
+<td colspan="2">
+<h4><a name="MyNewTargetAddress_Case_Statement_Code"></a><strong>_MyNewTargetAddress Case Statement Code</strong></h4>
+</td>
+</tr>
+<tr>
+<td>
+<h5><a name="By_mailNickName_and_msExchOriginatingForest"></a><strong>By mailNickName and msExchOriginatingForest</strong></h5>
+</td>
+<td><strong><span style="text-decoration:underline;"></span></strong></td>
+</tr>
+<tr>
+<td>
+<p><a name="_Toc263162796"><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">Case</span></a><span style="color:firebrick;font-family:&#39;courier new&#39;;font-size:10pt;"> &quot;_MyNewTargetAddress&quot;</span></p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">Try</span></p>
+<p><span style="font-family:&#39;courier new&#39;;fonthe copy and paste, and that it matches your &nbsp;Flow Rule Name in the Advanced Export Attribute Flow Options Dialog.</strong>
+</li></ol>
+</td>
+</tr>
+</tbody>
+</table>
+<br />
+<br />
+<table>
+<tbody>
+<tr>
+<td colspan="2">
+<h4><a name="MyNewTargetAddress_Case_Statement_Code"></a><strong>_MyNewTargetAddress Case Statement Code</strong></h4>
+</td>
+</tr>
+<tr>
+<td>
+<h5-size:10pt;">csentry(<span style="color:firebrick;">&quot;targetAddress&quot;</span>).Value =
+<span style="color:firebrick;">&quot;smtp:&quot;</span> &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">mventry(<span style="color:firebrick;">&quot;mailNickName&quot;</span>).Value &amp;
+<span style="color:firebrick;">&quot;@&quot;</span> &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">mventry(<span style="color:firebrick;">&quot;msExchOriginatingForest&quot;</span>).Value</span></p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">Catch</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> ex
+<span style="color:blue;">As</span> Exception</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;"><span style="color:blue;">Throw</span>
+<span style="color:blue;">New</span> Exception(<span style="color:firebrick;">&quot;Exception Occurred&quot;</span> &amp; vbCrLf &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">ex.Message.ToString() &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">vbCrLf &amp; ex.InnerException.Message.ToString())</span></p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">End</span><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;"> Try<br />
+<br />
+<br />
+<br />
+<br />
+</span></p>
+</td>
+<td>
+<p>&nbsp;</p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;"></span></p>
+&nbsp;
+<p>&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td>
+<h5><a name="By_First_Name_Last_Name_and_msExchOriginatingForest"></a><strong>By First Name.Last Name and msExchOriginatingForest</strong></h5>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td>
+<p><a name="_Toc263162796"><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">Case</span></a><span style="color:firebrick;font-family:&#39;courier new&#39;;font-size:10pt;"> &quot;_MyNewTargetAddress&quot;</span></p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">Try</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">csentry(<span style="color:firebrick;">&quot;targetAddress&quot;</span>).Value =
+<span style="color:firebrick;">&quot;smtp:&quot;</span> &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">mventry(<span style="color:firebrick;">&quot;givenName&quot;</span>).Value &amp; &quot;.&quot; &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;"><span style="font-family:&#39;courier new&#39;;font-size:13px;">mventry(<span style="color:firebrick;">&quot;sn&quot;</span>).Value</span> &amp;
+<span style="color:firebrick;">&quot;@&quot;</span> &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">mventry(<span style="color:firebrick;">&quot;msExchOriginatingForest&quot;</span>).Value</span></p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">Catch</span><span style="font-family:&#39;courier new&#39;;font-size:10pt;"> ex
+<span style="color:blue;">As</span> Exception</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;"><span style="color:blue;">Throw</span>
+<span style="color:blue;">New</span> Exception(<span style="color:firebrick;">&quot;Exception Occurred&quot;</span> &amp; vbCrLf &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">ex.Message.ToString() &amp; _</span></p>
+<p><span style="font-family:&#39;courier new&#39;;font-size:10pt;">vbCrLf &amp; ex.InnerException.Message.ToString())</span></p>
+<p><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;">End</span><span style="color:blue;font-family:&#39;courier new&#39;;font-size:10pt;"> Try</span></p>
+</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>&nbsp;</p>
+</blockquote>
+</li></ol>
+</li></ol>
+</td>
+</tr>
+<tr>
+<td>
+<h3><a name="BUILD_SOLUTION_Compiling_source_code_modifications"></a><strong>Build Solution&nbsp;- Compiling source code modifications</strong></h3>
+</td>
+</tr>
+<tr>
+<td>
+<ol>
+<li>You should still be in Microsoft Visual Studio </li><li>From the Build menu, select Build Solution </li><li>Navigate to the New GalSync Builds folder we created above in the Update Build Output Path section
+</li><li>You will find 2 - 3 files here
+<ol>
+<li>MSFT_GALSYNC.DLL </li><li>GALSYNC.XML </li><li>MSFT_GALSYNC.XML </li></ol>
+</li></ol>
+</td>
+</tr>
+<tr>
+<td>
+<h3><a name="TESTING_NEW_CODE_Test_the_updates_you_just_made"></a><strong>Testing New Code&nbsp;- Test the updates you just made</strong></h3>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p>It is very important to test your new source code prior to allowing it to run in your production environment.&nbsp; We strongly urge you to have a development/test environment.&nbsp; If you do not have a test environment, ensure that you backup your existing GalSync.DLL.</p>
+<ol>
+<li>In the Extensions folder, make a backup copy of your MSFT_GALSYNC.DLL </li><li>Copy, just the MSFT_GALSYNC.DLL from the New GalSync Builds folder to the Extensions folder
+</li><li>GUI Changes:
+<ol>
+<li>In the Synchronization Service Manager Console, select Tools &gt; Options </li><li>Click the Browse button beside Rules Extension Name </li><li>Select MSFT_GALSYNC.DLL </li><li>Click the Ok button </li></ol>
+</li><li>View the Properties of each Management Agent, and select the Configure Extensions Tab
+</li><li>Click the Browse button, and select MSFT_GALSYNC.DLL </li><li>Test your solution
+<ol>
+<li>You may want to use some export testing methods, by reviewing the wiki page:<br />
+<a href="http://social.technet.microsoft.com/wiki/contents/articles/9538.hto allowing it to run in your production eow-to-how-to-test-the-exporting-of-data-before-it-is-exported.aspx">How to test the exporting of data before it is exported</a>
+</li></ol>
+</li></ol>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</blockquote>
+</td>
+</tr>
+<tr>
+<td>
+<h2><a name="ADDITIONAL_RESOURCES"></a>Additional Resources</h2>
+</td>
+</tr>
+<tr>
+<td>
+<blockquote dir="ltr" style="margin-right:0px;">
+<p><a href="http://social.technet.microsoft.com/wiki/contents/articles/11405.reference-fim-landing-page-resource-wiki-page-index-en-us.aspx">FIM LANDING PAGE: Resource Wiki and Troubleshooter Wiki Index</a></p>
+</blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+
+</div>
+    
+    

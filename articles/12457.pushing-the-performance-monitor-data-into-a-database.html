@@ -1,0 +1,106 @@
+---
+layout: default
+title: Pushing the Performance Monitor Data into a Database - TechNet Articles - United States (English) - TechNet Wiki
+weight: 3
+---
+
+<div class="post-content user-defined-markup">
+
+<div style="margin-bottom:0pt;"><strong><span style="font-size:12pt;background-color:white;color:#222222;">Pushing the Performance counters of the Database</span></strong><strong><span style="font-size:12pt;background-color:white;font-family:arial,sans-serif;color:#222222;">&nbsp;</span></strong><span style="font-size:12pt;font-family:arial,sans-serif;color:#222222;"><br />
+<br />
+</span><span style="font-size:12pt;background-color:whass="content-fragment page no-wrapper" id="fragment-6615">
+<div class="content-fragment-inner fiji-content-fragment-inner"><div class="content-fragment-top fiji-content-fragment-top"><div class="r1 fiji-r1"></div><div class="r2 fiji-r2"></div><div class="r3 fiji-r3"></div><div class="r4 fiji-r4"></div></div><div class="content-fragment-content">
+
+<div class="full-post-header"></div>
+<div class="full-post">
+    <h1 class="post-name">Pushing the Performance Monitor Data into a Database</h1>
+    
+
+  ite;color:#222222;">As we know the Monitoring the Performance counters is an important task of the SQL DBA, and even these performance counters are an integral part of the troubleshooting of the performance
+ issues.&nbsp;</span><span style="font-size:12pt;font-family:arial,sans-serif;color:#222222;"><br />
+</span><span style="font-size:12pt;background-color:white;color:#222222;">And there is interesting way to push the performance counters into the Database of a sql server and from there we can Query them, make views and reports.</span><span style="font-size:12pt;background-color:white;font-family:arial,sans-serif;color:#222222;">&nbsp;</span><span style="font-size:12pt;font-family:arial,sans-serif;color:#222222;"><br />
+<br />
+</span><strong><span style="font-size:14pt;background-color:white;color:#222222;">Let’s Begin:</span></strong><span style="font-size:14pt;background-color:white;font-family:arial,sans-serif;color:#222222;">&nbsp;</span><span style="font-size:12pt;font-family:arial,sans-serif;color:#222222;"><br />
+<br />
+</span><strong><span style="font-size:12pt;background-color:white;color:#222222;">1. Making a Data Collector:</span></strong><span style="font-size:12pt;background-color:white;font-family:arial,sans-serif;color:#222222;">&nbsp;</span><span style="font-size:12pt;font-family:arial,sans-serif;color:#222222;"><br />
+</span><span style="font-size:12pt;background-color:white;color:#222222;">First for pushing any perfmon in the database first we need to build a Data Collector set from the perfmon. This Data Collector is going to have the basic performance counters which
+ we want to monitor, Try to keep them as few as possible, so let us be more specific on our requirements(for TempDB Analysis, DB Analysis, Server Health Analysis) and then populating them accordingly. Then determine the intervals at which we need to populate
+ (on 15, 30 seconds basis or minute basis).</span><span style="font-size:12pt;background-color:white;font-family:arial,sans-serif;color:#222222;">&nbsp;<br />
+</span><span style="background-color:white;font-size:16px;color:#222222;">You can follow the below link for getting more details on how to create a Data collector sets in the Performance Monitor.<br />
+</span><a href="http://technet.microsoft.com/en-us/library/cc749337.aspx">http://technet.microsoft.com/en-us/library/cc749337.aspx</a>&nbsp;</div>
+<div style="margin-bottom:0pt;"><strong><span style="font-size:12pt;background-color:white;color:#222222;">2. &nbsp;Making a System DSN<br />
+</span></strong><span style="font-size:12pt;background-color:white;color:#222222;">Now for pushing this Performance Monitor from the blg file to the Database we need to create a System DSN from the ODBC of the server. You need to select the Database where
+ you are going to push the perfmon. Preferably host the database over a staging instance and where all the performance data of the production servers can also be pushed.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><strong><span style="font-size:12pt;background-color:white;color:#222222;">3. Running the
+<em>relog</em> Command<br />
+</span></strong><span style="font-size:12pt;background-color:white;color:#222222;">The relog command is used for re-logging the existing log files into another format. During the re-logging along with the change of format we extract time-specific, counter-specific
+ or both data.<br />
+</span><span style="font-size:12pt;background-color:white;color:#222222;"><br />
+Now as we are logging only a few counters we can execute the command<br />
+</span><span style="font-size:12pt;background-color:white;color:#222222;">relog “</span><em style="color:#222222;font-size:12pt;">&lt;The BLG file&gt;</em><span style="font-size:12pt;background-color:white;color:#222222;">” –f SQL –o SQL:</span><em style="color:#222222;font-size:12pt;">&lt;SYSTEM
+ DSN NAME&gt;</em><strong style="color:#222222;font-size:12pt;">!</strong><em style="color:#222222;font-size:12pt;">&lt;Server where Database is present&gt;</em></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">Example: relog
+</span><span style="font-size:12pt;background-color:fuchsia;color:#222222;">C:\ImportantPermon.Blg</span><span style="font-size:12pt;background-color:white;color:#222222;"> –f SQL –o SQL:</span><span style="font-size:12pt;background-color:aqua;color:#222222;">PerfmonDSN</span><span style="font-size:12pt;background-color:white;color:#222222;">!</span><em style="color:#222222;font-size:12pt;"><span style="background-color:lime;">RTMVDB01\STGSQLINSTANCE<br />
+</span></em><span style="font-size:12pt;background-color:white;color:#222222;"><br />
+After the execution of the above command the relog command determines the no of samples in the blg file and pushes them into the database</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><strong><span style="font-size:12pt;background-color:white;color:#222222;">4. Query from the SQL</span></strong></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">Now after the relog command is executed we can see that three tables are created in the database<br />
+<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/6254.tables.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/6254.tables.jpg" style="border-width:0px;border-style:solid;width:171px;height:107px;" /></a><br />
+</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><span style="font-size:12pt;background-color:white;color:#222222;">Now the performance counter data and values is stored in the table
+</span><strong style="color:#222222;font-size:12pt;">dbo.CounterData</strong><span style="font-size:12pt;background-color:white;color:#222222;"> and the Counter Details are stored in the table
+</span><strong style="color:#222222;font-size:12pt;">dbo.CounterDetails.&nbsp; </strong>
+<span style="font-size:12pt;background-color:white;color:#222222;">But if we select the values from the
+</span><strong style="color:#222222;font-size:12pt;">dbo.CounterData </strong><span style="font-size:12pt;background-color:white;color:#222222;">the data it gives is difficult to analyze as the Date and Time both mixed come up as a string, the description
+ of the counters is present in </span><strong style="color:#222222;font-size:12pt;">dbo.CounterDetails</st
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><span style="font-size:12pt;background-color:white;color:#222222;">Now the performance counter data and vrong><span style="font-size:12pt;background-color:white;color:#222222;">.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><span style="font-size:12pt;background-color:white;color:#222222;">So we can create a simple view like which will relate both the tables</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">CREATE</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+<span style="color:blue;">VIEW</span> [dbo]<span style="color:gray;">.</span>[Bestview]<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">AS<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">SELECT</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="color:gray;">LEFT(</span>dbo<span style="color:gray;">.</span>CounterData<span style="color:gray;">.</span>CounterDateTime<span style="color:gray;">,</span> 10<span style="color:gray;">)</span>
+<span style="color:blue;">AS</span> <span style="color:blue;">Date</span><span style="color:gray;">,</span>
+<span style="color:fuchsia;">SUBSTRING</span><span style="color:gray;">(</span>dbo<span style="color:gray;">.</span>CounterData<span style="color:gray;">.</span>CounterDateTime<span style="color:gray;">,</span> 12<span style="color:gray;">,</span> 8<span style="color:gray;">)</span>
+<span style="color:blue;">AS</span> <span style="color:blue;">Time</span><span style="color:gray;">,</span> dbo<span style="color:gray;">.</span>CounterData<span style="color:gray;">.</span>CounterValue<span style="color:gray;">,</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterDetails</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">MachineName</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">,</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+ dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterDetails</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">ObjectName</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">,</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+ dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterDetails</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterName</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">,</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">
+ dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterDetails</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">InstanceName<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">FROM</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dbo<span style="color:gray;">.</span>CounterData
+<span style="color:gray;">INNER</span> <span style="color:#808080;">JOIN&nbsp;</span></span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterDetails
+<br />
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:blue;">ON</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterData</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterID
+</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">=</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;"> dbo</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterDetails</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;color:gray;">.</span><span style="font-size:10pt;font-family:&#39;courier new&#39;;">CounterID</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:10pt;font-family:&#39;courier new&#39;;">&nbsp;</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">After this view is created, we can use this view to get a systematic info like in the below format<br />
+&nbsp;<a href="http://social.technet.microsoft.com/wiki/cfs-file.ashx/__key/communityserver-wikis-components-files/00-00-00-00-05/7563.exampleview.jpg"><img alt=" " src="http://social.technet.microsoft.com/wiki/resized-image.ashx/__size/550x0/__key/communityserver-wikis-components-files/00-00-00-00-05/7563.exampleview.jpg" style="border-width:0px;border-style:solid;" /></a>&nbsp;<br />
+</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">So we can see above we can get the Counter Value along with the Date, Time. In a similar manner we can multiple views over the Tables to extract
+ Data which will be very helpful for our analysis as well as reporting.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;"><br />
+<strong><span style="font-size:12pt;background-color:white;">How does this Help in setting up an Analysis?</span></strong><br />
+</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><span style="font-size:12pt;background-color:white;color:#222222;">As we have seen that after we make the Data Collector, we run the
+ relog command to push the data into the perfmon. For doing this on an automated basis we can just create a simple batch file which will start/stop the perfmon, push the data to the Database. And this batch can be scheduled using a Windows Task.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">Now here we set the properties of the Data Collector set such that it overwrites the same file once it starts again. So in the batch file we had
+ to just specify a single log file name which used to be pushed into the DB get overwritten by the Perfmon.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><strong><span style="font-size:12pt;background-color:white;color:#222222;">Advantages of this Method:</span></strong></div>
+<div style="margin-bottom:0pt;"><strong><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span></strong><span style="font-size:12pt;background-color:white;color:#222222;">Using this Method is very helpful when we want to
+ monitor a set of values for a few days, or generate reports based on these values.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">As an example I used this method to generate reports over the TempDB by collecting the data of a specific SQL counters during the peak hours of
+ usage and stored in TempDB. And then connected the Database where is stored the Data from my Excel and got excellent reports of my TempDB performance. Please note that on this overall time I have stored the Production performance counter Data in a Database
+ present in the Staging Server and then queried it. I never touched the Production SQL instance.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><strong><span style="font-size:12pt;background-color:white;color:#222222;">One More Example:</span></strong></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">For our Team we were observing that every day at a specific time say midnight 11 PM there was a huge spike in the CPU.&nbsp; So what we configured
+ a Data collector set which contains just two objects <strong>Processor (_Total) : % ProcessorTime</strong> and
+<strong>Process(*): %ProcessorTime. </strong>We set the Data Collector properties to get overwritten and made a job to start and stop the Data collector set after one hour and after that push the log file into the Database.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-colorhe Staging Server and then queried it. I never touched the Production SQL instance.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><strong><span style="font-size:12pt;background-color:white;color:#222222;">One More Example:</span></strong></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;col:white;color:#222222;">&nbsp;</span><span style="font-size:12pt;background-color:white;color:#222222;">And then we queried using the Table and found out the processes taking
+ the huge amount of CPU by ordering them by the value and then found out that the culprit at that time was the antivirus.</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span></div>
+<div style="margin-bottom:0pt;"><span style="font-size:12pt;background-color:white;color:#222222;">&nbsp;</span></div>
+
+</div>
+    
+    
